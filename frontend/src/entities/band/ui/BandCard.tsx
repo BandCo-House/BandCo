@@ -8,6 +8,7 @@ export const BandCard = ({ band }: BandCardProps) => {
   return (
     <div>
       <span>{band.name}</span>
+      <span>{band.memberCount}</span>
     </div>
   );
 };
