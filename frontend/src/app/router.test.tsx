@@ -38,7 +38,7 @@ describe('앱 라우터', () => {
 
     render(<RouterProvider router={router} />);
 
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
   it('로그아웃 사용자가 프로필 경로로 접근하면 루트로 리다이렉트된다', async () => {
@@ -49,7 +49,7 @@ describe('앱 라우터', () => {
 
     render(<RouterProvider router={router} />);
 
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
   it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
@@ -71,7 +71,7 @@ describe('앱 라우터', () => {
 
     render(<RouterProvider router={router} />);
 
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
   it('관리자 사용자가 관리자 경로로 접근하면 관리자 페이지를 렌더링한다', async () => {
@@ -95,10 +95,9 @@ describe('앱 라우터', () => {
 
     await screen.findByText('SongsPage');
 
-    expect(screen.getByRole('button', { name: '곡 라이브러리' })).toHaveAttribute(
-      'data-variant',
-      'default',
-    );
+    expect(
+      screen.getByRole('button', { name: '곡 라이브러리' }),
+    ).toHaveAttribute('data-variant', 'default');
     expect(screen.getByRole('button', { name: '캘린더' })).toHaveAttribute(
       'data-variant',
       'outline',
@@ -119,10 +118,9 @@ describe('앱 라우터', () => {
       'data-variant',
       'default',
     );
-    expect(screen.getByRole('button', { name: '곡 라이브러리' })).toHaveAttribute(
-      'data-variant',
-      'outline',
-    );
+    expect(
+      screen.getByRole('button', { name: '곡 라이브러리' }),
+    ).toHaveAttribute('data-variant', 'outline');
   });
 
   it('루트에서 검색바가 노출된다', async () => {
@@ -132,8 +130,10 @@ describe('앱 라우터', () => {
     });
 
     const { unmount } = render(<RouterProvider router={rootRouter} />);
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('밴드/사용자를 찾아보세요')).toBeInTheDocument();
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('밴드/사용자를 찾아보세요'),
+    ).toBeInTheDocument();
     unmount();
 
     const songsRouter = createRouterForTest('/band/1/performance/1/songs', {
@@ -143,7 +143,9 @@ describe('앱 라우터', () => {
 
     render(<RouterProvider router={songsRouter} />);
     expect(await screen.findByText('SongsPage')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('밴드/사용자를 찾아보세요')).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('밴드/사용자를 찾아보세요'),
+    ).not.toBeInTheDocument();
   });
 
   it('프로필/초대수락 페이지에서는 우측 프로필 아바타를 렌더링하지 않는다', async () => {
@@ -178,7 +180,7 @@ describe('앱 라우터', () => {
     await screen.findByText('BandDetailPage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
 
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
   it('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
@@ -192,7 +194,7 @@ describe('앱 라우터', () => {
     await screen.findByText('ProfilePage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
 
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
   it('팀 상세의 뒤로가기는 해당 곡의 팀 목록으로 이동한다', async () => {
