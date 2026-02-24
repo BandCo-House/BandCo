@@ -1,59 +1,76 @@
-import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/mocks/server';
+import { useBandCreate } from './useBandCreate';
 
-import { createAppRouter } from '@/app/router';
-import * as bandApi from '../api/band-api';
-import type { BandCreateRequest } from '../api/band-api';
+const navigateMock = vi.fn();
 
-// createBand 어댑터를 mock — 훅 로직만 격리 검증
-vi.mock('../api/band-api', () => ({
-  createBand: vi.fn(),
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => navigateMock,
 }));
 
-const mockCreateBand = vi.mocked(bandApi.createBand);
-
-const createTestRouter = (initialPath: string) => {
-  const router = createAppRouter();
-  router.update({
-    history: createMemoryHistory({ initialEntries: [initialPath] }),
-    context: { user: { isLoggedIn: true, isAdmin: false } },
+const createTestWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
-  return router;
+
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
 };
 
 describe('useBandCreate', () => {
-  it('createBand 성공 시 / 로 navigate한다', async () => {
-    mockCreateBand.mockResolvedValueOnce({ id: 'band-1', name: '테스트 밴드' });
-
-    const router = createTestRouter('/band/create');
-    render(<RouterProvider router={router} />);
-
-    // 현재 페이지가 /band/create임을 확인
-    expect(await screen.findByText('BandCreatePage')).toBeInTheDocument();
-
-    // createBand 성공 후 / 로 navigate 시뮬레이션
-    await router.navigate({ to: '/' });
-
-    expect(await screen.findByText('MyBandsPage')).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('createBand 실패 시 페이지를 유지한다', async () => {
-    mockCreateBand.mockRejectedValueOnce(new Error('서버 에러'));
+  it('성공 시 뮤테이션 후 리다이렉트한다', async () => {
+    const { result } = renderHook(() => useBandCreate(), {
+      wrapper: createTestWrapper(),
+    });
 
-    const router = createTestRouter('/band/create');
-    render(<RouterProvider router={router} />);
+    result.current.submit({ name: '새로운 밴드' });
 
-    // /band/create 에서 시작
-    expect(await screen.findByText('BandCreatePage')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(true);
+    });
 
-    // createBand 실패 호출
-    try {
-      await bandApi.createBand({ name: '실패' } as BandCreateRequest);
-    } catch{ /* empty */ }
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false);
+      },
+      { timeout: 2000 },
+    );
 
-    // 실패 후 여전히 /band/create에 있어야 함
-    expect(screen.queryByText('MyBandsPage')).not.toBeInTheDocument();
-    expect(screen.getByText('BandCreatePage')).toBeInTheDocument();
+    expect(result.current.error).toBeNull();
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/' });
+  });
+
+  it('실패 시 에러 상태를 업데이트한다', async () => {
+    server.use(
+      http.post('/bands', () => {
+        return HttpResponse.json({ success: false }, { status: 400 });
+      }),
+    );
+
+    const { result } = renderHook(() => useBandCreate(), {
+      wrapper: createTestWrapper(),
+    });
+
+    result.current.submit({ name: '실패하는 밴드' });
+
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false);
+      },
+      { timeout: 2000 },
+    );
+
+    expect(result.current.error).toBeTruthy();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });

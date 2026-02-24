@@ -1,7 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createBand } from '../api/band-api';
 import type { BandCreateRequest } from '../api/band-api';
+import { bandKeys } from '@/entities/band/api/useBands';
 
 export interface UseBandCreateResult {
   submit: (data: BandCreateRequest) => Promise<void>;
@@ -11,22 +12,24 @@ export interface UseBandCreateResult {
 
 export const useBandCreate = (): UseBandCreateResult => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const submit = async (data: BandCreateRequest): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await createBand(data);
+  const mutation = useMutation({
+    mutationFn: createBand,
+    onSuccess: async () => {
+      // 밴드 생성 성공 시 밴드 목록 쿼리 무효화 (데이터 갱신 트리거)
+      await queryClient.invalidateQueries({ queryKey: bandKeys.lists() });
       await navigate({ to: '/' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '밴드 생성에 실패했습니다');
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  const submit = async (data: BandCreateRequest) => {
+    mutation.mutate(data);
   };
 
-  return { submit, isLoading, error };
+  return {
+    submit,
+    isLoading: mutation.isPending,
+    error: mutation.error ? mutation.error.message : null,
+  };
 };

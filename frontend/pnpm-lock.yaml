@@ -114,6 +114,9 @@ importers:
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0(@noble/hashes@1.8.0)
+      msw:
+        specifier: ^2.12.10
+        version: 2.12.10(@types/node@24.10.13)(typescript@5.9.3)
       shadcn:
         specifier: ^3.8.4
         version: 3.8.4(@types/node@24.10.13)(typescript@5.9.3)

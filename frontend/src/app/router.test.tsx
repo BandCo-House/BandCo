@@ -1,8 +1,20 @@
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { UserAccess } from '@/app/providers/auth-context';
 import { createAppRouter } from '@/app/router';
+
+const renderWithRouter = (router: ReturnType<typeof createAppRouter>) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+};
 
 const createRouterForTest = (initialPath: string, user: UserAccess) => {
   const router = createAppRouter();
@@ -36,7 +48,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
@@ -47,7 +59,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
@@ -58,7 +70,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
   });
@@ -69,7 +81,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
@@ -80,7 +92,7 @@ describe('앱 라우터', () => {
       isAdmin: true,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     expect(await screen.findByText('AdminPage')).toBeInTheDocument();
   });
@@ -91,7 +103,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('SongsPage');
 
@@ -110,7 +122,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
 
@@ -129,7 +141,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    const { unmount } = render(<RouterProvider router={rootRouter} />);
+    const { unmount } = renderWithRouter(rootRouter);
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('밴드/사용자를 찾아보세요'),
@@ -175,7 +187,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandDetailPage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
@@ -189,7 +201,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('ProfilePage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
@@ -203,7 +215,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('TeamDetailPage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
