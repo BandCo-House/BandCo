@@ -85,8 +85,8 @@ describe('앱 라우터', () => {
     expect(await screen.findByText('AdminPage')).toBeInTheDocument();
   });
 
-  it('performance 하위 songs 경로에서는 곡 라이브러리 탭이 active 상태다', async () => {
-    const router = createRouterForTest('/band/1/performance/1/songs', {
+  it('밴드 곡 라이브러리 경로에서는 곡 라이브러리 탭이 active 상태다', async () => {
+    const router = createRouterForTest('/band/1/songs', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -136,7 +136,7 @@ describe('앱 라우터', () => {
     expect(screen.getByPlaceholderText('밴드/사용자를 찾아보세요')).toBeInTheDocument();
     unmount();
 
-    const songsRouter = createRouterForTest('/band/1/performance/1/songs', {
+    const songsRouter = createRouterForTest('/band/1/songs', {
       isLoggedIn: true,
       isAdmin: false,
     });

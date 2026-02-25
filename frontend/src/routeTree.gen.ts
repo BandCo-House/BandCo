@@ -18,12 +18,11 @@ import { Route as InviteAcceptRouteImport } from './pages/invite.accept'
 import { Route as BandBandIdRouteImport } from './pages/band.$bandId'
 import { Route as BandBandIdIndexRouteImport } from './pages/band.$bandId.index'
 import { Route as SongSongIdTeamsRouteImport } from './pages/song.$songId.teams'
+import { Route as BandBandIdSongsRouteImport } from './pages/band.$bandId.songs'
 import { Route as BandBandIdSettingsRouteImport } from './pages/band.$bandId.settings'
-import { Route as BandBandIdInviteRouteImport } from './pages/band.$bandId.invite'
 import { Route as SongSongIdTeamTeamIdRouteImport } from './pages/song.$songId.team.$teamId'
 import { Route as BandBandIdPerformancePerformanceIdRouteImport } from './pages/band.$bandId.performance.$performanceId'
 import { Route as BandBandIdPerformancePerformanceIdIndexRouteImport } from './pages/band.$bandId.performance.$performanceId.index'
-import { Route as BandBandIdPerformancePerformanceIdSongsRouteImport } from './pages/band.$bandId.performance.$performanceId.songs'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -70,14 +69,14 @@ const SongSongIdTeamsRoute = SongSongIdTeamsRouteImport.update({
   path: '/song/$songId/teams',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BandBandIdSongsRoute = BandBandIdSongsRouteImport.update({
+  id: '/songs',
+  path: '/songs',
+  getParentRoute: () => BandBandIdRoute,
+} as any)
 const BandBandIdSettingsRoute = BandBandIdSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => BandBandIdRoute,
-} as any)
-const BandBandIdInviteRoute = BandBandIdInviteRouteImport.update({
-  id: '/invite',
-  path: '/invite',
   getParentRoute: () => BandBandIdRoute,
 } as any)
 const SongSongIdTeamTeamIdRoute = SongSongIdTeamTeamIdRouteImport.update({
@@ -97,12 +96,6 @@ const BandBandIdPerformancePerformanceIdIndexRoute =
     path: '/',
     getParentRoute: () => BandBandIdPerformancePerformanceIdRoute,
   } as any)
-const BandBandIdPerformancePerformanceIdSongsRoute =
-  BandBandIdPerformancePerformanceIdSongsRouteImport.update({
-    id: '/songs',
-    path: '/songs',
-    getParentRoute: () => BandBandIdPerformancePerformanceIdRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -112,13 +105,12 @@ export interface FileRoutesByFullPath {
   '/invite/accept': typeof InviteAcceptRoute
   '/invite/request': typeof InviteRequestRoute
   '/performance/create': typeof PerformanceCreateRoute
-  '/band/$bandId/invite': typeof BandBandIdInviteRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
+  '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId/': typeof BandBandIdIndexRoute
   '/band/$bandId/performance/$performanceId': typeof BandBandIdPerformancePerformanceIdRouteWithChildren
   '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
-  '/band/$bandId/performance/$performanceId/songs': typeof BandBandIdPerformancePerformanceIdSongsRoute
   '/band/$bandId/performance/$performanceId/': typeof BandBandIdPerformancePerformanceIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -128,12 +120,11 @@ export interface FileRoutesByTo {
   '/invite/accept': typeof InviteAcceptRoute
   '/invite/request': typeof InviteRequestRoute
   '/performance/create': typeof PerformanceCreateRoute
-  '/band/$bandId/invite': typeof BandBandIdInviteRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
+  '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId': typeof BandBandIdIndexRoute
   '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
-  '/band/$bandId/performance/$performanceId/songs': typeof BandBandIdPerformancePerformanceIdSongsRoute
   '/band/$bandId/performance/$performanceId': typeof BandBandIdPerformancePerformanceIdIndexRoute
 }
 export interface FileRoutesById {
@@ -145,13 +136,12 @@ export interface FileRoutesById {
   '/invite/accept': typeof InviteAcceptRoute
   '/invite/request': typeof InviteRequestRoute
   '/performance/create': typeof PerformanceCreateRoute
-  '/band/$bandId/invite': typeof BandBandIdInviteRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
+  '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId/': typeof BandBandIdIndexRoute
   '/band/$bandId/performance/$performanceId': typeof BandBandIdPerformancePerformanceIdRouteWithChildren
   '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
-  '/band/$bandId/performance/$performanceId/songs': typeof BandBandIdPerformancePerformanceIdSongsRoute
   '/band/$bandId/performance/$performanceId/': typeof BandBandIdPerformancePerformanceIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -164,13 +154,12 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/invite/request'
     | '/performance/create'
-    | '/band/$bandId/invite'
     | '/band/$bandId/settings'
+    | '/band/$bandId/songs'
     | '/song/$songId/teams'
     | '/band/$bandId/'
     | '/band/$bandId/performance/$performanceId'
     | '/song/$songId/team/$teamId'
-    | '/band/$bandId/performance/$performanceId/songs'
     | '/band/$bandId/performance/$performanceId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -180,12 +169,11 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/invite/request'
     | '/performance/create'
-    | '/band/$bandId/invite'
     | '/band/$bandId/settings'
+    | '/band/$bandId/songs'
     | '/song/$songId/teams'
     | '/band/$bandId'
     | '/song/$songId/team/$teamId'
-    | '/band/$bandId/performance/$performanceId/songs'
     | '/band/$bandId/performance/$performanceId'
   id:
     | '__root__'
@@ -196,13 +184,12 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/invite/request'
     | '/performance/create'
-    | '/band/$bandId/invite'
     | '/band/$bandId/settings'
+    | '/band/$bandId/songs'
     | '/song/$songId/teams'
     | '/band/$bandId/'
     | '/band/$bandId/performance/$performanceId'
     | '/song/$songId/team/$teamId'
-    | '/band/$bandId/performance/$performanceId/songs'
     | '/band/$bandId/performance/$performanceId/'
   fileRoutesById: FileRoutesById
 }
@@ -283,18 +270,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SongSongIdTeamsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/band/$bandId/songs': {
+      id: '/band/$bandId/songs'
+      path: '/songs'
+      fullPath: '/band/$bandId/songs'
+      preLoaderRoute: typeof BandBandIdSongsRouteImport
+      parentRoute: typeof BandBandIdRoute
+    }
     '/band/$bandId/settings': {
       id: '/band/$bandId/settings'
       path: '/settings'
       fullPath: '/band/$bandId/settings'
       preLoaderRoute: typeof BandBandIdSettingsRouteImport
-      parentRoute: typeof BandBandIdRoute
-    }
-    '/band/$bandId/invite': {
-      id: '/band/$bandId/invite'
-      path: '/invite'
-      fullPath: '/band/$bandId/invite'
-      preLoaderRoute: typeof BandBandIdInviteRouteImport
       parentRoute: typeof BandBandIdRoute
     }
     '/song/$songId/team/$teamId': {
@@ -318,25 +305,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BandBandIdPerformancePerformanceIdIndexRouteImport
       parentRoute: typeof BandBandIdPerformancePerformanceIdRoute
     }
-    '/band/$bandId/performance/$performanceId/songs': {
-      id: '/band/$bandId/performance/$performanceId/songs'
-      path: '/songs'
-      fullPath: '/band/$bandId/performance/$performanceId/songs'
-      preLoaderRoute: typeof BandBandIdPerformancePerformanceIdSongsRouteImport
-      parentRoute: typeof BandBandIdPerformancePerformanceIdRoute
-    }
   }
 }
 
 interface BandBandIdPerformancePerformanceIdRouteChildren {
-  BandBandIdPerformancePerformanceIdSongsRoute: typeof BandBandIdPerformancePerformanceIdSongsRoute
   BandBandIdPerformancePerformanceIdIndexRoute: typeof BandBandIdPerformancePerformanceIdIndexRoute
 }
 
 const BandBandIdPerformancePerformanceIdRouteChildren: BandBandIdPerformancePerformanceIdRouteChildren =
   {
-    BandBandIdPerformancePerformanceIdSongsRoute:
-      BandBandIdPerformancePerformanceIdSongsRoute,
     BandBandIdPerformancePerformanceIdIndexRoute:
       BandBandIdPerformancePerformanceIdIndexRoute,
   }
@@ -347,15 +324,15 @@ const BandBandIdPerformancePerformanceIdRouteWithChildren =
   )
 
 interface BandBandIdRouteChildren {
-  BandBandIdInviteRoute: typeof BandBandIdInviteRoute
   BandBandIdSettingsRoute: typeof BandBandIdSettingsRoute
+  BandBandIdSongsRoute: typeof BandBandIdSongsRoute
   BandBandIdIndexRoute: typeof BandBandIdIndexRoute
   BandBandIdPerformancePerformanceIdRoute: typeof BandBandIdPerformancePerformanceIdRouteWithChildren
 }
 
 const BandBandIdRouteChildren: BandBandIdRouteChildren = {
-  BandBandIdInviteRoute: BandBandIdInviteRoute,
   BandBandIdSettingsRoute: BandBandIdSettingsRoute,
+  BandBandIdSongsRoute: BandBandIdSongsRoute,
   BandBandIdIndexRoute: BandBandIdIndexRoute,
   BandBandIdPerformancePerformanceIdRoute:
     BandBandIdPerformancePerformanceIdRouteWithChildren,

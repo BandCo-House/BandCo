@@ -10,8 +10,8 @@ export const Route = createFileRoute('/band/$bandId')({
 });
 
 /**
- * 밴드 공연 화면(캘린더/곡 라이브러리) 공통 탭
- * 라우트 파라미터를 유지하면서 같은 공연 내 하위 화면만 전환한다.
+ * 밴드 상세/공연 화면에서 공통으로 쓰는 탭
+ * 캘린더는 공연 상세로, 곡 라이브러리는 밴드 공용 라이브러리로 이동한다.
  */
 export const bandPerformanceTabs: HeaderTab[] = [
   {
@@ -28,13 +28,12 @@ export const bandPerformanceTabs: HeaderTab[] = [
   {
     key: 'songs',
     label: '곡 라이브러리',
-    to: '/band/$bandId/performance/$performanceId/songs',
+    to: '/band/$bandId/songs',
     getParams: (params: Record<string, string>) => ({
       bandId: params.bandId,
-      performanceId: params.performanceId,
     }),
     isActive: ({ pathname, params }) =>
-      pathname === `/band/${params.bandId}/performance/${params.performanceId}/songs`,
+      pathname === `/band/${params.bandId}/songs`,
   },
 ];
 
