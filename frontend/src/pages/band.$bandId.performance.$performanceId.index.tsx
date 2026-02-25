@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { bandPerformanceTabs, resolvePerformanceHeader } from './band.$bandId';
+import {
+  bandPerformanceTabs,
+  resolvePerformanceHeader,
+} from './-band-header-utils';
 
 export const Route = createFileRoute('/band/$bandId/performance/$performanceId/')({
   component: BandPerformanceRoutePage,

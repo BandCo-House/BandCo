@@ -7,6 +7,7 @@ export type HeaderTab = {
   active?: boolean;
   onClick?: () => void;
   to?: string;
+  getTo?: (params: Record<string, string>) => string;
   getParams?: (params: Record<string, string>) => Record<string, string>;
   activePathPrefixes?: string[];
   isActive?: (context: { pathname: string; params: Record<string, string> }) => boolean;

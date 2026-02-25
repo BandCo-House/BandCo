@@ -5,7 +5,7 @@ export const Route = createFileRoute('/band/$bandId/settings')({
   staticData: {
     header: {
       title: '밴드 설정',
-      backTo: '/',
+      backTo: '/band/$bandId',
     },
   },
 });

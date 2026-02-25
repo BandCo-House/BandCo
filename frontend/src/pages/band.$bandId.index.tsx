@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { resolveBandDetailHeader } from './band.$bandId';
+import { resolveBandDetailHeader } from './-band-header-utils';
 
 export const Route = createFileRoute('/band/$bandId/')({
   component: BandDetailRoutePage,

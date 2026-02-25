@@ -1,7 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { bandPerformanceTabs } from './band.$bandId';
+import {
+  getPerformanceIdFromLocationSearch,
+  parseSongsSearch,
+  resolveSongsHeader,
+} from './-band-header-utils';
 
 export const Route = createFileRoute('/band/$bandId/songs')({
+  validateSearch: parseSongsSearch,
+  loader: ({ location }) => {
+    return {
+      performanceId: getPerformanceIdFromLocationSearch(location.search),
+    };
+  },
   component: BandSongsRoutePage,
   staticData: {
     header: {
@@ -10,12 +20,12 @@ export const Route = createFileRoute('/band/$bandId/songs')({
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
       }),
-      tabs: bandPerformanceTabs,
       rightActionLabel: '설정',
       rightActionTo: '/band/$bandId/settings',
       getRightActionParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
       }),
+      resolve: resolveSongsHeader,
     },
   },
 });

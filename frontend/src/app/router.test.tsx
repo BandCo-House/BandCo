@@ -105,6 +105,36 @@ describe('앱 라우터', () => {
     );
   });
 
+  it('밴드 곡 라이브러리에서 캘린더 탭 클릭 시 해당 공연 캘린더로 이동한다', async () => {
+    const router = createRouterForTest('/band/1/songs', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('SongsPage');
+    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
+
+    expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
+  });
+
+  it('공연 상세에서 곡 라이브러리 탭으로 이동 후 캘린더 탭을 누르면 동일 공연으로 돌아온다', async () => {
+    const router = createRouterForTest('/band/1/performance/1', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('BandPerformancePage');
+    fireEvent.click(screen.getByRole('button', { name: '곡 라이브러리' }));
+    await screen.findByText('SongsPage');
+    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
+
+    expect(await screen.findByText('BandPerformancePage')).toBeInTheDocument();
+  });
+
   it('공연 상세 경로에서는 캘린더 탭이 active 상태다', async () => {
     const router = createRouterForTest('/band/1/performance/1', {
       isLoggedIn: true,
@@ -136,7 +166,7 @@ describe('앱 라우터', () => {
     expect(screen.getByPlaceholderText('밴드/사용자를 찾아보세요')).toBeInTheDocument();
     unmount();
 
-    const songsRouter = createRouterForTest('/band/1/songs', {
+    const songsRouter = createRouterForTest('/band/1/songs?performanceId=1', {
       isLoggedIn: true,
       isAdmin: false,
     });
