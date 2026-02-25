@@ -1,5 +1,10 @@
-export { HEADER_CONFIG, withHeader } from './model/header-config';
-export { resolveHeader } from './model/resolve-header';
+export { createHeaderConfig, withHeader } from './model/header-config';
+export {
+  bandPerformanceTabs,
+  resolveHeader,
+  resolveBandDetailHeader,
+  resolvePerformanceHeader,
+} from './model/header-utils';
 export type {
   HeaderResolveContext,
   HeaderResolveResult,

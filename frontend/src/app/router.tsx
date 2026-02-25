@@ -9,7 +9,13 @@ import type { UserAccess } from '@/app/providers/auth-context';
 import { RootError } from '@/app/error/RootError';
 import { RootLayout } from '@/app/layouts/RootLayout';
 import { RootLoading } from '@/app/loading/RootLoading';
-import { HEADER_CONFIG, withHeader } from '@/widgets/page-header';
+import {
+  bandPerformanceTabs,
+  createHeaderConfig,
+  resolveBandDetailHeader,
+  resolvePerformanceHeader,
+  withHeader,
+} from '@/widgets/page-header';
 import { AdminPage } from '@/pages/admin/AdminPage';
 import { BandCreatePage } from '@/pages/band/BandCreatePage';
 import { BandDetailPage } from '@/pages/band/BandDetailPage';
@@ -71,7 +77,11 @@ const myBandsRoute = createRoute({
       path: '/',
       component: MyBandsPage,
     },
-    HEADER_CONFIG.home,
+    createHeaderConfig({
+      title: '서비스명',
+      showBack: false,
+      showSearchBar: true,
+    }),
   ),
 });
 
@@ -83,7 +93,13 @@ const profileRoute = createRoute({
       beforeLoad: requireLogin,
       component: ProfilePage,
     },
-    HEADER_CONFIG.profile,
+    createHeaderConfig({
+      title: '마이페이지',
+      subtitle: '내 프로필 정보를 관리하세요',
+      rightActionLabel: '수정',
+      backBehavior: 'browser',
+      showProfileAvatar: false,
+    }),
   ),
 });
 
@@ -94,7 +110,9 @@ const songTeamsRoute = createRoute({
       path: '/song/$songId/teams',
       component: SongTeamsPage,
     },
-    HEADER_CONFIG.songTeams,
+    createHeaderConfig({
+      title: '팀 목록',
+    }),
   ),
 });
 
@@ -105,7 +123,13 @@ const teamDetailRoute = createRoute({
       path: '/song/$songId/team/$teamId',
       component: TeamDetailPage,
     },
-    HEADER_CONFIG.teamDetail,
+    createHeaderConfig({
+      title: '팀 상세',
+      backTo: '/song/$songId/teams',
+      getBackParams: (params: Record<string, string>) => ({
+        songId: params.songId,
+      }),
+    }),
   ),
 });
 
@@ -126,7 +150,17 @@ const bandDetailRoute = createRoute({
       path: '/',
       component: BandDetailPage,
     },
-    HEADER_CONFIG.bandDetail,
+    createHeaderConfig({
+      title: '밴드',
+      brandLabel: '밴드',
+      backTo: '/',
+      rightActionLabel: '밴드 설정',
+      rightActionTo: '/band/$bandId/settings',
+      getRightActionParams: (params: Record<string, string>) => ({
+        bandId: params.bandId,
+      }),
+      resolve: resolveBandDetailHeader,
+    }),
   ),
 });
 
@@ -137,7 +171,10 @@ const bandSettingsRoute = createRoute({
       path: 'settings',
       component: BandSettingsPage,
     },
-    HEADER_CONFIG.bandSettings,
+    createHeaderConfig({
+      title: '밴드 설정',
+      backTo: '/',
+    }),
   ),
 });
 
@@ -148,7 +185,10 @@ const bandInviteRoute = createRoute({
       path: 'invite',
       component: BandInvitePage,
     },
-    HEADER_CONFIG.bandInvite,
+    createHeaderConfig({
+      title: '밴드 초대',
+      backTo: '/',
+    }),
   ),
 });
 
@@ -159,7 +199,20 @@ const bandPerformanceRoute = createRoute({
       path: 'performance/$performanceId',
       component: BandPerformancePage,
     },
-    HEADER_CONFIG.bandPerformance,
+    createHeaderConfig({
+      title: '공연 상세',
+      backTo: '/band/$bandId',
+      getBackParams: (params: Record<string, string>) => ({
+        bandId: params.bandId,
+      }),
+      tabs: bandPerformanceTabs,
+      rightActionLabel: '설정',
+      rightActionTo: '/band/$bandId/settings',
+      getRightActionParams: (params: Record<string, string>) => ({
+        bandId: params.bandId,
+      }),
+      resolve: resolvePerformanceHeader,
+    }),
   ),
 });
 
@@ -170,7 +223,20 @@ const bandPerformanceSongsRoute = createRoute({
       path: 'performance/$performanceId/songs',
       component: SongsPage,
     },
-    HEADER_CONFIG.songs,
+    createHeaderConfig({
+      title: '공연 상세',
+      backTo: '/band/$bandId',
+      getBackParams: (params: Record<string, string>) => ({
+        bandId: params.bandId,
+      }),
+      tabs: bandPerformanceTabs,
+      rightActionLabel: '설정',
+      rightActionTo: '/band/$bandId/settings',
+      getRightActionParams: (params: Record<string, string>) => ({
+        bandId: params.bandId,
+      }),
+      resolve: resolvePerformanceHeader,
+    }),
   ),
 });
 
@@ -181,7 +247,9 @@ const bandCreateRoute = createRoute({
       path: '/band/create',
       component: BandCreatePage,
     },
-    HEADER_CONFIG.bandCreate,
+    createHeaderConfig({
+      title: '밴드 생성',
+    }),
   ),
 });
 
@@ -196,7 +264,9 @@ const performanceCreateRoute = createRoute({
       path: '/performance/create',
       component: PerformanceCreatePage,
     },
-    HEADER_CONFIG.performanceCreate,
+    createHeaderConfig({
+      title: '공연 생성',
+    }),
   ),
 });
 
@@ -207,7 +277,10 @@ const inviteAcceptRoute = createRoute({
       path: '/invite/accept',
       component: InviteAcceptPage,
     },
-    HEADER_CONFIG.inviteAccept,
+    createHeaderConfig({
+      title: '초대 수락',
+      showProfileAvatar: false,
+    }),
   ),
 });
 
@@ -218,7 +291,9 @@ const inviteRequestRoute = createRoute({
       path: '/invite/request',
       component: InviteRequestPage,
     },
-    HEADER_CONFIG.inviteRequest,
+    createHeaderConfig({
+      title: '초대 요청',
+    }),
   ),
 });
 
@@ -234,7 +309,9 @@ const adminRoute = createRoute({
       beforeLoad: requireAdmin,
       component: AdminPage,
     },
-    HEADER_CONFIG.admin,
+    createHeaderConfig({
+      title: '관리자',
+    }),
   ),
 });
 

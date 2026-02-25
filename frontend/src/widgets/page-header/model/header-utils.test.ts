@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveHeader } from './resolve-header';
+import { resolveHeader } from './header-utils';
 
 describe('resolveHeader', () => {
   it('header static data가 없으면 null을 반환한다', () => {
