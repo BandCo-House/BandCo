@@ -12,9 +12,10 @@ export const Route = createFileRoute('/band/$bandId/performance/$performanceId/'
       }),
       tabs: bandPerformanceTabs,
       rightActionLabel: '설정',
-      rightActionTo: '/band/$bandId/settings',
+      rightActionTo: '/band/$bandId/performance/$performanceId/settings',
       getRightActionParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
+        performanceId: params.performanceId,
       }),
       resolve: resolvePerformanceHeader,
     },

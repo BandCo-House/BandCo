@@ -222,4 +222,18 @@ describe('앱 라우터', () => {
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });
+
+  it('공연 상세의 우측 설정 버튼은 공연 설정 페이지로 이동한다', async () => {
+    const router = createRouterForTest('/band/1/performance/1', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('BandPerformancePage');
+    fireEvent.click(screen.getByRole('button', { name: '설정' }));
+
+    expect(await screen.findByText('PerformanceSettingsPage')).toBeInTheDocument();
+  });
 });
