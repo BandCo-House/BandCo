@@ -17,7 +17,6 @@ import {
   withHeader,
 } from '@/widgets/page-header';
 import { AdminPage } from '@/pages/admin/AdminPage';
-import { BandCreatePage } from '@/pages/band/BandCreatePage';
 import { BandDetailPage } from '@/pages/band/BandDetailPage';
 import { BandInvitePage } from '@/pages/band/BandInvitePage';
 import { BandPerformancePage } from '@/pages/band/BandPerformancePage';
@@ -240,19 +239,6 @@ const bandPerformanceSongsRoute = createRoute({
   ),
 });
 
-const bandCreateRoute = createRoute({
-  ...withHeader(
-    {
-      getParentRoute: () => rootRoute,
-      path: '/band/create',
-      component: BandCreatePage,
-    },
-    createHeaderConfig({
-      title: '밴드 생성',
-    }),
-  ),
-});
-
 /* ------------------------------------------------------------------ */
 /*  Performance / Invite                                               */
 /* ------------------------------------------------------------------ */
@@ -333,7 +319,6 @@ export const routeTree = rootRoute.addChildren([
     bandPerformanceSongsRoute,
   ]),
 
-  bandCreateRoute,
   performanceCreateRoute,
   inviteAcceptRoute,
   inviteRequestRoute,
