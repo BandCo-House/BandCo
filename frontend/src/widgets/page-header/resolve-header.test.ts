@@ -11,7 +11,7 @@ describe('resolveHeader', () => {
     expect(resolved).toBeNull();
   });
 
-  it('resolve 결과를 static header와 병합한다', () => {
+  it('resolve 결과를 static header와 병합하고 기본값을 채운다', () => {
     const resolved = resolveHeader(
       {
         header: {
@@ -29,6 +29,11 @@ describe('resolveHeader', () => {
     );
 
     expect(resolved).toEqual({
+      showBack: true,
+      backBehavior: 'route',
+      showUtilities: true,
+      showSearchBar: false,
+      showProfileAvatar: true,
       title: '동적 제목',
       subtitle: '기본 부제',
       resolve: expect.any(Function),

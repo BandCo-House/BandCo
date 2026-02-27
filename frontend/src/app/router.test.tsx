@@ -97,8 +97,8 @@ describe('앱 라우터', () => {
     expect(await screen.findByText('AdminPage')).toBeInTheDocument();
   });
 
-  it('performance 하위 songs 경로에서는 곡 라이브러리 탭이 active 상태다', async () => {
-    const router = createRouterForTest('/band/1/performance/1/songs', {
+  it('밴드 곡 라이브러리 경로에서는 곡 라이브러리 탭이 active 상태다', async () => {
+    const router = createRouterForTest('/band/1/songs', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -114,6 +114,36 @@ describe('앱 라우터', () => {
       'data-variant',
       'outline',
     );
+  });
+
+  it('밴드 곡 라이브러리에서 캘린더 탭 클릭 시 해당 공연 캘린더로 이동한다', async () => {
+    const router = createRouterForTest('/band/1/songs', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('SongsPage');
+    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
+
+    expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
+  });
+
+  it('공연 상세에서 곡 라이브러리 탭으로 이동 후 캘린더 탭을 누르면 동일 공연으로 돌아온다', async () => {
+    const router = createRouterForTest('/band/1/performance/1', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('BandPerformancePage');
+    fireEvent.click(screen.getByRole('button', { name: '곡 라이브러리' }));
+    await screen.findByText('SongsPage');
+    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
+
+    expect(await screen.findByText('BandPerformancePage')).toBeInTheDocument();
   });
 
   it('공연 상세 경로에서는 캘린더 탭이 active 상태다', async () => {
@@ -148,7 +178,7 @@ describe('앱 라우터', () => {
     ).toBeInTheDocument();
     unmount();
 
-    const songsRouter = createRouterForTest('/band/1/performance/1/songs', {
+    const songsRouter = createRouterForTest('/band/1/songs?performanceId=1', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -235,5 +265,19 @@ describe('앱 라우터', () => {
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
+  });
+
+  it('공연 상세의 우측 설정 버튼은 공연 설정 페이지로 이동한다', async () => {
+    const router = createRouterForTest('/band/1/performance/1', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('BandPerformancePage');
+    fireEvent.click(screen.getByRole('button', { name: '설정' }));
+
+    expect(await screen.findByText('PerformanceSettingsPage')).toBeInTheDocument();
   });
 });

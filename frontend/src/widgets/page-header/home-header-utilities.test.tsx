@@ -1,6 +1,15 @@
+import type { ComponentProps } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { HomeHeaderUtilities } from './home-header-utilities';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    Link: ({ children, ...props }: ComponentProps<'a'>) => <a {...props}>{children}</a>,
+  };
+});
 
 describe('HomeHeaderUtilities', () => {
   it('기본 렌더에서는 검색바 없이 프로필만 렌더링한다', () => {
@@ -17,7 +26,7 @@ describe('HomeHeaderUtilities', () => {
     fireEvent.change(input, { target: { value: '테스트 검색어' } });
 
     expect(input).toHaveValue('테스트 검색어');
-    expect(document.querySelector('.w-px')).toBeInTheDocument();
+    expect(screen.getByLabelText('프로필 열기')).toBeInTheDocument();
   });
 
   it('showProfileAvatar=false이면 프로필 아바타를 렌더링하지 않는다', () => {

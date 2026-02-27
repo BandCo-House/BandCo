@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { Input } from '@/shared/ui/input';
-import { Link } from '@tanstack/react-router';
 
 type HomeHeaderUtilitiesProps = {
   showSearchBar?: boolean;
@@ -9,7 +9,8 @@ type HomeHeaderUtilitiesProps = {
 };
 
 /**
- * Home header utility area: global search and user profile.
+ * 홈 헤더 우측 유틸 영역
+ * 검색바/프로필 노출 여부를 라우트 헤더 설정으로 제어한다.
  */
 export const HomeHeaderUtilities = ({
   showSearchBar = false,
@@ -17,13 +18,11 @@ export const HomeHeaderUtilities = ({
 }: HomeHeaderUtilitiesProps) => {
   const [query, setQuery] = useState('');
 
-  //TODO: 실제 데이터로 교체 필요
+  // TODO: 실제 API 응답값으로 교체 필요
   const profileNameFromApi = '김민';
   const profileImageUrlFromApi: string | undefined = undefined;
 
-  const visibleComponents = [showSearchBar, showProfileAvatar].filter(
-    Boolean,
-  ).length;
+  const visibleComponents = [showSearchBar, showProfileAvatar].filter(Boolean).length;
   if (visibleComponents === 0) return null;
 
   return (
@@ -47,10 +46,7 @@ export const HomeHeaderUtilities = ({
         >
           <Avatar size="lg" className="border border-red-200">
             {profileImageUrlFromApi ? (
-              <AvatarImage
-                src={profileImageUrlFromApi}
-                alt={`${profileNameFromApi} 프로필`}
-              />
+              <AvatarImage src={profileImageUrlFromApi} alt={`${profileNameFromApi} 프로필`} />
             ) : null}
             <AvatarFallback>{profileNameFromApi.slice(0, 2)}</AvatarFallback>
           </Avatar>

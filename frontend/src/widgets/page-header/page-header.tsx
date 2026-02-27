@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { BackButton } from '@/shared/ui/back-button';
 import { Button } from '@/shared/ui/button';
-import type { HeaderTab } from '../model/types';
+import type { HeaderTab } from './types';
 
 export type PageHeaderProps = {
   title: string;
@@ -19,7 +19,7 @@ export type PageHeaderProps = {
 };
 
 /**
- * Standard page header used by route-level layouts.
+ * 라우트 레벨에서 공통으로 사용하는 표준 페이지 헤더
  */
 export const PageHeader = ({
   title,
