@@ -1,5 +1,5 @@
 /**
- * Header tab item definition.
+ * 헤더 탭 아이템 정의
  */
 export type HeaderTab = {
   key: string;
@@ -7,19 +7,23 @@ export type HeaderTab = {
   active?: boolean;
   onClick?: () => void;
   to?: string;
+  getTo?: (params: Record<string, string>) => string;
   getParams?: (params: Record<string, string>) => Record<string, string>;
   activePathPrefixes?: string[];
   isActive?: (context: { pathname: string; params: Record<string, string> }) => boolean;
 };
 
 /**
- * Route data used to resolve dynamic header fields.
+ * 라우트에서 동적 헤더 값을 계산할 때 사용하는 입력 컨텍스트
  */
 export type HeaderResolveContext = {
   params: Record<string, string>;
   loaderData: unknown;
 };
 
+/**
+ * 동적 resolve 함수가 반환할 수 있는 헤더 필드
+ */
 export type HeaderResolveResult = {
   title?: string;
   subtitle?: string;
@@ -30,7 +34,7 @@ export type HeaderResolveResult = {
 };
 
 /**
- * Static header configuration attached to route static data.
+ * 라우트 staticData에 저장되는 헤더 설정
  */
 export type HeaderStaticConfig = {
   title?: string;
@@ -52,7 +56,7 @@ export type HeaderStaticConfig = {
 };
 
 /**
- * Route static data extension for TanStack Router.
+ * TanStack Router match.staticData 확장 타입
  */
 export type RouteStaticData = {
   header?: HeaderStaticConfig;

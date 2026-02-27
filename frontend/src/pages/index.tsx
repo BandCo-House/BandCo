@@ -1,0 +1,17 @@
+import { createFileRoute } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/')({
+  component: MyBandsRoutePage,
+  staticData: {
+    header: {
+      title: '서비스명',
+      showBack: false,
+      showSearchBar: true,
+    },
+  },
+});
+
+// 홈(내 밴드 목록) 라우트 전용 화면
+function MyBandsRoutePage() {
+  return <div>MyBandsPage</div>;
+}

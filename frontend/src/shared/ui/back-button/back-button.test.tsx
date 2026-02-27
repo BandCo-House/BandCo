@@ -32,6 +32,12 @@ describe("BackButton", () => {
     // 텍스트가 없어야 함 (버튼 내부는 아이콘만)
     const button = screen.getByRole("button");
     expect(button).toHaveTextContent("");
+    expect(button).toHaveAttribute("aria-label", "뒤로 가기");
+  });
+
+  it("aria-label을 명시하면 해당 값을 우선 사용한다", () => {
+    render(<BackButton label="" aria-label="뒤로" />);
+    expect(screen.getByRole("button")).toHaveAttribute("aria-label", "뒤로");
   });
 
   it("클릭 시 router.history.back()이 호출된다", () => {

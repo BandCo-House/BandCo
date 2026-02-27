@@ -33,12 +33,19 @@ export const RootLayout = () => {
     : undefined;
 
   const resolvedTabs = header?.tabs?.map((tab) => {
+    const tabTo = tab.getTo?.(currentParams) ?? tab.to;
     const tabParams = tab.getParams?.(currentParams);
-    const tabOnClick = tab.to
+    const tabOnClick = tabTo
       ? () => {
+          const [tabPath, tabQuery] = tabTo.split('?');
+          const tabSearch = tabQuery
+            ? Object.fromEntries(new URLSearchParams(tabQuery).entries())
+            : undefined;
+
           router.navigate({
-            to: tab.to as never,
+            to: tabPath as never,
             ...(tabParams ? { params: tabParams as never } : {}),
+            ...(tabSearch ? { search: tabSearch as never } : {}),
           });
         }
       : tab.onClick;

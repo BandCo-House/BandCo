@@ -16,10 +16,13 @@ export function BackButton({
 }: BackButtonProps) {
   const router = useRouter();
   const handleClick = onClick ?? (() => router.history.back());
+  const hasAccessibleName = Boolean(label || props['aria-label'] || props['aria-labelledby']);
+  const ariaLabel = hasAccessibleName ? undefined : '뒤로 가기';
 
   return (
     <Button
       variant="default"
+      aria-label={ariaLabel}
       onClick={handleClick}
       {...props}
       className={cn('inline-flex items-center gap-1.5 p-2 rounded hover:bg-gray-100', className)}
