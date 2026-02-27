@@ -1,4 +1,4 @@
-export type ScheduleType = 'ensemble' | 'meeting';
+import type { ScheduleType } from '@/entities/schedule/model/types';
 
 export interface ScheduleCreateFormState {
   type: ScheduleType;

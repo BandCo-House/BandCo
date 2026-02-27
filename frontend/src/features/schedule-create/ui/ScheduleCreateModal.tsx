@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ScheduleType } from '../model/types';
+
 import { TypeSelectStep } from './steps/TypeSelectStep';
 import { EnsembleBasicStep } from './steps/EnsembleBasicStep';
 import { SongSelectStep } from './steps/SongSelectStep';
@@ -7,8 +7,9 @@ import { TeamSelectStep } from './steps/TeamSelectStep';
 import { MeetingBasicStep } from './steps/MeetingBasicStep';
 import { MemberSelectStep } from './steps/MemberSelectStep';
 import { useCreateSchedule } from '../api/useCreateSchedule';
+import type { ScheduleType } from '@/entities/schedule/model/types';
 export const ScheduleCreateModal = () => {
-  const [scheduleType, setScheduleType] = useState<ScheduleType>(null);
+  const [scheduleType, setScheduleType] = useState<ScheduleType | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
   // 통합 폼 상태
@@ -37,34 +38,41 @@ export const ScheduleCreateModal = () => {
     setCurrentStep((prev) => prev + 1);
   };
 
-  const { mutateAsync: createSchedule } = useCreateSchedule();
+  const { mutateAsync: createSchedule, isPending } = useCreateSchedule();
 
   const handleSubmit = async () => {
-    let payload;
-    if (scheduleType === 'ensemble') {
-      payload = {
-        type: 'ensemble' as const,
-        date: formData.date,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        place: formData.place,
-        songId: formData.songId!,
-        teamId: formData.teamId,
-      };
-    } else {
-      payload = {
-        type: 'meeting' as const,
-        title: formData.title,
-        date: formData.date,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        memberIds: formData.memberIds,
-        memo: formData.memo,
-      };
-    }
+    if (isPending) return;
+    if (scheduleType !== 'ensemble' && scheduleType !== 'meeting') return;
 
-    // React Query Mutation 호출
-    await createSchedule(payload);
+    try {
+      if (scheduleType === 'ensemble') {
+        if (!formData.songId || !formData.teamId) return;
+
+        await createSchedule({
+          type: 'ensemble',
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          place: formData.place,
+          songId: formData.songId,
+          teamId: formData.teamId,
+        });
+      } else {
+        if (formData.memberIds.length === 0) return;
+
+        await createSchedule({
+          type: 'meeting',
+          title: formData.title,
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          memberIds: formData.memberIds,
+          memo: formData.memo,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

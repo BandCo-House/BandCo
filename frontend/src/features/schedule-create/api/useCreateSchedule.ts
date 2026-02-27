@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import type { Schedule } from '@/entities/schedule/model/types';
+import { apiPost } from '@/shared/api';
 
 export type CreateSchedulePayload =
   | Omit<
@@ -14,17 +15,7 @@ export type CreateSchedulePayload =
 export const useCreateSchedule = () => {
   return useMutation({
     mutationFn: async (data: CreateSchedulePayload): Promise<Schedule> => {
-      const response = await fetch('/api/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('일정 생성에 실패했습니다.');
-      }
-
-      return response.json();
+      return apiPost<Schedule>('/api/schedule', data);
     },
   });
 };
