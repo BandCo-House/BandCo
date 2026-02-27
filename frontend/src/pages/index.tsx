@@ -1,3 +1,4 @@
+import { BandList } from '@/widgets/band-list/ui/BandList';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
@@ -13,5 +14,9 @@ export const Route = createFileRoute('/')({
 
 // 홈(내 밴드 목록) 라우트 전용 화면
 function MyBandsRoutePage() {
-  return <div>MyBandsPage</div>;
+  return (
+    <div>
+      <BandList />
+    </div>
+  );
 }
