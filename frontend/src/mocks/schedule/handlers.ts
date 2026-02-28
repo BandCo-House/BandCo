@@ -1,8 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import type { Schedule } from '@/entities/schedule/model/types';
+import { API_URL } from '../config';
 
 export const scheduleHandlers = [
-  http.post('/api/schedule', async ({ request }) => {
+  http.post(`${API_URL}/schedule`, async ({ request }) => {
     const payload = (await request.json()) as Omit<
       Schedule,
       'id' | 'createdAt' | 'updatedAt'

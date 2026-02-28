@@ -1,10 +1,11 @@
 import type { Band } from '@/entities/band/model/types';
 import type { ApiResponse } from '@/shared/api';
 import { http, HttpResponse } from 'msw';
+import { API_URL } from '../config';
 
 export const bandHandlers = [
   // 밴드 목록 조회 Mock
-  http.get('/bands', () => {
+  http.get(`${API_URL}/bands`, () => {
     return HttpResponse.json<ApiResponse<Band[]>>({
       success: true,
       data: [
@@ -16,7 +17,7 @@ export const bandHandlers = [
   }),
 
   // 밴드 생성 Mock
-  http.post('/bands', async ({ request }) => {
+  http.post(`${API_URL}/bands`, async ({ request }) => {
     const body = (await request.json()) as { name: string };
 
     // 단순 딜레이 시뮬레이션
