@@ -13,7 +13,8 @@
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "start": "node dist/main.js",
-    "start:dev": "tsx watch src/main.ts"
+    "start:dev": "tsx watch src/main.ts",
+    "test": "node --import tsx --test src/**/*.spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.13",
