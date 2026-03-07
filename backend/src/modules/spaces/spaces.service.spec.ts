@@ -25,3 +25,17 @@ test('합주 공간 목록 조회 서비스는 밴드, 검색어, 페이지네�
   assert.equal(result.pagination.totalCount, 2);
   assert.equal(result.pagination.hasNext, true);
 });
+
+test('합주 공간 상세 조회 서비스는 공간 상세 정보와 멤버 목록을 반환한다', () => {
+  const repository = new SpacesMockRepository();
+  const service = new SpacesService(repository);
+
+  const result = service.getSpaceDetail('space-001');
+
+  assert.equal(result.space.spaceId, 'space-001');
+  assert.equal(result.space.bandId, 'band-001');
+  assert.equal(result.members.length, 2);
+  assert.equal(result.members[0]?.nickname, '김민준');
+  assert.equal(result.songCount, 12);
+  assert.equal(result.scheduleCount, 28);
+});

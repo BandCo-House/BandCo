@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { createPagination, paginateItems } from '../../common/pagination';
 
 import type { GetBandSpacesQuery } from './dto/get-band-spaces-query.dto';
 import { SpacesMockRepository } from './repositories/spaces.mock-repository';
 import type { BandSpaceListItem, GetBandSpacesResult } from './types/band-space-list-item.type';
+import type { GetSpaceDetailResult } from './types/space-detail.type';
 
 @Injectable()
 export class SpacesService {
@@ -30,6 +31,16 @@ export class SpacesService {
       items: pagedSpaces,
       pagination,
     };
+  }
+
+  getSpaceDetail(spaceId: string): GetSpaceDetailResult {
+    const spaceDetail = this.spacesRepository.findDetailBySpaceId(spaceId);
+
+    if (spaceDetail === undefined) {
+      throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+    }
+
+    return spaceDetail;
   }
 
   private applySearchFilter(spaces: BandSpaceListItem[], keyword: string | undefined): BandSpaceListItem[] {
