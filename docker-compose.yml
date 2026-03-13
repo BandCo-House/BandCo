@@ -3,38 +3,81 @@ services:
     image: postgres:16.13
     container_name: jamplay_db
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - ./backend/.env.development
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - jamplay_network
+  db-setup:
+    image: postgres:16.13
+    container_name: jamplay_db_setup
+    env_file:
+      - ./backend/.env.development
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/prisma/sql/create-app-role.sql:/scripts/create-app-role.sql:ro
+    command: >
+      sh -c "
+      export PGPASSWORD=$${POSTGRES_PASSWORD} &&
+      psql
+      -h db
+      -p 5432
+      -U $${POSTGRES_USER}
+      -d $${POSTGRES_DB}
+      -v db_name=$${POSTGRES_DB}
+      -v db_app_user=$${DB_APP_USER}
+      -v db_app_password=$${DB_APP_PASSWORD}
+      -f /scripts/create-app-role.sql
+      "
+    restart: "no"
     networks:
       - jamplay_network
   backend:
-    image: node:22
+    image: node:24
     container_name: jamplay_backend
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+    depends_on:
+      db-setup:
+        condition: service_completed_successfully
+    env_file:
+      - ./backend/.env.development
     ports:
-      - "${BACKEND_PORT}:3000"
+      - "${BACKEND_PORT:-3000}:3000"
     volumes:
       - ./backend:/app
+      - backend_node_modules:/app/node_modules
     working_dir: /app
-    command: sh -c "corepack enable &&pnpm install && pnpm run start:dev"
+    command: >
+      sh -c "
+      export DATABASE_URL=postgresql://$${DB_APP_USER}:$${DB_APP_PASSWORD}@db:5432/$${POSTGRES_DB}?schema=public &&
+      corepack enable &&
+      pnpm install --force &&
+      pnpm prisma:generate &&
+      pnpm run start:dev
+      "
     networks:
       - jamplay_network
   frontend:
-    image: node:22
+    image: node:24
     container_name: jamplay_frontend
+    depends_on:
+      - backend
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
     working_dir: /app
-    command: sh -c "corepack enable && pnpm install && pnpm run dev"
+    command: sh -c "corepack enable && pnpm install --force && pnpm run dev"
     networks:
       - jamplay_network
 networks:
@@ -42,3 +85,5 @@ networks:
     driver: bridge
 volumes:
   db_data:
+  backend_node_modules:
+  frontend_node_modules:
