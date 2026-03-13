@@ -1,0 +1,42 @@
+-- 이 스크립트는 PostgreSQL 루트 또는 슈퍼유저 계정으로 1회 실행한다.
+-- 애플리케이션은 아래에서 생성한 하위 계정으로만 접속한다.
+
+CREATE ROLE jamplay_app
+WITH
+  LOGIN
+  PASSWORD 'jamplay1234';
+
+GRANT CONNECT, TEMPORARY
+ON DATABASE jamplay
+TO jamplay_app;
+
+\connect jamplay;
+
+REVOKE ALL
+ON SCHEMA public
+FROM PUBLIC;
+
+GRANT USAGE, CREATE
+ON SCHEMA public
+TO jamplay_app;
+
+GRANT SELECT, INSERT, UPDATE, DELETE, REFERENCES, TRIGGER
+ON ALL TABLES IN SCHEMA public
+TO jamplay_app;
+
+GRANT USAGE, SELECT, UPDATE
+ON ALL SEQUENCES IN SCHEMA public
+TO jamplay_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE, REFERENCES, TRIGGER
+ON TABLES
+TO jamplay_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT USAGE, SELECT, UPDATE
+ON SEQUENCES
+TO jamplay_app;
+
+ALTER ROLE jamplay_app
+SET search_path TO public;
