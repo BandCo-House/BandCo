@@ -6,3 +6,432 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BandSpaceMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum BandSpaceMemberStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SkillLevelType {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum TeamStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SongKey {
+  UNKNOWN
+  C
+  CM
+  D
+  DM
+  E
+  EM
+  F
+  FM
+  G
+  GM
+  A
+  AM
+  B
+  BM
+}
+
+enum BandInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  REMINDER
+}
+
+enum AttendanceStatus {
+  ATTEND
+  ABSENT
+  LATE
+  UNKNOWN
+}
+
+enum ScheduleType {
+  PRACTICE
+  PERFORMANCE
+  MEETING
+  ETC
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  CANCELLED
+  DONE
+}
+
+enum BandSpaceType {
+  PRACTICE_ROOM
+  STUDIO
+  ONLINE
+  ETC
+}
+
+enum BandSpaceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum BandMemberRole {
+  BM
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id                   String                @id @default(uuid()) @db.Uuid
+  email                String?               @unique @db.VarChar(255)
+  passwordHash         String?               @map("password_hash") @db.VarChar(255)
+  status               UserStatus            @default(ACTIVE)
+  lastLoginAt          DateTime?             @map("last_login_at") @db.Timestamptz(6)
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt            DateTime?             @map("deleted_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  profile              UserProfile?
+  notifications        Notification[]
+  userSkills           UserSkill[]
+  favoriteGenres       FavoriteGenre[]
+  managedBands         Band[]                @relation("BandManager")
+  joinRequests         BandJoinRequest[]
+  sentInvitations      BandInvitation[]      @relation("BandInvitationInviter")
+  receivedInvitations  BandInvitation[]      @relation("BandInvitationInvitee")
+  bandMemberships      BandMember[]
+  blacklistedBands     BandBlacklist[]
+  createdBandSpaces    BandSpace[]           @relation("BandSpaceCreator")
+  spaceMemberships     SpaceMember[]
+  createdSongs         Song[]                @relation("SongCreator")
+  createdSchedules     Schedule[]            @relation("ScheduleCreator")
+  scheduleParticipants ScheduleParticipant[]
+  ledTeams             Team[]                @relation("TeamLeader")
+  teamMemberships      TeamMember[]
+
+  @@map("users")
+}
+
+model SkillType {
+  id         String      @id @default(uuid()) @db.Uuid
+  name       String?     @db.VarChar(40)
+  userSkills UserSkill[]
+  songSkills SongSkill[]
+
+  @@map("skill_types")
+}
+
+model Genre {
+  id             String          @id @default(uuid()) @db.Uuid
+  name           String?         @db.VarChar(20)
+  favoriteGenres FavoriteGenre[]
+
+  @@map("genres")
+}
+
+model UserProfile {
+  userId          String    @id @map("user_id") @db.Uuid
+  nickname        String    @db.VarChar(255)
+  selfDescription String?   @map("self_description") @db.Text
+  profileMusicUrl String?   @map("profile_music_url") @db.Text
+  avatarUrl       String?   @map("avatar_url") @db.Text
+  updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String?          @db.VarChar(120)
+  isRead    Boolean          @default(false) @map("is_read")
+  remindsAt DateTime?        @map("reminds_at") @db.Timestamptz(6)
+  createdAt DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model UserSkill {
+  id          String         @id @default(uuid()) @db.Uuid
+  skillLevel  SkillLevelType @default(BEGINNER) @map("skill_level")
+  isPrimary   Boolean?       @default(false) @map("is_primary")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  skillTypeId String         @map("skill_type_id") @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  skillType   SkillType      @relation(fields: [skillTypeId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_skills")
+}
+
+model FavoriteGenre {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  genreId String @map("genre_id") @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@map("favor_genres")
+}
+
+model Band {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String?           @db.VarChar(40)
+  bandMasterUserId String            @map("bm_id") @db.Uuid
+  description      String?           @db.Text
+  visibility       Boolean?          @default(true)
+  inviteCode       String?           @map("invite_code") @db.VarChar(255)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  bandMasterUser   User              @relation("BandManager", fields: [bandMasterUserId], references: [id])
+  joinRequests     BandJoinRequest[]
+  invitations      BandInvitation[]
+  members          BandMember[]
+  blacklists       BandBlacklist[]
+  places           Place[]
+  spaces           BandSpace[]
+  songs            Song[]
+  teams            Team[]
+
+  @@map("bands")
+}
+
+model BandJoinRequest {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  bandId    String            @map("band_id") @db.Uuid
+  message   String?           @db.Text
+  status    JoinRequestStatus @default(PENDING)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  band      Band              @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@map("band_join_requests")
+}
+
+model BandInvitation {
+  id              String               @id @default(uuid()) @db.Uuid
+  bandId          String               @map("band_id") @db.Uuid
+  inviterUserId   String               @map("inviter_user_id") @db.Uuid
+  inviteeUserId   String               @map("invitee_user_id") @db.Uuid
+  invitationToken String?              @map("invitation_token") @db.VarChar(255)
+  status          BandInvitationStatus @default(PENDING)
+  respondedAt     DateTime?            @map("responded_at") @db.Timestamptz(6)
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  band            Band                 @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  inviterUser     User                 @relation("BandInvitationInviter", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  inviteeUser     User                 @relation("BandInvitationInvitee", fields: [inviteeUserId], references: [id], onDelete: Cascade)
+
+  @@map("band_invitations")
+}
+
+model BandMember {
+  id       String         @id @default(uuid()) @db.Uuid
+  bandId   String         @map("band_id") @db.Uuid
+  userId   String         @map("user_id") @db.Uuid
+  role     BandMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now()) @map("joined_at") @db.Timestamptz(6)
+  band     Band           @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("band_members")
+}
+
+model BandBlacklist {
+  id        String   @id @default(uuid()) @db.Uuid
+  bandId    String   @map("band_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  reason    String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  band      Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("band_blacklists")
+}
+
+model Place {
+  id            String     @id @default(uuid()) @db.Uuid
+  bandId        String     @map("band_id") @db.Uuid
+  name          String?    @db.VarChar(120)
+  address       String?    @db.VarChar(255)
+  detailAddress String?    @map("detail_address") @db.VarChar(255)
+  isActive      Boolean?   @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  band          Band       @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  schedules     Schedule[]
+
+  @@map("places")
+}
+
+model BandSpace {
+  id              String           @id @default(uuid()) @db.Uuid
+  bandId          String           @map("band_id") @db.Uuid
+  name            String?          @db.VarChar(150)
+  description     String?          @db.Text
+  spaceType       BandSpaceType?   @map("space_type")
+  status          BandSpaceStatus?
+  startDate       DateTime?        @map("start_date") @db.Date
+  endDate         DateTime?        @map("end_date") @db.Date
+  createdByUserId String           @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime?        @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  band            Band             @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  createdByUser   User             @relation("BandSpaceCreator", fields: [createdByUserId], references: [id])
+  members         SpaceMember[]
+  schedules       Schedule[]
+
+  @@map("band_spaces")
+}
+
+model SpaceMember {
+  id       String                @id @default(uuid()) @db.Uuid
+  spaceId  String                @map("space_id") @db.Uuid
+  userId   String                @map("user_id") @db.Uuid
+  role     BandSpaceMemberRole   @default(MEMBER)
+  status   BandSpaceMemberStatus @default(ACTIVE)
+  joinedAt DateTime              @default(now()) @map("joined_at") @db.Timestamptz(6)
+  space    BandSpace             @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("space_members")
+}
+
+model Song {
+  id              String      @id @default(uuid()) @db.Uuid
+  bandId          String?     @map("band_id") @db.Uuid
+  title           String?     @db.VarChar(200)
+  artistName      String?     @map("artist_name") @db.VarChar(200)
+  key             SongKey?    @map("key")
+  bpm             Int?        @db.SmallInt
+  sourceUrl       String?     @map("source_url") @db.Text
+  sourceType      String?     @map("source_type") @db.VarChar(20)
+  memo            String?     @db.Text
+  difficultyLevel Int?        @map("difficulty_level") @db.SmallInt
+  createdByUserId String?     @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  band            Band?       @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  createdByUser   User?       @relation("SongCreator", fields: [createdByUserId], references: [id])
+  songSkills      SongSkill[]
+  teamSongs       TeamSong[]
+
+  @@map("songs")
+}
+
+model SongSkill {
+  id          String    @id @default(uuid()) @db.Uuid
+  songId      String    @map("song_id") @db.Uuid
+  skillTypeId String    @map("skill_type_id") @db.Uuid
+  song        Song      @relation(fields: [songId], references: [id], onDelete: Cascade)
+  skillType   SkillType @relation(fields: [skillTypeId], references: [id], onDelete: Cascade)
+
+  @@map("song_skills")
+}
+
+model Schedule {
+  id              String                @id @default(uuid()) @db.Uuid
+  bandSpaceId     String                @map("band_space_id") @db.Uuid
+  placeId         String                @map("place_id") @db.Uuid
+  title           String?               @db.VarChar(150)
+  scheduleType    ScheduleType?         @map("schedule_type")
+  startAt         DateTime?             @map("start_at") @db.Timestamptz(6)
+  endAt           DateTime?             @map("end_at") @db.Timestamptz(6)
+  memo            String?               @db.Text
+  status          ScheduleStatus?
+  createdByUserId String                @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bandSpace       BandSpace             @relation(fields: [bandSpaceId], references: [id])
+  place           Place                 @relation(fields: [placeId], references: [id])
+  createdByUser   User                  @relation("ScheduleCreator", fields: [createdByUserId], references: [id])
+  participants    ScheduleParticipant[]
+  targetTeams     Team[]                @relation("TeamTargetSchedule")
+
+  @@map("schedules")
+}
+
+model ScheduleParticipant {
+  id               String            @id @default(uuid()) @db.Uuid
+  scheduleId       String            @map("schedule_id") @db.Uuid
+  userId           String            @map("user_id") @db.Uuid
+  attendanceStatus AttendanceStatus? @map("attendance_status")
+  note             String?           @db.Text
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  schedule         Schedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_participants")
+}
+
+model Team {
+  id               String       @id @default(uuid()) @db.Uuid
+  bandId           String       @map("band_id") @db.Uuid
+  name             String?      @db.VarChar(150)
+  targetScheduleId String?      @map("target_schedule_id") @db.Uuid
+  note             String?      @db.Text
+  status           TeamStatus?  @default(ACTIVE)
+  teamLeaderUserId String?      @map("team_leader_user_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  band             Band         @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  targetSchedule   Schedule?    @relation("TeamTargetSchedule", fields: [targetScheduleId], references: [id])
+  teamLeaderUser   User?        @relation("TeamLeader", fields: [teamLeaderUserId], references: [id])
+  members          TeamMember[]
+  teamSongs        TeamSong[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id       String   @id @default(uuid()) @db.Uuid
+  teamId   String   @map("team_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_members")
+}
+
+model TeamSong {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  teamId    String   @map("team_id") @db.Uuid
+  songId    String   @map("song_id") @db.Uuid
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@map("team_songs")
+}
