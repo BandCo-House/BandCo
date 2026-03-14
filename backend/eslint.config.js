@@ -16,6 +16,7 @@ export default [
       'node_modules/**',
       'coverage/**',
       'logs/**',
+      'src/generated/**',
       '**/*.config.*',
       '**/eslint.config.*',
       // Nest 기본 test 폴더를 린트에서 제외하고 싶으면 활성화

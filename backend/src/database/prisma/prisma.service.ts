@@ -1,8 +1,7 @@
-import type { INestApplication, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { type INestApplication, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 
 import { getDatabaseConfig } from '../../config';
+import { PrismaClient } from '../../generated/prisma';
 
 import { createPrismaClientOptions } from './prisma.config';
 
