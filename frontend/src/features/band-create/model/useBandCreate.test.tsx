@@ -52,7 +52,7 @@ describe('useBandCreate', () => {
 
   it('실패 시 에러 상태를 업데이트한다', async () => {
     server.use(
-      http.post('/bands', () => {
+      http.post('/api/bands', () => {
         return HttpResponse.json({ success: false }, { status: 400 });
       }),
     );

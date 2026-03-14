@@ -15,7 +15,7 @@ export const Route = createFileRoute('/')({
 // 홈(내 밴드 목록) 라우트 전용 화면
 function MyBandsRoutePage() {
   return (
-    <div>
+    <div data-testid="my-bands-page">
       <BandList />
     </div>
   );

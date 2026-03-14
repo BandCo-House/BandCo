@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type { Schedule } from '@/entities/schedule/model/types';
+import type { ApiResponse } from '@/shared/api';
 import { API_URL } from '../config';
 
 export const scheduleHandlers = [
@@ -17,6 +18,12 @@ export const scheduleHandlers = [
       updatedAt: now,
     } as Schedule; // 현재 회의가 있는지도 잘 모르겠고 일단 패스.... 내일정해야지..
 
-    return HttpResponse.json(newSchedule, { status: 201 });
+    return HttpResponse.json<ApiResponse<Schedule>>(
+      {
+        success: true,
+        data: newSchedule,
+      },
+      { status: 201 },
+    );
   }),
 ];
