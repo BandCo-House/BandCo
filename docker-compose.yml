@@ -14,7 +14,7 @@ services:
     networks:
       - jamplay_network
   backend:
-    image: node:22
+    image: node:24
     container_name: jamplay_backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -22,17 +22,20 @@ services:
       - "${BACKEND_PORT}:3000"
     volumes:
       - ./backend:/app
+      - backend_node_modules:/app/node_modules
+
     working_dir: /app
     command: sh -c "corepack enable &&pnpm install && pnpm run start:dev"
     networks:
       - jamplay_network
   frontend:
-    image: node:22
+    image: node:24
     container_name: jamplay_frontend
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
     working_dir: /app
     command: sh -c "corepack enable && pnpm install && pnpm run dev"
     networks:
@@ -42,3 +45,5 @@ networks:
     driver: bridge
 volumes:
   db_data:
+  backend_node_modules:
+  frontend_node_modules:
