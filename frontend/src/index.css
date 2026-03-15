@@ -63,7 +63,7 @@
   --success-surface: #ebfef5;
   --success: #05e173;
   --success-foreground: #020119;
-  --background: #faf9f0;
+  --background: #f7f7f7;
   --foreground: #1b1b32;
   --primary-foreground: #faf9f0;
   --secondary-foreground: #020119;
@@ -80,7 +80,7 @@
 
 .dark {
   --background: #020119;
-  --foreground: #faf9f0;
+  --foreground: #f7f7f7;
   --card: rgb(27 27 50 / 0.88);
   --card-foreground: #faf9f0;
   --popover: #1b1b32;

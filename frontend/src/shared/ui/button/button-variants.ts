@@ -6,9 +6,9 @@ export const buttonVariants = cva(
   variants: {
     variant: {
         default:
-          'bg-primary text-primary-foreground',
+          'bg-primary text-primary-foreground text-secondary-surface',
         outline:
-          'border border-border/80 bg-background/75 text-foreground',
+          'border border-primary-light bg-transparent text-foreground',
         ghost: 'bg-transparent text-foreground',
     },
     size: {

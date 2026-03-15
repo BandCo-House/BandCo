@@ -55,7 +55,7 @@ export const PageHeader = ({
               {showBack ? (
                 <BackButton
                   label="뒤로"
-                  variant="outline"
+                  variant="ghost"
                   className="text-sm"
                   onClick={onBack}
                 />
