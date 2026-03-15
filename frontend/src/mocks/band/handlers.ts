@@ -45,16 +45,30 @@ export const bandHandlers = [
 
   // 밴드 생성 Mock
   http.post(`${API_URL}/bands`, async ({ request }) => {
-    const body = (await request.json()) as { name: string };
+    const body = (await request.json()) as {
+      name: string;
+      description: string | null;
+      visibility: boolean;
+    };
 
     // 단순 딜레이 시뮬레이션
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     return HttpResponse.json({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '밴드 생성 성공',
       data: {
-        id: `band-${Date.now()}`,
-        name: body.name,
+        band: {
+          id: `band-${Date.now()}`,
+          name: body.name,
+          description: body.description,
+          visibility: body.visibility,
+          inviteCode: 'NEW123',
+          bmId: 'bm-new',
+          createdAt: '2026-03-03T18:20:10.123+09:00',
+          updatedAt: '2026-03-03T18:20:10.123+09:00',
+        },
       },
     });
   }),

@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import { Button } from '@/shared/ui/button';
 import { SVGIcon } from '@/shared/ui/icon';
 import { BandCard } from '@/entities/band/ui/BandCard';
 import { useBands } from '@/entities/band/api/useBands';
+import { BandCreateDialog } from './BandCreateDialog';
+import { InviteCodeDialog } from './InviteCodeDialog';
 
 export const BandList = () => {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isInviteCodeDialogOpen, setIsInviteCodeDialogOpen] = useState(false);
   const { data: bands = [], isLoading } = useBands();
 
   if (isLoading) return <div data-testid="band-list">로딩 중...</div>;
@@ -15,12 +20,13 @@ export const BandList = () => {
     <section data-testid="band-list" className="space-y-7">
       <div className="flex items-start justify-between gap-6">
         <div className="space-y-5">
-          <h2 className="text-4xl font-semibold tracking-tight">밴드</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">밴드</h2>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
-              className="h-11 rounded-full bg-secondary-surface px-5 text-sm font-semibold text-secondary-foreground shadow-xl/5"
+              className="bg-secondary-surface  text-secondary-foreground shadow-xl/5"
+              onClick={() => setIsCreateDialogOpen(true)}
             >
               <span>밴드 만들기</span>
               <SVGIcon icon="AddWithCircle" size="sm" />
@@ -28,7 +34,8 @@ export const BandList = () => {
 
             <Button
               type="button"
-              className="h-11 rounded-full bg-secondary-surface px-5 text-sm font-semibold text-secondary-foreground shadow-xl/5"
+              className="bg-secondary-surface text-secondary-foreground shadow-xl/5"
+              onClick={() => setIsInviteCodeDialogOpen(true)}
             >
               <span>초대 코드 입력</span>
             </Button>
@@ -52,6 +59,15 @@ export const BandList = () => {
           </li>
         ))}
       </ul>
+
+      <BandCreateDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
+      <InviteCodeDialog
+        open={isInviteCodeDialogOpen}
+        onOpenChange={setIsInviteCodeDialogOpen}
+      />
     </section>
   );
 };

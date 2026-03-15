@@ -5,7 +5,7 @@ import type { BandCreateRequest } from '../api/band-api';
 import { bandKeys } from '@/entities/band/api/useBands';
 
 export interface UseBandCreateResult {
-  submit: (data: BandCreateRequest) => void;
+  submit: (data: BandCreateRequest) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
@@ -23,8 +23,12 @@ export const useBandCreate = (): UseBandCreateResult => {
     },
   });
 
-  const submit = (data: BandCreateRequest) => {
-    mutation.mutate(data);
+  const submit = async (data: BandCreateRequest) => {
+    try {
+      await mutation.mutateAsync(data);
+    } catch {
+      return;
+    }
   };
 
   return {
