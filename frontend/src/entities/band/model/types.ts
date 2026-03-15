@@ -1,12 +1,4 @@
-export interface Band {
-  id: string;
-  name: string;
-  description: string | null;
-  visibility: boolean;
-  inviteCode: string;
-  bmId: string;
-  myRole: 'BM' | 'MEMBER';
-  joinedAt: string;
-  createdAt: string;
-  memberCount?: number;
-}
+import type { z } from 'zod';
+import { bandSchema } from './schema';
+
+export type Band = z.infer<typeof bandSchema>;

@@ -1,17 +1,9 @@
 import { apiClient } from '@/shared/api';
 import type { Band } from '../model/types';
-
-interface BandListApiResponse {
-  status: 'success' | 'error';
-  error: string | null;
-  message: string;
-  data: {
-    totalCount: number;
-    bands: Band[];
-  };
-}
+import { bandListResponseSchema } from '../model/schema';
 
 export const getBands = async (): Promise<Band[]> => {
-  const response = await apiClient.get<BandListApiResponse>('/bands');
-  return response.data.data.bands;
+  const response = await apiClient.get('/bands');
+  const parsed = bandListResponseSchema.parse(response.data);
+  return parsed.data.bands;
 };

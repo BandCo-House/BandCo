@@ -1,4 +1,6 @@
 import { apiPost } from '@/shared/api';
+import { bandSummarySchema } from '@/entities/band/model/schema';
+import { z } from 'zod';
 
 export interface BandCreateRequest {
   name: string;
@@ -6,20 +8,15 @@ export interface BandCreateRequest {
   visibility: boolean;
 }
 
-export interface BandCreateResponse {
-  id: string;
-  name: string;
-  description: string | null;
-  visibility: boolean;
-  inviteCode: string;
-  bmId: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export const bandCreateResponseSchema = bandSummarySchema.extend({
+  updatedAt: z.string(),
+});
+
+export type BandCreateResponse = z.infer<typeof bandCreateResponseSchema>;
 
 export const createBand = (
   data: BandCreateRequest,
 ): Promise<BandCreateResponse> =>
   apiPost<{ band: BandCreateResponse }>('/bands', data).then(
-    (response) => response.band,
+    (response) => bandCreateResponseSchema.parse(response.band),
   );

@@ -88,4 +88,27 @@ describe('createBand 어댑터', () => {
       createBand({ name: '', description: null, visibility: true }),
     ).rejects.toThrow();
   });
+
+  it('필수 응답 필드가 누락되면 reject된다', async () => {
+    mock.onPost('/bands').reply(200, {
+      status: 'success',
+      error: null,
+      message: '밴드 생성 성공',
+      data: {
+        band: {
+          id: 'band-123',
+          name: '우리 밴드',
+          description: '주 1회 합주',
+          visibility: true,
+          inviteCode: 'INV123',
+          createdAt: '2026-03-03T18:20:10.123+09:00',
+          updatedAt: '2026-03-03T18:20:10.123+09:00',
+        },
+      },
+    });
+
+    await expect(
+      createBand({ name: '우리 밴드', description: '주 1회 합주', visibility: true }),
+    ).rejects.toThrow();
+  });
 });
