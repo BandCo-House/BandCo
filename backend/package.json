@@ -7,19 +7,20 @@
     "node": "24.13.1"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && sh ./scripts/copy-generated-prisma.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
+    "prisma:seed": "prisma db seed",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "start": "node dist/main.js",
-    "start:dev": "tsx watch src/main.ts",
+    "start:dev": "nest start --watch",
     "test": "node --import tsx --test src/**/*.spec.ts"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@nestjs/cli": "^11.0.16",
     "@eslint/js": "^9.39.2",
     "@types/node": "^25.2.3",
     "eslint": "^9.39.2",
@@ -47,5 +49,8 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.55.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
