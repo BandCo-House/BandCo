@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { Search } from 'lucide-react';
-
 import { cn } from '@/shared/lib/utils';
+import { Search } from 'lucide-react';
 
 type InputProps = React.ComponentProps<'input'> & {
   /**
@@ -15,23 +14,27 @@ type InputProps = React.ComponentProps<'input'> & {
  * Base input component with optional search-bar mode.
  */
 function Input({ className, type, isSearchBar = false, ...props }: InputProps) {
-  const hasAccessibleName = Boolean(props['aria-label'] || props['aria-labelledby']);
+  const hasAccessibleName = Boolean(
+    props['aria-label'] || props['aria-labelledby'],
+  );
   const defaultSearchAriaLabel =
     typeof props.placeholder === 'string' && props.placeholder.trim().length > 0
       ? props.placeholder
       : 'Search';
   const inputProps =
-    isSearchBar && !hasAccessibleName ? { ...props, 'aria-label': defaultSearchAriaLabel } : props;
+    isSearchBar && !hasAccessibleName
+      ? { ...props, 'aria-label': defaultSearchAriaLabel }
+      : props;
 
   const inputElement = (
     <input
       type={type}
       data-slot="input"
       className={cn(
-        'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full rounded-md border bg-transparent px-3 text-base transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-        'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
+        'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input w-full rounded-full border bg-input px-4 py-3 text-base transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+        'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50',
         'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
-        isSearchBar && 'pl-9',
+        isSearchBar && 'pl-11',
         className,
       )}
       {...inputProps}
