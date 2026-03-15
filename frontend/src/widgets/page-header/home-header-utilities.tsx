@@ -75,13 +75,12 @@ export const HomeHeaderUtilities = ({
           {showProfileAvatar ? (
             <Link
               to="/profile"
-              type="button"
               aria-label="프로필 열기"
               className="rounded-full hover:opacity-90"
             >
               <Avatar
                 size="lg"
-                className="border border-white/80 bg-white shadow-xl/5"
+                className="border border-white/80 bg-white"
               >
                 {profileImageUrlFromApi ? (
                   <AvatarImage
