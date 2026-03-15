@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './pages/__root'
 import { Route as ProfileRouteImport } from './pages/profile'
 import { Route as AdminRouteImport } from './pages/admin'
 import { Route as IndexRouteImport } from './pages/index'
-import { Route as InviteAcceptRouteImport } from './pages/invite.accept'
 import { Route as BandBandIdRouteImport } from './pages/band.$bandId'
 import { Route as BandBandIdIndexRouteImport } from './pages/band.$bandId.index'
 import { Route as SongSongIdTeamsRouteImport } from './pages/song.$songId.teams'
@@ -36,11 +35,6 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InviteAcceptRoute = InviteAcceptRouteImport.update({
-  id: '/invite/accept',
-  path: '/invite/accept',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BandBandIdRoute = BandBandIdRouteImport.update({
@@ -97,7 +91,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/profile': typeof ProfileRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
-  '/invite/accept': typeof InviteAcceptRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
@@ -111,7 +104,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/profile': typeof ProfileRoute
-  '/invite/accept': typeof InviteAcceptRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
@@ -126,7 +118,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/profile': typeof ProfileRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
-  '/invite/accept': typeof InviteAcceptRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
@@ -143,7 +134,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/profile'
     | '/band/$bandId'
-    | '/invite/accept'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
     | '/song/$songId/teams'
@@ -157,7 +147,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/profile'
-    | '/invite/accept'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
     | '/song/$songId/teams'
@@ -171,7 +160,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/profile'
     | '/band/$bandId'
-    | '/invite/accept'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
     | '/song/$songId/teams'
@@ -187,7 +175,6 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ProfileRoute: typeof ProfileRoute
   BandBandIdRoute: typeof BandBandIdRouteWithChildren
-  InviteAcceptRoute: typeof InviteAcceptRoute
   SongSongIdTeamsRoute: typeof SongSongIdTeamsRoute
   SongSongIdTeamTeamIdRoute: typeof SongSongIdTeamTeamIdRoute
 }
@@ -213,13 +200,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/invite/accept': {
-      id: '/invite/accept'
-      path: '/invite/accept'
-      fullPath: '/invite/accept'
-      preLoaderRoute: typeof InviteAcceptRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/band/$bandId': {
@@ -330,7 +310,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ProfileRoute: ProfileRoute,
   BandBandIdRoute: BandBandIdRouteWithChildren,
-  InviteAcceptRoute: InviteAcceptRoute,
   SongSongIdTeamsRoute: SongSongIdTeamsRoute,
   SongSongIdTeamTeamIdRoute: SongSongIdTeamTeamIdRoute,
 }
