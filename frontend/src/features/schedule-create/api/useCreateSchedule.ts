@@ -15,7 +15,7 @@ export type CreateSchedulePayload =
 export const useCreateSchedule = () => {
   return useMutation({
     mutationFn: async (data: CreateSchedulePayload): Promise<Schedule> => {
-      return apiPost<Schedule>('/api/schedule', data);
+      return apiPost<Schedule>('/schedule', data);
     },
   });
 };

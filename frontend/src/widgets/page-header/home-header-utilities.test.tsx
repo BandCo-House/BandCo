@@ -35,4 +35,11 @@ describe('HomeHeaderUtilities', () => {
     expect(screen.queryByLabelText('프로필 열기')).not.toBeInTheDocument();
     expect(document.querySelector('.w-px')).not.toBeInTheDocument();
   });
+
+  it('showNotificationTrigger=true이면 알림 버튼과 배지가 렌더링된다', () => {
+    render(<HomeHeaderUtilities showNotificationTrigger />);
+
+    expect(screen.getByRole('button', { name: '알림 열기' })).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
 });

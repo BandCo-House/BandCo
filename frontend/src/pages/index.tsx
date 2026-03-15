@@ -5,9 +5,10 @@ export const Route = createFileRoute('/')({
   component: MyBandsRoutePage,
   staticData: {
     header: {
-      title: '서비스명',
+      title: 'JamPlay',
       showBack: false,
       showSearchBar: true,
+      showNotificationTrigger: true,
     },
   },
 });
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/')({
 // 홈(내 밴드 목록) 라우트 전용 화면
 function MyBandsRoutePage() {
   return (
-    <div>
+    <div data-testid="my-bands-page">
       <BandList />
     </div>
   );

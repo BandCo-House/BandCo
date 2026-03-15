@@ -1,3 +1,5 @@
+export type { ScheduleType } from '@/entities/schedule/model/types';
+
 import type { ScheduleType } from '@/entities/schedule/model/types';
 
 export interface ScheduleCreateFormState {

@@ -6,13 +6,19 @@ import type { HeaderResolveContext, HeaderStaticConfig, RouteStaticData } from '
  */
 const HEADER_DEFAULTS: Pick<
   HeaderStaticConfig,
-  'showBack' | 'backBehavior' | 'showUtilities' | 'showSearchBar' | 'showProfileAvatar'
+  | 'showBack'
+  | 'backBehavior'
+  | 'showUtilities'
+  | 'showSearchBar'
+  | 'showProfileAvatar'
+  | 'showNotificationTrigger'
 > = {
   showBack: true,
   backBehavior: 'route',
   showUtilities: true,
   showSearchBar: false,
   showProfileAvatar: true,
+  showNotificationTrigger: false,
 };
 
 /**

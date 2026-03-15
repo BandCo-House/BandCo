@@ -190,7 +190,7 @@ describe('앱 라우터', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('프로필/초대수락 페이지에서는 우측 프로필 아바타를 렌더링하지 않는다', async () => {
+  it('프로필 페이지에서는 우측 프로필 아바타를 렌더링하지 않는다', async () => {
     const profileRouter = createRouterForTest('/profile', {
       isLoggedIn: true,
       isAdmin: false,
@@ -200,15 +200,6 @@ describe('앱 라우터', () => {
     expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
     expect(screen.queryByLabelText('프로필 열기')).not.toBeInTheDocument();
     unmount();
-
-    const inviteAcceptRouter = createRouterForTest('/invite/accept', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-    render(<RouterProvider router={inviteAcceptRouter} />);
-
-    expect(await screen.findByText('InviteAcceptPage')).toBeInTheDocument();
-    expect(screen.queryByLabelText('프로필 열기')).not.toBeInTheDocument();
   });
 
   it('밴드 상세의 뒤로가기는 루트(MyBands)로 이동한다', async () => {

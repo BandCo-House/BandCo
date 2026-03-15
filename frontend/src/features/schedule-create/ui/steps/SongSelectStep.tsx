@@ -19,13 +19,15 @@ export const SongSelectStep = ({ selectedId, onChange, onNext }: Props) => {
       <ul>
         {songs.map((song) => (
           <li key={song.id}>
-            <div
-              className={`rounded-full border border-gray-300 ${selectedId === song.id ? 'bg-blue-500' : ''}`}
-              aria-checked={selectedId === song.id}
-              onClick={() => onChange(song.id)}
-            >
+            <label>
+              <input
+                type="radio"
+                name="song"
+                checked={selectedId === song.id}
+                onChange={() => onChange(song.id)}
+              />
               {song.title}
-            </div>
+            </label>
           </li>
         ))}
       </ul>

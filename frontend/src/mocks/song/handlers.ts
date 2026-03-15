@@ -24,16 +24,13 @@ const song: Song = {
 };
 
 export const songHandlers = [
-  http.get(`${API_URL}/songs/:id`, ({ params }) => {
-    const id = String(params.id);
-
-    if (id.startsWith('band-')) {
-      return HttpResponse.json<ApiResponse<Song[]>>({
-        success: true,
-        data: [song],
-      });
-    }
-
+  http.get(new RegExp(`^${API_URL}/songs/band-[^/]+$`), () => {
+    return HttpResponse.json<ApiResponse<Song[]>>({
+      success: true,
+      data: [song],
+    });
+  }),
+  http.get(`${API_URL}/songs/:id`, () => {
     return HttpResponse.json<ApiResponse<Song>>({
       success: true,
       data: song,

@@ -8,7 +8,7 @@ import pluginQuery from "@tanstack/eslint-plugin-query";
 
 export default defineConfig([
   ...pluginQuery.configs["flat/recommended"],
-  globalIgnores(["dist", "**/routeTree.gen.ts"]),
+  globalIgnores(["dist", "**/routeTree.gen.ts", "public/mockServiceWorker.js"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [

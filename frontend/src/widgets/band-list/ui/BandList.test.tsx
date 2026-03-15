@@ -24,7 +24,7 @@ describe('BandList', () => {
 
   it('로딩 중일 때 로딩 상태를 표시한다', async () => {
     server.use(
-      http.get('/bands', async () => {
+      http.get('/api/bands', async () => {
         await delay('infinite');
         return HttpResponse.json({});
       }),
@@ -36,7 +36,7 @@ describe('BandList', () => {
 
   it('밴드가 없을 때 빈 상태를 표시한다', async () => {
     server.use(
-      http.get('/bands', () => {
+      http.get('/api/bands', () => {
         return HttpResponse.json({ success: true, data: [] });
       }),
     );
