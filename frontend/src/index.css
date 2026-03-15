@@ -67,8 +67,8 @@
   --foreground: #1b1b32;
   --primary-foreground: #faf9f0;
   --secondary-foreground: #020119;
-  --muted: #e6e9f0;
-  --muted-foreground: #7473b5;
+  --muted: #737373;
+  --muted-foreground: #b1b1b2;
   --card: rgb(255 255 255 / 0.7);
   --card-foreground: #1b1b32;
   --popover: #faf9f0;
@@ -94,7 +94,7 @@
   --secondary: #ddfe55;
   --secondary-foreground: #020119;
   --muted: #1b1b32;
-  --muted-foreground: #bdbcdc;
+  --muted-foreground: #d9dadd;
   --accent-surface: rgb(242 207 209 / 0.16);
   --accent-light: #d35f64;
   --accent: #c8393f;
@@ -130,6 +130,17 @@
       BlinkMacSystemFont,
       'Segoe UI',
       sans-serif;
+  }
+}
+
+@layer components {
+  .motion-lift {
+    @apply transition-all duration-200 ease-out will-change-transform;
+  }
+
+  .motion-lift:hover,
+  .motion-lift:focus-visible {
+    transform: translateY(-4px);
   }
 }
 

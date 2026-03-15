@@ -1,4 +1,17 @@
-import { apiGet } from '@/shared/api';
+import { apiClient } from '@/shared/api';
 import type { Band } from '../model/types';
 
-export const getBands = (): Promise<Band[]> => apiGet<Band[]>('/bands');
+interface BandListApiResponse {
+  status: 'success' | 'error';
+  error: string | null;
+  message: string;
+  data: {
+    totalCount: number;
+    bands: Band[];
+  };
+}
+
+export const getBands = async (): Promise<Band[]> => {
+  const response = await apiClient.get<BandListApiResponse>('/bands');
+  return response.data.data.bands;
+};
