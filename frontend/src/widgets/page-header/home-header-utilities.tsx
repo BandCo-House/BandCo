@@ -68,7 +68,7 @@ export const HomeHeaderUtilities = ({
             </Button>
           ) : null}
 
-          {showProfileAvatar ? (
+          {showNotificationTrigger && showProfileAvatar ? (
             <div aria-hidden="true" className="h-6 w-px bg-border/90" />
           ) : null}
 
