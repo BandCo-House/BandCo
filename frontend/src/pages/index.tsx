@@ -5,9 +5,10 @@ export const Route = createFileRoute('/')({
   component: MyBandsRoutePage,
   staticData: {
     header: {
-      title: '서비스명',
+      title: 'JamPlay',
       showBack: false,
       showSearchBar: true,
+      showNotificationTrigger: true,
     },
   },
 });

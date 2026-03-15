@@ -47,6 +47,7 @@ export type HeaderStaticConfig = {
   showUtilities?: boolean;
   showSearchBar?: boolean;
   showProfileAvatar?: boolean;
+  showNotificationTrigger?: boolean;
   meta?: string[];
   tabs?: HeaderTab[];
   rightActionLabel?: string;

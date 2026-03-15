@@ -98,13 +98,14 @@ export const RootLayout = () => {
           <HomeHeaderUtilities
             showSearchBar={header.showSearchBar}
             showProfileAvatar={header.showProfileAvatar}
+            showNotificationTrigger={header.showNotificationTrigger}
           />
         ) : undefined,
       }
     : null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {pageHeaderProps ? (
         <PageHeader
           {...pageHeaderProps}

@@ -34,6 +34,7 @@ describe('resolveHeader', () => {
       showUtilities: true,
       showSearchBar: false,
       showProfileAvatar: true,
+      showNotificationTrigger: false,
       title: '동적 제목',
       subtitle: '기본 부제',
       resolve: expect.any(Function),
