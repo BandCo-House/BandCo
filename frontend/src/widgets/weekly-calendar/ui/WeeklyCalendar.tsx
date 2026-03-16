@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { getStartOfWeek, addDays } from '@/shared/lib/date';
 import { WeeklyCalendarHeader } from './WeeklyCalendarHeader';
 import { WeeklyTimeGrid } from './WeeklyTimeGrid';
+import { useCalendarZoom } from '../model/use-calendar-zoom';
 
 export const WeeklyCalendar = () => {
   const [currentDate, setCurrentDate] = useState(() => new Date());
+  const { zoomLevel, slotHeight, zoomIn, zoomOut } = useCalendarZoom();
 
   const startOfWeek = getStartOfWeek(currentDate);
 
@@ -20,7 +22,13 @@ export const WeeklyCalendar = () => {
         onNext={handleNextWeek}
         onToday={handleToday}
       />
-      <WeeklyTimeGrid startDate={startOfWeek} />
+      <WeeklyTimeGrid
+        startDate={startOfWeek}
+        zoomLevel={zoomLevel}
+        slotHeight={slotHeight}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+      />
     </div>
   );
 };
