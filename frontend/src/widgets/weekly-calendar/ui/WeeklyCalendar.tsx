@@ -15,7 +15,7 @@ export const WeeklyCalendar = () => {
   const handleToday = () => setCurrentDate(new Date());
 
   return (
-    <div className="flex flex-col w-full h-full border rounded-lg bg-background">
+    <div className="flex flex-col w-full h-full">
       <WeeklyCalendarHeader
         currentDate={currentDate}
         onPrev={handlePrevWeek}

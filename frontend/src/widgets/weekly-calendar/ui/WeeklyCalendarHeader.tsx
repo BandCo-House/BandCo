@@ -1,6 +1,7 @@
 import { getStartOfWeek, addDays, formatWeekRange } from '@/shared/lib/date';
 import { IconMap } from '@/constants/icons';
 import { ChevronLeft, ChevronRight } from 'lucide-react'; // Assuming lucide-react is used for simple arrows
+import { Button } from '@/shared/ui/button';
 
 interface WeeklyCalendarHeaderProps {
   currentDate: Date;
@@ -22,42 +23,44 @@ export const WeeklyCalendarHeader = ({
   const weekRangeText = formatWeekRange(startOfWeek, endOfWeek);
 
   return (
-    <div className="flex items-center justify-between px-6 py-4  border-b border-gray-100">
+    <div className="flex items-center justify-between px-6 py-4 bg-inherit border-b border-gray-100">
       <div className="flex items-center gap-6">
         {/* 달력 아이콘 */}
-        <div 
+        <div
           className="flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded p-1 transition-colors"
           onClick={onToday}
           title="오늘로 이동"
         >
-          <IconMap.Calendar width={24} height={24} className="text-gray-700" />
+          <IconMap.Calendar width={24} height={24} className="" />
         </div>
 
         {/* 날짜 네비게이션 */}
-        <div className="flex items-center gap-3">
-          <button
+        <div className="flex items-center gap-3 w-90 justify-between">
+          <Button
             onClick={onPrev}
-            className="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded text-gray-500 hover:bg-gray-50 transition-colors shadow-sm"
+            size={'icon'}
+            className="w-9 h-8 bg-white  border-gray-200 rounded-[8px] hover:bg-gray-50 "
           >
-            <ChevronLeft size={16} />
-          </button>
-          
-          <h2 className="text-[17px] font-bold text-gray-800 tracking-tight min-w-[150px] text-center">
+            <ChevronLeft size={16} className="stroke-primary-light " />
+          </Button>
+
+          <h2 className="text-[17px] font-bold text-gray-800 tracking-tight min-w-37.5 text-center">
             {weekRangeText}
           </h2>
-          
-          <button
+
+          <Button
             onClick={onNext}
-            className="flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded text-gray-500 hover:bg-gray-50 transition-colors shadow-sm"
+            size={'icon'}
+            className="w-9 h-8 bg-white border-gray-200 rounded-[8px] hover:bg-gray-50 "
           >
-            <ChevronRight size={16} />
-          </button>
+            <ChevronRight size={16} className="stroke-primary-light" />
+          </Button>
         </div>
       </div>
 
       {/* 일정 추가 버튼 */}
-      <button className="flex items-center gap-1.5 px-4 py-2 bg-[#d34a4a] hover:bg-[#b83c3c] text-white text-sm font-medium rounded-full transition-colors shadow-sm">
-        일정 <IconMap.Add width={14} height={14} className="text-white" />
+      <button className="flex items-center gap-1.5 px-4 py-2 bg-accent border border-accent-surface hover:bg-[#b83c3c] text-secondary rounded-full transition-colors shadow-sm">
+        일정 <IconMap.Add width={14} height={14} className="text-secondary" />
       </button>
     </div>
   );
