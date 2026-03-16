@@ -27,15 +27,16 @@ export const WeeklyTimeGrid = ({
 
   // 줌 레벨에 따른 CSS 변수 설정
   const style = useMemo(
-    () => ({ '--slot-height': `${slotHeight}px` } as React.CSSProperties),
-    [slotHeight]
+    () => ({ '--slot-height': `${slotHeight}px` }) as React.CSSProperties,
+    [slotHeight],
   );
 
   // 키보드 단축키 (+, -)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 입력창이 활성화된 상태면 무시
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName))
+        return;
 
       if (e.key === '+' || e.key === '=') {
         onZoomIn?.();
@@ -51,7 +52,6 @@ export const WeeklyTimeGrid = ({
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
-// ... rest of use-effect remains same
 
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
@@ -63,13 +63,13 @@ export const WeeklyTimeGrid = ({
         lastWheelTime.current = now;
 
         const isZoomIn = e.deltaY < 0;
-        
+
         // 줌 전의 마우스 위치 및 전체 높이 정보 저장
         const rect = container.getBoundingClientRect();
         const mouseY = e.clientY - rect.top;
         const currentScrollTop = container.scrollTop;
         const currentTotalHeight = container.scrollHeight;
-        
+
         // 마우스 커서의 캘린더 내부 상대 위치 (%)
         const relY = (mouseY + currentScrollTop) / currentTotalHeight;
 
@@ -96,25 +96,31 @@ export const WeeklyTimeGrid = ({
   return (
     <div className="flex flex-col flex-1 overflow-hidden" style={style}>
       {/* Header: 요일 및 날짜 */}
-      <div className="grid grid-cols-8 border-b">
-        {/* 좌상단 빈칸 (시간 레이블 위) */}
-        <div className="border-r p-2 font-semibold text-center bg-muted/50">
-          Time
-        </div>
-
+      <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-gray-100 bg-[#FFFFFF66] sticky top-0 z-10 h-12.5">
+        {/* 좌상단 빈칸 */}
+        <div className="border-r border-gray-100"></div>
         {weekDays.map((day, index) => {
           const isToday = day.toDateString() === new Date().toDateString();
           return (
             <div
               key={index}
-              className={`p-2 text-center border-r last:border-r-0 ${
-                isToday ? 'bg-primary/10 text-primary font-bold' : ''
-              }`}
+              className=" text-center border-r border-gray-100 last:border-r-0 flex flex-col items-center gap-1 justify-center w-full"
             >
-              <div className="text-sm text-muted-foreground">
-                {['일', '월', '화', '수', '목', '금', '토'][day.getDay()]}
+              <div className="font-normal text-sm text-gray-400">
+                {
+                  ['월', '화', '수', '목', '금', '토', '일'][
+                    day.getDay() === 0 ? 6 : day.getDay() - 1
+                  ]
+                }
               </div>
-              <div className="text-lg" data-testid="day-label">
+              <div
+                className={`w-8 h-5 flex items-center justify-center rounded-full transition-colors text-sm font-semibold ${
+                  isToday
+                    ? 'bg-primary text-secondary-surface'
+                    : 'text-gray-700'
+                }`}
+                data-testid="day-label"
+              >
                 {day.getDate()}
               </div>
             </div>
@@ -123,15 +129,14 @@ export const WeeklyTimeGrid = ({
       </div>
 
       {/* Body: 시간 레이블 + 슬롯 */}
-      <div 
+      <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto custom-scrollbar "
       >
-        <div className="grid grid-cols-8">
+        <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] gap-x-0.5">
           {/* 시간 레이블 (1 Column) */}
-          <div className="flex flex-col border-r bg-muted/20">
+          <div className="flex flex-col border-r border-gray-100 bg-[#FFFFFF66] w-16">
             {hours.map((hour) => {
-              // 줌 레벨에 따라 표시할 분 단위 결정
               let minuteInterval = 60;
               if (zoomLevel >= 9) minuteInterval = 5;
               else if (zoomLevel >= 7) minuteInterval = 15;
@@ -139,25 +144,25 @@ export const WeeklyTimeGrid = ({
 
               const minutes = Array.from(
                 { length: 60 / minuteInterval },
-                (_, i) => i * minuteInterval
+                (_, i) => i * minuteInterval,
               );
 
               return (
                 <div
                   key={`time-${hour}`}
-                  className="h-[var(--slot-height)] border-b relative text-muted-foreground transition-[height] duration-200"
+                  className="h-(--slot-height) border-b border-gray-100 relative text-gray-400 transition-[height] duration-200"
                 >
                   {minutes.map((minute) => (
                     <div
                       key={`${hour}-${minute}`}
-                      className="absolute w-full text-center text-[9px] leading-none"
-                      style={{ 
-                        top: `${(minute / 60) * 100}%`,
+                      className="absolute w-full text-center text-[10px] leading-none"
+                      style={{
+                        top: `${((minute + minuteInterval / 2) / 60) * 100}%`,
                         transform: 'translateY(-50%)',
-                        paddingTop: minute === 0 ? '4px' : '0',
                         opacity: minute === 0 ? 1 : 0.6,
-                        fontWeight: minute === 0 ? '600' : '400',
-                        display: (zoomLevel < 4 && minute !== 0) ? 'none' : 'block'
+                        fontWeight: minute === 0 ? '500' : '400',
+                        display:
+                          zoomLevel < 4 && minute !== 0 ? 'none' : 'block',
                       }}
                     >
                       {`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`}
@@ -172,43 +177,54 @@ export const WeeklyTimeGrid = ({
           {weekDays.map((day, dayIndex) => (
             <div
               key={`col-${dayIndex}`}
-              className="flex flex-col border-r last:border-r-0"
+              className="flex flex-col border-last:border-r-0 border-t bg-white"
             >
               {hours.map((hour) => {
-                // 그리드 보조선 밀도 결정
                 let gridInterval = 60;
                 if (zoomLevel >= 9) gridInterval = 5;
                 else if (zoomLevel >= 7) gridInterval = 15;
                 else if (zoomLevel >= 4) gridInterval = 30;
 
-                const lineCount = 60 / gridInterval;
-                const percentage = 100 / lineCount;
+                const subSlotCount = 60 / gridInterval;
+                const subSlots = Array.from({ length: subSlotCount });
 
                 return (
                   <div
                     key={`slot-${dayIndex}-${hour}`}
-                    data-testid="time-slot"
-                    onClick={(e) => {
-                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                      const offsetY = e.clientY - rect.top;
-                      const totalHeight = rect.height;
-                      
-                      let minutes = Math.floor((offsetY / totalHeight) * 60);
-                      const roundTo = zoomLevel >= 9 ? 5 : 15;
-                      minutes = Math.round(minutes / roundTo) * roundTo;
-                      if (minutes >= 60) minutes = 55;
+                    className="h-(--slot-height) border-b border-rose-200 relative"
+                  >
+                    {/* 정밀 그리드 선 (좌측 레이블과 완벽히 일치, 빨간색 계열) */}
+                    <div className="absolute inset-0 flex flex-col pointer-events-none">
+                      {subSlots.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex-1 ${idx !== subSlots.length - 1 ? 'border-b border-destructive-surface' : ''}`}
+                        />
+                      ))}
+                    </div>
 
-                      const clickedDate = new Date(day);
-                      clickedDate.setHours(hour, minutes, 0, 0);
-                      onSlotClick?.(clickedDate);
-                    }}
-                    className="h-[var(--slot-height)] border-b border-dashed hover:bg-muted/50 cursor-pointer transition-[height,background-color] duration-200 relative"
-                    style={{
-                      backgroundImage: gridInterval < 60
-                        ? `repeating-linear-gradient(to bottom, transparent, transparent calc(${percentage}% - 1px), rgba(0,0,0,0.1) calc(${percentage}% - 1px), rgba(0,0,0,0.1) ${percentage}%)`
-                        : 'none',
-                    }}
-                  />
+                    {/* 클릭 가능한 영역 */}
+                    <div
+                      data-testid="time-slot"
+                      onClick={(e) => {
+                        const rect = (
+                          e.currentTarget as HTMLDivElement
+                        ).getBoundingClientRect();
+                        const offsetY = e.clientY - rect.top;
+                        const totalHeight = rect.height;
+
+                        let minutes = Math.floor((offsetY / totalHeight) * 60);
+                        const roundTo = zoomLevel >= 9 ? 5 : 15;
+                        minutes = Math.round(minutes / roundTo) * roundTo;
+                        if (minutes >= 60) minutes = 55;
+
+                        const clickedDate = new Date(day);
+                        clickedDate.setHours(hour, minutes, 0, 0);
+                        onSlotClick?.(clickedDate);
+                      }}
+                      className="absolute inset-0 cursor-pointer transition-colors duration-200"
+                    />
+                  </div>
                 );
               })}
             </div>
