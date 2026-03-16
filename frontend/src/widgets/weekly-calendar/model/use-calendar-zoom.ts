@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 10;
+const MAX_ZOOM = 9;
 const BASE_SLOT_HEIGHT = 64;
 
 /**
@@ -10,7 +10,7 @@ const BASE_SLOT_HEIGHT = 64;
  * 10단계: 768px (1시간, 1단계의 12배 -> 5분 단위가 약 64px)
  */
 const calculateSlotHeight = (level: number) => {
-  // 선형 증가 또는 단계별 매핑 가능. 
+  // 선형 증가 또는 단계별 매핑 가능.
   // 여기서는 레벨에 따라 지수적 또는 배수로 증가시켜 가독성을 확보함.
   // 1: 64, 2: 96, 3: 128, 4: 192, 5: 256, 6: 320, 7: 384, 8: 512, 9: 640, 10: 768
   const mapping: Record<number, number> = {
