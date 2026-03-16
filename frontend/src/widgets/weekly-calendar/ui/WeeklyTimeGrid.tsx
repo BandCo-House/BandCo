@@ -115,9 +115,28 @@ export const WeeklyTimeGrid = ({
             {hours.map((hour) => (
               <div
                 key={`time-${hour}`}
-                className="h-[var(--slot-height)] border-b flex items-start justify-center p-1 text-xs text-muted-foreground transition-[height] duration-200"
+                className="h-[var(--slot-height)] border-b flex flex-col items-center justify-start p-1 text-xs text-muted-foreground transition-[height] duration-200 overflow-hidden"
               >
-                {`${hour.toString().padStart(2, '0')}:00`}
+                <div className="font-medium">{`${hour.toString().padStart(2, '0')}:00`}</div>
+                
+                {/* Mid/High Zoom에서 30분 레이블 추가 */}
+                {zoomLevel >= 4 && (
+                  <div className="mt-auto mb-auto opacity-60 text-[10px]">
+                    {`${hour.toString().padStart(2, '0')}:30`}
+                  </div>
+                )}
+                
+                {/* High Zoom에서 15분, 45분 레이블 추가 */}
+                {zoomLevel >= 8 && (
+                  <>
+                    <div className="absolute top-[25%] left-0 right-0 text-center opacity-40 text-[9px]">
+                      {`${hour.toString().padStart(2, '0')}:15`}
+                    </div>
+                    <div className="absolute top-[75%] left-0 right-0 text-center opacity-40 text-[9px]">
+                      {`${hour.toString().padStart(2, '0')}:45`}
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -133,7 +152,19 @@ export const WeeklyTimeGrid = ({
                   key={`slot-${dayIndex}-${hour}`}
                   data-testid="time-slot"
                   onClick={() => onSlotClick?.(day, hour)}
-                  className="h-[var(--slot-height)] border-b border-dashed hover:bg-muted/50 cursor-pointer transition-[height,background-color] duration-200"
+                  className={`
+                    h-[var(--slot-height)] border-b border-dashed hover:bg-muted/50 cursor-pointer transition-[height,background-color] duration-200 relative
+                    ${zoomLevel >= 4 ? 'bg-grid-30' : ''}
+                    ${zoomLevel >= 8 ? 'bg-grid-15' : ''}
+                  `}
+                  style={{
+                    backgroundImage: zoomLevel >= 8 
+                      ? 'linear-gradient(to bottom, transparent 24.5%, rgba(0,0,0,0.05) 25%, transparent 25.5%, transparent 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%, transparent 74.5%, rgba(0,0,0,0.05) 75%, transparent 75.5%)'
+                      : zoomLevel >= 4
+                        ? 'linear-gradient(to bottom, transparent 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%)'
+                        : 'none',
+                    backgroundSize: '100% 100%'
+                  }}
                 />
               ))}
             </div>
