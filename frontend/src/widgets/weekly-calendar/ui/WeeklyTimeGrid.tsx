@@ -3,7 +3,7 @@ import { getWeekDays } from '@/shared/lib/date';
 
 interface WeeklyTimeGridProps {
   startDate: Date;
-  onSlotClick?: (date: Date, hour: number) => void;
+  onSlotClick?: (date: Date) => void;
   zoomLevel?: number;
   slotHeight?: number;
   onZoomIn?: () => void;
@@ -31,9 +31,27 @@ export const WeeklyTimeGrid = ({
     [slotHeight]
   );
 
+  // 키보드 단축키 (+, -)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 입력창이 활성화된 상태면 무시
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+      if (e.key === '+' || e.key === '=') {
+        onZoomIn?.();
+      } else if (e.key === '-' || e.key === '_') {
+        onZoomOut?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onZoomIn, onZoomOut]);
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
+// ... rest of use-effect remains same
 
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
@@ -151,7 +169,23 @@ export const WeeklyTimeGrid = ({
                 <div
                   key={`slot-${dayIndex}-${hour}`}
                   data-testid="time-slot"
-                  onClick={() => onSlotClick?.(day, hour)}
+                  onClick={(e) => {
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const offsetY = e.clientY - rect.top;
+                    const totalHeight = rect.height;
+                    
+                    // 클릭 위치를 기반으로 분 계산 (0-59)
+                    let minutes = Math.floor((offsetY / totalHeight) * 60);
+                    
+                    // 줌 레벨에 따라 반올림 (Level 8+는 5분 단위, 그 외는 15분 단위)
+                    const roundTo = zoomLevel >= 8 ? 5 : 15;
+                    minutes = Math.round(minutes / roundTo) * roundTo;
+                    if (minutes >= 60) minutes = 55; // 60분 방지
+
+                    const clickedDate = new Date(day);
+                    clickedDate.setHours(hour, minutes, 0, 0);
+                    onSlotClick?.(clickedDate);
+                  }}
                   className={`
                     h-[var(--slot-height)] border-b border-dashed hover:bg-muted/50 cursor-pointer transition-[height,background-color] duration-200 relative
                     ${zoomLevel >= 4 ? 'bg-grid-30' : ''}
