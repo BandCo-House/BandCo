@@ -130,33 +130,42 @@ export const WeeklyTimeGrid = ({
         <div className="grid grid-cols-8">
           {/* 시간 레이블 (1 Column) */}
           <div className="flex flex-col border-r bg-muted/20">
-            {hours.map((hour) => (
-              <div
-                key={`time-${hour}`}
-                className="h-[var(--slot-height)] border-b flex flex-col items-center justify-start p-1 text-xs text-muted-foreground transition-[height] duration-200 overflow-hidden"
-              >
-                <div className="font-medium">{`${hour.toString().padStart(2, '0')}:00`}</div>
-                
-                {/* Mid/High Zoom에서 30분 레이블 추가 */}
-                {zoomLevel >= 4 && (
-                  <div className="mt-auto mb-auto opacity-60 text-[10px]">
-                    {`${hour.toString().padStart(2, '0')}:30`}
-                  </div>
-                )}
-                
-                {/* High Zoom에서 15분, 45분 레이블 추가 */}
-                {zoomLevel >= 8 && (
-                  <>
-                    <div className="absolute top-[25%] left-0 right-0 text-center opacity-40 text-[9px]">
-                      {`${hour.toString().padStart(2, '0')}:15`}
+            {hours.map((hour) => {
+              // 줌 레벨에 따라 표시할 분 단위 결정
+              let minuteInterval = 60;
+              if (zoomLevel >= 9) minuteInterval = 5;
+              else if (zoomLevel >= 7) minuteInterval = 15;
+              else if (zoomLevel >= 4) minuteInterval = 30;
+
+              const minutes = Array.from(
+                { length: 60 / minuteInterval },
+                (_, i) => i * minuteInterval
+              );
+
+              return (
+                <div
+                  key={`time-${hour}`}
+                  className="h-[var(--slot-height)] border-b relative text-muted-foreground transition-[height] duration-200"
+                >
+                  {minutes.map((minute) => (
+                    <div
+                      key={`${hour}-${minute}`}
+                      className="absolute w-full text-center text-[9px] leading-none"
+                      style={{ 
+                        top: `${(minute / 60) * 100}%`,
+                        transform: 'translateY(-50%)',
+                        paddingTop: minute === 0 ? '4px' : '0',
+                        opacity: minute === 0 ? 1 : 0.6,
+                        fontWeight: minute === 0 ? '600' : '400',
+                        display: (zoomLevel < 4 && minute !== 0) ? 'none' : 'block'
+                      }}
+                    >
+                      {`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`}
                     </div>
-                    <div className="absolute top-[75%] left-0 right-0 text-center opacity-40 text-[9px]">
-                      {`${hour.toString().padStart(2, '0')}:45`}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
+                  ))}
+                </div>
+              );
+            })}
           </div>
 
           {/* 7일간의 시간 슬롯 (7 Columns) */}
@@ -165,42 +174,43 @@ export const WeeklyTimeGrid = ({
               key={`col-${dayIndex}`}
               className="flex flex-col border-r last:border-r-0"
             >
-              {hours.map((hour) => (
-                <div
-                  key={`slot-${dayIndex}-${hour}`}
-                  data-testid="time-slot"
-                  onClick={(e) => {
-                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                    const offsetY = e.clientY - rect.top;
-                    const totalHeight = rect.height;
-                    
-                    // 클릭 위치를 기반으로 분 계산 (0-59)
-                    let minutes = Math.floor((offsetY / totalHeight) * 60);
-                    
-                    // 줌 레벨에 따라 반올림 (Level 8+는 5분 단위, 그 외는 15분 단위)
-                    const roundTo = zoomLevel >= 8 ? 5 : 15;
-                    minutes = Math.round(minutes / roundTo) * roundTo;
-                    if (minutes >= 60) minutes = 55; // 60분 방지
+              {hours.map((hour) => {
+                // 그리드 보조선 밀도 결정
+                let gridInterval = 60;
+                if (zoomLevel >= 9) gridInterval = 5;
+                else if (zoomLevel >= 7) gridInterval = 15;
+                else if (zoomLevel >= 4) gridInterval = 30;
 
-                    const clickedDate = new Date(day);
-                    clickedDate.setHours(hour, minutes, 0, 0);
-                    onSlotClick?.(clickedDate);
-                  }}
-                  className={`
-                    h-[var(--slot-height)] border-b border-dashed hover:bg-muted/50 cursor-pointer transition-[height,background-color] duration-200 relative
-                    ${zoomLevel >= 4 ? 'bg-grid-30' : ''}
-                    ${zoomLevel >= 8 ? 'bg-grid-15' : ''}
-                  `}
-                  style={{
-                    backgroundImage: zoomLevel >= 8 
-                      ? 'linear-gradient(to bottom, transparent 24.5%, rgba(0,0,0,0.05) 25%, transparent 25.5%, transparent 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%, transparent 74.5%, rgba(0,0,0,0.05) 75%, transparent 75.5%)'
-                      : zoomLevel >= 4
-                        ? 'linear-gradient(to bottom, transparent 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%)'
+                const lineCount = 60 / gridInterval;
+                const percentage = 100 / lineCount;
+
+                return (
+                  <div
+                    key={`slot-${dayIndex}-${hour}`}
+                    data-testid="time-slot"
+                    onClick={(e) => {
+                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                      const offsetY = e.clientY - rect.top;
+                      const totalHeight = rect.height;
+                      
+                      let minutes = Math.floor((offsetY / totalHeight) * 60);
+                      const roundTo = zoomLevel >= 9 ? 5 : 15;
+                      minutes = Math.round(minutes / roundTo) * roundTo;
+                      if (minutes >= 60) minutes = 55;
+
+                      const clickedDate = new Date(day);
+                      clickedDate.setHours(hour, minutes, 0, 0);
+                      onSlotClick?.(clickedDate);
+                    }}
+                    className="h-[var(--slot-height)] border-b border-dashed hover:bg-muted/50 cursor-pointer transition-[height,background-color] duration-200 relative"
+                    style={{
+                      backgroundImage: gridInterval < 60
+                        ? `repeating-linear-gradient(to bottom, transparent, transparent calc(${percentage}% - 1px), rgba(0,0,0,0.1) calc(${percentage}% - 1px), rgba(0,0,0,0.1) ${percentage}%)`
                         : 'none',
-                    backgroundSize: '100% 100%'
-                  }}
-                />
-              ))}
+                    }}
+                  />
+                );
+              })}
             </div>
           ))}
         </div>
