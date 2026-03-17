@@ -18,7 +18,13 @@ export const Route = createFileRoute('/band/$bandId/')({
   },
 });
 
+import { WeeklyCalendar } from '@/widgets/weekly-calendar';
+
 // 밴드 상세 라우트 전용 화면
 function BandDetailRoutePage() {
-  return <div>BandDetailPage</div>;
+  return (
+    <div className="flex-1 overflow-hidden p-6">
+      <WeeklyCalendar />
+    </div>
+  );
 }
