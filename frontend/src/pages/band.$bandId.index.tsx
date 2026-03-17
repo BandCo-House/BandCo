@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { resolveBandDetailHeader } from './-band-header-utils';
+import { WeeklyCalendar } from '@/widgets/weekly-calendar/ui/WeeklyCalendar';
 
 export const Route = createFileRoute('/band/$bandId/')({
   component: BandDetailRoutePage,
@@ -17,8 +18,6 @@ export const Route = createFileRoute('/band/$bandId/')({
     },
   },
 });
-
-import { WeeklyCalendar } from '@/widgets/weekly-calendar';
 
 // 밴드 상세 라우트 전용 화면
 function BandDetailRoutePage() {
