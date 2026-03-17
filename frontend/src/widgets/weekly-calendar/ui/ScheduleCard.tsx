@@ -17,11 +17,13 @@ export const ScheduleCard = ({
   slotHeight,
   onClick,
 }: ScheduleCardProps) => {
-  const { schedule, startTime, endTime, partIndex, totalParts } = part;
-  const { top, height } = useScheduleLayout({
+  const { schedule, startTime, endTime, partIndex, totalParts, column, totalColumns } = part;
+  const { top, height, left, width } = useScheduleLayout({
     startTime,
     endTime,
     slotHeight,
+    column,
+    totalColumns,
   });
 
   const isContinued = partIndex > 0;
@@ -57,29 +59,33 @@ export const ScheduleCard = ({
 
   return (
     <div
-      className={`absolute left-1 right-1 px-2 py-1.5 rounded-[4px] border-l-[3px] shadow-sm cursor-pointer overflow-hidden flex flex-col gap-0.5 z-[1] hover:brightness-95 transition-all ${
-        THEMES[schedule.scheduleType] || 'bg-gray-100 text-gray-700 border-gray-300'
-      } ${isContinued ? 'opacity-90 border-dashed' : ''}`}
+      className={`absolute px-0.5 rounded-[4px] cursor-pointer overflow-hidden z-[1] hover:z-[10] hover:brightness-95 transition-all`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
+        left,
+        width,
       }}
       onClick={(e) => {
         e.stopPropagation();
         onClick(schedule.scheduleId);
       }}
     >
-      {!isContinued ? (
-        <div className="text-[11px] font-bold leading-tight truncate">
-          {schedule.ui.cardTitle}
+      <div className={`w-full h-full px-2 py-1.5 rounded-[4px] border-l-[3px] shadow-sm flex flex-col gap-0.5 ${
+        THEMES[schedule.scheduleType] || 'bg-gray-100 text-gray-700 border-gray-300'
+      } ${isContinued ? 'opacity-90 border-dashed' : ''}`}>
+        {!isContinued ? (
+          <div className="text-[11px] font-bold leading-tight truncate">
+            {schedule.ui.cardTitle}
+          </div>
+        ) : (
+          <div className="text-[10px] italic opacity-70 leading-tight">
+            (계속)
+          </div>
+        )}
+        <div className="text-[10px] opacity-80 font-medium leading-tight truncate">
+          {getTimeDisplay()}
         </div>
-      ) : (
-        <div className="text-[10px] italic opacity-70 leading-tight">
-          (계속)
-        </div>
-      )}
-      <div className="text-[10px] opacity-80 font-medium leading-tight truncate">
-        {getTimeDisplay()}
       </div>
     </div>
   );
