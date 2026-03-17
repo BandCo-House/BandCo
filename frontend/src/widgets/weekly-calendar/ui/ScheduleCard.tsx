@@ -29,19 +29,29 @@ export const ScheduleCard = ({
 
   // 시간 표시 포맷팅
   const getTimeDisplay = () => {
-    // 마지막 조각이고 자정을 넘긴 일정이었던 경우 (전체 조각이 1개 이상일 때)
-    if (isLastPart && totalParts > 1) {
-      const endDate = new Date(schedule.endAt);
-      const month = String(endDate.getMonth() + 1).padStart(2, '0');
-      const day = String(endDate.getDate()).padStart(2, '0');
-      return `~ ${month}.${day} ${endTime}`;
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${month}.${day}`;
+    };
+
+    // 자정을 넘기는 일정의 첫 번째 조각
+    if (partIndex === 0 && totalParts > 1) {
+      return `${formatDate(schedule.startAt)} ${startTime} ~`;
     }
     
-    // 첫 번째 조각이면서 자정을 넘기는 경우
-    if (partIndex === 0 && totalParts > 1) {
-      return `${startTime} ~`;
+    // 중간 조각 (하루 종일 이어짐)
+    if (isContinued && !isLastPart) {
+      return '00:00 ~';
     }
 
+    // 마지막 조각 (자정을 넘긴 일정의 끝)
+    if (isLastPart && totalParts > 1) {
+      return `~ ${formatDate(schedule.endAt)} ${endTime}`;
+    }
+
+    // 일반 당일 일정
     return `${startTime} - ${endTime === '24:00' ? '00:00' : endTime}`;
   };
 
