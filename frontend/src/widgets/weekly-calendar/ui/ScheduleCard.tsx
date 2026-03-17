@@ -67,9 +67,10 @@ export const ScheduleCard = ({
         onClick(schedule.scheduleId);
       }}
     >
-      <div className={`w-full h-full px-2 py-1.5 rounded-[4px] border-l-[3px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:shadow-2xl group-hover/card:scale-[1.02] ${
+      <div className={`w-full h-full min-h-[inherit] px-2 py-1.5 rounded-[4px] border-l-[3px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:min-h-[max(100%,100px)] group-hover/card:h-fit group-hover/card:shadow-2xl group-hover/card:scale-[1.01] ${
         THEMES[schedule.scheduleType] || 'bg-gray-100 text-gray-700 border-gray-300'
       } ${isContinued ? 'opacity-90 border-dashed' : ''}`}>
+
         {!isContinued ? (
           <div className="text-[11px] font-bold leading-tight truncate group-hover/card:whitespace-normal">
             {schedule.ui.cardTitle}
@@ -84,9 +85,11 @@ export const ScheduleCard = ({
         </div>
         
         {/* 추가 정보 (호버 시에만 명확히 노출) */}
-        <div className="hidden group-hover/card:block text-[9px] mt-1 opacity-70 border-t border-current pt-1">
-          {schedule.place?.name && <p>📍 {schedule.place.name}</p>}
-          {schedule.practice && <p>🎸 {schedule.practice.artistName}</p>}
+        <div className="hidden group-hover/card:flex flex-col gap-1 text-[9px] mt-1 opacity-70 border-t border-current pt-1">
+          {schedule.place?.name && <p className="truncate">📍 {schedule.place.name}</p>}
+          {schedule.practice && <p className="truncate">🎸 {schedule.practice.artistName} ({schedule.practice.team.name})</p>}
+          {schedule.meeting && <p>👥 참여자 {schedule.meeting.participantCount}명</p>}
+          {schedule.memo && <p className="italic mt-0.5 opacity-60">" {schedule.memo} "</p>}
         </div>
       </div>
     </div>
