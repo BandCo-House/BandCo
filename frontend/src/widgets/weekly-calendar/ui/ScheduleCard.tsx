@@ -38,28 +38,24 @@ export const ScheduleCard = ({
       return `${month}.${day}`;
     };
 
-    // 자정을 넘기는 일정의 첫 번째 조각
     if (partIndex === 0 && totalParts > 1) {
       return `${formatDate(schedule.startAt)} ${startTime} ~`;
     }
     
-    // 중간 조각 (하루 종일 이어짐)
     if (isContinued && !isLastPart) {
       return '00:00 ~';
     }
 
-    // 마지막 조각 (자정을 넘긴 일정의 끝)
     if (isLastPart && totalParts > 1) {
       return `~ ${formatDate(schedule.endAt)} ${endTime}`;
     }
 
-    // 일반 당일 일정
     return `${startTime} - ${endTime === '24:00' ? '00:00' : endTime}`;
   };
 
   return (
     <div
-      className={`absolute px-0.5 rounded-[4px] cursor-pointer overflow-hidden z-[1] hover:z-[10] hover:brightness-95 transition-all`}
+      className="absolute px-0.5 rounded-[4px] cursor-pointer z-[1] hover:z-50 group/card transition-all duration-200 ease-in-out"
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -71,11 +67,11 @@ export const ScheduleCard = ({
         onClick(schedule.scheduleId);
       }}
     >
-      <div className={`w-full h-full px-2 py-1.5 rounded-[4px] border-l-[3px] shadow-sm flex flex-col gap-0.5 ${
+      <div className={`w-full h-full px-2 py-1.5 rounded-[4px] border-l-[3px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:shadow-2xl group-hover/card:scale-[1.02] ${
         THEMES[schedule.scheduleType] || 'bg-gray-100 text-gray-700 border-gray-300'
       } ${isContinued ? 'opacity-90 border-dashed' : ''}`}>
         {!isContinued ? (
-          <div className="text-[11px] font-bold leading-tight truncate">
+          <div className="text-[11px] font-bold leading-tight truncate group-hover/card:whitespace-normal">
             {schedule.ui.cardTitle}
           </div>
         ) : (
@@ -83,8 +79,14 @@ export const ScheduleCard = ({
             (계속)
           </div>
         )}
-        <div className="text-[10px] opacity-80 font-medium leading-tight truncate">
+        <div className="text-[10px] opacity-80 font-medium leading-tight truncate group-hover/card:whitespace-normal">
           {getTimeDisplay()}
+        </div>
+        
+        {/* 추가 정보 (호버 시에만 명확히 노출) */}
+        <div className="hidden group-hover/card:block text-[9px] mt-1 opacity-70 border-t border-current pt-1">
+          {schedule.place?.name && <p>📍 {schedule.place.name}</p>}
+          {schedule.practice && <p>🎸 {schedule.practice.artistName}</p>}
         </div>
       </div>
     </div>
