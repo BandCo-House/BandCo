@@ -1,9 +1,13 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { getWeekDays } from '@/shared/lib/date';
+import { SchedulePart } from '@/entities/schedule/lib/split-schedule';
+import { ScheduleCard } from './ScheduleCard';
 
 interface WeeklyTimeGridProps {
   startDate: Date;
   onSlotClick?: (date: Date) => void;
+  onScheduleClick?: (scheduleId: string) => void;
+  schedules?: SchedulePart[];
   zoomLevel?: number;
   slotHeight?: number;
   onZoomIn?: () => void;
@@ -13,6 +17,8 @@ interface WeeklyTimeGridProps {
 export const WeeklyTimeGrid = ({
   startDate,
   onSlotClick,
+  onScheduleClick,
+  schedules = [],
   zoomLevel = 1,
   slotHeight = 64,
   onZoomIn,
@@ -22,14 +28,27 @@ export const WeeklyTimeGrid = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastWheelTime = useRef(0);
 
-  // 01:00부터 24:00까지의 시간 배열
-  const hours = Array.from({ length: 24 }, (_, i) => i + 1);
+  // 00:00부터 23:00까지의 시간 배열
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
   // 줌 레벨에 따른 CSS 변수 설정
   const style = useMemo(
     () => ({ '--slot-height': `${slotHeight}px` }) as React.CSSProperties,
     [slotHeight],
   );
+
+  // 특정 날짜의 일정 필터링
+  const getSchedulesByDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    // 주의: 로컬 시간대와 ISO 문자열 불일치 가능성이 있으므로 전처리 로직과 일치시켜야 함
+    // 하지만 일단 로컬 시간을 기준으로 split-schedule을 수정했으니, 여기서도 로컬 기준으로 변환
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const localDateStr = `${year}-${month}-${day}`;
+    
+    return schedules.filter((s) => s.date === localDateStr);
+  };
 
   // 키보드 단축키 (+, -)
   useEffect(() => {
@@ -180,8 +199,18 @@ export const WeeklyTimeGrid = ({
           {weekDays.map((day, dayIndex) => (
             <div
               key={`col-${dayIndex}`}
-              className="flex flex-col border-last:border-r-0 border-t bg-white"
+              className="flex flex-col border-last:border-r-0 border-t bg-white relative"
             >
+              {/* 일정 카드 렌더링 */}
+              {getSchedulesByDate(day).map((part, i) => (
+                <ScheduleCard
+                  key={`${part.schedule.scheduleId}-${i}`}
+                  part={part}
+                  slotHeight={slotHeight}
+                  onClick={(id) => onScheduleClick?.(id)}
+                />
+              ))}
+
               {hours.map((hour) => {
                 let gridInterval = 60;
                 if (zoomLevel >= 9) gridInterval = 5;
