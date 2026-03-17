@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { getWeekDays } from '@/shared/lib/date';
-import { SchedulePart } from '@/entities/schedule/lib/split-schedule';
+import { type SchedulePart } from '@/entities/schedule/lib/split-schedule';
 import { ScheduleCard } from './ScheduleCard';
 
 interface WeeklyTimeGridProps {
@@ -46,7 +46,7 @@ export const WeeklyTimeGrid = ({
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const localDateStr = `${year}-${month}-${day}`;
-    
+
     return schedules.filter((s) => s.date === localDateStr);
   };
 
@@ -177,10 +177,9 @@ export const WeeklyTimeGrid = ({
                   {minutes.map((minute) => (
                     <div
                       key={`${hour}-${minute}`}
-                      className="absolute w-full text-center text-[10px] leading-none"
+                      className="absolute w-full pr-2 text-right text-[10px] leading-none"
                       style={{
-                        top: `${((minute + minuteInterval / 2) / 60) * 100}%`,
-                        transform: 'translateY(-50%)',
+                        top: minute === 0 ? '4px' : `${(minute / 60) * 100}%`,
                         opacity: minute === 0 ? 1 : 0.6,
                         fontWeight: minute === 0 ? '500' : '400',
                         display:
