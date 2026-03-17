@@ -5,13 +5,15 @@ export interface SchedulePart {
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
+  partIndex: number;
+  totalParts: number;
 }
 
 /**
  * 일정을 자정 기준으로 분리하여 배열로 반환합니다.
  */
 export const splitSchedule = (schedule: ScheduleItem): SchedulePart[] => {
-  const parts: SchedulePart[] = [];
+  const parts: Omit<SchedulePart, 'totalParts'>[] = [];
   const start = new Date(schedule.startAt);
   const end = new Date(schedule.endAt);
 
@@ -31,6 +33,7 @@ export const splitSchedule = (schedule: ScheduleItem): SchedulePart[] => {
   };
 
   let current = new Date(start);
+  let index = 0;
 
   while (current < end) {
     const currentDateStr = formatDate(current);
@@ -38,17 +41,19 @@ export const splitSchedule = (schedule: ScheduleItem): SchedulePart[] => {
     nextDay.setDate(current.getDate() + 1);
     nextDay.setHours(0, 0, 0, 0);
 
-    const partEnd = nextDay < end ? nextDay : end;
-
     parts.push({
       schedule,
       date: currentDateStr,
       startTime: formatTime(current),
       endTime: nextDay < end ? '24:00' : formatTime(end),
+      partIndex: index++,
     });
 
     current = nextDay;
   }
 
-  return parts;
+  return parts.map((part) => ({
+    ...part,
+    totalParts: parts.length,
+  }));
 };
