@@ -9,6 +9,7 @@ export interface ScheduleItem {
   startAt: string; // ISO 8601 (e.g., "2026-02-18T10:00:00Z")
   endAt: string;
   place: { name: string } | null;
+  memo?: string;
   practice: {
     title: string;
     artistName: string;

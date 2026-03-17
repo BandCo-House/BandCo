@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import { ScheduleItem } from '@/entities/schedule/model/types';
+import { type ScheduleItem } from '@/entities/schedule/model/types';
 import { API_URL } from '../config';
 
 const schedules: ScheduleItem[] = [
@@ -36,7 +36,11 @@ const schedules: ScheduleItem[] = [
     place: { name: '회의실 1' },
     practice: null,
     meeting: { participantCount: 3 },
-    ui: { cardTitle: '기획 회의 A', cardSubTitle: '회의', colorToken: 'blue-400' },
+    ui: {
+      cardTitle: '기획 회의 A',
+      cardSubTitle: '회의',
+      colorToken: 'blue-400',
+    },
     status: 'SCHEDULED',
   },
   {
@@ -49,7 +53,11 @@ const schedules: ScheduleItem[] = [
     place: { name: '회의실 2' },
     practice: null,
     meeting: { participantCount: 4 },
-    ui: { cardTitle: '디자인 리뷰', cardSubTitle: '리뷰', colorToken: 'pink-400' },
+    ui: {
+      cardTitle: '디자인 리뷰',
+      cardSubTitle: '리뷰',
+      colorToken: 'pink-400',
+    },
     status: 'SCHEDULED',
   },
   // 3. 계단식 겹침 (18일 10:00 ~ 12:00, 11:00 ~ 13:00, 12:00 ~ 14:00)
@@ -63,7 +71,11 @@ const schedules: ScheduleItem[] = [
     place: { name: '연습실 B' },
     practice: { title: '연습 1', artistName: 'A', team: { name: '팀 A' } },
     meeting: null,
-    ui: { cardTitle: '파트 연습 1', cardSubTitle: '연습', colorToken: 'green-400' },
+    ui: {
+      cardTitle: '파트 연습 1',
+      cardSubTitle: '연습',
+      colorToken: 'green-400',
+    },
     status: 'SCHEDULED',
   },
   {
@@ -76,7 +88,11 @@ const schedules: ScheduleItem[] = [
     place: { name: '연습실 C' },
     practice: { title: '연습 2', artistName: 'B', team: { name: '팀 B' } },
     meeting: null,
-    ui: { cardTitle: '파트 연습 2', cardSubTitle: '연습', colorToken: 'yellow-400' },
+    ui: {
+      cardTitle: '파트 연습 2',
+      cardSubTitle: '연습',
+      colorToken: 'yellow-400',
+    },
     status: 'SCHEDULED',
   },
   {
@@ -89,7 +105,11 @@ const schedules: ScheduleItem[] = [
     place: { name: '연습실 D' },
     practice: { title: '연습 3', artistName: 'C', team: { name: '팀 C' } },
     meeting: null,
-    ui: { cardTitle: '파트 연습 3', cardSubTitle: '연습', colorToken: 'orange-400' },
+    ui: {
+      cardTitle: '파트 연습 3',
+      cardSubTitle: '연습',
+      colorToken: 'orange-400',
+    },
     status: 'SCHEDULED',
   },
   // 4. 부분 겹침 (19일 긴 일정 사이에 짧은 일정)
@@ -140,7 +160,7 @@ const schedules: ScheduleItem[] = [
       colorToken: 'blue-500',
     },
     status: 'SCHEDULED',
-  }
+  },
 ];
 
 export const scheduleHandlers = [
@@ -149,7 +169,7 @@ export const scheduleHandlers = [
       success: true,
       data: {
         items: schedules,
-      }
+      },
     });
   }),
 ];

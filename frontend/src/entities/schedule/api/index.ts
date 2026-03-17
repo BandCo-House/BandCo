@@ -1,5 +1,5 @@
 import { apiGet } from '@/shared/api/client';
-import { GetSchedulesResponse } from '../model/types';
+import { type GetSchedulesResponse } from '../model/types';
 
 export const getSchedules = (
   spaceId: string,
