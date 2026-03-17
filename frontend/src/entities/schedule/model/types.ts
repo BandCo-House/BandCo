@@ -1,27 +1,30 @@
-export type ScheduleType = 'ensemble' | 'meeting';
+export type ScheduleType = 'PRACTICE' | 'MEETING';
+export type ScheduleStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
 
-export interface BaseSchedule {
-  id: string;
-  type: ScheduleType;
-  date: string;
-  startTime: string;
-  endTime: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface EnsembleSchedule extends BaseSchedule {
-  type: 'ensemble';
-  place: string;
-  songId: string;
-  teamId: string | null;
-}
-
-export interface MeetingSchedule extends BaseSchedule {
-  type: 'meeting';
+export interface ScheduleItem {
+  scheduleId: string;
+  spaceId: string;
+  scheduleType: ScheduleType;
   title: string;
-  memberIds: string[];
-  memo: string;
+  startAt: string; // ISO 8601 (e.g., "2026-02-18T10:00:00Z")
+  endAt: string;
+  place: { name: string } | null;
+  practice: {
+    title: string;
+    artistName: string;
+    team: { name: string };
+  } | null;
+  meeting: {
+    participantCount: number;
+  } | null;
+  ui: {
+    cardTitle: string;
+    cardSubTitle: string;
+    colorToken: string;
+  };
+  status: ScheduleStatus;
 }
 
-export type Schedule = EnsembleSchedule | MeetingSchedule;
+export interface GetSchedulesResponse {
+  items: ScheduleItem[];
+}
