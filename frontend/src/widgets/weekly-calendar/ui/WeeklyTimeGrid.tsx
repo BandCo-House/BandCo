@@ -94,7 +94,10 @@ export const WeeklyTimeGrid = ({
   }, [onZoomIn, onZoomOut]);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden" style={style}>
+    <div
+      className="flex flex-col flex-1 overflow-hidden rounded-[8px] shadow-xl/5"
+      style={style}
+    >
       {/* Header: 요일 및 날짜 */}
       <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-gray-100 bg-[#FFFFFF66] sticky top-0 z-10 h-12.5">
         {/* 좌상단 빈칸 */}
@@ -131,7 +134,7 @@ export const WeeklyTimeGrid = ({
       {/* Body: 시간 레이블 + 슬롯 */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto custom-scrollbar "
+        className="flex-1 overflow-y-scroll max-h-200"
       >
         <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] gap-x-0.5">
           {/* 시간 레이블 (1 Column) */}
