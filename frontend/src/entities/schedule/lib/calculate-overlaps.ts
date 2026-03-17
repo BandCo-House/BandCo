@@ -42,7 +42,6 @@ export const calculateOverlaps = (parts: SchedulePart[]): SchedulePart[] => {
     const end = timeToMinutes(part.endTime);
 
     if (currentGroup.length > 0 && start >= groupMaxEnd) {
-      // 새로운 그룹 시작 전, 이전 그룹의 컬럼 배정 처리
       processGroup(currentGroup, results);
       currentGroup = [];
       groupMaxEnd = 0;
@@ -60,15 +59,14 @@ export const calculateOverlaps = (parts: SchedulePart[]): SchedulePart[] => {
 };
 
 /**
- * 한 그룹(Cluster) 내에서 각 일정의 열(Column)을 배정합니다.
+ * 한 그룹(Cluster) 내에서 각 일정의 열(Column)을 배정하고 최적 너비를 계산합니다.
  */
 function processGroup(group: SchedulePart[], results: SchedulePart[]) {
   const columns: SchedulePart[][] = [];
 
+  // 1. 그리디 컬럼 배정
   for (const part of group) {
     let placed = false;
-
-    // 각 열을 확인하며 겹치지 않는 첫 번째 열에 배정
     for (let i = 0; i < columns.length; i++) {
       const lastInCol = columns[i][columns[i].length - 1];
       if (!isOverlapping(lastInCol, part)) {
@@ -78,17 +76,23 @@ function processGroup(group: SchedulePart[], results: SchedulePart[]) {
         break;
       }
     }
-
-    // 모든 기존 열과 겹치면 새로운 열 생성
     if (!placed) {
       part.column = columns.length;
       columns.push([part]);
     }
   }
 
-  // 전체 열 개수(totalColumns)를 그룹 내 모든 일정에 부여
+  // 2. 각 일정별로 자신의 시간대에 겹치는 최대 컬럼 수 계산 (지능형 너비)
   for (const part of group) {
-    part.totalColumns = columns.length;
+    let maxOverlapAtAnyPoint = 0;
+    
+    // 일정의 시작부터 끝까지 매 분(또는 주요 시점)마다 겹치는 컬럼 수를 체크할 수 있으나,
+    // 성능을 위해 그룹 내 다른 일정들과의 교차 여부로 계산
+    const overlappingParts = group.filter(other => isOverlapping(part, other));
+    const usedColumns = new Set(overlappingParts.map(p => p.column));
+    
+    // 이 일정이 속한 시간대에 활성화된 최대 컬럼 인덱스 + 1
+    part.totalColumns = Math.max(...Array.from(usedColumns as Set<number>)) + 1;
     results.push(part);
   }
 }
