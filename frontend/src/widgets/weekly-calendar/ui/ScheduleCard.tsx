@@ -63,7 +63,7 @@ export const ScheduleCard = ({
 
   return (
     <div
-      className="absolute rounded-[4px] cursor-pointer z-[1] hover:z-50 border-t-accent border-t border-b border-b-accent group/card transition-all duration-200 ease-in-out"
+      className="absolute rounded-[4px] cursor-pointer z-[1] hover:z-50 group/card transition-all duration-200 ease-in-out"
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -76,7 +76,7 @@ export const ScheduleCard = ({
       }}
     >
       <div
-        className={`w-full h-full min-h-[inherit] px-2 py-1.5 rounded-[4px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:min-h-[max(100%,100px)] group-hover/card:h-fit group-hover/card:shadow-2xl  ${
+        className={`border-t-accent border-t border-b border-b-accent w-full h-full min-h-[inherit] px-2 py-1.5 rounded-[4px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:min-h-[max(100%,100px)] group-hover/card:h-fit group-hover/card:shadow-2xl  ${
           THEMES[schedule.scheduleType] ||
           'bg-gray-100 text-gray-700 border-gray-300'
         } ${isContinued ? 'opacity-90 border-dashed' : ''}`}
