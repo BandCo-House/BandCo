@@ -76,7 +76,7 @@ export const ScheduleCard = ({
       }}
     >
       <div
-        className={`w-full h-full min-h-[inherit] px-2 py-1.5 rounded-[4px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:min-h-[max(100%,100px)] group-hover/card:h-fit group-hover/card:shadow-2xl group-hover/card:scale-[1.01] ${
+        className={`w-full h-full min-h-[inherit] px-2 py-1.5 rounded-[4px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:min-h-[max(100%,100px)] group-hover/card:h-fit group-hover/card:shadow-2xl  ${
           THEMES[schedule.scheduleType] ||
           'bg-gray-100 text-gray-700 border-gray-300'
         } ${isContinued ? 'opacity-90 border-dashed' : ''}`}
