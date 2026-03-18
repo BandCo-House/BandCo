@@ -39,7 +39,6 @@ export const WeeklyTimeGrid = ({
 
   // 특정 날짜의 일정 필터링
   const getSchedulesByDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
     // 주의: 로컬 시간대와 ISO 문자열 불일치 가능성이 있으므로 전처리 로직과 일치시켜야 함
     // 하지만 일단 로컬 시간을 기준으로 split-schedule을 수정했으니, 여기서도 로컬 기준으로 변환
     const year = date.getFullYear();
@@ -253,7 +252,7 @@ export const WeeklyTimeGrid = ({
                         clickedDate.setHours(hour, minutes, 0, 0);
                         onSlotClick?.(clickedDate);
                       }}
-                      className="absolute inset-0 cursor-pointer transition-colors duration-200"
+                      className="absolute inset-0 transition-colors duration-200"
                     />
                   </div>
                 );

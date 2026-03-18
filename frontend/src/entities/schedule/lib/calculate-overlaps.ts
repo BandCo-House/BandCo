@@ -84,13 +84,13 @@ function processGroup(group: SchedulePart[], results: SchedulePart[]) {
 
   // 2. 각 일정별로 자신의 시간대에 겹치는 최대 컬럼 수 계산 (지능형 너비)
   for (const part of group) {
-    let maxOverlapAtAnyPoint = 0;
-    
     // 일정의 시작부터 끝까지 매 분(또는 주요 시점)마다 겹치는 컬럼 수를 체크할 수 있으나,
     // 성능을 위해 그룹 내 다른 일정들과의 교차 여부로 계산
-    const overlappingParts = group.filter(other => isOverlapping(part, other));
-    const usedColumns = new Set(overlappingParts.map(p => p.column));
-    
+    const overlappingParts = group.filter((other) =>
+      isOverlapping(part, other),
+    );
+    const usedColumns = new Set(overlappingParts.map((p) => p.column));
+
     // 이 일정이 속한 시간대에 활성화된 최대 컬럼 인덱스 + 1
     part.totalColumns = Math.max(...Array.from(usedColumns as Set<number>)) + 1;
     results.push(part);

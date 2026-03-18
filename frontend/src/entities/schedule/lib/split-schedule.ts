@@ -7,6 +7,8 @@ export interface SchedulePart {
   endTime: string; // HH:mm
   partIndex: number;
   totalParts: number;
+  column?: number; // 겹치는 일정들 사이에서의 컬럼 위치 (0부터 시작)
+  totalColumns?: number; // 겹치는 일정들 사이에서의 총 컬럼 수
 }
 
 /**
