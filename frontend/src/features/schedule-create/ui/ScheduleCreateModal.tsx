@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
 import { TypeSelectStep } from './steps/TypeSelectStep';
@@ -26,10 +25,17 @@ export const ScheduleCreateModal = ({
   const [scheduleType, setScheduleType] = useState<ScheduleType | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
+  const toISODateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // 통합 폼 상태
   const [formData, setFormData] = useState<ScheduleCreateFormState>({
     title: '',
-    date: initialDate ? format(initialDate, 'yyyy-MM-dd') : '',
+    date: initialDate ? toISODateString(initialDate) : '',
     startTime: '19:00',
     endTime: '21:00',
     placeId: null,
