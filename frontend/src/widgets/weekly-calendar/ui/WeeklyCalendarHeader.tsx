@@ -8,6 +8,7 @@ interface WeeklyCalendarHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  onAddClick: () => void;
 }
 
 export const WeeklyCalendarHeader = ({
@@ -15,6 +16,7 @@ export const WeeklyCalendarHeader = ({
   onPrev,
   onNext,
   onToday,
+  onAddClick,
 }: WeeklyCalendarHeaderProps) => {
   const startOfWeek = getStartOfWeek(currentDate);
   const endOfWeek = addDays(startOfWeek, 6);
@@ -59,7 +61,10 @@ export const WeeklyCalendarHeader = ({
       </div>
 
       {/* 일정 추가 버튼 */}
-      <button className="flex items-center gap-1.5 px-4 py-2 bg-accent border border-accent-surface hover:bg-[#b83c3c] text-secondary rounded-full transition-colors shadow-sm">
+      <button
+        onClick={onAddClick}
+        className="flex items-center gap-1.5 px-4 py-2 bg-accent border border-accent-surface hover:bg-[#b83c3c] text-secondary rounded-full transition-colors shadow-sm"
+      >
         일정 <IconMap.Add width={14} height={14} className="text-secondary" />
       </button>
     </div>

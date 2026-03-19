@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { getStartOfWeek, addDays } from '@/shared/lib/date';
 import { useSchedules } from '@/entities/schedule/model/queries';
+import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreateModal';
 import { WeeklyCalendarHeader } from './WeeklyCalendarHeader';
 import { WeeklyTimeGrid } from './WeeklyTimeGrid';
 import { useCalendarZoom } from '../model/use-calendar-zoom';
@@ -9,6 +10,7 @@ import { useCalendarZoom } from '../model/use-calendar-zoom';
 export const WeeklyCalendar = () => {
   const { bandId } = useParams({ strict: false });
   const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { zoomLevel, slotHeight, zoomIn, zoomOut } = useCalendarZoom();
 
   const startOfWeek = getStartOfWeek(currentDate);
@@ -31,6 +33,9 @@ export const WeeklyCalendar = () => {
   const handleNextWeek = () => setCurrentDate((prev) => addDays(prev, 7));
   const handleToday = () => setCurrentDate(new Date());
 
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
   const handleScheduleClick = (id: string) => {
     console.log('Schedule clicked:', id);
     // TODO: 상세보기 모달 오픈 로직 추가 예정
@@ -43,6 +48,7 @@ export const WeeklyCalendar = () => {
         onPrev={handlePrevWeek}
         onNext={handleNextWeek}
         onToday={handleToday}
+        onAddClick={handleOpenModal}
       />
       <div className="relative flex-1 overflow-hidden">
         {isLoading && (
@@ -60,6 +66,12 @@ export const WeeklyCalendar = () => {
           onZoomOut={zoomOut}
         />
       </div>
+
+      <ScheduleCreateModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        initialDate={currentDate}
+      />
     </div>
   );
 };
