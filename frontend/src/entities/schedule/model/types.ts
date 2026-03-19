@@ -1,5 +1,20 @@
-export type ScheduleType = 'PRACTICE' | 'MEETING';
-export type ScheduleStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
+export type ScheduleType = 'PRACTICE' | 'PERFORMANCE' | 'MEETING' | 'ETC';
+export type ScheduleStatus = 'SCHEDULED' | 'CANCELLED' | 'DONE';
+
+export interface CreateScheduleRequest {
+  title: string;
+  scheduleType: ScheduleType;
+  startAt: string; // ISO 8601
+  endAt: string;   // ISO 8601
+  placeId?: string;
+  memo?: string;
+  status: ScheduleStatus;
+  // 연습(PRACTICE) 전용
+  songId?: string;
+  teamId?: string;
+  // 회의(MEETING) 전용
+  participantUserIds?: string[];
+}
 
 export interface ScheduleItem {
   scheduleId: string;
