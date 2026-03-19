@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
 import { TypeSelectStep } from './steps/TypeSelectStep';
 import { PracticeBasicStep } from './steps/PracticeBasicStep';
@@ -7,9 +5,7 @@ import { SongSelectStep } from './steps/SongSelectStep';
 import { TeamSelectStep } from './steps/TeamSelectStep';
 import { MeetingBasicStep } from './steps/MeetingBasicStep';
 import { MemberSelectStep } from './steps/MemberSelectStep';
-import { useCreateSchedule } from '../api/useCreateSchedule';
-import type { ScheduleType } from '@/entities/schedule/model/types';
-import type { ScheduleCreateFormState } from '../model/types';
+import { useScheduleCreateForm } from '../model/useScheduleCreateForm';
 
 interface ScheduleCreateModalProps {
   isOpen: boolean;
@@ -22,86 +18,9 @@ export const ScheduleCreateModal = ({
   onClose,
   initialDate,
 }: ScheduleCreateModalProps) => {
-  const [scheduleType, setScheduleType] = useState<ScheduleType | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
-
-  const toISODateString = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  // 통합 폼 상태
-  const [formData, setFormData] = useState<ScheduleCreateFormState>({
-    title: '',
-    date: initialDate ? toISODateString(initialDate) : '',
-    startTime: '19:00',
-    endTime: '21:00',
-    placeId: null,
-    songId: null,
-    teamId: null,
-    participantUserIds: [],
-    memo: '',
-  });
-
-  const handleTypeSelect = (type: ScheduleType) => {
-    setScheduleType(type);
-    setCurrentStep(1);
-  };
-
-  const updateForm = (updates: Partial<ScheduleCreateFormState>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const handleNextStep = () => {
-    setCurrentStep((prev) => prev + 1);
-  };
-
-  const { mutateAsync: createSchedule, isPending } = useCreateSchedule();
-
-  const handleSubmit = async () => {
-    if (isPending) return;
-    if (!scheduleType) return;
-
-    try {
-      const startAt = `${formData.date}T${formData.startTime}:00Z`;
-      const endAt = `${formData.date}T${formData.endTime}:00Z`;
-
-      if (scheduleType === 'PRACTICE') {
-        if (!formData.songId || !formData.teamId || !formData.placeId) return;
-
-        // PRACTICE 제목 자동 생성 (실제 구현 시 선택된 곡/팀 정보가 필요하지만 현재는 ID만 있음)
-        // TODO: 곡/팀 정보를 가져와서 제목 구성하는 로직 보완 필요
-        const generatedTitle = `합주 연습 (${formData.date})`;
-
-        await createSchedule({
-          title: generatedTitle,
-          scheduleType: 'PRACTICE',
-          startAt,
-          endAt,
-          placeId: formData.placeId,
-          songId: formData.songId,
-          teamId: formData.teamId,
-          status: 'SCHEDULED',
-        });
-      } else if (scheduleType === 'MEETING') {
-        await createSchedule({
-          title: formData.title,
-          scheduleType: 'MEETING',
-          startAt,
-          endAt,
-          participantUserIds: formData.participantUserIds,
-          memo: formData.memo,
-          status: 'SCHEDULED',
-        });
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const { state, actions } = useScheduleCreateForm(onClose, initialDate);
+  const { scheduleType, currentStep, formData } = state;
+  const { handleTypeSelect, updateForm, handleNextStep, handleSubmit } = actions;
 
   const renderStep = () => {
     if (currentStep === 0) {
