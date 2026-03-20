@@ -1,5 +1,4 @@
-export interface Band {
-  id: string;
-  name: string;
-  memberCount: number;
-}
+import type { z } from 'zod';
+import { bandSchema } from './schema';
+
+export type Band = z.infer<typeof bandSchema>;

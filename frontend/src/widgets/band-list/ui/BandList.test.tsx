@@ -1,9 +1,13 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse, delay } from 'msw';
 import { server } from '@/mocks/server';
 import { BandList } from './BandList';
+
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => vi.fn(),
+}));
 
 const renderWithClient = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({
@@ -18,8 +22,11 @@ describe('BandList', () => {
   it('밴드 목록을 렌더링한다', async () => {
     renderWithClient(<BandList />);
 
-    expect(await screen.findByText('홍대 인디 밴드')).toBeInTheDocument();
-    expect(screen.getByText('직장인 연합 밴드')).toBeInTheDocument();
+    expect(await screen.findByText('합주하자')).toBeInTheDocument();
+    expect(screen.getByText('락스타')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '밴드 만들기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '초대 코드 입력' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '목록 편집' })).toBeInTheDocument();
   });
 
   it('로딩 중일 때 로딩 상태를 표시한다', async () => {
@@ -37,7 +44,15 @@ describe('BandList', () => {
   it('밴드가 없을 때 빈 상태를 표시한다', async () => {
     server.use(
       http.get('/api/bands', () => {
-        return HttpResponse.json({ success: true, data: [] });
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '내 밴드 목록 조회 성공',
+          data: {
+            totalCount: 0,
+            bands: [],
+          },
+        });
       }),
     );
 

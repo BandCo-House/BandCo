@@ -33,7 +33,11 @@ describe('useBandCreate', () => {
       wrapper: createTestWrapper(),
     });
 
-    result.current.submit({ name: '새로운 밴드' });
+    void result.current.submit({
+      name: '새로운 밴드',
+      description: '주 1회 합주',
+      visibility: true,
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(true);
@@ -61,7 +65,11 @@ describe('useBandCreate', () => {
       wrapper: createTestWrapper(),
     });
 
-    result.current.submit({ name: '실패하는 밴드' });
+    void result.current.submit({
+      name: '실패하는 밴드',
+      description: null,
+      visibility: true,
+    });
 
     await waitFor(
       () => {

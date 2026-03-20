@@ -11,34 +11,71 @@ afterEach(() => {
 });
 
 describe('createBand 어댑터', () => {
-  it('POST /bands 를 올바른 body로 호출하고 응답(id, name)을 반환한다', async () => {
-    const requestBody = { name: '우리 밴드' };
-    const responseData = { id: 'band-123', name: '우리 밴드' };
+  it('POST /bands 를 올바른 body로 호출하고 응답 band를 반환한다', async () => {
+    const requestBody = {
+      name: '우리 밴드',
+      description: '주 1회 합주',
+      visibility: true,
+    };
+    const responseData = {
+      band: {
+        id: 'band-123',
+        name: '우리 밴드',
+        description: '주 1회 합주',
+        visibility: true,
+        inviteCode: 'INV123',
+        bmId: 'bm-1',
+        createdAt: '2026-03-03T18:20:10.123+09:00',
+        updatedAt: '2026-03-03T18:20:10.123+09:00',
+      },
+    };
 
     mock.onPost('/bands', requestBody).reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '밴드 생성 성공',
       data: responseData,
     });
 
     const result = await createBand(requestBody);
 
-    expect(result).toEqual(responseData);
+    expect(result).toEqual(responseData.band);
   });
 
-  it('name이 서버에 그대로 전달된다', async () => {
+  it('name, description, visibility가 서버에 그대로 전달된다', async () => {
     let capturedBody: unknown;
 
     mock.onPost('/bands').reply((config) => {
       capturedBody = JSON.parse(config.data as string);
       return [
         200,
-        { success: true, data: { id: 'band-456', name: '테스트 밴드' } },
+        {
+          status: 'success',
+          error: null,
+          message: '밴드 생성 성공',
+          data: {
+            band: {
+              id: 'band-456',
+              name: '테스트 밴드',
+              description: null,
+              visibility: true,
+              inviteCode: 'INV456',
+              bmId: 'bm-1',
+              createdAt: '2026-03-03T18:20:10.123+09:00',
+              updatedAt: '2026-03-03T18:20:10.123+09:00',
+            },
+          },
+        },
       ];
     });
 
-    await createBand({ name: '테스트 밴드' });
+    await createBand({ name: '테스트 밴드', description: null, visibility: true });
 
-    expect(capturedBody).toEqual({ name: '테스트 밴드' });
+    expect(capturedBody).toEqual({
+      name: '테스트 밴드',
+      description: null,
+      visibility: true,
+    });
   });
 
   it('서버 에러(422) 시 reject된다', async () => {
@@ -47,6 +84,31 @@ describe('createBand 어댑터', () => {
       error: { code: 'INVALID_INPUT', message: '이름이 올바르지 않습니다' },
     });
 
-    await expect(createBand({ name: '' })).rejects.toThrow();
+    await expect(
+      createBand({ name: '', description: null, visibility: true }),
+    ).rejects.toThrow();
+  });
+
+  it('필수 응답 필드가 누락되면 reject된다', async () => {
+    mock.onPost('/bands').reply(200, {
+      status: 'success',
+      error: null,
+      message: '밴드 생성 성공',
+      data: {
+        band: {
+          id: 'band-123',
+          name: '우리 밴드',
+          description: '주 1회 합주',
+          visibility: true,
+          inviteCode: 'INV123',
+          createdAt: '2026-03-03T18:20:10.123+09:00',
+          updatedAt: '2026-03-03T18:20:10.123+09:00',
+        },
+      },
+    });
+
+    await expect(
+      createBand({ name: '우리 밴드', description: '주 1회 합주', visibility: true }),
+    ).rejects.toThrow();
   });
 });
