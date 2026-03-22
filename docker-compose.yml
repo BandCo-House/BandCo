@@ -16,38 +16,12 @@ services:
       retries: 10
     networks:
       - jamplay_network
-  db-setup:
-    image: postgres:16.13
-    container_name: jamplay_db_setup
-    env_file:
-      - ./backend/.env.development
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./backend/prisma/sql/create-app-role.sql:/scripts/create-app-role.sql:ro
-    command: >
-      sh -c "
-      export PGPASSWORD=$${POSTGRES_PASSWORD} &&
-      psql
-      -h db
-      -p 5432
-      -U $${POSTGRES_USER}
-      -d $${POSTGRES_DB}
-      -v db_name=$${POSTGRES_DB}
-      -v db_app_user=$${DB_APP_USER}
-      -v db_app_password=$${DB_APP_PASSWORD}
-      -f /scripts/create-app-role.sql
-      "
-    restart: "no"
-    networks:
-      - jamplay_network
   backend:
     image: node:24
     container_name: jamplay_backend
     depends_on:
-      db-setup:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
     env_file:
       - ./backend/.env.development
     ports:
@@ -58,7 +32,6 @@ services:
     working_dir: /app
     command: >
       sh -c "
-      export DATABASE_URL=postgresql://$${DB_APP_USER}:$${DB_APP_PASSWORD}@db:5432/$${POSTGRES_DB}?schema=public &&
       corepack enable &&
       pnpm install --force &&
       pnpm prisma:generate &&
