@@ -3,8 +3,11 @@ import {
   bandPerformanceTabs,
   resolvePerformanceHeader,
 } from './-band-header-utils';
+import { WeeklyCalendar } from '@/widgets/weekly-calendar/ui/WeeklyCalendar';
 
-export const Route = createFileRoute('/band/$bandId/performance/$performanceId/')({
+export const Route = createFileRoute(
+  '/band/$bandId/performance/$performanceId/',
+)({
   component: BandPerformanceRoutePage,
   staticData: {
     header: {
@@ -27,5 +30,9 @@ export const Route = createFileRoute('/band/$bandId/performance/$performanceId/'
 
 // 공연 상세(캘린더) 라우트 전용 화면
 function BandPerformanceRoutePage() {
-  return <div>BandPerformancePage</div>;
+  return (
+    <div>
+      <WeeklyCalendar />
+    </div>
+  );
 }
