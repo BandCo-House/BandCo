@@ -70,4 +70,17 @@ describe('splitSchedule', () => {
     expect(results[2].startTime).toBe('00:00');
     expect(results[2].endTime).toBe('15:00');
   });
+
+  it('정확히 자정에 끝나는 일정이면 전날 24:00으로 끝나는 하나의 조각을 반환한다', () => {
+    const midnightEndSchedule = {
+      ...baseSchedule,
+      startAt: '2026-03-17T22:00:00',
+      endAt: '2026-03-18T00:00:00',
+    };
+    const results = splitSchedule(midnightEndSchedule);
+    expect(results).toHaveLength(1);
+    expect(results[0].date).toBe('2026-03-17');
+    expect(results[0].startTime).toBe('22:00');
+    expect(results[0].endTime).toBe('24:00');
+  });
 });

@@ -47,7 +47,7 @@ export const splitSchedule = (schedule: ScheduleItem): SchedulePart[] => {
       schedule,
       date: currentDateStr,
       startTime: formatTime(current),
-      endTime: nextDay < end ? '24:00' : formatTime(end),
+      endTime: nextDay <= end ? '24:00' : formatTime(end),
       partIndex: index++,
     });
 

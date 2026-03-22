@@ -10,7 +10,7 @@ const schedules: ScheduleItem[] = [
     scheduleType: 'PRACTICE',
     title: '좋은 날 합주',
     startAt: '2026-03-17T22:00:00',
-    endAt: '2026-03-18T02:00:00',
+    endAt: '2026-03-18T00:00:00',
     place: { name: '연습실 A' },
     practice: {
       title: '좋은 날',
