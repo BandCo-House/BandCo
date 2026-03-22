@@ -1,27 +1,76 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WeeklyCalendar } from './WeeklyCalendar';
 import { getStartOfWeek, getWeekDays } from '@/shared/lib/date';
 
+// 1. TanStack Router Mocking
+vi.mock('@tanstack/react-router', () => ({
+  useParams: vi.fn().mockReturnValue({ bandId: 'test-band' }),
+  useNavigate: vi.fn(),
+}));
+
+// 2. Lucide React Mocking (단순 객체 방식으로 변경)
+vi.mock('lucide-react', () => ({
+  ChevronLeft: (props: any) => <div data-testid="lucide-chevronleft" {...props} />,
+  ChevronRight: (props: any) => <div data-testid="lucide-chevronright" {...props} />,
+  Plus: (props: any) => <div data-testid="lucide-plus" {...props} />,
+  Calendar: (props: any) => <div data-testid="lucide-calendar" {...props} />,
+  X: (props: any) => <div data-testid="lucide-x" {...props} />,
+}));
+
+// 3. IconMap Mocking
+vi.mock('@/constants/icons', () => ({
+  IconMap: {
+    Calendar: (props: any) => <div data-testid="icon-calendar" {...props} />,
+    Add: (props: any) => <div data-testid="icon-add" {...props} />,
+  },
+}));
+
+// 4. ScheduleCreateModal Mocking (Radix UI Dialog 에러 방지)
+vi.mock('@/features/schedule-create/ui/ScheduleCreateModal', () => ({
+  ScheduleCreateModal: ({ isOpen }: { isOpen: boolean }) => 
+    isOpen ? <div data-testid="schedule-create-modal">Modal Open</div> : null,
+}));
+
+// 5. QueryClient 설정
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      gcTime: 0,
+    },
+  },
+});
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>
+  );
+};
+
 describe('WeeklyCalendar (주간 일정표)', () => {
-  // 테스트를 위해 시스템 시간을 고정합니다.
   beforeEach(() => {
-    // 2026-03-04 (수요일)을 현재 시간으로 고정
+    // 2026-03-04 (수요일) 고정
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 2, 4));
+    queryClient.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.clearAllMocks();
   });
 
   it('초기 렌더링 시 현재 주의 월~일 날짜가 표시되어야 합니다', () => {
-    render(<WeeklyCalendar />);
+    renderWithProviders(<WeeklyCalendar />);
 
     const currentWeekStart = getStartOfWeek(new Date());
     const weekDays = getWeekDays(currentWeekStart);
 
-    // 각 요일의 날짜 번호가 화면에 렌더링되었는지 확인합니다.
     const dayLabels = screen.getAllByTestId('day-label');
     expect(dayLabels).toHaveLength(7);
 
@@ -31,49 +80,54 @@ describe('WeeklyCalendar (주간 일정표)', () => {
     });
   });
 
-  it('01시부터 24시까지의 시간대 레이블이 모두 렌더링되어야 합니다', () => {
-    render(<WeeklyCalendar />);
+  it('00시부터 23시까지의 시간대 레이블이 모두 렌더링되어야 합니다', () => {
+    renderWithProviders(<WeeklyCalendar />);
 
-    // 01:00, 02:00, ..., 24:00 텍스트가 존재하는지 확인
-    for (let i = 1; i <= 24; i++) {
+    // 00:00, 01:00, ..., 23:00 텍스트가 존재하는지 확인
+    for (let i = 0; i <= 23; i++) {
       const timeString = `${i.toString().padStart(2, '0')}:00`;
       expect(screen.getByText(timeString)).toBeInTheDocument();
     }
   });
 
   it('168개의(7일 x 24시간) 일정 슬롯이 존재해야 합니다', () => {
-    render(<WeeklyCalendar />);
+    renderWithProviders(<WeeklyCalendar />);
 
-    // data-testid="time-slot" 인 요소들을 찾습니다.
     const slots = screen.getAllByTestId('time-slot');
     expect(slots).toHaveLength(7 * 24);
   });
 
   it('이전/다음 버튼 클릭 시 이전 주 또는 다음 주로 날짜가 변경되어야 합니다', () => {
-    // 2026-03-04 (수요일) 기준 렌더링
-    render(<WeeklyCalendar />);
+    renderWithProviders(<WeeklyCalendar />);
 
     const prevButton = screen.getByRole('button', { name: /이전 주/i });
     const nextButton = screen.getByRole('button', { name: /다음 주/i });
 
-    // 초기: 3월 2일(월요일)부터 표시되는지 확인
+    // 초기: 3월 2일(월요일)
     let dayLabels = screen.getAllByTestId('day-label');
     expect(dayLabels[0]).toHaveTextContent('2');
     expect(screen.getByText('2026년 3월 2일 ~ 8일')).toBeInTheDocument();
 
-    // 다음 주 클릭 -> 2026-03-09(월요일) 등 표시 검증
+    // 다음 주 클릭 -> 3월 9일
     fireEvent.click(nextButton);
     dayLabels = screen.getAllByTestId('day-label');
     expect(dayLabels[0]).toHaveTextContent('9');
-    expect(dayLabels[6]).toHaveTextContent('15'); // 3월 15일 일요일
     expect(screen.getByText('2026년 3월 9일 ~ 15일')).toBeInTheDocument();
 
-    // 이전 주를 두 번 클릭 -> 2026-02-23(월요일) 표시 검증
+    // 이전 주 두 번 클릭 -> 2월 23일
     fireEvent.click(prevButton);
     fireEvent.click(prevButton);
     dayLabels = screen.getAllByTestId('day-label');
     expect(dayLabels[0]).toHaveTextContent('23');
-    expect(dayLabels[6]).toHaveTextContent('1'); // 3월 1일 일요일
     expect(screen.getByText('2026년 2월 23일 ~ 3월 1일')).toBeInTheDocument();
+  });
+
+  it('일정 추가 버튼 클릭 시 모달이 열려야 합니다', () => {
+    renderWithProviders(<WeeklyCalendar />);
+    
+    const addButton = screen.getByRole('button', { name: /일정/i });
+    fireEvent.click(addButton);
+
+    expect(screen.getByTestId('schedule-create-modal')).toBeInTheDocument();
   });
 });

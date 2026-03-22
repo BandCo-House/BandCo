@@ -41,6 +41,7 @@ export const WeeklyCalendarHeader = ({
           <Button
             onClick={onPrev}
             size={'icon'}
+            aria-label="이전 주"
             className="w-9 h-8 bg-white  border-gray-200 rounded-[8px] hover:bg-gray-50 "
           >
             <ChevronLeft size={16} className="stroke-primary-light " />
@@ -53,6 +54,7 @@ export const WeeklyCalendarHeader = ({
           <Button
             onClick={onNext}
             size={'icon'}
+            aria-label="다음 주"
             className="w-9 h-8 bg-white border-gray-200 rounded-[8px] hover:bg-gray-50 "
           >
             <ChevronRight size={16} className="stroke-primary-light" />
