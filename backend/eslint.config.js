@@ -5,6 +5,10 @@ import importPlugin from 'eslint-plugin-import';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import prettierPlugin from 'eslint-plugin-prettier';
 import { builtinModules } from 'node:module';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 export default [
   // ------------------------------------------------------------
@@ -56,7 +60,8 @@ export default [
 
       parser: tseslint.parser,
       parserOptions: {
-        projectService: true,
+        project: ['./tsconfig.eslint.json'],
+        tsconfigRootDir: currentDirectory,
       },
     },
 
