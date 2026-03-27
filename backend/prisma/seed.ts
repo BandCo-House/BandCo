@@ -1,3 +1,4 @@
+import { getConflictingSeedUserIds, type SeedUserDefinition } from '../src/database/prisma/seed-user-conflict.util';
 import { PrismaClient } from '../src/generated/prisma';
 
 const prisma = new PrismaClient();
@@ -58,6 +59,24 @@ const seedIds = {
   },
 } as const;
 
+const seedUsers: readonly SeedUserDefinition[] = [
+  {
+    id: seedIds.users.minjun,
+    email: 'minjun@jamplay.local',
+    status: 'ACTIVE',
+  },
+  {
+    id: seedIds.users.seoyeon,
+    email: 'seoyeon@jamplay.local',
+    status: 'ACTIVE',
+  },
+  {
+    id: seedIds.users.jiho,
+    email: 'jiho@jamplay.local',
+    status: 'ACTIVE',
+  },
+] as const;
+
 /**
  * 로컬 개발 환경에서 바로 화면과 API를 확인할 수 있도록
  * 최소한의 데모 데이터를 고정 ID로 채운다.
@@ -86,42 +105,65 @@ async function seedLocalDemoData(): Promise<void> {
  * @returns {Promise<void>} 사용자 데이터가 준비되면 완료된다.
  */
 async function upsertUsers(): Promise<void> {
-  await prisma.user.upsert({
-    where: { id: seedIds.users.minjun },
-    update: {
-      email: 'minjun@jamplay.local',
-      status: 'ACTIVE',
+  await clearEmailsFromConflictingUsers();
+
+  for (const seedUser of seedUsers) {
+    await prisma.user.upsert({
+      where: { id: seedUser.id },
+      update: {
+        email: seedUser.email,
+        status: seedUser.status,
+      },
+      create: {
+        id: seedUser.id,
+        email: seedUser.email,
+        status: seedUser.status,
+      },
+    });
+  }
+}
+
+/**
+ * 이전 시드 실행이나 수동 데이터 입력으로 남아 있는 사용자 중에서
+ * 현재 시드가 사용할 이메일과 같지만 ID가 다른 레코드의 이메일만 먼저 비운다.
+ *
+ * 시드는 다른 테이블에서 고정 사용자 ID를 참조하므로,
+ * 기존 사용자를 삭제하면 FK 제약이 걸릴 수 있다.
+ * 그래서 로컬 더미 데이터 시드에서는 참조 관계는 유지하고,
+ * 이메일 유니크 충돌만 해소하는 방식으로 정리한다.
+ *
+ * @returns {Promise<void>} 이메일 충돌 정리가 끝나면 완료된다.
+ */
+async function clearEmailsFromConflictingUsers(): Promise<void> {
+  const existingUsers = await prisma.user.findMany({
+    where: {
+      email: {
+        in: seedUsers.map(seedUser => seedUser.email),
+      },
     },
-    create: {
-      id: seedIds.users.minjun,
-      email: 'minjun@jamplay.local',
-      status: 'ACTIVE',
+    select: {
+      id: true,
+      email: true,
     },
   });
 
-  await prisma.user.upsert({
-    where: { id: seedIds.users.seoyeon },
-    update: {
-      email: 'seoyeon@jamplay.local',
-      status: 'ACTIVE',
-    },
-    create: {
-      id: seedIds.users.seoyeon,
-      email: 'seoyeon@jamplay.local',
-      status: 'ACTIVE',
-    },
+  const conflictingUserIds = getConflictingSeedUserIds({
+    seedUsers,
+    existingUsers,
   });
 
-  await prisma.user.upsert({
-    where: { id: seedIds.users.jiho },
-    update: {
-      email: 'jiho@jamplay.local',
-      status: 'ACTIVE',
+  if (conflictingUserIds.length === 0) {
+    return;
+  }
+
+  await prisma.user.updateMany({
+    where: {
+      id: {
+        in: conflictingUserIds,
+      },
     },
-    create: {
-      id: seedIds.users.jiho,
-      email: 'jiho@jamplay.local',
-      status: 'ACTIVE',
+    data: {
+      email: null,
     },
   });
 }

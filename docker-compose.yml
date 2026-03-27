@@ -34,9 +34,6 @@ services:
       sh -c "
       corepack enable &&
       pnpm install --force &&
-      pnpm prisma:generate &&
-      pnpm prisma:migrate:deploy &&
-      pnpm prisma:seed &&
       pnpm run start:dev
       "
     networks:

@@ -14,11 +14,13 @@
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
     "prisma:seed": "prisma db seed",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "prestart:dev": "node -e \"const fs=require('node:fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.rmSync('tsconfig.build.tsbuildinfo', { force: true }); fs.rmSync('tsconfig.tsbuildinfo', { force: true });\"",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "test": "node --import tsx --test src/**/*.spec.ts"
@@ -49,8 +51,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.55.0"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }
