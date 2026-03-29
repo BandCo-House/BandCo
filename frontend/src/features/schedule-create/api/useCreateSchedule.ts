@@ -1,21 +1,16 @@
-import { useMutation } from '@tanstack/react-query';
-import type { Schedule } from '@/entities/schedule/model/types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { CreateScheduleRequest, ScheduleItem } from '@/entities/schedule/model/types';
 import { apiPost } from '@/shared/api';
 
-export type CreateSchedulePayload =
-  | Omit<
-      Extract<Schedule, { type: 'ensemble' }>,
-      'id' | 'createdAt' | 'updatedAt'
-    >
-  | Omit<
-      Extract<Schedule, { type: 'meeting' }>,
-      'id' | 'createdAt' | 'updatedAt'
-    >;
-
 export const useCreateSchedule = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (data: CreateSchedulePayload): Promise<Schedule> => {
-      return apiPost<Schedule>('/schedule', data);
+    mutationFn: async (data: CreateScheduleRequest): Promise<ScheduleItem> => {
+      return apiPost<ScheduleItem>('/schedule', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
     },
   });
 };

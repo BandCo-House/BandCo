@@ -3,6 +3,13 @@ export type { ScheduleType } from '@/entities/schedule/model/types';
 import type { ScheduleType } from '@/entities/schedule/model/types';
 
 export interface ScheduleCreateFormState {
-  type: ScheduleType;
-  // TODO: Add ensemble/meeting specific fields later
+  title: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  placeId: string | null;
+  songId: string | null;
+  teamId: string | null;
+  participantUserIds: string[];
+  memo: string;
 }

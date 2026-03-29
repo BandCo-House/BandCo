@@ -1,121 +1,103 @@
-import { useState } from 'react';
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
 import { TypeSelectStep } from './steps/TypeSelectStep';
-import { EnsembleBasicStep } from './steps/EnsembleBasicStep';
+import { PracticeBasicStep } from './steps/PracticeBasicStep';
 import { SongSelectStep } from './steps/SongSelectStep';
 import { TeamSelectStep } from './steps/TeamSelectStep';
 import { MeetingBasicStep } from './steps/MeetingBasicStep';
 import { MemberSelectStep } from './steps/MemberSelectStep';
-import { useCreateSchedule } from '../api/useCreateSchedule';
-import type { ScheduleType } from '@/entities/schedule/model/types';
-export const ScheduleCreateModal = () => {
-  const [scheduleType, setScheduleType] = useState<ScheduleType | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
+import { useScheduleCreateForm } from '../model/useScheduleCreateForm';
 
-  // 통합 폼 상태
-  const [formData, setFormData] = useState({
-    title: '',
-    date: '',
-    startTime: '',
-    endTime: '',
-    place: '',
-    songId: null as string | null,
-    teamId: null as string | null,
-    memberIds: [] as string[],
-    memo: '',
-  });
+interface ScheduleCreateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialDate?: Date;
+}
 
-  const handleTypeSelect = (type: ScheduleType) => {
-    setScheduleType(type);
-    setCurrentStep(1);
-  };
+export const ScheduleCreateModal = ({
+  isOpen,
+  onClose,
+  initialDate,
+}: ScheduleCreateModalProps) => {
+  const { state, actions } = useScheduleCreateForm(onClose, initialDate);
+  const { scheduleType, currentStep, formData } = state;
+  const { handleTypeSelect, updateForm, handleNextStep, handleSubmit } = actions;
 
-  const updateForm = (updates: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const handleNextStep = () => {
-    setCurrentStep((prev) => prev + 1);
-  };
-
-  const { mutateAsync: createSchedule, isPending } = useCreateSchedule();
-
-  const handleSubmit = async () => {
-    if (isPending) return;
-    if (scheduleType !== 'ensemble' && scheduleType !== 'meeting') return;
-
-    try {
-      if (scheduleType === 'ensemble') {
-        if (!formData.songId || !formData.teamId) return;
-
-        await createSchedule({
-          type: 'ensemble',
-          date: formData.date,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          place: formData.place,
-          songId: formData.songId,
-          teamId: formData.teamId,
-        });
-      } else {
-        if (formData.memberIds.length === 0) return;
-
-        await createSchedule({
-          type: 'meeting',
-          title: formData.title,
-          date: formData.date,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          memberIds: formData.memberIds,
-          memo: formData.memo,
-        });
-      }
-    } catch (error) {
-      console.error(error);
+  const renderStep = () => {
+    if (currentStep === 0) {
+      return <TypeSelectStep onSelect={handleTypeSelect} />;
     }
+
+    if (scheduleType === 'PRACTICE') {
+      switch (currentStep) {
+        case 1:
+          return (
+            <PracticeBasicStep
+              data={formData}
+              onChange={updateForm}
+              onNext={handleNextStep}
+            />
+          );
+        case 2:
+          return (
+            <SongSelectStep
+              selectedId={formData.songId}
+              onChange={(songId) => updateForm({ songId })}
+              onNext={handleNextStep}
+            />
+          );
+        case 3:
+          return (
+            <TeamSelectStep
+              selectedTeamId={formData.teamId}
+              onChange={(teamId) => updateForm({ teamId })}
+              onSubmit={handleSubmit}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+
+    if (scheduleType === 'MEETING') {
+      switch (currentStep) {
+        case 1:
+          return (
+            <MeetingBasicStep
+              data={formData}
+              onChange={updateForm}
+              onNext={handleNextStep}
+            />
+          );
+        case 2:
+          return (
+            <MemberSelectStep
+              selectedIds={formData.participantUserIds}
+              onChange={(participantUserIds) => updateForm({ participantUserIds })}
+              memo={formData.memo}
+              onMemoChange={(memo) => updateForm({ memo })}
+              onSubmit={handleSubmit}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+
+    return null;
   };
 
   return (
-    <div data-testid="schedule-create-modal">
-      <h1>새 일정 추가</h1>
-      {currentStep === 0 && <TypeSelectStep onSelect={handleTypeSelect} />}
-      {scheduleType === 'ensemble' && currentStep === 1 && (
-        <EnsembleBasicStep
-          data={formData}
-          onChange={updateForm}
-          onNext={handleNextStep}
-        />
-      )}
-      {scheduleType === 'ensemble' && currentStep === 2 && (
-        <SongSelectStep
-          selectedId={formData.songId}
-          onChange={(songId) => updateForm({ songId })}
-          onNext={handleNextStep}
-        />
-      )}
-      {scheduleType === 'ensemble' && currentStep === 3 && (
-        <TeamSelectStep
-          selectedTeamId={formData.teamId}
-          onChange={(teamId) => updateForm({ teamId })}
-          onSubmit={handleSubmit}
-        />
-      )}
-      {scheduleType === 'meeting' && currentStep === 1 && (
-        <MeetingBasicStep
-          data={formData}
-          onChange={updateForm}
-          onNext={handleNextStep}
-        />
-      )}
-      {scheduleType === 'meeting' && currentStep === 2 && (
-        <MemberSelectStep
-          selectedIds={formData.memberIds}
-          onChange={(memberIds) => updateForm({ memberIds })}
-          memo={formData.memo}
-          onMemoChange={(memo) => updateForm({ memo })}
-          onSubmit={handleSubmit}
-        />
-      )}
-    </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl">
+        <DialogHeader className="px-8 pt-8 pb-2">
+          <DialogTitle className="text-2xl font-bold text-gray-800 tracking-tight">
+            새 일정 추가
+          </DialogTitle>
+        </DialogHeader>
+        <div className="px-8 pb-8">
+          {renderStep()}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
