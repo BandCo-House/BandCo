@@ -14,7 +14,6 @@
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
     "prisma:seed": "prisma db seed",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
