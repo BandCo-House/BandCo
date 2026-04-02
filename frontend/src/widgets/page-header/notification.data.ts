@@ -9,6 +9,7 @@ export type NotificationPreview = {
   title: string;
   description: string;
   isRead: boolean;
+  targetPath?: string;
 };
 
 export const notificationTypeFilters: NotificationType[] = ['NOTICE', 'INVITE', 'REMINDER'];

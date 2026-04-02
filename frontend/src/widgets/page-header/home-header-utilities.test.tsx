@@ -33,7 +33,15 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    Link: ({ children, ...props }: ComponentProps<'a'>) => <a {...props}>{children}</a>,
+    Link: ({
+      children,
+      to,
+      ...props
+    }: ComponentProps<'a'> & { to?: string }) => (
+      <a href={to} {...props}>
+        {children}
+      </a>
+    ),
   };
 });
 
@@ -73,6 +81,10 @@ describe('HomeHeaderUtilities', () => {
     expect(screen.getByRole('heading', { name: '알림' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '모두 읽음' })).toBeInTheDocument();
     expect(screen.getByText('인디 밴드 초대장 도착!')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /인디 밴드 초대장 도착!/ })).toHaveAttribute(
+      'href',
+      '/invite/a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1',
+    );
 
     fireEvent.click(screen.getByRole('button', { name: '일정' }));
 

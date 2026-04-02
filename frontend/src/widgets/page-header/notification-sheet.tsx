@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import type { NotificationType } from '@/entities/notification/model/types';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
@@ -159,7 +160,7 @@ export const NotificationSheet = ({
 
       <ul aria-label="알림 목록" className="mt-2 space-y-3">
         {visibleNotifications.map((notification) => (
-          <li key={notification.notificationId}>
+          <li key={notification.notificationId} className="relative">
             {(() => {
               const actions = [
                 {
@@ -174,54 +175,68 @@ export const NotificationSheet = ({
                 },
               ];
               const hasEnabledActions = actions.some((action) => !action.disabled);
+              const cardContent = (
+                <>
+                  <div className="min-w-0 space-y-1">
+                    <h3 className={getNotificationTextClassName('title', notification.isRead)}>
+                      {notification.title}
+                    </h3>
+                    <p className={getNotificationTextClassName('description', notification.isRead)}>
+                      {notification.description}
+                    </p>
+                  </div>
+                </>
+              );
 
               return (
-                <article className="rounded-lg border border-border bg-card px-4 py-4 shadow-xl/5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
-                  <h3 className={getNotificationTextClassName('title', notification.isRead)}>
-                    {notification.title}
-                  </h3>
-                  <p className={getNotificationTextClassName('description', notification.isRead)}>
-                    {notification.description}
-                  </p>
-                </div>
-
-                {hasEnabledActions ? (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`${notification.title} 더보기`}
-                        className="-mt-1 -mr-3 size-8 shrink-0 rounded-full text-muted hover:bg-background/80 hover:text-foreground"
-                      >
-                        <SVGIcon icon="Kebab" size="sm" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      sideOffset={0}
-                      className="w-40 bg-popover p-1"
+                <>
+                  {notification.targetPath ? (
+                    <Link
+                      to={notification.targetPath as never}
+                      className="block rounded-lg border border-border bg-card px-4 py-4 pr-12 shadow-xl/5 transition-colors hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
-                      {actions.map((action) => (
+                      {cardContent}
+                    </Link>
+                  ) : (
+                    <article className="rounded-lg border border-border bg-card px-4 py-4 pr-12 shadow-xl/5">
+                      {cardContent}
+                    </article>
+                  )}
+
+                  {hasEnabledActions ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
                         <Button
-                          key={action.key}
                           type="button"
                           variant="ghost"
-                          size="sm"
-                          disabled={action.disabled}
-                          className="w-full justify-start rounded-xl px-3 text-foreground"
-                          onClick={action.onClick}
+                          size="icon"
+                          aria-label={`${notification.title} 더보기`}
+                          className="absolute top-3 right-1 size-8 shrink-0 rounded-full text-muted hover:bg-background hover:text-foreground"
                         >
-                          <span className="typo-sm-m">{action.label}</span>
+                          <SVGIcon icon="Kebab" size="sm" />
                         </Button>
-                      ))}
-                    </PopoverContent>
-                  </Popover>
-                ) : null}
-              </div>
-                </article>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        sideOffset={2}
+                        className="w-40 bg-popover p-1"
+                      >
+                        {actions.map((action) => (
+                          <Button
+                            key={action.key}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={action.disabled}
+                            className="w-full justify-start rounded-xl px-3 text-foreground"
+                            onClick={action.onClick}
+                          >
+                            <span className="typo-sm-m">{action.label}</span>
+                          </Button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+                  ) : null}
+                </>
               );
             })()}
           </li>
