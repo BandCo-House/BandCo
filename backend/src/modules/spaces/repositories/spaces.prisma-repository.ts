@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { createPagination } from '../../../common/pagination';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
+import type { AddSpaceMemberInput } from '../dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
+import type { AddSpaceMemberResult } from '../types/add-space-member-result.type';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
@@ -82,6 +84,74 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
 @Injectable()
 export class SpacesPrismaRepository implements SpacesRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * 합주 공간 멤버를 추가한다.
+   *
+   * @param {string} spaceId - 멤버를 추가할 합주 공간 ID
+   * @param {AddSpaceMemberInput} input - 검증이 끝난 멤버 추가 입력값
+   * @returns {Promise<AddSpaceMemberResult>} 멤버 추가 응답 데이터
+   */
+  async addSpaceMember(spaceId: string, input: AddSpaceMemberInput): Promise<AddSpaceMemberResult> {
+    const [space, user, existingMember] = await Promise.all([
+      this.prisma.bandSpace.findFirst({
+        where: {
+          id: spaceId,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+        },
+      }),
+      this.prisma.user.findUnique({
+        where: {
+          id: input.userId,
+        },
+        select: {
+          id: true,
+        },
+      }),
+      this.prisma.spaceMember.findFirst({
+        where: {
+          spaceId,
+          userId: input.userId,
+        },
+        select: {
+          id: true,
+        },
+      }),
+    ]);
+
+    if (space === null) {
+      throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+    }
+
+    if (user === null) {
+      throw new NotFoundException('추가할 사용자를 찾을 수 없습니다.');
+    }
+
+    if (existingMember !== null) {
+      throw new ConflictException('이미 합주 공간에 참여 중인 사용자입니다.');
+    }
+
+    const createdMember = await this.prisma.spaceMember.create({
+      data: {
+        spaceId,
+        userId: input.userId,
+        role: input.role,
+        status: 'ACTIVE',
+      },
+    });
+
+    return {
+      memberId: createdMember.id,
+      spaceId: createdMember.spaceId,
+      userId: createdMember.userId,
+      role: createdMember.role,
+      status: createdMember.status,
+      joinedAt: createdMember.joinedAt.toISOString(),
+    };
+  }
 
   /**
    * 밴드 아래에 새 합주 공간을 만들고,

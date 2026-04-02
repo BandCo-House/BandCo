@@ -8,6 +8,16 @@ import { SpacesService } from './spaces.service';
 
 function createSpacesRepositoryStub(): SpacesRepository {
   return {
+    async addSpaceMember(spaceId, input) {
+      return {
+        memberId: 'member-001',
+        spaceId,
+        userId: input.userId,
+        role: input.role,
+        status: 'ACTIVE',
+        joinedAt: '2026-02-21T09:00:00.000Z',
+      };
+    },
     async createBandSpace(bandId, input) {
       return {
         spaceId: 'created-space-001',
@@ -110,6 +120,24 @@ function createSpacesRepositoryStub(): SpacesRepository {
     },
   };
 }
+
+test('합주 공간 멤버 추가 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
+  const repository = createSpacesRepositoryStub();
+  const service = new SpacesService(repository);
+  const controller = new SpacesController(service);
+
+  const response = await controller.addSpaceMember('space-001', {
+    userId: '22222222-2222-2222-2222-222222222222',
+    role: 'MEMBER',
+  });
+
+  assert.equal(response.status, 'success');
+  assert.equal(response.error, null);
+  assert.equal(response.message, '합주 공간 멤버 추가 성공');
+  assert.equal(response.data.memberId, 'member-001');
+  assert.equal(response.data.spaceId, 'space-001');
+  assert.equal(response.data.userId, '22222222-2222-2222-2222-222222222222');
+});
 
 test('합주 공간 생성 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
   const repository = createSpacesRepositoryStub();
