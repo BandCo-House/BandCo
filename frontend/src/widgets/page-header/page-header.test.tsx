@@ -46,7 +46,7 @@ describe('PageHeader', () => {
   });
 
   it('모든 페이지에서 공통 헤더 셸은 전역 본문 셸과 동일한 최대 너비 클래스를 사용해야 한다', () => {
-    render(<PageHeader title="JamPlay" />);
+    render(<PageHeader title="BandCo" />);
 
     expect(screen.getByRole('banner').firstElementChild).toHaveClass(
       'mx-auto',
@@ -56,10 +56,10 @@ describe('PageHeader', () => {
     );
   });
 
-  it('JamPlay 타이틀은 모바일에서 숨김 클래스를 가져야 한다', () => {
-    render(<PageHeader title="JamPlay" />);
+  it('타이틀은 모바일에서 숨김 클래스를 가져야 한다', () => {
+    render(<PageHeader title="BandCo" />);
 
-    expect(screen.getByRole('heading', { name: 'JamPlay' })).toHaveClass(
+    expect(screen.getByRole('heading', { name: 'BandCo' })).toHaveClass(
       'hidden',
       'sm:block',
     );
