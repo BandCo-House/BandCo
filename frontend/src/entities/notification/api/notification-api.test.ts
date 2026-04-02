@@ -51,4 +51,16 @@ describe('getNotificationUnreadSummary 어댑터', () => {
 
     await expect(getNotificationUnreadSummary()).rejects.toThrow();
   });
+
+  it('network error가 발생하면 reject된다', async () => {
+    mock.onGet('/notifications/unread-summary').networkError();
+
+    await expect(getNotificationUnreadSummary()).rejects.toThrow();
+  });
+
+  it('500 응답이 오면 reject된다', async () => {
+    mock.onGet('/notifications/unread-summary').reply(500);
+
+    await expect(getNotificationUnreadSummary()).rejects.toThrow();
+  });
 });
