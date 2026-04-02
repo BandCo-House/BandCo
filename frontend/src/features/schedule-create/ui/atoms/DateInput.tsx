@@ -14,7 +14,7 @@ export const DateInput = ({ value, onChange, label }: DateInputProps) => {
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <label htmlFor={id} className="text-sm-m text-foreground">
+        <label htmlFor={id} className="typo-sm-m text-foreground">
           {label}
         </label>
       )}

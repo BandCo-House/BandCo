@@ -28,7 +28,7 @@ export const StatusBadge = ({
   return (
     <span
       className={cn(
-        'text-xs-sb inline-flex items-center rounded-full border px-2.5 py-1',
+        'typo-xs-sb inline-flex items-center rounded-full border px-2.5 py-1',
         colorClassNames[color],
         className,
       )}

@@ -82,19 +82,19 @@ export const ScheduleCard = ({
         } ${isContinued ? 'opacity-90 border-dashed' : ''}`}
       >
         {!isContinued ? (
-          <div className="text-xs-sb truncate leading-tight group-hover/card:whitespace-normal">
+          <div className="typo-xs-sb truncate leading-tight group-hover/card:whitespace-normal">
             {schedule.ui.cardTitle}
           </div>
         ) : (
-          <div className="text-xs-r leading-tight italic opacity-70">
+          <div className="typo-xs-r leading-tight italic opacity-70">
             (계속)
           </div>
         )}
-        <div className="text-xs-m truncate leading-tight opacity-80 group-hover/card:whitespace-normal">
+        <div className="typo-xs-m truncate leading-tight opacity-80 group-hover/card:whitespace-normal">
           {getTimeDisplay()}
         </div>
 
-        <div className="text-xs-r mt-1 hidden flex-col gap-1 border-t border-current pt-1 opacity-70 group-hover/card:flex">
+        <div className="typo-xs-r mt-1 hidden flex-col gap-1 border-t border-current pt-1 opacity-70 group-hover/card:flex">
           {schedule.place?.name && (
             <p className="truncate">📍 {schedule.place.name}</p>
           )}

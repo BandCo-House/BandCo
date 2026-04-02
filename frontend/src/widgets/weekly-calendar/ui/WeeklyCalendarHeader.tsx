@@ -47,7 +47,7 @@ export const WeeklyCalendarHeader = ({
             <ChevronLeft size={16} className="stroke-primary-light" />
           </Button>
 
-          <h2 className="text-lg-b min-w-0 flex-1 text-center text-foreground">
+          <h2 className="typo-lg-b min-w-0 flex-1 text-center text-foreground">
             {weekRangeText}
           </h2>
 
