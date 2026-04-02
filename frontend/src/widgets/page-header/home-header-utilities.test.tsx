@@ -3,6 +3,19 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { HomeHeaderUtilities } from './home-header-utilities';
 
+vi.mock('@/entities/notification/api/useNotificationUnreadSummary', () => ({
+  useNotificationUnreadSummary: () => ({
+    data: {
+      unreadCount: 3,
+      unreadByType: {
+        NOTICE: 1,
+        INVITE: 1,
+        REMINDER: 1,
+      },
+    },
+  }),
+}));
+
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
@@ -41,5 +54,16 @@ describe('HomeHeaderUtilities', () => {
 
     expect(screen.getByRole('button', { name: '알림 열기' })).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '알림 열기' }));
+
+    expect(screen.getByRole('heading', { name: '알림' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '모두 읽음' })).toBeInTheDocument();
+    expect(screen.getByText('인디 밴드 초대장 도착!')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '일정' }));
+
+    expect(screen.getByText('합주 일정 임박')).toBeInTheDocument();
+    expect(screen.queryByText('인디 밴드 초대장 도착!')).not.toBeInTheDocument();
   });
 });
