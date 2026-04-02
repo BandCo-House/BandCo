@@ -1,10 +1,25 @@
 import { BadRequestException } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
 
 import { normalizeOptionalString } from '../../../common/query';
 
-export interface CreateBandRequestBody {
+export class CreateBandRequestBody {
+  @ApiProperty({
+    description: '생성할 밴드 이름',
+    example: '합주하자',
+  })
   name?: unknown;
+
+  @ApiProperty({
+    description: '밴드 설명',
+    example: '주 1회 합주하는 밴드입니다.',
+  })
   description?: unknown;
+
+  @ApiProperty({
+    description: '밴드 공개 여부',
+    example: true,
+  })
   visibility?: unknown;
 }
 
