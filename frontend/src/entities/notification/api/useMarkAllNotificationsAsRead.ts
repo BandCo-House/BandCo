@@ -19,11 +19,9 @@ export const useMarkAllNotificationsAsRead = () => {
 
           return {
             unreadCount: 0,
-            unreadByType: {
-              NOTICE: 0,
-              INVITE: 0,
-              REMINDER: 0,
-            },
+            unreadByType: Object.fromEntries(
+              Object.keys(current.unreadByType).map((key) => [key, 0]),
+            ) as NotificationUnreadSummary['unreadByType'],
           };
         },
       );

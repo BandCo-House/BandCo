@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NotificationType } from '@/entities/notification/model/types';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
@@ -15,11 +15,12 @@ import {
 import {
   buildUnreadByTypeFromNotifications,
   getUnreadNotificationsCount,
+  type NotificationPreview,
   markNotificationPreviewAsRead,
-  notificationPreviews,
   notificationTypeFilters,
   translateNotificationType,
 } from './notification.data';
+import { notificationPreviewsMock } from './notification.data.mock';
 
 const getNotificationTextClassName = (
   tone: 'title' | 'description',
@@ -32,12 +33,24 @@ const getNotificationTextClassName = (
 /**
  * 홈 헤더 알림 버튼에서 열리는 우측 시트 패널
  */
-export const NotificationSheet = () => {
+export const NotificationSheet = ({
+  notifications: incomingNotifications,
+}: {
+  notifications?: NotificationPreview[];
+}) => {
   const [activeType, setActiveType] = useState<NotificationType>('INVITE');
-  const [notifications, setNotifications] = useState(notificationPreviews);
+  const [notifications, setNotifications] = useState<NotificationPreview[]>([]);
   const { mutate: markAllAsRead, isPending: isMarkingAllAsRead } =
     useMarkAllNotificationsAsRead();
   const { mutate: markAsRead } = useMarkNotificationAsRead();
+  const fallbackNotifications = import.meta.env.PROD
+    ? []
+    : notificationPreviewsMock;
+
+  useEffect(() => {
+    setNotifications(incomingNotifications ?? fallbackNotifications);
+  }, [fallbackNotifications, incomingNotifications]);
+
   const visibleNotifications = notifications.filter(
     (notification) => notification.type === activeType,
   );
@@ -48,25 +61,41 @@ export const NotificationSheet = () => {
    * 카드 액션에서 개별 알림을 읽음 처리합니다.
    */
   const handleMarkAsRead = (notificationId: string, type: NotificationType) => {
+    const previousNotifications = notifications;
+
     setNotifications((currentNotifications) =>
       markNotificationPreviewAsRead(currentNotifications, notificationId),
     );
 
-    markAsRead({ notificationId, type });
+    markAsRead(
+      { notificationId, type },
+      {
+        onError: () => {
+          setNotifications(previousNotifications);
+        },
+      },
+    );
   };
 
   /**
    * 현재 시트에 표시 중인 알림 전체를 읽음 상태로 변경합니다.
    */
   const handleMarkAllAsRead = () => {
+    const previousNotifications = notifications;
+
     setNotifications((currentNotifications) =>
       currentNotifications.map((notification) => ({
         ...notification,
-        isRead: true,
+        isRead:
+          notification.type === activeType ? true : notification.isRead,
       })),
     );
 
-    markAllAsRead();
+    markAllAsRead(undefined, {
+      onError: () => {
+        setNotifications(previousNotifications);
+      },
+    });
   };
 
   return (
