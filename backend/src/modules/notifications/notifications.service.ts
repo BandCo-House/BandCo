@@ -4,6 +4,7 @@ import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import { NOTIFICATIONS_REPOSITORY, type NotificationsRepository } from './repositories/notifications.repository';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
+import type { UnreadNotificationCountResult } from './types/unread-notification-count-result.type';
 
 const DEMO_NOTIFICATION_USER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -22,6 +23,15 @@ export class NotificationsService {
    */
   async getNotifications(query: GetNotificationsQuery): Promise<GetNotificationsResult> {
     return this.notificationsRepository.findNotifications(DEMO_NOTIFICATION_USER_ID, query);
+  }
+
+  /**
+   * 현재 사용자 기준 안읽음 알림 총 개수와 타입별 개수를 조회한다.
+   *
+   * @returns {Promise<UnreadNotificationCountResult>} 안읽음 알림 집계 결과
+   */
+  async getUnreadNotificationCount(): Promise<UnreadNotificationCountResult> {
+    return this.notificationsRepository.countUnreadNotifications(DEMO_NOTIFICATION_USER_ID);
   }
 
   /**

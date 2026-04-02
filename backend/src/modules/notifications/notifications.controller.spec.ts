@@ -29,6 +29,16 @@ test('알림 목록 조회 컨트롤러는 공통 성공 응답 형식을 반환
         },
       };
     },
+    async countUnreadNotifications() {
+      return {
+        unreadCount: 3,
+        unreadByType: {
+          INVITE: 1,
+          NOTICE: 1,
+          REMINDER: 1,
+        },
+      };
+    },
     async markNotificationAsRead() {
       return {
         notificationId: 'notification-001',
@@ -52,6 +62,50 @@ test('알림 목록 조회 컨트롤러는 공통 성공 응답 형식을 반환
   assert.equal(response.data.pagination.totalCount, 1);
 });
 
+test('안읽음 알림 개수 조회 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
+  const repository: NotificationsRepository = {
+    async findNotifications() {
+      return {
+        items: [],
+        pagination: {
+          page: 1,
+          size: 20,
+          totalCount: 0,
+          hasNext: false,
+        },
+      };
+    },
+    async countUnreadNotifications() {
+      return {
+        unreadCount: 3,
+        unreadByType: {
+          INVITE: 1,
+          NOTICE: 1,
+          REMINDER: 1,
+        },
+      };
+    },
+    async markNotificationAsRead() {
+      return {
+        notificationId: 'notification-001',
+        isRead: true,
+      };
+    },
+  };
+  const service = new NotificationsService(repository);
+  const controller = new NotificationsController(service);
+
+  const response = await controller.getUnreadNotificationCount();
+
+  assert.equal(response.status, 'success');
+  assert.equal(response.error, null);
+  assert.equal(response.message, '읽지 않은 알림 개수 조회 성공');
+  assert.equal(response.data.unreadCount, 3);
+  assert.equal(response.data.unreadByType.INVITE, 1);
+  assert.equal(response.data.unreadByType.NOTICE, 1);
+  assert.equal(response.data.unreadByType.REMINDER, 1);
+});
+
 test('알림 읽음 처리 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
   const repository: NotificationsRepository = {
     async findNotifications() {
@@ -62,6 +116,16 @@ test('알림 읽음 처리 컨트롤러는 공통 성공 응답 형식을 반환
           size: 20,
           totalCount: 0,
           hasNext: false,
+        },
+      };
+    },
+    async countUnreadNotifications() {
+      return {
+        unreadCount: 3,
+        unreadByType: {
+          INVITE: 1,
+          NOTICE: 1,
+          REMINDER: 1,
         },
       };
     },

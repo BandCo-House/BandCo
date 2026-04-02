@@ -5,6 +5,7 @@ import { PrismaService } from '../../../database/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
+import type { UnreadNotificationCountResult } from '../types/unread-notification-count-result.type';
 
 import type { NotificationsRepository } from './notifications.repository';
 
@@ -98,6 +99,53 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
     return {
       notificationId: updatedNotification.id,
       isRead: updatedNotification.isRead,
+    };
+  }
+
+  /**
+   * 사용자 기준 안읽음 알림 총 개수와 타입별 개수를 함께 집계한다.
+   *
+   * @param {string} userId - 현재 로그인 사용자 대신 임시로 사용하는 사용자 ID
+   * @returns {Promise<UnreadNotificationCountResult>} 안읽음 총 개수와 타입별 개수
+   */
+  async countUnreadNotifications(userId: string): Promise<UnreadNotificationCountResult> {
+    const [unreadCount, unreadInviteCount, unreadNoticeCount, unreadReminderCount] = await this.prisma.$transaction([
+      this.prisma.notification.count({
+        where: {
+          userId,
+          isRead: false,
+        },
+      }),
+      this.prisma.notification.count({
+        where: {
+          userId,
+          isRead: false,
+          type: 'INVITE',
+        },
+      }),
+      this.prisma.notification.count({
+        where: {
+          userId,
+          isRead: false,
+          type: 'NOTICE',
+        },
+      }),
+      this.prisma.notification.count({
+        where: {
+          userId,
+          isRead: false,
+          type: 'REMINDER',
+        },
+      }),
+    ]);
+
+    return {
+      unreadCount,
+      unreadByType: {
+        INVITE: unreadInviteCount,
+        NOTICE: unreadNoticeCount,
+        REMINDER: unreadReminderCount,
+      },
     };
   }
 

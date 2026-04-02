@@ -5,6 +5,7 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import { type GetNotificationsQueryParams, parseGetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
+import type { UnreadNotificationCountResult } from './types/unread-notification-count-result.type';
 import { NotificationsService } from './notifications.service';
 
 @Controller()
@@ -17,6 +18,13 @@ export class NotificationsController {
     const notifications = await this.notificationsService.getNotifications(query);
 
     return createSuccessResponse('알림 목록 조회 성공', notifications);
+  }
+
+  @Get('notifications/unread-count')
+  async getUnreadNotificationCount(): Promise<ApiSuccessResponse<UnreadNotificationCountResult>> {
+    const result = await this.notificationsService.getUnreadNotificationCount();
+
+    return createSuccessResponse('읽지 않은 알림 개수 조회 성공', result);
   }
 
   @Patch('notifications/:notificationId/read')
