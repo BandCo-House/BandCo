@@ -18,9 +18,9 @@ import { Route as SongSongIdTeamsRouteImport } from './pages/song.$songId.teams'
 import { Route as BandBandIdSongsRouteImport } from './pages/band.$bandId.songs'
 import { Route as BandBandIdSettingsRouteImport } from './pages/band.$bandId.settings'
 import { Route as SongSongIdTeamTeamIdRouteImport } from './pages/song.$songId.team.$teamId'
-import { Route as BandBandIdPerformancePerformanceIdRouteImport } from './pages/band.$bandId.performance.$performanceId'
-import { Route as BandBandIdPerformancePerformanceIdIndexRouteImport } from './pages/band.$bandId.performance.$performanceId.index'
-import { Route as BandBandIdPerformancePerformanceIdSettingsRouteImport } from './pages/band.$bandId.performance.$performanceId.settings'
+import { Route as BandBandIdSpaceSpaceIdRouteImport } from './pages/band.$bandId.space.$spaceId'
+import { Route as BandBandIdSpaceSpaceIdIndexRouteImport } from './pages/band.$bandId.space.$spaceId.index'
+import { Route as BandBandIdSpaceSpaceIdSettingsRouteImport } from './pages/band.$bandId.space.$spaceId.settings'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -67,23 +67,22 @@ const SongSongIdTeamTeamIdRoute = SongSongIdTeamTeamIdRouteImport.update({
   path: '/song/$songId/team/$teamId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BandBandIdPerformancePerformanceIdRoute =
-  BandBandIdPerformancePerformanceIdRouteImport.update({
-    id: '/performance/$performanceId',
-    path: '/performance/$performanceId',
-    getParentRoute: () => BandBandIdRoute,
-  } as any)
-const BandBandIdPerformancePerformanceIdIndexRoute =
-  BandBandIdPerformancePerformanceIdIndexRouteImport.update({
+const BandBandIdSpaceSpaceIdRoute = BandBandIdSpaceSpaceIdRouteImport.update({
+  id: '/space/$spaceId',
+  path: '/space/$spaceId',
+  getParentRoute: () => BandBandIdRoute,
+} as any)
+const BandBandIdSpaceSpaceIdIndexRoute =
+  BandBandIdSpaceSpaceIdIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => BandBandIdPerformancePerformanceIdRoute,
+    getParentRoute: () => BandBandIdSpaceSpaceIdRoute,
   } as any)
-const BandBandIdPerformancePerformanceIdSettingsRoute =
-  BandBandIdPerformancePerformanceIdSettingsRouteImport.update({
+const BandBandIdSpaceSpaceIdSettingsRoute =
+  BandBandIdSpaceSpaceIdSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
-    getParentRoute: () => BandBandIdPerformancePerformanceIdRoute,
+    getParentRoute: () => BandBandIdSpaceSpaceIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -95,10 +94,10 @@ export interface FileRoutesByFullPath {
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId/': typeof BandBandIdIndexRoute
-  '/band/$bandId/performance/$performanceId': typeof BandBandIdPerformancePerformanceIdRouteWithChildren
+  '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdRouteWithChildren
   '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
-  '/band/$bandId/performance/$performanceId/settings': typeof BandBandIdPerformancePerformanceIdSettingsRoute
-  '/band/$bandId/performance/$performanceId/': typeof BandBandIdPerformancePerformanceIdIndexRoute
+  '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
+  '/band/$bandId/space/$spaceId/': typeof BandBandIdSpaceSpaceIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,8 +108,8 @@ export interface FileRoutesByTo {
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId': typeof BandBandIdIndexRoute
   '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
-  '/band/$bandId/performance/$performanceId/settings': typeof BandBandIdPerformancePerformanceIdSettingsRoute
-  '/band/$bandId/performance/$performanceId': typeof BandBandIdPerformancePerformanceIdIndexRoute
+  '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
+  '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,10 +121,10 @@ export interface FileRoutesById {
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId/': typeof BandBandIdIndexRoute
-  '/band/$bandId/performance/$performanceId': typeof BandBandIdPerformancePerformanceIdRouteWithChildren
+  '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdRouteWithChildren
   '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
-  '/band/$bandId/performance/$performanceId/settings': typeof BandBandIdPerformancePerformanceIdSettingsRoute
-  '/band/$bandId/performance/$performanceId/': typeof BandBandIdPerformancePerformanceIdIndexRoute
+  '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
+  '/band/$bandId/space/$spaceId/': typeof BandBandIdSpaceSpaceIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,10 +137,10 @@ export interface FileRouteTypes {
     | '/band/$bandId/songs'
     | '/song/$songId/teams'
     | '/band/$bandId/'
-    | '/band/$bandId/performance/$performanceId'
+    | '/band/$bandId/space/$spaceId'
     | '/song/$songId/team/$teamId'
-    | '/band/$bandId/performance/$performanceId/settings'
-    | '/band/$bandId/performance/$performanceId/'
+    | '/band/$bandId/space/$spaceId/settings'
+    | '/band/$bandId/space/$spaceId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,8 +151,8 @@ export interface FileRouteTypes {
     | '/song/$songId/teams'
     | '/band/$bandId'
     | '/song/$songId/team/$teamId'
-    | '/band/$bandId/performance/$performanceId/settings'
-    | '/band/$bandId/performance/$performanceId'
+    | '/band/$bandId/space/$spaceId/settings'
+    | '/band/$bandId/space/$spaceId'
   id:
     | '__root__'
     | '/'
@@ -164,10 +163,10 @@ export interface FileRouteTypes {
     | '/band/$bandId/songs'
     | '/song/$songId/teams'
     | '/band/$bandId/'
-    | '/band/$bandId/performance/$performanceId'
+    | '/band/$bandId/space/$spaceId'
     | '/song/$songId/team/$teamId'
-    | '/band/$bandId/performance/$performanceId/settings'
-    | '/band/$bandId/performance/$performanceId/'
+    | '/band/$bandId/space/$spaceId/settings'
+    | '/band/$bandId/space/$spaceId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,61 +243,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SongSongIdTeamTeamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/band/$bandId/performance/$performanceId': {
-      id: '/band/$bandId/performance/$performanceId'
-      path: '/performance/$performanceId'
-      fullPath: '/band/$bandId/performance/$performanceId'
-      preLoaderRoute: typeof BandBandIdPerformancePerformanceIdRouteImport
+    '/band/$bandId/space/$spaceId': {
+      id: '/band/$bandId/space/$spaceId'
+      path: '/space/$spaceId'
+      fullPath: '/band/$bandId/space/$spaceId'
+      preLoaderRoute: typeof BandBandIdSpaceSpaceIdRouteImport
       parentRoute: typeof BandBandIdRoute
     }
-    '/band/$bandId/performance/$performanceId/': {
-      id: '/band/$bandId/performance/$performanceId/'
+    '/band/$bandId/space/$spaceId/': {
+      id: '/band/$bandId/space/$spaceId/'
       path: '/'
-      fullPath: '/band/$bandId/performance/$performanceId/'
-      preLoaderRoute: typeof BandBandIdPerformancePerformanceIdIndexRouteImport
-      parentRoute: typeof BandBandIdPerformancePerformanceIdRoute
+      fullPath: '/band/$bandId/space/$spaceId/'
+      preLoaderRoute: typeof BandBandIdSpaceSpaceIdIndexRouteImport
+      parentRoute: typeof BandBandIdSpaceSpaceIdRoute
     }
-    '/band/$bandId/performance/$performanceId/settings': {
-      id: '/band/$bandId/performance/$performanceId/settings'
+    '/band/$bandId/space/$spaceId/settings': {
+      id: '/band/$bandId/space/$spaceId/settings'
       path: '/settings'
-      fullPath: '/band/$bandId/performance/$performanceId/settings'
-      preLoaderRoute: typeof BandBandIdPerformancePerformanceIdSettingsRouteImport
-      parentRoute: typeof BandBandIdPerformancePerformanceIdRoute
+      fullPath: '/band/$bandId/space/$spaceId/settings'
+      preLoaderRoute: typeof BandBandIdSpaceSpaceIdSettingsRouteImport
+      parentRoute: typeof BandBandIdSpaceSpaceIdRoute
     }
   }
 }
 
-interface BandBandIdPerformancePerformanceIdRouteChildren {
-  BandBandIdPerformancePerformanceIdSettingsRoute: typeof BandBandIdPerformancePerformanceIdSettingsRoute
-  BandBandIdPerformancePerformanceIdIndexRoute: typeof BandBandIdPerformancePerformanceIdIndexRoute
+interface BandBandIdSpaceSpaceIdRouteChildren {
+  BandBandIdSpaceSpaceIdSettingsRoute: typeof BandBandIdSpaceSpaceIdSettingsRoute
+  BandBandIdSpaceSpaceIdIndexRoute: typeof BandBandIdSpaceSpaceIdIndexRoute
 }
 
-const BandBandIdPerformancePerformanceIdRouteChildren: BandBandIdPerformancePerformanceIdRouteChildren =
+const BandBandIdSpaceSpaceIdRouteChildren: BandBandIdSpaceSpaceIdRouteChildren =
   {
-    BandBandIdPerformancePerformanceIdSettingsRoute:
-      BandBandIdPerformancePerformanceIdSettingsRoute,
-    BandBandIdPerformancePerformanceIdIndexRoute:
-      BandBandIdPerformancePerformanceIdIndexRoute,
+    BandBandIdSpaceSpaceIdSettingsRoute: BandBandIdSpaceSpaceIdSettingsRoute,
+    BandBandIdSpaceSpaceIdIndexRoute: BandBandIdSpaceSpaceIdIndexRoute,
   }
 
-const BandBandIdPerformancePerformanceIdRouteWithChildren =
-  BandBandIdPerformancePerformanceIdRoute._addFileChildren(
-    BandBandIdPerformancePerformanceIdRouteChildren,
+const BandBandIdSpaceSpaceIdRouteWithChildren =
+  BandBandIdSpaceSpaceIdRoute._addFileChildren(
+    BandBandIdSpaceSpaceIdRouteChildren,
   )
 
 interface BandBandIdRouteChildren {
   BandBandIdSettingsRoute: typeof BandBandIdSettingsRoute
   BandBandIdSongsRoute: typeof BandBandIdSongsRoute
   BandBandIdIndexRoute: typeof BandBandIdIndexRoute
-  BandBandIdPerformancePerformanceIdRoute: typeof BandBandIdPerformancePerformanceIdRouteWithChildren
+  BandBandIdSpaceSpaceIdRoute: typeof BandBandIdSpaceSpaceIdRouteWithChildren
 }
 
 const BandBandIdRouteChildren: BandBandIdRouteChildren = {
   BandBandIdSettingsRoute: BandBandIdSettingsRoute,
   BandBandIdSongsRoute: BandBandIdSongsRoute,
   BandBandIdIndexRoute: BandBandIdIndexRoute,
-  BandBandIdPerformancePerformanceIdRoute:
-    BandBandIdPerformancePerformanceIdRouteWithChildren,
+  BandBandIdSpaceSpaceIdRoute: BandBandIdSpaceSpaceIdRouteWithChildren,
 }
 
 const BandBandIdRouteWithChildren = BandBandIdRoute._addFileChildren(
