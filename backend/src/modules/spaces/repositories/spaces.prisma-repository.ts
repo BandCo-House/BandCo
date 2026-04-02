@@ -17,6 +17,15 @@ const DEMO_VIEWER_USER_ID = '11111111-1111-1111-1111-111111111111';
 
 type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
   include: {
+    band: {
+      select: {
+        _count: {
+          select: {
+            songs: true;
+          };
+        };
+      };
+    };
     members: {
       where: {
         userId: string;
@@ -30,24 +39,20 @@ type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
         members: true;
       };
     };
-    schedules: {
-      select: {
-        targetTeams: {
-          select: {
-            _count: {
-              select: {
-                teamSongs: true;
-              };
-            };
-          };
-        };
-      };
-    };
   };
 }>;
 
 type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
   include: {
+    band: {
+      select: {
+        _count: {
+          select: {
+            songs: true;
+          };
+        };
+      };
+    };
     members: {
       include: {
         user: {
@@ -61,19 +66,7 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
         };
       };
     };
-    schedules: {
-      select: {
-        targetTeams: {
-          select: {
-            _count: {
-              select: {
-                teamSongs: true;
-              };
-            };
-          };
-        };
-      };
-    };
+    schedules: true;
   };
 }>;
 
@@ -239,6 +232,15 @@ export class SpacesPrismaRepository implements SpacesRepository {
         skip,
         take: query.size,
         include: {
+          band: {
+            select: {
+              _count: {
+                select: {
+                  songs: true,
+                },
+              },
+            },
+          },
           members: {
             where: {
               userId: DEMO_VIEWER_USER_ID,
@@ -250,19 +252,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
           _count: {
             select: {
               members: true,
-            },
-          },
-          schedules: {
-            select: {
-              targetTeams: {
-                select: {
-                  _count: {
-                    select: {
-                      teamSongs: true,
-                    },
-                  },
-                },
-              },
             },
           },
         },
@@ -291,6 +280,15 @@ export class SpacesPrismaRepository implements SpacesRepository {
         deletedAt: null,
       },
       include: {
+        band: {
+          select: {
+            _count: {
+              select: {
+                songs: true,
+              },
+            },
+          },
+        },
         members: {
           include: {
             user: {
@@ -304,19 +302,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
             },
           },
         },
-        schedules: {
-          select: {
-            targetTeams: {
-              select: {
-                _count: {
-                  select: {
-                    teamSongs: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+        schedules: true,
       },
     });
 
@@ -410,7 +396,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
       startDate: this.formatDateOnly(space.startDate),
       endDate: this.formatDateOnly(space.endDate),
       memberCount: space._count.members,
-      songCount: this.calculateSongCount(space.schedules),
+      songCount: space.band._count.songs,
       isMine: space.createdByUserId === DEMO_VIEWER_USER_ID,
       myMembership: {
         isMember: myMembership !== undefined,
@@ -453,7 +439,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
         updatedAt: this.formatDateTime(space.updatedAt, space.createdAt),
       },
       members: sortedMembers.map(member => this.mapSpaceMemberDetail(member)),
-      songCount: this.calculateSongCount(space.schedules),
+      songCount: space.band._count.songs,
       scheduleCount: space.schedules.length,
     };
   }
@@ -472,23 +458,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
       status: member.status,
       joinedAt: member.joinedAt.toISOString(),
     };
-  }
-
-  /**
-   * 공간 아래 일정과 팀을 따라가며 화면에서 보여 줄 곡 수를 계산한다.
-   *
-   * 현재 스키마에는 공간과 곡이 직접 연결되어 있지 않기 때문에
-   * 일정 -> 대상 팀 -> 팀 곡 개수 합산 방식으로 우선 정리한다.
-   *
-   * @param {Array<{ targetTeams: Array<{ _count: { teamSongs: number } }> }>} schedules - 일정 목록
-   * @returns {number} 합산된 곡 수
-   */
-  private calculateSongCount(schedules: Array<{ targetTeams: Array<{ _count: { teamSongs: number } }> }>): number {
-    return schedules.reduce((spaceSongCount, schedule) => {
-      const scheduleSongCount = schedule.targetTeams.reduce((teamSongCount, team) => teamSongCount + team._count.teamSongs, 0);
-
-      return spaceSongCount + scheduleSongCount;
-    }, 0);
   }
 
   /**
