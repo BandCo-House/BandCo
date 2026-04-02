@@ -8,8 +8,8 @@ interface ScheduleCardProps {
 }
 
 const THEMES: Record<string, string> = {
-  PRACTICE: 'bg-secondary-surface text-primary-main border-primary-light',
-  MEETING: 'bg-success-surface text-secondary-main border-secondary-light',
+  PRACTICE: 'border-primary-light bg-secondary-surface text-foreground',
+  MEETING: 'border-success bg-success-surface text-foreground',
 };
 
 export const ScheduleCard = ({
@@ -63,7 +63,7 @@ export const ScheduleCard = ({
 
   return (
     <div
-      className="absolute rounded-[4px] cursor-pointer z-[1] hover:z-50 group/card transition-all duration-200 ease-in-out"
+      className="group/card absolute z-[1] cursor-pointer transition-all duration-200 ease-in-out hover:z-50"
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -76,26 +76,25 @@ export const ScheduleCard = ({
       }}
     >
       <div
-        className={`border-t-accent border-t border-b border-b-accent w-full h-full min-h-[inherit] px-2 py-1.5 rounded-[4px] shadow-sm flex flex-col gap-0.5 transition-all duration-300 group-hover/card:min-w-[180px] group-hover/card:min-h-[max(100%,100px)] group-hover/card:h-fit group-hover/card:shadow-2xl  ${
+        className={`flex h-full min-h-[inherit] w-full flex-col gap-0.5 border-y px-2 py-1.5 shadow-sm transition-all duration-300 group-hover/card:h-fit group-hover/card:min-h-[max(100%,100px)] group-hover/card:min-w-[180px] group-hover/card:shadow-2xl ${
           THEMES[schedule.scheduleType] ||
-          'bg-gray-100 text-gray-700 border-gray-300'
+          'border-border bg-muted text-foreground'
         } ${isContinued ? 'opacity-90 border-dashed' : ''}`}
       >
         {!isContinued ? (
-          <div className="text-[11px] font-bold leading-tight truncate group-hover/card:whitespace-normal">
+          <div className="text-xs-sb truncate leading-tight group-hover/card:whitespace-normal">
             {schedule.ui.cardTitle}
           </div>
         ) : (
-          <div className="text-[10px] italic opacity-70 leading-tight">
+          <div className="text-xs-r leading-tight italic opacity-70">
             (계속)
           </div>
         )}
-        <div className="text-[10px] opacity-80 font-medium leading-tight truncate group-hover/card:whitespace-normal">
+        <div className="text-xs-m truncate leading-tight opacity-80 group-hover/card:whitespace-normal">
           {getTimeDisplay()}
         </div>
 
-        {/* 추가 정보 (호버 시에만 명확히 노출) */}
-        <div className="hidden group-hover/card:flex flex-col gap-1 text-[9px] mt-1 opacity-70 border-t border-current pt-1">
+        <div className="text-xs-r mt-1 hidden flex-col gap-1 border-t border-current pt-1 opacity-70 group-hover/card:flex">
           {schedule.place?.name && (
             <p className="truncate">📍 {schedule.place.name}</p>
           )}
@@ -108,7 +107,7 @@ export const ScheduleCard = ({
             <p>👥 참여자 {schedule.meeting.participantCount}명</p>
           )}
           {schedule.memo && (
-            <p className="italic mt-0.5 opacity-60">" {schedule.memo} "</p>
+            <p className="mt-0.5 italic opacity-60">" {schedule.memo} "</p>
           )}
         </div>
       </div>

@@ -31,11 +31,13 @@ export const InviteCodeDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Input
-          value={inviteCode}
-          onChange={(event) => setInviteCode(event.target.value)}
-          placeholder="초대 코드를 입력하세요"
-        />
+        <div className="pt-4">
+          <Input
+            value={inviteCode}
+            onChange={(event) => setInviteCode(event.target.value)}
+            placeholder="초대 코드를 입력하세요"
+          />
+        </div>
 
         <DialogFooter className="sm:justify-end">
           <Button

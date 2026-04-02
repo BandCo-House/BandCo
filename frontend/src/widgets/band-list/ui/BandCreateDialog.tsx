@@ -72,7 +72,7 @@ export const BandCreateDialog = ({
 
         <div className="space-y-6 pt-4">
           <label htmlFor="band-name" className="flex flex-col gap-3">
-            <span className="text-lg font-semibold">밴드 이름</span>
+            <span className="text-lg-sb">밴드 이름</span>
             <Input
               id="band-name"
               value={form.name}
@@ -84,7 +84,7 @@ export const BandCreateDialog = ({
           </label>
 
           <label htmlFor="band-description" className="flex flex-col gap-3">
-            <span className="text-lg font-semibold">밴드 소개</span>
+            <span className="text-lg-sb">밴드 소개</span>
             <textarea
               id="band-description"
               value={form.description}
@@ -95,11 +95,11 @@ export const BandCreateDialog = ({
                 }))
               }
               placeholder="주 1회 합주하는 밴드입니다."
-              className="w-full rounded-xl border border-border bg-white p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="text-base-r w-full rounded-2xl border border-border bg-input p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </label>
 
-          <label className="flex items-center gap-3 text-muted">
+          <label className="text-base-r flex items-center gap-3 text-muted">
             <Checkbox
               checked={form.visibility}
               onCheckedChange={(checked) =>
@@ -113,9 +113,9 @@ export const BandCreateDialog = ({
           </label>
 
           {fieldError ? (
-            <p className="text-sm text-destructive">{fieldError}</p>
+            <p className="text-sm-r text-destructive">{fieldError}</p>
           ) : null}
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="text-sm-r text-destructive">{error}</p> : null}
         </div>
 
         <DialogFooter className="sm:justify-end">

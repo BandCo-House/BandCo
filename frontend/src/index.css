@@ -144,6 +144,104 @@
   }
 }
 
+@layer utilities {
+  .text-3xl-b {
+    font-size: 2rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .text-2xl {
+    font-size: 1.75rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .text-xl-sb {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .text-lg-b {
+    font-size: 1.125rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .text-lg-sb {
+    font-size: 1.125rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .text-base-b {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .text-base-sb {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .text-base-m {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .text-base-r {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .text-sm-b {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .text-sm-sb {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .text-sm-m {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .text-sm-r {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .text-xs-sb {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .text-xs-m {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .text-xs-r {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+}
+
 button {
   cursor: pointer;
 }

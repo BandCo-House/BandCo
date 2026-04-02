@@ -20,7 +20,7 @@ export const PlaceSelect = ({ value, onChange, label }: PlaceSelectProps) => {
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <label htmlFor={id} className="text-sm font-medium text-gray-700">
+        <label htmlFor={id} className="text-sm-m text-foreground">
           {label}
         </label>
       )}
@@ -30,7 +30,7 @@ export const PlaceSelect = ({ value, onChange, label }: PlaceSelectProps) => {
           id={id}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+          className="text-sm-r h-12 w-full appearance-none rounded-2xl border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
         >
           <option value="" disabled>
             장소 선택

@@ -14,7 +14,7 @@ export const DateInput = ({ value, onChange, label }: DateInputProps) => {
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <label htmlFor={id} className="text-sm font-medium text-gray-700">
+        <label htmlFor={id} className="text-sm-m text-foreground">
           {label}
         </label>
       )}
@@ -25,7 +25,7 @@ export const DateInput = ({ value, onChange, label }: DateInputProps) => {
           type="date"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-12 pl-10 rounded-xl border-gray-200 focus:ring-primary/20"
+          className="h-12 rounded-2xl pl-10 focus:ring-ring/50"
         />
       </div>
     </div>

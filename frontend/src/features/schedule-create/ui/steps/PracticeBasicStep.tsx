@@ -20,7 +20,7 @@ export const PracticeBasicStep = ({
 
   return (
     <div className="flex flex-col gap-6 py-4">
-      <h2 className="text-xl font-bold text-gray-800">합주 연습 기본 정보</h2>
+      <h2 className="text-xl-sb text-foreground">합주 연습 기본 정보</h2>
       <div className="space-y-4">
         <DateInput
           label="날짜"
@@ -43,7 +43,7 @@ export const PracticeBasicStep = ({
       <Button
         onClick={onNext}
         disabled={isNextDisabled}
-        className="h-12 rounded-xl text-lg font-bold mt-4"
+        className="text-lg-b mt-4 h-12 rounded-2xl"
       >
         다음 단계로
       </Button>
