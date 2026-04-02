@@ -31,7 +31,7 @@ function Input({ className, type, isSearchBar = false, ...props }: InputProps) {
       type={type}
       data-slot="input"
       className={cn(
-        'text-base-r file:text-sm-m file:text-foreground placeholder:text-muted selection:bg-primary selection:text-primary-foreground border-border w-full rounded-full border bg-input px-4 py-3 transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+        'text-base-r file:text-sm file:font-medium file:text-foreground placeholder:text-muted selection:bg-primary selection:text-primary-foreground border-border w-full rounded-full border bg-input px-4 py-3 transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
         'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50',
         'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
         isSearchBar && 'pl-11',

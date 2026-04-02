@@ -70,7 +70,7 @@ export const PageHeader = ({
                 <h1
                   className={cn(
                     'text-2xl truncate',
-                    title === 'JamPlay' ? 'hidden sm:block' : undefined,
+                    title === 'JamPlay' ? 'sr-only sm:not-sr-only' : undefined,
                   )}
                 >
                   {title}
