@@ -12,16 +12,19 @@ export class SpacesController {
   constructor(private readonly spacesService: SpacesService) {}
 
   @Get('bands/:bandId/spaces')
-  getBandSpaces(@Param('bandId') bandId: string, @Query() rawQuery: GetBandSpacesQueryParams): ApiSuccessResponse<GetBandSpacesResult> {
+  async getBandSpaces(
+    @Param('bandId') bandId: string,
+    @Query() rawQuery: GetBandSpacesQueryParams,
+  ): Promise<ApiSuccessResponse<GetBandSpacesResult>> {
     const query = parseGetBandSpacesQuery(rawQuery);
-    const spaces = this.spacesService.getBandSpaces(bandId, query);
+    const spaces = await this.spacesService.getBandSpaces(bandId, query);
 
     return createSuccessResponse('합주 공간 목록 조회 성공', spaces);
   }
 
   @Get('spaces/:spaceId')
-  getSpaceDetail(@Param('spaceId') spaceId: string): ApiSuccessResponse<GetSpaceDetailResult> {
-    const spaceDetail = this.spacesService.getSpaceDetail(spaceId);
+  async getSpaceDetail(@Param('spaceId') spaceId: string): Promise<ApiSuccessResponse<GetSpaceDetailResult>> {
+    const spaceDetail = await this.spacesService.getSpaceDetail(spaceId);
 
     return createSuccessResponse('합주 공간 상세 조회 성공', spaceDetail);
   }
