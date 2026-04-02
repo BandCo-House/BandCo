@@ -41,8 +41,8 @@ export const PageHeader = ({
         className,
       )}
     >
-      <div className="mx-auto grid min-h-24 w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 px-6">
-        <div className="min-w-0 flex items-center gap-5">
+      <div className="mx-auto grid min-h-24 w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-6 sm:gap-5">
+        <div className="min-w-0 flex items-center gap-3 sm:gap-4">
           {!showBack ? (
             <span
               aria-hidden="true"
@@ -51,7 +51,7 @@ export const PageHeader = ({
           ) : null}
 
           <div className="min-w-0">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {showBack ? (
                 <BackButton
                   label="뒤로"
@@ -67,7 +67,12 @@ export const PageHeader = ({
                     {brandLabel}
                   </p>
                 ) : null}
-                <h1 className="truncate text-2xl font-semibold leading-tight tracking-tight">
+                <h1
+                  className={cn(
+                    'truncate text-2xl font-semibold leading-tight tracking-tight',
+                    title === 'JamPlay' ? 'hidden sm:block' : undefined,
+                  )}
+                >
                   {title}
                 </h1>
                 {subtitle ? (

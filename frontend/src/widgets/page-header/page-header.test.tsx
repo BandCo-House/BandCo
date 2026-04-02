@@ -44,4 +44,24 @@ describe('PageHeader', () => {
     expect(onTabClick).toHaveBeenCalledTimes(1);
     expect(onRightActionClick).toHaveBeenCalledTimes(1);
   });
+
+  it('모든 페이지에서 공통 헤더 셸은 전역 본문 셸과 동일한 최대 너비 클래스를 사용해야 한다', () => {
+    render(<PageHeader title="JamPlay" />);
+
+    expect(screen.getByRole('banner').firstElementChild).toHaveClass(
+      'mx-auto',
+      'w-full',
+      'max-w-7xl',
+      'px-6',
+    );
+  });
+
+  it('JamPlay 타이틀은 모바일에서 숨김 클래스를 가져야 한다', () => {
+    render(<PageHeader title="JamPlay" />);
+
+    expect(screen.getByRole('heading', { name: 'JamPlay' })).toHaveClass(
+      'hidden',
+      'sm:block',
+    );
+  });
 });
