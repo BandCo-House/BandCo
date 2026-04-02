@@ -125,7 +125,7 @@ export const WeeklyTimeGrid = ({
               key={index}
               className="flex w-full flex-col items-center justify-center gap-1 border-r border-border text-center last:border-r-0"
             >
-              <div className="text-sm-r text-muted">
+              <div className="typo-sm-r text-muted">
                 {
                   ['월', '화', '수', '목', '금', '토', '일'][
                     day.getDay() === 0 ? 6 : day.getDay() - 1
@@ -133,7 +133,7 @@ export const WeeklyTimeGrid = ({
                 }
               </div>
               <div
-                className={`text-sm-sb flex h-5 w-8 items-center justify-center rounded-full transition-colors ${
+                className={`typo-sm-sb flex h-5 w-8 items-center justify-center rounded-full transition-colors ${
                   isToday
                     ? 'bg-primary text-secondary-surface'
                     : 'text-foreground'
@@ -173,7 +173,7 @@ export const WeeklyTimeGrid = ({
                   {minutes.map((minute) => (
                     <div
                       key={`${hour}-${minute}`}
-                      className="text-xs-r absolute w-full pr-2 text-right"
+                      className="typo-xs-r absolute w-full pr-2 text-right"
                       style={{
                         top: minute === 0 ? '4px' : `${(minute / 60) * 100}%`,
                         opacity: minute === 0 ? 1 : 0.6,

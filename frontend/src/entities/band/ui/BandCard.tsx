@@ -22,17 +22,17 @@ export const BandCard = ({ band }: BandCardProps) => {
 
       <div className="flex min-h-24 flex-col justify-between px-2 pb-1 pt-4">
         <div className="space-y-1 text-center">
-          <p className="text-lg-sb truncate">
+          <p className="typo-lg-sb truncate">
             {band.name}
           </p>
           {band.description ? (
-            <p className="text-sm-r line-clamp-1 text-muted">
+            <p className="typo-sm-r line-clamp-1 text-muted">
               {band.description}
             </p>
           ) : null}
         </div>
 
-        <div className="text-sm-m flex items-center justify-end gap-1.5 text-muted">
+        <div className="typo-sm-m flex items-center justify-end gap-1.5 text-muted">
           <SVGIcon icon="Member" size="sm" />
           <span>{band.memberCount ?? 0}명</span>
         </div>

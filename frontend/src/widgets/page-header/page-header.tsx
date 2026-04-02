@@ -56,27 +56,27 @@ export const PageHeader = ({
                 <BackButton
                   label="뒤로"
                   variant="ghost"
-                  className="text-sm-sb"
+                  className="typo-sm-sb"
                   onClick={onBack}
                 />
               ) : null}
 
               <div className="min-w-0">
                 {brandLabel ? (
-                  <p className="mb-1 text-xs-sb text-muted">
+                  <p className="mb-1 typo-xs-sb text-muted">
                     {brandLabel}
                   </p>
                 ) : null}
                 <h1
                   className={cn(
-                    'text-2xl-b truncate',
+                    'typo-2xl-b truncate',
                     title === 'BandCo' ? 'sr-only sm:not-sr-only' : undefined,
                   )}
                 >
                   {title}
                 </h1>
                 {subtitle ? (
-                  <p className="text-base-r mt-1 text-muted">
+                  <p className="typo-base-r mt-1 text-muted">
                     {subtitle}
                   </p>
                 ) : null}
@@ -84,7 +84,7 @@ export const PageHeader = ({
             </div>
 
             {meta && meta.length > 0 ? (
-              <div className="text-sm-m mt-4 flex flex-wrap items-center gap-4 text-muted">
+              <div className="typo-sm-m mt-4 flex flex-wrap items-center gap-4 text-muted">
                 {meta.map((item) => (
                   <span key={item}>{item}</span>
                 ))}
@@ -104,7 +104,7 @@ export const PageHeader = ({
                   type="button"
                   variant={tab.active ? 'default' : 'outline'}
                   className={cn(
-                    'text-sm-sb h-9 rounded-lg px-4',
+                    'typo-sm-sb h-9 rounded-lg px-4',
                     tab.active
                       ? 'border-foreground bg-foreground text-background'
                       : 'bg-transparent text-foreground hover:bg-muted',
@@ -121,7 +121,7 @@ export const PageHeader = ({
             <Button
               type="button"
               variant="outline"
-              className="text-sm-sb h-9 rounded-lg border border-border px-4"
+              className="typo-sm-sb h-9 rounded-lg border border-border px-4"
               onClick={onRightActionClick}
             >
               {rightActionLabel}
