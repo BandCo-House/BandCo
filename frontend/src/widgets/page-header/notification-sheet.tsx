@@ -26,8 +26,8 @@ const getNotificationTextClassName = (
   isRead: boolean,
 ) =>
   tone === 'title'
-    ? `text-sm-b ${isRead ? 'text-muted' : 'text-foreground'}`
-    : `text-sm-r ${isRead ? 'text-muted' : 'text-foreground'}`;
+    ? `typo-sm-b ${isRead ? 'text-muted' : 'text-foreground'}`
+    : `typo-sm-r ${isRead ? 'text-muted' : 'text-foreground'}`;
 
 /**
  * 홈 헤더 알림 버튼에서 열리는 우측 시트 패널
@@ -76,7 +76,7 @@ export const NotificationSheet = () => {
     >
       <SheetHeader className="gap-0 p-0">
         <div className="flex items-center justify-between">
-          <SheetTitle className="text-xl-sb">
+          <SheetTitle className="typo-xl-sb">
             알림
           </SheetTitle>
 
@@ -85,10 +85,10 @@ export const NotificationSheet = () => {
             variant="ghost"
             size="sm"
             disabled={unreadCount === 0 || isMarkingAllAsRead}
-            className="text-xs-m h-auto px-0 text-muted hover:bg-transparent hover:text-foreground"
+            className="h-auto px-0 text-muted hover:bg-transparent hover:text-foreground"
             onClick={handleMarkAllAsRead}
           >
-            모두 읽음
+            <span className="typo-sm-m">모두 읽음</span>
           </Button>
         </div>
 
@@ -109,14 +109,14 @@ export const NotificationSheet = () => {
               variant="ghost"
               size="sm"
               className={cn(
-                'text-sm-sb relative px-4',
+                'relative px-4',
                 isActive
                   ? 'bg-foreground text-background hover:bg-foreground'
                   : 'bg-input text-muted hover:bg-input hover:text-foreground',
               )}
               onClick={() => setActiveType(type)}
             >
-              {translateNotificationType(type)}
+              <span className="typo-sm-sb">{translateNotificationType(type)}</span>
               {hasUnread ? (
                 <span
                   aria-hidden="true"
@@ -185,7 +185,7 @@ export const NotificationSheet = () => {
                           className="w-full justify-start rounded-xl px-3 text-foreground"
                           onClick={action.onClick}
                         >
-                          <span className="text-sm-m">{action.label}</span>
+                          <span className="typo-sm-m">{action.label}</span>
                         </Button>
                       ))}
                     </PopoverContent>

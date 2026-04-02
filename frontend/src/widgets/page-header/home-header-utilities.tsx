@@ -32,7 +32,7 @@ const NotificationTriggerButton = () => {
         >
           <SVGIcon icon="Bell" size="md" />
           {unreadSummary && unreadSummary.unreadCount > 0 ? (
-            <span className="text-xs-sb absolute -top-0.5 -right-0.5 inline-flex size-5 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+            <span className="typo-xs-sb absolute -top-0.5 -right-0.5 inline-flex size-5 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
               {unreadSummary.unreadCount}
             </span>
           ) : null}

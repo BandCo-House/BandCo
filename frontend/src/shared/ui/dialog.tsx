@@ -124,7 +124,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-2xl', className)}
+      className={cn('typo-2xl-b', className)}
       {...props}
     />
   );
