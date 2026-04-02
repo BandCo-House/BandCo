@@ -29,6 +29,12 @@ test('알림 목록 조회 컨트롤러는 공통 성공 응답 형식을 반환
         },
       };
     },
+    async markNotificationAsRead() {
+      return {
+        notificationId: 'notification-001',
+        isRead: true,
+      };
+    },
   };
   const service = new NotificationsService(repository);
   const controller = new NotificationsController(service);
@@ -44,4 +50,38 @@ test('알림 목록 조회 컨트롤러는 공통 성공 응답 형식을 반환
   assert.equal(response.data.items.length, 1);
   assert.equal(response.data.items[0]?.notificationId, 'notification-001');
   assert.equal(response.data.pagination.totalCount, 1);
+});
+
+test('알림 읽음 처리 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
+  const repository: NotificationsRepository = {
+    async findNotifications() {
+      return {
+        items: [],
+        pagination: {
+          page: 1,
+          size: 20,
+          totalCount: 0,
+          hasNext: false,
+        },
+      };
+    },
+    async markNotificationAsRead(notificationUserId, notificationId) {
+      assert.equal(notificationUserId, '11111111-1111-1111-1111-111111111111');
+
+      return {
+        notificationId,
+        isRead: true,
+      };
+    },
+  };
+  const service = new NotificationsService(repository);
+  const controller = new NotificationsController(service);
+
+  const response = await controller.markNotificationAsRead('notification-001');
+
+  assert.equal(response.status, 'success');
+  assert.equal(response.error, null);
+  assert.equal(response.message, '알림 읽음 처리 성공');
+  assert.equal(response.data.notificationId, 'notification-001');
+  assert.equal(response.data.isRead, true);
 });

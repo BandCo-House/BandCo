@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { createPagination } from '../../../common/pagination';
 import { PrismaService } from '../../../database/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
 
 import type { NotificationsRepository } from './notifications.repository';
@@ -56,6 +57,47 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
         page: query.page,
         size: query.size,
       }),
+    };
+  }
+
+  /**
+   * 현재 사용자 소유 알림만 읽음 상태로 바꾼다.
+   *
+   * @param {string} userId - 현재 로그인 사용자 대신 임시로 사용하는 사용자 ID
+   * @param {string} notificationId - 읽음 처리할 알림 ID
+   * @returns {Promise<MarkNotificationReadResult | undefined>} 읽음 처리 결과 또는 대상 없음
+   */
+  async markNotificationAsRead(userId: string, notificationId: string): Promise<MarkNotificationReadResult | undefined> {
+    const notification = await this.prisma.notification.findFirst({
+      where: {
+        id: notificationId,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (notification === null) {
+      return undefined;
+    }
+
+    const updatedNotification = await this.prisma.notification.update({
+      where: {
+        id: notificationId,
+      },
+      data: {
+        isRead: true,
+      },
+      select: {
+        id: true,
+        isRead: true,
+      },
+    });
+
+    return {
+      notificationId: updatedNotification.id,
+      isRead: updatedNotification.isRead,
     };
   }
 

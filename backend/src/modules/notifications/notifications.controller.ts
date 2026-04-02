@@ -1,8 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { type GetNotificationsQueryParams, parseGetNotificationsQuery } from './dto/get-notifications-query.dto';
+import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import { NotificationsService } from './notifications.service';
 
@@ -16,5 +17,12 @@ export class NotificationsController {
     const notifications = await this.notificationsService.getNotifications(query);
 
     return createSuccessResponse('알림 목록 조회 성공', notifications);
+  }
+
+  @Patch('notifications/:notificationId/read')
+  async markNotificationAsRead(@Param('notificationId') notificationId: string): Promise<ApiSuccessResponse<MarkNotificationReadResult>> {
+    const result = await this.notificationsService.markNotificationAsRead(notificationId);
+
+    return createSuccessResponse('알림 읽음 처리 성공', result);
   }
 }

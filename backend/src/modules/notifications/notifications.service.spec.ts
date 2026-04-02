@@ -32,6 +32,12 @@ test('알림 목록 조회 서비스는 임시 사용자 기준으로 repository
         },
       };
     },
+    async markNotificationAsRead() {
+      return {
+        notificationId: 'notification-001',
+        isRead: true,
+      };
+    },
   };
   const service = new NotificationsService(repository);
 
@@ -49,4 +55,40 @@ test('알림 목록 조회 서비스는 임시 사용자 기준으로 repository
   assert.equal(result.items.length, 1);
   assert.equal(result.items[0]?.type, 'INVITE');
   assert.equal(result.pagination.totalCount, 1);
+});
+
+test('알림 읽음 처리 서비스는 임시 사용자 기준으로 repository에 읽음 처리를 위임한다', async () => {
+  let capturedUserId: string | undefined;
+  let capturedNotificationId: string | undefined;
+
+  const repository: NotificationsRepository = {
+    async findNotifications() {
+      return {
+        items: [],
+        pagination: {
+          page: 1,
+          size: 20,
+          totalCount: 0,
+          hasNext: false,
+        },
+      };
+    },
+    async markNotificationAsRead(userId, notificationId) {
+      capturedUserId = userId;
+      capturedNotificationId = notificationId;
+
+      return {
+        notificationId,
+        isRead: true,
+      };
+    },
+  };
+  const service = new NotificationsService(repository);
+
+  const result = await service.markNotificationAsRead('notification-001');
+
+  assert.equal(capturedUserId, '11111111-1111-1111-1111-111111111111');
+  assert.equal(capturedNotificationId, 'notification-001');
+  assert.equal(result.notificationId, 'notification-001');
+  assert.equal(result.isRead, true);
 });
