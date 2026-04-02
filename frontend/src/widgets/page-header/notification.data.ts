@@ -92,3 +92,16 @@ export const buildUnreadByTypeFromNotifications = (
     (notification) => notification.type === 'REMINDER' && !notification.isRead,
   ).length,
 });
+
+/**
+ * 미리보기 목록에서 특정 알림을 읽음 상태로 갱신합니다.
+ */
+export const markNotificationPreviewAsRead = (
+  notifications: NotificationPreview[],
+  notificationId: string,
+) =>
+  notifications.map((notification) =>
+    notification.notificationId === notificationId
+      ? { ...notification, isRead: true }
+      : notification,
+  );

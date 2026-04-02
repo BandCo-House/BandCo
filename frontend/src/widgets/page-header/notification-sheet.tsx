@@ -1,6 +1,11 @@
 import { useState } from 'react';
-import type { NotificationType, NotificationUnreadByType } from '@/entities/notification/model/types';
+import type { NotificationType } from '@/entities/notification/model/types';
+import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
+import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
 import { Button } from '@/shared/ui/button';
+import { SVGIcon } from '@/shared/ui/icon';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
+import { cn } from '@/shared/lib/utils';
 import {
   SheetContent,
   SheetDescription,
@@ -9,25 +14,60 @@ import {
 } from '@/shared/ui/sheet';
 import {
   buildUnreadByTypeFromNotifications,
+  getUnreadNotificationsCount,
+  markNotificationPreviewAsRead,
   notificationPreviews,
   notificationTypeFilters,
   translateNotificationType,
 } from './notification.data';
 
+const getNotificationTextClassName = (
+  tone: 'title' | 'description',
+  isRead: boolean,
+) =>
+  tone === 'title'
+    ? `text-sm-b ${isRead ? 'text-muted' : 'text-foreground'}`
+    : `text-sm-r ${isRead ? 'text-muted' : 'text-foreground'}`;
+
 /**
  * 홈 헤더 알림 버튼에서 열리는 우측 시트 패널
  */
-export const NotificationSheet = ({
-  unreadByType,
-}: {
-  unreadByType?: NotificationUnreadByType;
-}) => {
+export const NotificationSheet = () => {
   const [activeType, setActiveType] = useState<NotificationType>('INVITE');
-  const visibleNotifications = notificationPreviews.filter(
+  const [notifications, setNotifications] = useState(notificationPreviews);
+  const { mutate: markAllAsRead, isPending: isMarkingAllAsRead } =
+    useMarkAllNotificationsAsRead();
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+  const visibleNotifications = notifications.filter(
     (notification) => notification.type === activeType,
   );
-  const resolvedUnreadByType =
-    unreadByType ?? buildUnreadByTypeFromNotifications(notificationPreviews);
+  const resolvedUnreadByType = buildUnreadByTypeFromNotifications(notifications);
+  const unreadCount = getUnreadNotificationsCount(notifications);
+
+  /**
+   * 카드 액션에서 개별 알림을 읽음 처리합니다.
+   */
+  const handleMarkAsRead = (notificationId: string, type: NotificationType) => {
+    setNotifications((currentNotifications) =>
+      markNotificationPreviewAsRead(currentNotifications, notificationId),
+    );
+
+    markAsRead({ notificationId, type });
+  };
+
+  /**
+   * 현재 시트에 표시 중인 알림 전체를 읽음 상태로 변경합니다.
+   */
+  const handleMarkAllAsRead = () => {
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((notification) => ({
+        ...notification,
+        isRead: true,
+      })),
+    );
+
+    markAllAsRead();
+  };
 
   return (
     <SheetContent
@@ -35,8 +75,8 @@ export const NotificationSheet = ({
       className="w-full rounded-none border-l border-border bg-card px-4 py-5 backdrop-blur-xl sm:max-w-sm sm:px-5"
     >
       <SheetHeader className="gap-0 p-0">
-        <div className="flex items-center justify-between gap-3">
-          <SheetTitle className="text-2xl">
+        <div className="flex items-center justify-between">
+          <SheetTitle className="text-xl-sb">
             알림
           </SheetTitle>
 
@@ -44,7 +84,9 @@ export const NotificationSheet = ({
             type="button"
             variant="ghost"
             size="sm"
-            className="text-xs-sb h-auto px-0 text-muted hover:bg-transparent hover:text-foreground"
+            disabled={unreadCount === 0 || isMarkingAllAsRead}
+            className="text-xs-m h-auto px-0 text-muted hover:bg-transparent hover:text-foreground"
+            onClick={handleMarkAllAsRead}
           >
             모두 읽음
           </Button>
@@ -55,7 +97,7 @@ export const NotificationSheet = ({
         </SheetDescription>
       </SheetHeader>
 
-      <nav aria-label="알림 분류" className="mt-4 flex items-center gap-2">
+      <nav aria-label="알림 분류" className="mt-0 flex items-center gap-2">
         {notificationTypeFilters.map((type) => {
           const hasUnread = resolvedUnreadByType[type] > 0;
           const isActive = type === activeType;
@@ -66,9 +108,12 @@ export const NotificationSheet = ({
               type="button"
               variant="ghost"
               size="sm"
-              className={isActive
-                ? 'text-sm-sb relative h-9 bg-foreground px-4 text-background hover:bg-foreground'
-                : 'text-sm-sb relative h-9 bg-input px-4 text-muted hover:bg-input hover:text-foreground'}
+              className={cn(
+                'text-sm-sb relative px-4',
+                isActive
+                  ? 'bg-foreground text-background hover:bg-foreground'
+                  : 'bg-input text-muted hover:bg-input hover:text-foreground',
+              )}
               onClick={() => setActiveType(type)}
             >
               {translateNotificationType(type)}
@@ -83,19 +128,73 @@ export const NotificationSheet = ({
         })}
       </nav>
 
-      <ul aria-label="알림 목록" className="mt-4 space-y-3">
+      <ul aria-label="알림 목록" className="mt-2 space-y-3">
         {visibleNotifications.map((notification) => (
           <li key={notification.notificationId}>
-            <article className="rounded-2xl border border-border bg-card px-4 py-4 shadow-xl/5">
-              <div className="space-y-1">
-                <h3 className="text-lg-b text-foreground">
-                  {notification.title}
-                </h3>
-                <p className="text-base-r text-muted">
-                  {notification.description}
-                </p>
+            {(() => {
+              const actions = [
+                {
+                  key: 'mark-as-read',
+                  label: '읽음으로 표시',
+                  disabled: notification.isRead,
+                  onClick: () =>
+                    handleMarkAsRead(
+                      notification.notificationId,
+                      notification.type,
+                    ),
+                },
+              ];
+              const hasEnabledActions = actions.some((action) => !action.disabled);
+
+              return (
+                <article className="rounded-lg border border-border bg-card px-4 py-4 shadow-xl/5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                  <h3 className={getNotificationTextClassName('title', notification.isRead)}>
+                    {notification.title}
+                  </h3>
+                  <p className={getNotificationTextClassName('description', notification.isRead)}>
+                    {notification.description}
+                  </p>
+                </div>
+
+                {hasEnabledActions ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`${notification.title} 더보기`}
+                        className="-mt-1 -mr-3 size-8 shrink-0 rounded-full text-muted hover:bg-background/80 hover:text-foreground"
+                      >
+                        <SVGIcon icon="Kebab" size="sm" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      sideOffset={0}
+                      className="w-40 bg-popover p-1"
+                    >
+                      {actions.map((action) => (
+                        <Button
+                          key={action.key}
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={action.disabled}
+                          className="w-full justify-start rounded-xl px-3 text-foreground"
+                          onClick={action.onClick}
+                        >
+                          <span className="text-sm-m">{action.label}</span>
+                        </Button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+                ) : null}
               </div>
-            </article>
+                </article>
+              );
+            })()}
           </li>
         ))}
       </ul>

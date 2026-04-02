@@ -17,4 +17,28 @@ export const notificationHandlers = [
       },
     });
   }),
+  http.patch(
+    `${API_URL}/notifications/:notificationId/read`,
+    ({ params }) => {
+      return HttpResponse.json({
+        status: 'success',
+        error: null,
+        message: '알림 읽음 처리 성공',
+        data: {
+          notificationId: params.notificationId,
+          updatedCount: 1,
+        },
+      });
+    },
+  ),
+  http.patch(`${API_URL}/notifications/read-all`, () => {
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '전체 알림 읽음 처리 성공',
+      data: {
+        updatedCount: 3,
+      },
+    });
+  }),
 ];

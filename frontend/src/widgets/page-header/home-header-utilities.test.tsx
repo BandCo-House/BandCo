@@ -16,6 +16,19 @@ vi.mock('@/entities/notification/api/useNotificationUnreadSummary', () => ({
   }),
 }));
 
+vi.mock('@/entities/notification/api/useMarkNotificationAsRead', () => ({
+  useMarkNotificationAsRead: () => ({
+    mutate: vi.fn(),
+  }),
+}));
+
+vi.mock('@/entities/notification/api/useMarkAllNotificationsAsRead', () => ({
+  useMarkAllNotificationsAsRead: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {

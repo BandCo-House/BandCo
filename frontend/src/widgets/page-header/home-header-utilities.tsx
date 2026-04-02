@@ -38,7 +38,7 @@ const NotificationTriggerButton = () => {
           ) : null}
         </Button>
       </SheetTrigger>
-      <NotificationSheet unreadByType={unreadSummary?.unreadByType} />
+      <NotificationSheet />
     </Sheet>
   );
 };
