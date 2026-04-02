@@ -8,6 +8,20 @@ import { SpacesService } from './spaces.service';
 
 function createSpacesRepositoryStub(): SpacesRepository {
   return {
+    async createBandSpace(bandId, input) {
+      return {
+        spaceId: 'created-space-001',
+        bandId,
+        name: input.name,
+        description: input.description,
+        spaceType: input.spaceType,
+        status: input.status,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        createdByUserId: 'user-001',
+        createdAt: '2026-02-21T09:30:00.000Z',
+      };
+    },
     async findBandSpaces() {
       return {
         items: [
@@ -96,6 +110,27 @@ function createSpacesRepositoryStub(): SpacesRepository {
     },
   };
 }
+
+test('합주 공간 생성 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
+  const repository = createSpacesRepositoryStub();
+  const service = new SpacesService(repository);
+  const controller = new SpacesController(service);
+
+  const response = await controller.createBandSpace('band-001', {
+    name: '3월 정기 합주',
+    description: '정기 합주 준비',
+    spaceType: 'STUDIO',
+    status: 'ACTIVE',
+    startDate: '2026-03-01',
+    endDate: '2026-03-20',
+  });
+
+  assert.equal(response.status, 'success');
+  assert.equal(response.error, null);
+  assert.equal(response.message, '합주 공간 생성 성공');
+  assert.equal(response.data.spaceId, 'created-space-001');
+  assert.equal(response.data.bandId, 'band-001');
+});
 
 test('합주 공간 목록 조회 컨트롤러는 공통 성공 응답 형식을 반환한다', async () => {
   const repository = createSpacesRepositoryStub();

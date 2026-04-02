@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { createPagination } from '../../../common/pagination';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
+import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
+import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
 
 import type { SpacesRepository } from './spaces.repository';
@@ -80,6 +82,69 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
 @Injectable()
 export class SpacesPrismaRepository implements SpacesRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * 밴드 아래에 새 합주 공간을 만들고,
+   * 생성자를 기본 리더 멤버로 함께 연결한다.
+   *
+   * @param {string} bandId - 공간을 만들 대상 밴드 ID
+   * @param {CreateBandSpaceInput} input - 검증이 끝난 생성 요청값
+   * @returns {Promise<CreateBandSpaceResult>} 생성 응답 데이터
+   */
+  async createBandSpace(bandId: string, input: CreateBandSpaceInput): Promise<CreateBandSpaceResult> {
+    const band = await this.prisma.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (band === null) {
+      throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+    }
+
+    const createdSpace = await this.prisma.$transaction(async transaction => {
+      const bandSpace = await transaction.bandSpace.create({
+        data: {
+          bandId,
+          name: input.name,
+          description: input.description,
+          spaceType: input.spaceType,
+          status: input.status,
+          startDate: new Date(`${input.startDate}T00:00:00.000Z`),
+          endDate: new Date(`${input.endDate}T00:00:00.000Z`),
+          createdByUserId: DEMO_VIEWER_USER_ID,
+        },
+      });
+
+      await transaction.spaceMember.create({
+        data: {
+          spaceId: bandSpace.id,
+          userId: DEMO_VIEWER_USER_ID,
+          role: 'LEADER',
+          status: 'ACTIVE',
+        },
+      });
+
+      return bandSpace;
+    });
+
+    return {
+      spaceId: createdSpace.id,
+      bandId: createdSpace.bandId,
+      name: createdSpace.name ?? '',
+      description: createdSpace.description ?? '',
+      spaceType: createdSpace.spaceType ?? 'ETC',
+      status: createdSpace.status ?? 'INACTIVE',
+      startDate: this.formatDateOnly(createdSpace.startDate),
+      endDate: this.formatDateOnly(createdSpace.endDate),
+      createdByUserId: createdSpace.createdByUserId,
+      createdAt: createdSpace.createdAt.toISOString(),
+    };
+  }
 
   /**
    * 밴드 소속 합주 공간 목록을 실제 DB에서 조회하고,

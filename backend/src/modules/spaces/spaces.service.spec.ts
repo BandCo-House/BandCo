@@ -8,6 +8,20 @@ import { SpacesService } from './spaces.service';
 
 function createSpacesRepositoryStub(): SpacesRepository {
   return {
+    async createBandSpace(bandId, input) {
+      return {
+        spaceId: 'created-space-001',
+        bandId,
+        name: input.name,
+        description: input.description,
+        spaceType: input.spaceType,
+        status: input.status,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        createdByUserId: 'user-001',
+        createdAt: '2026-02-21T09:30:00.000Z',
+      };
+    },
     async findBandSpaces() {
       return {
         items: [
@@ -80,6 +94,25 @@ function createSpacesRepositoryStub(): SpacesRepository {
     },
   };
 }
+
+test('합주 공간 생성 서비스는 repository가 만든 응답을 그대로 반환한다', async () => {
+  const repository = createSpacesRepositoryStub();
+  const service = new SpacesService(repository);
+
+  const result = await service.createBandSpace('band-001', {
+    name: '3월 정기 합주',
+    description: '정기 합주 준비',
+    spaceType: 'STUDIO',
+    status: 'ACTIVE',
+    startDate: '2026-03-01',
+    endDate: '2026-03-20',
+  });
+
+  assert.equal(result.spaceId, 'created-space-001');
+  assert.equal(result.bandId, 'band-001');
+  assert.equal(result.name, '3월 정기 합주');
+  assert.equal(result.createdByUserId, 'user-001');
+});
 
 test('합주 공간 목록 조회 서비스는 repository 결과를 그대로 반환한다', async () => {
   const repository = createSpacesRepositoryStub();
