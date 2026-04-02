@@ -57,6 +57,11 @@ const seedIds = {
     summerThird: 'f6f6f6f6-f6f6-f6f6-f6f6-f6f6f6f6f6f6',
     acousticSecond: '17171717-1717-1717-1717-171717171717',
   },
+  notifications: {
+    invite: '18181818-1818-1818-1818-181818181818',
+    notice: '19191919-1919-1919-1919-191919191919',
+    reminder: '20202020-2020-2020-2020-202020202020',
+  },
 } as const;
 
 const seedUsers: readonly SeedUserDefinition[] = [
@@ -97,6 +102,7 @@ async function seedLocalDemoData(): Promise<void> {
   await upsertTeams();
   await upsertTeamMembers();
   await upsertTeamSongs();
+  await upsertNotifications();
 }
 
 /**
@@ -829,6 +835,78 @@ async function upsertTeamSongs(): Promise<void> {
       id: seedIds.teamSongs.acousticSecond,
       teamId: seedIds.teams.acousticUnit,
       songId: seedIds.songs.second,
+    },
+  });
+}
+
+/**
+ * 알림 목록 화면과 안읽음 개수 확인에 쓸 기본 알림 데이터를 만든다.
+ *
+ * @returns {Promise<void>} 알림 데이터가 준비되면 완료된다.
+ */
+async function upsertNotifications(): Promise<void> {
+  await prisma.notification.upsert({
+    where: { id: seedIds.notifications.invite },
+    update: {
+      userId: seedIds.users.minjun,
+      type: 'INVITE',
+      title: '밴드 초대가 도착했습니다.',
+      description: '이서연님이 합주하자 밴드로 초대했습니다.',
+      targetPath: `/invites/${seedIds.notifications.invite}`,
+      isRead: false,
+    },
+    create: {
+      id: seedIds.notifications.invite,
+      userId: seedIds.users.minjun,
+      type: 'INVITE',
+      title: '밴드 초대가 도착했습니다.',
+      description: '이서연님이 합주하자 밴드로 초대했습니다.',
+      targetPath: `/invites/${seedIds.notifications.invite}`,
+      isRead: false,
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: seedIds.notifications.notice },
+    update: {
+      userId: seedIds.users.minjun,
+      type: 'NOTICE',
+      title: '밴드 공지가 등록되었습니다.',
+      description: '정기 공연 공지 내용을 확인해주세요.',
+      targetPath: `/bands/${seedIds.band}/notices/${seedIds.notifications.notice}`,
+      isRead: true,
+    },
+    create: {
+      id: seedIds.notifications.notice,
+      userId: seedIds.users.minjun,
+      type: 'NOTICE',
+      title: '밴드 공지가 등록되었습니다.',
+      description: '정기 공연 공지 내용을 확인해주세요.',
+      targetPath: `/bands/${seedIds.band}/notices/${seedIds.notifications.notice}`,
+      isRead: true,
+    },
+  });
+
+  await prisma.notification.upsert({
+    where: { id: seedIds.notifications.reminder },
+    update: {
+      userId: seedIds.users.minjun,
+      type: 'REMINDER',
+      title: '오늘 합주 일정이 있습니다.',
+      description: '오후 7시 연습실 합주 일정을 확인해주세요.',
+      targetPath: `/spaces/${seedIds.spaces.acousticSession}/schedules/${seedIds.schedules.acousticPractice}`,
+      isRead: false,
+      remindsAt: new Date('2026-03-05T09:00:00.000Z'),
+    },
+    create: {
+      id: seedIds.notifications.reminder,
+      userId: seedIds.users.minjun,
+      type: 'REMINDER',
+      title: '오늘 합주 일정이 있습니다.',
+      description: '오후 7시 연습실 합주 일정을 확인해주세요.',
+      targetPath: `/spaces/${seedIds.spaces.acousticSession}/schedules/${seedIds.schedules.acousticPractice}`,
+      isRead: false,
+      remindsAt: new Date('2026-03-05T09:00:00.000Z'),
     },
   });
 }
