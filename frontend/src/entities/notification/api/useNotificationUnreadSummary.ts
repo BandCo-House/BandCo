@@ -3,6 +3,7 @@ import { getNotificationUnreadSummary } from './notification-api';
 
 export const notificationQueries = {
   all: ['notifications'] as const,
+  list: () => [...notificationQueries.all, 'list'] as const,
   unreadSummary: () => [...notificationQueries.all, 'unread-summary'] as const,
 };
 
