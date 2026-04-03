@@ -16,6 +16,50 @@ vi.mock('@/entities/notification/api/useNotificationUnreadSummary', () => ({
   }),
 }));
 
+vi.mock('@/entities/notification/api/useNotificationList', () => ({
+  useNotificationList: () => ({
+    data: {
+      items: [
+        {
+          notificationId: 'uuid-invite-1',
+          type: 'INVITE',
+          title: '인디 밴드 초대장 도착!',
+          description: '밴드에 참여하려면 초대를 확인해 주세요.',
+          isRead: false,
+          targetPath: '/invite/a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1',
+          createdAt: '2026-03-05T10:00:00+09:00',
+        },
+        {
+          notificationId: 'uuid-notice-1',
+          type: 'NOTICE',
+          title: '합주방 공지 업데이트',
+          description: '이번 주 합주실 사용 공지가 새로 등록되었어요.',
+          isRead: false,
+          targetPath:
+            '/band/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/notices/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          createdAt: '2026-03-05T11:00:00+09:00',
+        },
+        {
+          notificationId: 'uuid-reminder-1',
+          type: 'REMINDER',
+          title: '합주 일정 임박',
+          description: '내일 저녁 8시에 합주 일정이 있어요.',
+          isRead: false,
+          targetPath:
+            '/space/cccccccc-cccc-cccc-cccc-cccccccccccc/schedules/dddddddd-dddd-dddd-dddd-dddddddddddd',
+          createdAt: '2026-03-05T12:00:00+09:00',
+        },
+      ],
+      pagination: {
+        page: 1,
+        size: 20,
+        totalCount: 3,
+        hasNext: false,
+      },
+    },
+  }),
+}));
+
 vi.mock('@/entities/notification/api/useMarkNotificationAsRead', () => ({
   useMarkNotificationAsRead: () => ({
     mutate: vi.fn(),

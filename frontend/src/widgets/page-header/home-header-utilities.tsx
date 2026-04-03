@@ -5,6 +5,7 @@ import { Button } from '@/shared/ui/button';
 import { SVGIcon } from '@/shared/ui/icon';
 import { Input } from '@/shared/ui/input';
 import { Sheet, SheetTrigger } from '@/shared/ui/sheet';
+import { useNotificationList } from '@/entities/notification/api/useNotificationList';
 import { useNotificationUnreadSummary } from '@/entities/notification/api/useNotificationUnreadSummary';
 import { NotificationSheet } from './notification-sheet';
 
@@ -19,6 +20,7 @@ type HomeHeaderUtilitiesProps = {
  */
 const NotificationTriggerButton = () => {
   const { data: unreadSummary } = useNotificationUnreadSummary();
+  const { data: notificationList } = useNotificationList();
 
   return (
     <Sheet>
@@ -38,7 +40,7 @@ const NotificationTriggerButton = () => {
           ) : null}
         </Button>
       </SheetTrigger>
-      <NotificationSheet />
+      <NotificationSheet notifications={notificationList?.items} />
     </Sheet>
   );
 };
