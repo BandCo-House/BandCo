@@ -178,7 +178,7 @@ describe('앱 라우터', () => {
     ).toBeInTheDocument();
     unmount();
 
-    const songsRouter = createRouterForTest('/band/1/songs?performanceId=1', {
+    const songsRouter = createRouterForTest('/band/1/songs?spaceId=1', {
       isLoggedIn: true,
       isAdmin: false,
     });

@@ -79,16 +79,15 @@ export const NotificationSheet = ({
   };
 
   /**
-   * 현재 시트에 표시 중인 알림 전체를 읽음 상태로 변경합니다.
-   */
+ * 현재 알림 전체를 읽음 상태로 변경합니다.
+ */
   const handleMarkAllAsRead = () => {
     const previousNotifications = notifications;
 
     setNotifications((currentNotifications) =>
       currentNotifications.map((notification) => ({
         ...notification,
-        isRead:
-          notification.type === activeType ? true : notification.isRead,
+        isRead: true,
       })),
     );
 

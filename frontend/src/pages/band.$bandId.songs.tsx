@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  getPerformanceIdFromLocationSearch,
+  getSpaceIdFromLocationSearch,
   parseSongsSearch,
   resolveSongsHeader,
 } from './-band-header-utils';
@@ -9,7 +9,7 @@ export const Route = createFileRoute('/band/$bandId/songs')({
   validateSearch: parseSongsSearch,
   loader: ({ location }) => {
     return {
-      performanceId: getPerformanceIdFromLocationSearch(location.search),
+      spaceId: getSpaceIdFromLocationSearch(location.search),
     };
   },
   component: BandSongsRoutePage,

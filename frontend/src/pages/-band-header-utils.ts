@@ -10,7 +10,7 @@ type BandTabParams = {
 };
 
 type SongsSearch = {
-  performanceId?: string;
+  spaceId?: string;
 };
 
 /**
@@ -29,7 +29,7 @@ const toBandTabParams = (params: Record<string, string>): BandTabParams => ({
  */
 const buildSongsPath = ({ bandId, spaceId }: BandTabParams): string =>
   spaceId
-    ? `/band/${bandId}/songs?performanceId=${spaceId}`
+    ? `/band/${bandId}/songs?spaceId=${spaceId}`
     : `/band/${bandId}/songs`;
 
 /**
@@ -41,7 +41,7 @@ const buildPerformancePath = ({ bandId, spaceId }: BandTabParams): string =>
 /**
  * 공연 상세 화면에서 사용하는 공통 탭 세트.
  * - calendar: 현재 spaceId로 공연 캘린더 라우트 이동
- * - songs: 밴드 공용 songs 라우트로 이동하되 performanceId search로 복귀 컨텍스트를 유지
+ * - songs: 밴드 공용 songs 라우트로 이동하되 spaceId search로 복귀 컨텍스트를 유지
  */
 export const bandPerformanceTabs: HeaderTab[] = [
   {
@@ -122,29 +122,28 @@ export const resolvePerformanceHeader = ({
  * 문자열/배열/기타 타입이 들어와도 string 하나만 허용한다.
  */
 export const parseSongsSearch = (search: Record<string, unknown>): SongsSearch => ({
-  performanceId:
-    typeof search.performanceId === 'string' ? search.performanceId : undefined,
+  spaceId: typeof search.spaceId === 'string' ? search.spaceId : undefined,
 });
 
 /**
  * TanStack Router의 location.search가 런타임에 문자열/객체 모두 가능해서
- * 두 형태를 모두 처리해 performanceId를 안전하게 추출한다.
+ * 두 형태를 모두 처리해 spaceId를 안전하게 추출한다.
  */
-export const getPerformanceIdFromLocationSearch = (
+export const getSpaceIdFromLocationSearch = (
   rawSearch: unknown,
 ): string | undefined => {
   if (typeof rawSearch === 'string') {
     const query = rawSearch.startsWith('?') ? rawSearch.slice(1) : rawSearch;
-    return new URLSearchParams(query).get('performanceId') ?? undefined;
+    return new URLSearchParams(query).get('spaceId') ?? undefined;
   }
 
   if (
     rawSearch &&
     typeof rawSearch === 'object' &&
-    'performanceId' in rawSearch &&
-    typeof rawSearch.performanceId === 'string'
+    'spaceId' in rawSearch &&
+    typeof rawSearch.spaceId === 'string'
   ) {
-    return rawSearch.performanceId;
+    return rawSearch.spaceId;
   }
 
   return undefined;
@@ -152,7 +151,7 @@ export const getPerformanceIdFromLocationSearch = (
 
 /**
  * songs 화면 전용 헤더 해석기
- * songs URL에 실린 performanceId(search)를 읽어 캘린더 탭 복귀 대상을 결정한다.
+ * songs URL에 실린 spaceId(search)를 읽어 캘린더 탭 복귀 대상을 결정한다.
  */
 export const resolveSongsHeader = ({
   params,
@@ -160,13 +159,13 @@ export const resolveSongsHeader = ({
 }: HeaderResolveContext): HeaderResolveResult => {
   const songsData = loaderData as SongsSearch | undefined;
   const bandId = params.bandId;
-  const performanceId = songsData?.performanceId;
+  const spaceId = songsData?.spaceId;
 
-  const calendarPath = performanceId
-    ? `/band/${bandId}/space/${performanceId}`
+  const calendarPath = spaceId
+    ? `/band/${bandId}/space/${spaceId}`
     : `/band/${bandId}`;
-  const songsPath = performanceId
-    ? `/band/${bandId}/songs?performanceId=${performanceId}`
+  const songsPath = spaceId
+    ? `/band/${bandId}/songs?spaceId=${spaceId}`
     : `/band/${bandId}/songs`;
 
   return {
