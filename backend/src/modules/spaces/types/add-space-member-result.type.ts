@@ -1,8 +1,10 @@
+import type { BandSpaceMemberRole, BandSpaceMemberStatus } from '../../../generated/prisma';
+
 export interface AddSpaceMemberResult {
   memberId: string;
   spaceId: string;
   userId: string;
-  role: 'LEADER' | 'MEMBER';
-  status: 'ACTIVE' | 'INACTIVE';
+  role: BandSpaceMemberRole;
+  status: BandSpaceMemberStatus;
   joinedAt: string;
 }
