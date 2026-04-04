@@ -62,4 +62,27 @@ export class AuthService {
     const newUser = await this.membersService.createUserWithEmail(email, hash);
     return this.loginUser(email, newUser.id);
   }
+
+  parseTokenFromHeader(header: string, isbearer: boolean) {
+    {
+      const splitToken = header.split(' ');
+      const token = splitToken[1];
+      const prefix = isbearer ? 'Bearer' : 'Basic';
+      if (splitToken.length !== 2 || splitToken[0] !== prefix) {
+        throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+      }
+      return token;
+    }
+  }
+
+  decodeBasicToken(token: string) {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const split = decoded.split(':');
+    if (split.length !== 2) {
+      throw new UnauthorizedException('유효하지 않은 Basic 토큰입니다.');
+    }
+    const email = split[0];
+    const password = split[1];
+    return { email, password };
+  }
 }
