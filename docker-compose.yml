@@ -17,7 +17,7 @@ services:
     networks:
       - jamplay_network
   backend:
-    image: node:24
+    image: node:24.13.1
     container_name: jamplay_backend
     depends_on:
       db:
@@ -39,7 +39,7 @@ services:
     networks:
       - jamplay_network
   frontend:
-    image: node:24
+    image: node:22
     container_name: jamplay_frontend
     depends_on:
       - backend
