@@ -167,8 +167,8 @@ test('합주 공간 목록 조회 컨트롤러는 공통 성공 응답 형식을
 
   const response = await controller.getBandSpaces('band-001', {
     query: '공연',
-    page: '1',
-    size: '10',
+    page: 1,
+    size: 10,
   });
 
   assert.equal(response.status, 'success');
