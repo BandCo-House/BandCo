@@ -25,50 +25,50 @@ export const WeeklyCalendarHeader = ({
   const weekRangeText = formatWeekRange(startOfWeek, endOfWeek);
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 bg-inherit border-b border-gray-100">
+    <div className="flex items-center justify-between border-b border-border bg-inherit px-6 py-4">
       <div className="flex items-center gap-6">
-        {/* 달력 아이콘 */}
-        <div
-          className="flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded p-1 transition-colors"
+        <button
+          type="button"
+          className="rounded-md p-1 transition-colors hover:bg-muted"
           onClick={onToday}
           title="오늘로 이동"
         >
           <IconMap.Calendar width={24} height={24} className="" />
-        </div>
+        </button>
 
-        {/* 날짜 네비게이션 */}
-        <div className="flex items-center gap-3 w-90 justify-between">
+        <div className="flex w-full max-w-sm items-center justify-between gap-3">
           <Button
             onClick={onPrev}
             size={'icon'}
+            variant="outline"
             aria-label="이전 주"
-            className="w-9 h-8 bg-white  border-gray-200 rounded-[8px] hover:bg-gray-50 "
+            className="size-9 rounded-md bg-background hover:bg-muted"
           >
-            <ChevronLeft size={16} className="stroke-primary-light " />
+            <ChevronLeft size={16} className="stroke-primary-light" />
           </Button>
 
-          <h2 className="text-[17px] font-bold text-gray-800 tracking-tight min-w-37.5 text-center">
+          <h2 className="typo-lg-b min-w-0 flex-1 text-center text-foreground">
             {weekRangeText}
           </h2>
 
           <Button
             onClick={onNext}
             size={'icon'}
+            variant="outline"
             aria-label="다음 주"
-            className="w-9 h-8 bg-white border-gray-200 rounded-[8px] hover:bg-gray-50 "
+            className="size-9 rounded-md bg-background hover:bg-muted"
           >
             <ChevronRight size={16} className="stroke-primary-light" />
           </Button>
         </div>
       </div>
 
-      {/* 일정 추가 버튼 */}
-      <button
+      <Button
         onClick={onAddClick}
-        className="flex items-center gap-1.5 px-4 py-2 bg-accent border border-accent-surface hover:bg-[#b83c3c] text-secondary rounded-full transition-colors shadow-sm"
+        className="bg-accent text-secondary hover:bg-accent-light"
       >
         일정 <IconMap.Add width={14} height={14} className="text-secondary" />
-      </button>
+      </Button>
     </div>
   );
 };

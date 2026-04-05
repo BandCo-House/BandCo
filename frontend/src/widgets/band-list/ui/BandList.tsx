@@ -20,7 +20,7 @@ export const BandList = () => {
     <section data-testid="band-list" className="space-y-7">
       <div className="flex items-start justify-between gap-6">
         <div className="space-y-5">
-          <h2 className="text-3xl font-semibold tracking-tight">밴드</h2>
+          <h2 className="typo-3xl-b">밴드</h2>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button
@@ -45,7 +45,7 @@ export const BandList = () => {
         <Button
           type="button"
           variant="ghost"
-          className="gap-2 px-0 text-sm font-medium text-muted hover:text-foreground"
+          className="typo-sm-m gap-2 px-0 text-muted hover:text-foreground"
         >
           <span>목록 편집</span>
           <SVGIcon icon="Setting" size="sm" />
