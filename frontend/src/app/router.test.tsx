@@ -190,6 +190,23 @@ describe('앱 라우터', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('루트 경로의 본문 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
+    const router = createRouterForTest('/', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveClass(
+      'mx-auto',
+      'w-full',
+      'max-w-7xl',
+      'px-6',
+    );
+  });
+
   it('프로필 페이지에서는 우측 프로필 아바타를 렌더링하지 않는다', async () => {
     const profileRouter = createRouterForTest('/profile', {
       isLoggedIn: true,
