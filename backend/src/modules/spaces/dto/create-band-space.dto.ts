@@ -3,10 +3,9 @@ import { IsEnum, IsISO8601, IsNotEmpty, IsString, Matches, Validate } from 'clas
 
 import { EndDateNotBeforeStartDateConstraint } from '../../../common/validation/date-order.validator';
 import { trimStringValue } from '../../../common/validation/transform.util';
+import { BandSpaceStatus, BandSpaceType } from '../../../generated/prisma';
 import type { SpaceStatus, SpaceType } from '../types/band-space-list-item.type';
 
-const ALLOWED_SPACE_TYPES: readonly SpaceType[] = ['PRACTICE_ROOM', 'STUDIO', 'ONLINE', 'ETC'] as const;
-const ALLOWED_SPACE_STATUSES: readonly SpaceStatus[] = ['ACTIVE', 'INACTIVE'] as const;
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -34,7 +33,7 @@ export class CreateBandSpaceBodyDto {
   @IsString({
     message: 'spaceType는 문자열이어야 합니다.',
   })
-  @IsEnum(ALLOWED_SPACE_TYPES, {
+  @IsEnum(BandSpaceType, {
     message: 'spaceType는 허용된 값만 사용할 수 있습니다.',
   })
   spaceType!: SpaceType;
@@ -42,7 +41,7 @@ export class CreateBandSpaceBodyDto {
   @IsString({
     message: 'status는 문자열이어야 합니다.',
   })
-  @IsEnum(ALLOWED_SPACE_STATUSES, {
+  @IsEnum(BandSpaceStatus, {
     message: 'status는 허용된 값만 사용할 수 있습니다.',
   })
   status!: SpaceStatus;

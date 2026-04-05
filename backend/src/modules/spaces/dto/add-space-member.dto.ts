@@ -1,8 +1,8 @@
 import { IsEnum, IsString, Matches } from 'class-validator';
 
+import { BandSpaceMemberRole } from '../../../generated/prisma';
 import type { SpaceMemberRole } from '../types/band-space-list-item.type';
 
-const ALLOWED_SPACE_MEMBER_ROLES: readonly SpaceMemberRole[] = ['LEADER', 'MEMBER'] as const;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -20,10 +20,10 @@ export class AddSpaceMemberBodyDto {
   @IsString({
     message: 'role은 문자열이어야 합니다.',
   })
-  @IsEnum(ALLOWED_SPACE_MEMBER_ROLES, {
+  @IsEnum(BandSpaceMemberRole, {
     message: 'role은 허용된 값만 사용할 수 있습니다.',
   })
-  role: SpaceMemberRole = 'MEMBER';
+  role: SpaceMemberRole = BandSpaceMemberRole.MEMBER;
 }
 
 export type AddSpaceMemberInput = AddSpaceMemberBodyDto;
