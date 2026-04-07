@@ -144,6 +144,104 @@
   }
 }
 
+@layer utilities {
+  .typo-3xl-b {
+    font-size: 2rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .typo-2xl-b {
+    font-size: 1.75rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .typo-xl-sb {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .typo-lg-b {
+    font-size: 1.125rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .typo-lg-sb {
+    font-size: 1.125rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .typo-base-b {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .typo-base-sb {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .typo-base-m {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .typo-base-r {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .typo-sm-b {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .typo-sm-sb {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .typo-sm-m {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .typo-sm-r {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .typo-xs-sb {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .typo-xs-m {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .typo-xs-r {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+}
+
 button {
   cursor: pointer;
 }

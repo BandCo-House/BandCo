@@ -4,8 +4,8 @@ export type { PageHeaderProps } from './page-header';
 export { resolveHeader } from './resolve-header';
 export type {
   HeaderResolveContext,
+  HeaderTab,
   HeaderResolveResult,
   HeaderStaticConfig,
-  HeaderTab,
   RouteStaticData,
 } from './types';

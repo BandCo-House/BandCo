@@ -88,9 +88,9 @@ export const ScheduleCreateModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl">
+      <DialogContent className="overflow-hidden border-none p-0 shadow-2xl sm:max-w-xl">
         <DialogHeader className="px-8 pt-8 pb-2">
-          <DialogTitle className="text-2xl font-bold text-gray-800 tracking-tight">
+          <DialogTitle className="text-2xl text-foreground">
             새 일정 추가
           </DialogTitle>
         </DialogHeader>

@@ -113,21 +113,19 @@ export const WeeklyTimeGrid = ({
 
   return (
     <div
-      className="flex flex-col flex-1 overflow-hidden rounded-[8px] shadow-xl/5"
+      className="flex flex-1 flex-col overflow-hidden shadow-xl/5"
       style={style}
     >
-      {/* Header: 요일 및 날짜 */}
-      <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-gray-100 bg-[#FFFFFF66] sticky top-0 z-10 h-12.5">
-        {/* 좌상단 빈칸 */}
-        <div className="border-r border-gray-100"></div>
+      <div className="sticky top-0 z-10 grid h-12.5 grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-border bg-background/40">
+        <div className="border-r border-border"></div>
         {weekDays.map((day, index) => {
           const isToday = day.toDateString() === new Date().toDateString();
           return (
             <div
               key={index}
-              className=" text-center border-r border-gray-100 last:border-r-0 flex flex-col items-center gap-1 justify-center w-full"
+              className="flex w-full flex-col items-center justify-center gap-1 border-r border-border text-center last:border-r-0"
             >
-              <div className="font-normal text-sm text-gray-400">
+              <div className="typo-sm-r text-muted">
                 {
                   ['월', '화', '수', '목', '금', '토', '일'][
                     day.getDay() === 0 ? 6 : day.getDay() - 1
@@ -135,10 +133,10 @@ export const WeeklyTimeGrid = ({
                 }
               </div>
               <div
-                className={`w-8 h-5 flex items-center justify-center rounded-full transition-colors text-sm font-semibold ${
+                className={`typo-sm-sb flex h-5 w-8 items-center justify-center rounded-full transition-colors ${
                   isToday
                     ? 'bg-primary text-secondary-surface'
-                    : 'text-gray-700'
+                    : 'text-foreground'
                 }`}
                 data-testid="day-label"
               >
@@ -155,8 +153,7 @@ export const WeeklyTimeGrid = ({
         className="flex-1 overflow-y-scroll max-h-200"
       >
         <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] gap-x-0.5">
-          {/* 시간 레이블 (1 Column) */}
-          <div className="flex flex-col border-r border-gray-100 bg-[#FFFFFF66] w-16">
+          <div className="flex w-16 flex-col border-r border-border bg-background/40">
             {hours.map((hour) => {
               let minuteInterval = 60;
               if (zoomLevel >= 9) minuteInterval = 5;
@@ -171,12 +168,12 @@ export const WeeklyTimeGrid = ({
               return (
                 <div
                   key={`time-${hour}`}
-                  className="h-(--slot-height) border-b border-gray-100 relative text-gray-400 transition-[height] duration-200"
+                  className="relative h-(--slot-height) border-b border-border text-muted transition-[height] duration-200"
                 >
                   {minutes.map((minute) => (
                     <div
                       key={`${hour}-${minute}`}
-                      className="absolute w-full pr-2 text-right text-[10px] leading-none"
+                      className="typo-xs-r absolute w-full pr-2 text-right"
                       style={{
                         top: minute === 0 ? '4px' : `${(minute / 60) * 100}%`,
                         opacity: minute === 0 ? 1 : 0.6,
@@ -197,9 +194,8 @@ export const WeeklyTimeGrid = ({
           {weekDays.map((day, dayIndex) => (
             <div
               key={`col-${dayIndex}`}
-              className="flex flex-col border-last:border-r-0 border-t bg-white relative"
+              className="relative flex flex-col border-t bg-background"
             >
-              {/* 일정 카드 렌더링 */}
               {getSchedulesByDate(day).map((part, i) => (
                 <ScheduleCard
                   key={`${part.schedule.scheduleId}-${i}`}
@@ -221,9 +217,8 @@ export const WeeklyTimeGrid = ({
                 return (
                   <div
                     key={`slot-${dayIndex}-${hour}`}
-                    className="h-(--slot-height) border-b border-rose-200 relative"
+                    className="relative h-(--slot-height) border-b border-destructive-surface"
                   >
-                    {/* 정밀 그리드 선 (좌측 레이블과 완벽히 일치, 빨간색 계열) */}
                     <div className="absolute inset-0 flex flex-col pointer-events-none">
                       {subSlots.map((_, idx) => (
                         <div
@@ -233,7 +228,6 @@ export const WeeklyTimeGrid = ({
                       ))}
                     </div>
 
-                    {/* 클릭 가능한 영역 */}
                     <div
                       data-testid="time-slot"
                       onClick={(e) => {
