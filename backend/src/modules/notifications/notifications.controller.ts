@@ -2,7 +2,7 @@ import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
-import { type GetNotificationsQueryParams, parseGetNotificationsQuery } from './dto/get-notifications-query.dto';
+import { GetNotificationsQueryDto } from './dto/get-notifications-query.dto';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import type { UnreadNotificationCountResult } from './types/unread-notification-count-result.type';
@@ -13,8 +13,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get('notifications')
-  async getNotifications(@Query() rawQuery: GetNotificationsQueryParams): Promise<ApiSuccessResponse<GetNotificationsResult>> {
-    const query = parseGetNotificationsQuery(rawQuery);
+  async getNotifications(@Query() query: GetNotificationsQueryDto): Promise<ApiSuccessResponse<GetNotificationsResult>> {
     const notifications = await this.notificationsService.getNotifications(query);
 
     return createSuccessResponse('알림 목록 조회 성공', notifications);

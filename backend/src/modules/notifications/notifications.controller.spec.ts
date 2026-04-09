@@ -50,8 +50,8 @@ test('알림 목록 조회 컨트롤러는 공통 성공 응답 형식을 반환
   const controller = new NotificationsController(service);
 
   const response = await controller.getNotifications({
-    page: '1',
-    size: '20',
+    page: 1,
+    size: 20,
   });
 
   assert.equal(response.status, 'success');
