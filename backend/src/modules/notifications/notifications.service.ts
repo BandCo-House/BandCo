@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import { NOTIFICATIONS_REPOSITORY, type NotificationsRepository } from './repositories/notifications.repository';
@@ -22,6 +22,10 @@ export class NotificationsService {
    * @returns {Promise<GetNotificationsResult>} 알림 목록과 페이지 정보
    */
   async getNotifications(query: GetNotificationsQuery): Promise<GetNotificationsResult> {
+    if (query.from !== undefined && query.to !== undefined && query.from.getTime() > query.to.getTime()) {
+      throw new BadRequestException('from은 to보다 늦을 수 없습니다.');
+    }
+
     return this.notificationsRepository.findNotifications(DEMO_NOTIFICATION_USER_ID, query);
   }
 
