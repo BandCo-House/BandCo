@@ -7,10 +7,11 @@ import {
   parseOptionalDateValue,
   parseOptionalPositiveIntegerValue,
 } from '../../../common/validation/transform.util';
+import { NotificationType } from '../../../generated/prisma';
 
-export type NotificationListType = 'INVITE' | 'NOTICE' | 'REMINDER';
+export type NotificationListType = NotificationType;
 
-export const NOTIFICATION_LIST_TYPES: readonly NotificationListType[] = ['INVITE', 'NOTICE', 'REMINDER'] as const;
+export const NOTIFICATION_LIST_TYPES = Object.values(NotificationType);
 
 export class GetNotificationsQueryDto {
   @Transform(parseOptionalBooleanValue)

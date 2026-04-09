@@ -1,9 +1,9 @@
 import type { PaginationResult } from '../../../common/pagination';
-import type { NotificationListType } from '../dto/get-notifications-query.dto';
+import type { NotificationType } from '../../../generated/prisma';
 
 export interface NotificationListItem {
   notificationId: string;
-  type: NotificationListType;
+  type: NotificationType;
   title: string;
   description: string;
   isRead: boolean;

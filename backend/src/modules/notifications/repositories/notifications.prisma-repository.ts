@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { createPagination } from '../../../common/pagination';
 import { PrismaService } from '../../../database/prisma';
+import type { NotificationType } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
@@ -175,7 +176,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
    */
   private mapNotification(notification: {
     id: string;
-    type: 'INVITE' | 'NOTICE' | 'REMINDER';
+    type: NotificationType;
     title: string | null;
     description: string | null;
     isRead: boolean;
