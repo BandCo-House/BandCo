@@ -115,7 +115,7 @@ export const RootLayout = () => {
       ) : null}
       <main
         className={cn(
-          'mx-auto w-full max-w-90rem px-6 py-8',
+          'mx-auto w-full max-w-7xl px-6 py-8',
           pageHeaderProps ? 'pt-[calc(8rem+2rem)]' : undefined,
         )}
       >

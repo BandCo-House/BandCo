@@ -26,16 +26,16 @@ export const TimeRangeInput = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 mt-2">
+      <div className="mt-2 flex items-center gap-2">
         <div className="flex flex-col gap-1 flex-1">
-          <label htmlFor={startId} className="text-sm font-medium text-gray-700">시작 시간</label>
+          <label htmlFor={startId} className="typo-sm-m text-foreground">시작 시간</label>
           <div className="relative">
             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" />
             <select
               id={startId}
               value={startTime}
               onChange={(e) => onStartTimeChange(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="typo-sm-r h-12 w-full rounded-2xl border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
             >
               {timeOptions.map((time) => (
                 <option key={`start-${time}`} value={time}>
@@ -45,16 +45,16 @@ export const TimeRangeInput = ({
             </select>
           </div>
         </div>
-        <span className="text-gray-400 mt-6">~</span>
+        <span className="typo-sm-m mt-6 text-muted">~</span>
         <div className="flex flex-col gap-1 flex-1">
-          <label htmlFor={endId} className="text-sm font-medium text-gray-700">종료 시간</label>
+          <label htmlFor={endId} className="typo-sm-m text-foreground">종료 시간</label>
           <div className="relative">
             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" />
             <select
               id={endId}
               value={endTime}
               onChange={(e) => onEndTimeChange(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="typo-sm-r h-12 w-full rounded-2xl border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
             >
               {timeOptions.map((time) => (
                 <option key={`end-${time}`} value={time}>

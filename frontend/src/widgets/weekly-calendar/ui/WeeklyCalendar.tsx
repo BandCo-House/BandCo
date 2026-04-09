@@ -42,7 +42,7 @@ export const WeeklyCalendar = () => {
   };
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex h-full w-full flex-col">
       <WeeklyCalendarHeader
         currentDate={currentDate}
         onPrev={handlePrevWeek}
@@ -52,8 +52,8 @@ export const WeeklyCalendar = () => {
       />
       <div className="relative flex-1 overflow-hidden">
         {isLoading && (
-          <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-main" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/50">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
           </div>
         )}
         <WeeklyTimeGrid
