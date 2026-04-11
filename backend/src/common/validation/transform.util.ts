@@ -75,3 +75,29 @@ export function parseOptionalPositiveIntegerValue({ value }: TransformFnParams):
 
   return parsedValue;
 }
+
+/**
+ * 선택 날짜 문자열을 Date 로 변환한다.
+ *
+ * @param {TransformFnParams} params - class-transformer가 전달한 원본 값
+ * @returns {unknown} Date 로 변환한 값 또는 원본 값
+ */
+export function parseOptionalDateValue({ value }: TransformFnParams): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length === 0) {
+    return undefined;
+  }
+
+  const parsedDate = new Date(trimmedValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return parsedDate;
+}
