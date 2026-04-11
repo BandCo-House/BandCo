@@ -1,41 +1,61 @@
-import { normalizeOptionalString, parseOptionalBoolean, parseOptionalPositiveInteger } from '../../../common/query';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-export interface GetBandSpacesQueryParams {
-  query?: string;
-  onlyMine?: string;
-  inProgressOnly?: string;
-  page?: string;
-  size?: string;
-  sort?: string;
-}
-
-export interface GetBandSpacesQuery {
-  query?: string;
-  onlyMine?: boolean;
-  inProgressOnly?: boolean;
-  page: number;
-  size: number;
-  sort?: string;
-}
+import {
+  normalizeOptionalStringValue,
+  parseOptionalBooleanValue,
+  parseOptionalPositiveIntegerValue,
+} from '../../../common/validation/transform.util';
 
 /**
- * 문자열 쿼리를 서비스에서 다루기 쉬운 형태로 변환한다.
- *
- * @param params 컨트롤러에서 전달받은 원본 쿼리 문자열
- * @returns 필터링과 페이지네이션에 바로 사용할 수 있는 쿼리 객체
+ * 합주 공간 목록 조회 쿼리를 검증하고 서비스에서 바로 쓸 수 있는 형태로 만든다.
  */
-export function parseGetBandSpacesQuery(params: GetBandSpacesQueryParams): GetBandSpacesQuery {
-  const parsedPage = parseOptionalPositiveInteger(params.page, 'page', 1);
-  const parsedSize = parseOptionalPositiveInteger(params.size, 'size', 20);
-  const parsedOnlyMine = parseOptionalBoolean(params.onlyMine, 'onlyMine');
-  const parsedInProgressOnly = parseOptionalBoolean(params.inProgressOnly, 'inProgressOnly');
+export class GetBandSpacesQueryDto {
+  @Transform(normalizeOptionalStringValue)
+  @IsOptional()
+  @IsString({
+    message: 'query는 문자열이어야 합니다.',
+  })
+  query?: string;
 
-  return {
-    query: normalizeOptionalString(params.query),
-    onlyMine: parsedOnlyMine,
-    inProgressOnly: parsedInProgressOnly,
-    page: parsedPage,
-    size: parsedSize,
-    sort: normalizeOptionalString(params.sort),
-  };
+  @Transform(parseOptionalBooleanValue)
+  @IsOptional()
+  @IsBoolean({
+    message: 'onlyMine는 true 또는 false 여야 합니다.',
+  })
+  onlyMine?: boolean;
+
+  @Transform(parseOptionalBooleanValue)
+  @IsOptional()
+  @IsBoolean({
+    message: 'inProgressOnly는 true 또는 false 여야 합니다.',
+  })
+  inProgressOnly?: boolean;
+
+  @Transform(parseOptionalPositiveIntegerValue)
+  @IsInt({
+    message: 'page는 1 이상의 정수여야 합니다.',
+  })
+  @Min(1, {
+    message: 'page는 1 이상의 정수여야 합니다.',
+  })
+  page: number = 1;
+
+  @Transform(parseOptionalPositiveIntegerValue)
+  @IsInt({
+    message: 'size는 1 이상의 정수여야 합니다.',
+  })
+  @Min(1, {
+    message: 'size는 1 이상의 정수여야 합니다.',
+  })
+  size: number = 20;
+
+  @Transform(normalizeOptionalStringValue)
+  @IsOptional()
+  @IsString({
+    message: 'sort는 문자열이어야 합니다.',
+  })
+  sort?: string;
 }
+
+export type GetBandSpacesQuery = GetBandSpacesQueryDto;
