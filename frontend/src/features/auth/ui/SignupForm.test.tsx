@@ -3,6 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SignupForm } from "./SignupForm";
 
+// Link 모킹 추가
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children }: any) => <a data-testid="link">{children}</a>,
+}));
+
 describe("SignupForm", () => {
   it("이메일, 비밀번호, 이름 입력란이 렌더링되어야 한다", () => {
     render(<SignupForm onSubmit={vi.fn()} />);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { loginSchema } from '../model/auth.schema';
 import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
 import { Link } from '@tanstack/react-router';
 
 interface LoginFormProps {
@@ -9,12 +8,16 @@ interface LoginFormProps {
   isLoading?: boolean;
 }
 
+import { FloatingInput } from '@/shared/ui/floating-input';
+
 export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {},
   );
+
+  const isFormEmpty = email.trim() === '' || password.trim() === '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,54 +42,57 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
   return (
     <div>
       <div className="text-center mb-10">
-        <h1 className="text-[46px] font-extrabold tracking-tight text-primary-dark">
+        <Link
+          to="/"
+          className="text-[46px] font-extrabold tracking-tight text-primary-dark"
+        >
           BandCo
-        </h1>
+        </Link>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium">
-            이메일
-          </label>
-          <Input
+          <FloatingInput
             id="email"
             type="email"
+            label="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="example@email.com"
+            placeholder="이메일을 입력하세요."
             aria-invalid={!!errors.email}
           />
           {errors.email && (
-            <p className="text-xs text-destructive">{errors.email}</p>
+            <p className="text-xs text-destructive ml-4">{errors.email}</p>
           )}
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium">
-            비밀번호
-          </label>
-          <Input
+          <FloatingInput
             id="password"
             type="password"
+            label="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호 입력"
+            placeholder="비밀번호를 입력하세요."
             aria-invalid={!!errors.password}
           />
           {errors.password && (
-            <p className="text-xs text-destructive">{errors.password}</p>
+            <p className="text-xs text-destructive ml-4">{errors.password}</p>
           )}
         </div>
 
-        <Button type="submit" disabled={isLoading} className="mt-2 w-full">
+        <Button
+          type="submit"
+          disabled={isLoading || isFormEmpty}
+          className={` opacity-100! mt-4 w-full rounded-[14px] h-12 text-lg ${isFormEmpty ? 'cursor-not-allowed bg-primary-surface text-primary-light' : ''}`}
+        >
           {isLoading ? '로그인 중...' : '로그인'}
         </Button>
       </form>
-      <div className="mt-8 pt-6 border-t border-slate-200">
-        <div className="flex items-center justify-center gap-4 text-sm text-slate-500">
+      <div className="mt-8 pt-6 ">
+        <div className="flex items-center justify-center gap-4 text-sm text-primary-light typo-base-m">
           <Link
             to="/signup"
-            className="hover:text-primary transition-colors font-medium"
+            className=" hover:text-primary transition-colors font-medium"
           >
             회원가입
           </Link>
