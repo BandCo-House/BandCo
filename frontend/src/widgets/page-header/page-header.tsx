@@ -37,12 +37,12 @@ export const PageHeader = ({
   return (
     <header
       className={cn(
-        'fixed inset-x-0 top-0 z-40 bg-white/72 shadow-xl/5 backdrop-blur-xl',
+        'fixed inset-x-0 top-0 z-40 bg-background/72 shadow-xl/5 backdrop-blur-xl',
         className,
       )}
     >
-      <div className="mx-auto grid min-h-24 w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 px-6">
-        <div className="min-w-0 flex items-center gap-5">
+      <div className="mx-auto grid min-h-24 w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-6 sm:gap-5">
+        <div className="min-w-0 flex items-center gap-3 sm:gap-4">
           {!showBack ? (
             <span
               aria-hidden="true"
@@ -51,27 +51,32 @@ export const PageHeader = ({
           ) : null}
 
           <div className="min-w-0">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {showBack ? (
                 <BackButton
                   label="뒤로"
                   variant="ghost"
-                  className="text-sm"
+                  className="typo-sm-sb"
                   onClick={onBack}
                 />
               ) : null}
 
               <div className="min-w-0">
                 {brandLabel ? (
-                  <p className="mb-1 text-sm font-medium text-muted-foreground">
+                  <p className="mb-1 typo-xs-sb text-muted">
                     {brandLabel}
                   </p>
                 ) : null}
-                <h1 className="truncate text-2xl font-semibold leading-tight tracking-tight">
+                <h1
+                  className={cn(
+                    'typo-2xl-b truncate',
+                    title === 'BandCo' ? 'sr-only sm:not-sr-only' : undefined,
+                  )}
+                >
                   {title}
                 </h1>
                 {subtitle ? (
-                  <p className="mt-1 text-base text-muted-foreground">
+                  <p className="typo-base-r mt-1 text-muted">
                     {subtitle}
                   </p>
                 ) : null}
@@ -79,7 +84,7 @@ export const PageHeader = ({
             </div>
 
             {meta && meta.length > 0 ? (
-              <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <div className="typo-sm-m mt-4 flex flex-wrap items-center gap-4 text-muted">
                 {meta.map((item) => (
                   <span key={item}>{item}</span>
                 ))}
@@ -99,7 +104,7 @@ export const PageHeader = ({
                   type="button"
                   variant={tab.active ? 'default' : 'outline'}
                   className={cn(
-                    'h-9 rounded-lg px-4 text-sm font-semibold',
+                    'typo-sm-sb h-9 rounded-lg px-4',
                     tab.active
                       ? 'border-foreground bg-foreground text-background'
                       : 'bg-transparent text-foreground hover:bg-muted',
@@ -116,7 +121,7 @@ export const PageHeader = ({
             <Button
               type="button"
               variant="outline"
-              className="h-9 rounded-lg border border-border px-4 text-sm font-semibold"
+              className="typo-sm-sb h-9 rounded-lg border border-border px-4"
               onClick={onRightActionClick}
             >
               {rightActionLabel}
