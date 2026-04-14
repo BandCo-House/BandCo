@@ -144,7 +144,107 @@
   }
 }
 
-@layer utilities {
+/* ===== Typography ===== */
+
+@utility typo-3xl-b {
+  font-size: 2rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+@utility typo-2xl-b {
+  font-size: 1.75rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+@utility typo-xl-sb {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@utility typo-lg-b {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+@utility typo-lg-sb {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@utility typo-base-b {
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+@utility typo-base-sb {
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@utility typo-base-m {
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+@utility typo-base-r {
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+@utility typo-sm-b {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+@utility typo-sm-sb {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@utility typo-sm-m {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+@utility typo-sm-r {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+@utility typo-xs-sb {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@utility typo-xs-m {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+@utility typo-xs-r {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* 타이포그래피 끝 */
+
+/* @layer utilities {
   .typo-3xl-b {
     font-size: 2rem;
     line-height: 1.4;
@@ -240,7 +340,7 @@
     line-height: 1.4;
     font-weight: 400;
   }
-}
+} */
 
 button {
   cursor: pointer;
