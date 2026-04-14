@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './pages/__root'
+import { Route as SignupRouteImport } from './pages/signup'
 import { Route as ProfileRouteImport } from './pages/profile'
+import { Route as LoginRouteImport } from './pages/login'
 import { Route as AdminRouteImport } from './pages/admin'
 import { Route as IndexRouteImport } from './pages/index'
 import { Route as BandBandIdRouteImport } from './pages/band.$bandId'
@@ -22,9 +24,19 @@ import { Route as BandBandIdPerformancePerformanceIdRouteImport } from './pages/
 import { Route as BandBandIdPerformancePerformanceIdIndexRouteImport } from './pages/band.$bandId.performance.$performanceId.index'
 import { Route as BandBandIdPerformancePerformanceIdSettingsRouteImport } from './pages/band.$bandId.performance.$performanceId.settings'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -89,7 +101,9 @@ const BandBandIdPerformancePerformanceIdSettingsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/signup': typeof SignupRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
@@ -103,7 +117,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/signup': typeof SignupRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
   '/song/$songId/teams': typeof SongSongIdTeamsRoute
@@ -116,7 +132,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/signup': typeof SignupRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
@@ -132,7 +150,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/login'
     | '/profile'
+    | '/signup'
     | '/band/$bandId'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
@@ -146,7 +166,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/login'
     | '/profile'
+    | '/signup'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
     | '/song/$songId/teams'
@@ -158,7 +180,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/login'
     | '/profile'
+    | '/signup'
     | '/band/$bandId'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
@@ -173,7 +197,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  SignupRoute: typeof SignupRoute
   BandBandIdRoute: typeof BandBandIdRouteWithChildren
   SongSongIdTeamsRoute: typeof SongSongIdTeamsRoute
   SongSongIdTeamTeamIdRoute: typeof SongSongIdTeamTeamIdRoute
@@ -181,11 +207,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -308,7 +348,9 @@ const BandBandIdRouteWithChildren = BandBandIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  SignupRoute: SignupRoute,
   BandBandIdRoute: BandBandIdRouteWithChildren,
   SongSongIdTeamsRoute: SongSongIdTeamsRoute,
   SongSongIdTeamTeamIdRoute: SongSongIdTeamTeamIdRoute,
