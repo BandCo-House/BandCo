@@ -5,7 +5,7 @@ import { registerEmail } from '@/features/auth/api/auth.service';
 import { SignupForm } from '@/features/auth/ui/SignupForm';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
-import { AxiosError } from 'axios';
+import axios from 'axios';
 
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
@@ -25,10 +25,12 @@ export function SignupPage() {
       const res = await registerEmail(data);
       // 회원가입 성공 시 자동 로그인
       login(res.accessToken, res.refreshToken);
-      navigate({ to: '/' });
+      await navigate({ to: '/' });
     } catch (err) {
-      if (err instanceof AxiosError) {
+      if (axios.isAxiosError<{ message?: string }>(err)) {
         setError(err.response?.data?.message || '회원가입에 실패했습니다.');
+      } else {
+        setError('회원가입에 실패했습니다.');
       }
     }
     setIsLoading(false);

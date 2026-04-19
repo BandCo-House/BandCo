@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { Input } from './input';
 
@@ -18,6 +18,8 @@ export function FloatingInput({
   ref,
   ...props
 }: FloatingInputProps) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
   {
     /* css의 높이 radius등의 경우 추후 옵션으로 분리 현재는 일단 h-14로 통일 */
   }
@@ -30,17 +32,20 @@ export function FloatingInput({
       )}
     >
       <legend
+        aria-hidden="true"
         className={cn(
           'ml-2 px-1 text-sm font-bold text-slate-900 bg-transparent opacity-0 transition-opacity duration-200 pointer-events-none select-none',
           'group-focus-within:opacity-100',
           labelClassName,
         )}
       >
-        {label}
+        <label htmlFor={inputId} className="sr-only">
+          {label}
+        </label>
       </legend>
 
       <Input
-        id={id}
+        id={inputId}
         ref={ref}
         {...props}
         className={cn(
