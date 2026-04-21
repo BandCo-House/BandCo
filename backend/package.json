@@ -22,7 +22,7 @@
     "prestart:dev": "node -e \"const fs=require('node:fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.rmSync('tsconfig.build.tsbuildinfo', { force: true }); fs.rmSync('tsconfig.tsbuildinfo', { force: true });\"",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
-    "test": "node --import tsx --test src/**/*.spec.ts"
+    "test": "node --import tsx --test \"src/**/*.spec.ts\""
   },
   "dependencies": {
     "@nestjs/common": "^11.1.13",

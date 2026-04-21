@@ -66,8 +66,8 @@ enum BandInvitationStatus {
 }
 
 enum NotificationType {
-  INFO
-  WARNING
+  INVITE
+  NOTICE
   REMINDER
 }
 
@@ -169,15 +169,19 @@ model UserProfile {
 }
 
 model Notification {
-  id        String           @id @default(uuid()) @db.Uuid
-  userId    String           @map("user_id") @db.Uuid
-  type      NotificationType
-  title     String?          @db.VarChar(120)
-  isRead    Boolean          @default(false) @map("is_read")
-  remindsAt DateTime?        @map("reminds_at") @db.Timestamptz(6)
-  createdAt DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  type        NotificationType
+  title       String?          @db.VarChar(120)
+  description String?          @db.Text
+  targetPath  String?          @map("target_path") @db.Text
+  isRead      Boolean          @default(false) @map("is_read")
+  remindsAt   DateTime?        @map("reminds_at") @db.Timestamptz(6)
+  createdAt   DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead])
+  @@index([userId, isRead, type])
   @@map("notifications")
 }
 

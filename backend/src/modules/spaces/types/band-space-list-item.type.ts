@@ -1,8 +1,10 @@
-export type SpaceType = 'PRACTICE_ROOM' | 'STUDIO' | 'ONLINE' | 'ETC';
+import type { BandSpaceMemberRole, BandSpaceStatus, BandSpaceType } from '../../../generated/prisma';
 
-export type SpaceStatus = 'ACTIVE' | 'INACTIVE';
+export type SpaceType = BandSpaceType;
 
-export type SpaceMemberRole = 'LEADER' | 'MEMBER';
+export type SpaceStatus = BandSpaceStatus;
+
+export type SpaceMemberRole = BandSpaceMemberRole;
 
 export interface BandSpaceMembership {
   isMember: boolean;
