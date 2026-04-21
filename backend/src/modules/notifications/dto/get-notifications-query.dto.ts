@@ -8,6 +8,12 @@ import {
   parseOptionalPositiveIntegerValue,
 } from '../../../common/validation/transform.util';
 import { NotificationType } from '../../../generated/prisma';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
+import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
+import { dateValidationMessage } from 'src/common/validation-message/date-validation.message';
+import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
+import { isInValidationMessage } from 'src/common/validation-message/isin-validation.message';
 
 export type NotificationListType = NotificationType;
 
@@ -17,56 +23,56 @@ export class GetNotificationsQueryDto {
   @Transform(parseOptionalBooleanValue)
   @IsOptional()
   @IsBoolean({
-    message: 'isRead는 true 또는 false 여야 합니다.',
+    message: booleanValidationMessage,
   })
   isRead?: boolean;
 
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
-    message: 'type은 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsIn(NOTIFICATION_LIST_TYPES, {
-    message: 'type은 INVITE, NOTICE, REMINDER 중 하나여야 합니다.',
+    message: isInValidationMessage,
   })
   type?: NotificationListType;
 
   @Transform(parseOptionalDateValue)
   @IsOptional()
   @IsDate({
-    message: 'from은 ISO-8601 형식의 날짜여야 합니다.',
+    message: dateValidationMessage,
   })
   from?: Date;
 
   @Transform(parseOptionalDateValue)
   @IsOptional()
   @IsDate({
-    message: 'to은 ISO-8601 형식의 날짜여야 합니다.',
+    message: dateValidationMessage,
   })
   to?: Date;
 
   @Transform(parseOptionalPositiveIntegerValue)
   @IsInt({
-    message: 'page는 1 이상의 정수여야 합니다.',
+    message: intValidationMessage,
   })
   @Min(1, {
-    message: 'page는 1 이상의 정수여야 합니다.',
+    message: minValidationMessage,
   })
   page: number = 1;
 
   @Transform(parseOptionalPositiveIntegerValue)
   @IsInt({
-    message: 'size는 1 이상의 정수여야 합니다.',
+    message: intValidationMessage,
   })
   @Min(1, {
-    message: 'size는 1 이상의 정수여야 합니다.',
+    message: minValidationMessage,
   })
   size: number = 20;
 
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
-    message: 'sort는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   sort?: string;
 }
