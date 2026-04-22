@@ -6,58 +6,58 @@ import type {
 
 type BandTabParams = {
   bandId: string;
-  performanceId?: string;
+  spaceId?: string;
 };
 
 type SongsSearch = {
-  performanceId?: string;
+  spaceId?: string;
 };
 
 /**
  * HeaderTab에서 전달하는 느슨한 params를 밴드 탭 전용 형태로 정규화한다.
  * bandId는 라우트 필수 파라미터이므로 문자열로 강제하고,
- * performanceId는 songs 화면에서는 없을 수 있어 optional로 둔다.
+ * spaceId는 songs 화면에서는 없을 수 있어 optional로 둔다.
  */
 const toBandTabParams = (params: Record<string, string>): BandTabParams => ({
   bandId: params.bandId,
-  performanceId: params.performanceId,
+  spaceId: params.spaceId,
 });
 
 /**
  * 곡 라이브러리 진입 URL을 생성한다.
- * performanceId가 있으면 search로 유지해 캘린더 복귀 컨텍스트를 보존한다.
+ * spaceId가 있으면 search로 유지해 캘린더 복귀 컨텍스트를 보존한다.
  */
-const buildSongsPath = ({ bandId, performanceId }: BandTabParams): string =>
-  performanceId
-    ? `/band/${bandId}/songs?performanceId=${performanceId}`
+const buildSongsPath = ({ bandId, spaceId }: BandTabParams): string =>
+  spaceId
+    ? `/band/${bandId}/songs?spaceId=${spaceId}`
     : `/band/${bandId}/songs`;
 
 /**
  * 공연 캘린더 경로를 생성한다.
  */
-const buildPerformancePath = ({ bandId, performanceId }: BandTabParams): string =>
-  `/band/${bandId}/performance/${performanceId}`;
+const buildPerformancePath = ({ bandId, spaceId }: BandTabParams): string =>
+  `/band/${bandId}/space/${spaceId}`;
 
 /**
  * 공연 상세 화면에서 사용하는 공통 탭 세트.
- * - calendar: 현재 performanceId로 공연 캘린더 라우트 이동
- * - songs: 밴드 공용 songs 라우트로 이동하되 performanceId를 search로 유지
+ * - calendar: 현재 spaceId로 공연 캘린더 라우트 이동
+ * - songs: 밴드 공용 songs 라우트로 이동하되 spaceId search로 복귀 컨텍스트를 유지
  */
 export const bandPerformanceTabs: HeaderTab[] = [
   {
     key: 'calendar',
     label: '캘린더',
-    to: '/band/$bandId/performance/$performanceId',
+    to: '/band/$bandId/space/$spaceId',
     getParams: (params: Record<string, string>) => {
-      const { bandId, performanceId } = toBandTabParams(params);
+      const { bandId, spaceId } = toBandTabParams(params);
       return {
         bandId,
-        performanceId: performanceId ?? '',
+        spaceId: spaceId ?? '',
       };
     },
     isActive: ({ pathname, params }) => {
       const normalized = toBandTabParams(params);
-      if (!normalized.performanceId) return false;
+      if (!normalized.spaceId) return false;
       return pathname === buildPerformancePath(normalized);
     },
   },
@@ -122,29 +122,28 @@ export const resolvePerformanceHeader = ({
  * 문자열/배열/기타 타입이 들어와도 string 하나만 허용한다.
  */
 export const parseSongsSearch = (search: Record<string, unknown>): SongsSearch => ({
-  performanceId:
-    typeof search.performanceId === 'string' ? search.performanceId : undefined,
+  spaceId: typeof search.spaceId === 'string' ? search.spaceId : undefined,
 });
 
 /**
  * TanStack Router의 location.search가 런타임에 문자열/객체 모두 가능해서
- * 두 형태를 모두 처리해 performanceId를 안전하게 추출한다.
+ * 두 형태를 모두 처리해 spaceId를 안전하게 추출한다.
  */
-export const getPerformanceIdFromLocationSearch = (
+export const getSpaceIdFromLocationSearch = (
   rawSearch: unknown,
 ): string | undefined => {
   if (typeof rawSearch === 'string') {
     const query = rawSearch.startsWith('?') ? rawSearch.slice(1) : rawSearch;
-    return new URLSearchParams(query).get('performanceId') ?? undefined;
+    return new URLSearchParams(query).get('spaceId') ?? undefined;
   }
 
   if (
     rawSearch &&
     typeof rawSearch === 'object' &&
-    'performanceId' in rawSearch &&
-    typeof rawSearch.performanceId === 'string'
+    'spaceId' in rawSearch &&
+    typeof rawSearch.spaceId === 'string'
   ) {
-    return rawSearch.performanceId;
+    return rawSearch.spaceId;
   }
 
   return undefined;
@@ -152,7 +151,7 @@ export const getPerformanceIdFromLocationSearch = (
 
 /**
  * songs 화면 전용 헤더 해석기
- * songs URL에 실린 performanceId(search)를 읽어 캘린더 탭 복귀 대상을 결정한다.
+ * songs URL에 실린 spaceId(search)를 읽어 캘린더 탭 복귀 대상을 결정한다.
  */
 export const resolveSongsHeader = ({
   params,
@@ -160,13 +159,13 @@ export const resolveSongsHeader = ({
 }: HeaderResolveContext): HeaderResolveResult => {
   const songsData = loaderData as SongsSearch | undefined;
   const bandId = params.bandId;
-  const performanceId = songsData?.performanceId;
+  const spaceId = songsData?.spaceId;
 
-  const calendarPath = performanceId
-    ? `/band/${bandId}/performance/${performanceId}`
+  const calendarPath = spaceId
+    ? `/band/${bandId}/space/${spaceId}`
     : `/band/${bandId}`;
-  const songsPath = performanceId
-    ? `/band/${bandId}/songs?performanceId=${performanceId}`
+  const songsPath = spaceId
+    ? `/band/${bandId}/songs?spaceId=${spaceId}`
     : `/band/${bandId}/songs`;
 
   return {

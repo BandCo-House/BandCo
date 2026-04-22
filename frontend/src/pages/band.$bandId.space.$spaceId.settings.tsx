@@ -1,14 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/band/$bandId/performance/$performanceId/settings')({
+export const Route = createFileRoute('/band/$bandId/space/$spaceId/settings')({
   component: PerformanceSettingsRoutePage,
   staticData: {
     header: {
       title: '공연 설정',
-      backTo: '/band/$bandId/performance/$performanceId',
+      backTo: '/band/$bandId/space/$spaceId',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
-        performanceId: params.performanceId,
+        spaceId: params.spaceId,
       }),
     },
   },
