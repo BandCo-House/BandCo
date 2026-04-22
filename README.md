@@ -1,1 +1,1 @@
-# BandCo -  Band + Community
+# BandCo - Band + Community

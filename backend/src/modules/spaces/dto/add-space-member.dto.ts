@@ -2,6 +2,9 @@ import { IsEnum, IsString, Matches } from 'class-validator';
 
 import { BandSpaceMemberRole } from '../../../generated/prisma';
 import type { SpaceMemberRole } from '../types/band-space-list-item.type';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
+import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -10,18 +13,18 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  */
 export class AddSpaceMemberBodyDto {
   @IsString({
-    message: 'userId는 UUID 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @Matches(UUID_PATTERN, {
-    message: 'userId는 올바른 UUID 형식이어야 합니다.',
+    message: uuidValidationMessage,
   })
   userId!: string;
 
   @IsString({
-    message: 'role은 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsEnum(BandSpaceMemberRole, {
-    message: 'role은 허용된 값만 사용할 수 있습니다.',
+    message: enumValidationMessage,
   })
   role: SpaceMemberRole = BandSpaceMemberRole.MEMBER;
 }

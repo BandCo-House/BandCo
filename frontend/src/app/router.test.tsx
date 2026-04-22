@@ -131,7 +131,7 @@ describe('앱 라우터', () => {
   });
 
   it('공연 상세에서 곡 라이브러리 탭으로 이동 후 캘린더 탭을 누르면 동일 공연으로 돌아온다', async () => {
-    const router = createRouterForTest('/band/1/performance/1', {
+    const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -147,7 +147,7 @@ describe('앱 라우터', () => {
   });
 
   it('공연 상세 경로에서는 캘린더 탭이 active 상태다', async () => {
-    const router = createRouterForTest('/band/1/performance/1', {
+    const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -178,7 +178,7 @@ describe('앱 라우터', () => {
     ).toBeInTheDocument();
     unmount();
 
-    const songsRouter = createRouterForTest('/band/1/songs?performanceId=1', {
+    const songsRouter = createRouterForTest('/band/1/songs?spaceId=1', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -262,7 +262,7 @@ describe('앱 라우터', () => {
   });
 
   it('공연 상세(캘린더)의 뒤로가기는 밴드 상세로 이동한다', async () => {
-    const router = createRouterForTest('/band/1/performance/1', {
+    const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,
       isAdmin: false,
     });
@@ -276,7 +276,7 @@ describe('앱 라우터', () => {
   });
 
   it('공연 상세의 우측 설정 버튼은 공연 설정 페이지로 이동한다', async () => {
-    const router = createRouterForTest('/band/1/performance/1', {
+    const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,
       isAdmin: false,
     });

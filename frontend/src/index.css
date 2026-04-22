@@ -71,7 +71,7 @@
   --muted-foreground: #b1b1b2;
   --card: rgb(255 255 255 / 0.7);
   --card-foreground: #1b1b32;
-  --popover: #faf9f0;
+  --popover: #f7f7f7;
   --popover-foreground: #1b1b32;
   --border: rgb(189 188 220 / 0.85);
   --input: rgb(255 255 255 / 0.82);
@@ -83,7 +83,7 @@
   --foreground: #f7f7f7;
   --card: rgb(27 27 50 / 0.88);
   --card-foreground: #faf9f0;
-  --popover: #1b1b32;
+  --popover: #020119;
   --popover-foreground: #faf9f0;
   --primary-surface: rgb(189 188 220 / 0.2);
   --primary-light: #7473b5;

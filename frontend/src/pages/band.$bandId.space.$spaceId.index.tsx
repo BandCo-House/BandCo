@@ -6,7 +6,7 @@ import {
 import { WeeklyCalendar } from '@/widgets/weekly-calendar/ui/WeeklyCalendar';
 
 export const Route = createFileRoute(
-  '/band/$bandId/performance/$performanceId/',
+  '/band/$bandId/space/$spaceId/',
 )({
   component: BandPerformanceRoutePage,
   staticData: {
@@ -18,10 +18,10 @@ export const Route = createFileRoute(
       }),
       tabs: bandPerformanceTabs,
       rightActionLabel: '설정',
-      rightActionTo: '/band/$bandId/performance/$performanceId/settings',
+      rightActionTo: '/band/$bandId/space/$spaceId/settings',
       getRightActionParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
-        performanceId: params.performanceId,
+        spaceId: params.spaceId,
       }),
       resolve: resolvePerformanceHeader,
     },

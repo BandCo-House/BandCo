@@ -60,8 +60,8 @@ describe('PageHeader', () => {
     render(<PageHeader title="BandCo" />);
 
     expect(screen.getByRole('heading', { name: 'BandCo' })).toHaveClass(
-      'hidden',
-      'sm:block',
+      'sr-only',
+      'sm:not-sr-only',
     );
   });
 });

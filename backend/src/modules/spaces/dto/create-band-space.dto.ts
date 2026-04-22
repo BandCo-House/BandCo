@@ -5,6 +5,11 @@ import { EndDateNotBeforeStartDateConstraint } from '../../../common/validation/
 import { trimStringValue } from '../../../common/validation/transform.util';
 import { BandSpaceStatus, BandSpaceType } from '../../../generated/prisma';
 import type { SpaceStatus, SpaceType } from '../types/band-space-list-item.type';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
+import { notemptyValidationMessage } from 'src/common/validation-message/notempty-validation.message';
+import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
+import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -14,47 +19,47 @@ const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export class CreateBandSpaceBodyDto {
   @Transform(trimStringValue)
   @IsString({
-    message: 'name는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsNotEmpty({
-    message: 'name는 비어 있을 수 없습니다.',
+    message: notemptyValidationMessage,
   })
   name!: string;
 
   @Transform(trimStringValue)
   @IsString({
-    message: 'description는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsNotEmpty({
-    message: 'description는 비어 있을 수 없습니다.',
+    message: notemptyValidationMessage,
   })
   description!: string;
 
   @IsString({
-    message: 'spaceType는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsEnum(BandSpaceType, {
-    message: 'spaceType는 허용된 값만 사용할 수 있습니다.',
+    message: enumValidationMessage,
   })
   spaceType!: SpaceType;
 
   @IsString({
-    message: 'status는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsEnum(BandSpaceStatus, {
-    message: 'status는 허용된 값만 사용할 수 있습니다.',
+    message: enumValidationMessage,
   })
   status!: SpaceStatus;
 
   @Transform(trimStringValue)
   @IsString({
-    message: 'startDate는 yyyy-mm-dd 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsNotEmpty({
-    message: 'startDate는 비어 있을 수 없습니다.',
+    message: notemptyValidationMessage,
   })
   @Matches(DATE_ONLY_PATTERN, {
-    message: 'startDate는 yyyy-mm-dd 형식이어야 합니다.',
+    message: matchValidationMessage,
   })
   @IsISO8601(
     {
@@ -62,20 +67,20 @@ export class CreateBandSpaceBodyDto {
       strictSeparator: true,
     },
     {
-      message: 'startDate가 올바른 날짜가 아닙니다.',
+      message: iso8601ValidationMessage,
     },
   )
   startDate!: string;
 
   @Transform(trimStringValue)
   @IsString({
-    message: 'endDate는 yyyy-mm-dd 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   @IsNotEmpty({
-    message: 'endDate는 비어 있을 수 없습니다.',
+    message: notemptyValidationMessage,
   })
   @Matches(DATE_ONLY_PATTERN, {
-    message: 'endDate는 yyyy-mm-dd 형식이어야 합니다.',
+    message: matchValidationMessage,
   })
   @IsISO8601(
     {
@@ -83,7 +88,7 @@ export class CreateBandSpaceBodyDto {
       strictSeparator: true,
     },
     {
-      message: 'endDate가 올바른 날짜가 아닙니다.',
+      message: iso8601ValidationMessage,
     },
   )
   @Validate(EndDateNotBeforeStartDateConstraint)

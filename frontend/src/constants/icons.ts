@@ -6,6 +6,7 @@ import Calendar from '@/assets/icons/calendar.svg?react';
 import Check from '@/assets/icons/check.svg?react';
 import Copy from '@/assets/icons/copy.svg?react';
 import Invite from '@/assets/icons/invite.svg?react';
+import Kebab from '@/assets/icons/kebab.svg?react';
 import Link from '@/assets/icons/link.svg?react';
 import Member from '@/assets/icons/member.svg?react';
 import Setting from '@/assets/icons/setting.svg?react';
@@ -20,6 +21,7 @@ export const IconMap = {
   Check,
   Copy,
   Invite,
+  Kebab,
   Link,
   Member,
   Setting,
