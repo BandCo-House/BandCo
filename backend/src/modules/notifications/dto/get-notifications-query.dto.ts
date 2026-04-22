@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDate, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsDate, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 import {
   normalizeOptionalStringValue,
@@ -13,7 +13,7 @@ import { intValidationMessage } from 'src/common/validation-message/int-validati
 import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
 import { dateValidationMessage } from 'src/common/validation-message/date-validation.message';
 import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
-import { isInValidationMessage } from 'src/common/validation-message/isin-validation.message';
+import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 
 export type NotificationListType = NotificationType;
 
@@ -32,8 +32,8 @@ export class GetNotificationsQueryDto {
   @IsString({
     message: stringValidationMessage,
   })
-  @IsIn(NOTIFICATION_LIST_TYPES, {
-    message: isInValidationMessage,
+  @IsEnum(NOTIFICATION_LIST_TYPES, {
+    message: enumValidationMessage,
   })
   type?: NotificationListType;
 
