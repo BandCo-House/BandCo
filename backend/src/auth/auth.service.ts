@@ -63,18 +63,6 @@ export class AuthService {
     return this.loginUser(email, newUser.id);
   }
 
-  parseTokenFromHeader(header: string, isbearer: boolean) {
-    {
-      const splitToken = header.split(' ');
-      const token = splitToken[1];
-      const prefix = isbearer ? 'Bearer' : 'Basic';
-      if (splitToken.length !== 2 || splitToken[0] !== prefix) {
-        throw new UnauthorizedException('유효하지 않은 토큰입니다.');
-      }
-      return token;
-    }
-  }
-
   decodeBasicToken(token: string) {
     const decoded = Buffer.from(token, 'base64').toString('utf-8');
     const split = decoded.split(':');
@@ -100,5 +88,14 @@ export class AuthService {
       throw new UnauthorizedException('재발급은 refresh 토큰만 가능합니다.');
     }
     return this.signToken(decoded.email, decoded.id, isRefreshToken);
+  }
+  extractTokenFromHeader(rawToken: string, isBearer: boolean) {
+    const splitToken = rawToken.split(' ');
+    const prefix = isBearer ? 'Bearer' : 'Basic';
+
+    if (splitToken.length !== 2 || splitToken[0] !== prefix) {
+      throw new UnauthorizedException('길이 또는 prefix가 잘못된 토큰 형식입니다.');
+    }
+    return splitToken[1];
   }
 }
