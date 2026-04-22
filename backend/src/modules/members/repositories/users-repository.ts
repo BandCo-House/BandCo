@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
+import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma/prisma.service';
 
 export class UserRepository {
