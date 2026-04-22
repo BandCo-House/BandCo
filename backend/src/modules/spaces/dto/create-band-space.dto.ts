@@ -8,7 +8,7 @@ import type { SpaceStatus, SpaceType } from '../types/band-space-list-item.type'
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { notemptyValidationMessage } from 'src/common/validation-message/notempty-validation.message';
-import { isoValidationMessage } from 'src/common/validation-message/iso-validation.message';
+import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
 import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -67,7 +67,7 @@ export class CreateBandSpaceBodyDto {
       strictSeparator: true,
     },
     {
-      message: isoValidationMessage,
+      message: iso8601ValidationMessage,
     },
   )
   startDate!: string;
@@ -88,7 +88,7 @@ export class CreateBandSpaceBodyDto {
       strictSeparator: true,
     },
     {
-      message: isoValidationMessage,
+      message: iso8601ValidationMessage,
     },
   )
   @Validate(EndDateNotBeforeStartDateConstraint)
