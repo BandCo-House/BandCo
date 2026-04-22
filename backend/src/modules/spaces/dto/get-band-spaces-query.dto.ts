@@ -6,6 +6,10 @@ import {
   parseOptionalBooleanValue,
   parseOptionalPositiveIntegerValue,
 } from '../../../common/validation/transform.util';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
+import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
+import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
 
 /**
  * 합주 공간 목록 조회 쿼리를 검증하고 서비스에서 바로 쓸 수 있는 형태로 만든다.
@@ -14,46 +18,46 @@ export class GetBandSpacesQueryDto {
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
-    message: 'query는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   query?: string;
 
   @Transform(parseOptionalBooleanValue)
   @IsOptional()
   @IsBoolean({
-    message: 'onlyMine는 true 또는 false 여야 합니다.',
+    message: booleanValidationMessage,
   })
   onlyMine?: boolean;
 
   @Transform(parseOptionalBooleanValue)
   @IsOptional()
   @IsBoolean({
-    message: 'inProgressOnly는 true 또는 false 여야 합니다.',
+    message: booleanValidationMessage,
   })
   inProgressOnly?: boolean;
 
   @Transform(parseOptionalPositiveIntegerValue)
   @IsInt({
-    message: 'page는 1 이상의 정수여야 합니다.',
+    message: intValidationMessage,
   })
   @Min(1, {
-    message: 'page는 1 이상의 정수여야 합니다.',
+    message: minValidationMessage,
   })
   page: number = 1;
 
   @Transform(parseOptionalPositiveIntegerValue)
   @IsInt({
-    message: 'size는 1 이상의 정수여야 합니다.',
+    message: intValidationMessage,
   })
   @Min(1, {
-    message: 'size는 1 이상의 정수여야 합니다.',
+    message: minValidationMessage,
   })
   size: number = 20;
 
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
-    message: 'sort는 문자열이어야 합니다.',
+    message: stringValidationMessage,
   })
   sort?: string;
 }
