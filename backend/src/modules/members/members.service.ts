@@ -1,30 +1,26 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma/prisma.service';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { MembersPrismaRepository } from './repositories/member.prisma-repository';
+import { MEMBERS_REPOSITORY, MembersRepository } from './repositories/member.repository';
 
 @Injectable()
 export class MembersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(MEMBERS_REPOSITORY)
+    private readonly membersRepository: MembersRepository,
+  ) {}
   async getUserByEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await this.membersRepository.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('사용자를 찾을 수 없습니다.');
+    }
     return user;
   }
 
   async createUserWithEmail(email: string, passwordHash: string) {
-    const emailExists = await this.prisma.user.count({
-      where: { email },
-    });
-    if (emailExists > 0) {
+    const existingUser = await this.membersRepository.findByEmail(email);
+    if (existingUser) {
       throw new BadRequestException('이미 존재하는 이메일입니다.');
     }
-
-    const newUser = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-      },
-    });
-    return newUser;
+    return this.membersRepository.createUserWithEmail(email, passwordHash);
   }
 }
