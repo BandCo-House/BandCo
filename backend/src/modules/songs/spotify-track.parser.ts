@@ -1,4 +1,4 @@
-import type { SpotifySongPreview } from './types/spotify-song-preview.type';
+import type { SongPreview } from './types/song-preview.type';
 import type { SpotifyTrackApiResponse } from './types/spotify-track-api-response.type';
 
 const SPOTIFY_SOURCE_TYPE = 'SPOTIFY';
@@ -7,9 +7,9 @@ const SPOTIFY_SOURCE_TYPE = 'SPOTIFY';
  * Spotify track 응답을 곡 등록 전에 확인할 수 있는 데이터로 변환한다.
  *
  * @param {SpotifyTrackApiResponse} spotifyTrack - Spotify Web API track 응답
- * @returns {SpotifySongPreview} 곡 등록 미리보기 데이터
+ * @returns {SongPreview} 곡 등록 미리보기 데이터
  */
-export function parseSpotifyTrackToSongPreview(spotifyTrack: SpotifyTrackApiResponse): SpotifySongPreview {
+export function parseSpotifyTrackToSongPreview(spotifyTrack: SpotifyTrackApiResponse): SongPreview {
   const artistNames = spotifyTrack.artists.map(artist => artist.name);
   const artistName = artistNames.join(', ');
 
@@ -21,7 +21,7 @@ export function parseSpotifyTrackToSongPreview(spotifyTrack: SpotifyTrackApiResp
   const sourceUrl = spotifyTrackUrl ?? fallbackTrackUrl;
 
   return {
-    spotifyTrackId: spotifyTrack.id,
+    externalTrackId: spotifyTrack.id,
     title: spotifyTrack.name,
     artistName,
     albumName: spotifyTrack.album.name,

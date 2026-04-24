@@ -34,7 +34,7 @@ test('Spotify track 응답을 곡 미리보기 데이터로 변환한다', () =>
 
   const result = parseSpotifyTrackToSongPreview(spotifyTrack);
 
-  assert.equal(result.spotifyTrackId, '11dFghVXANMlKmJXsNCbNl');
+  assert.equal(result.externalTrackId, '11dFghVXANMlKmJXsNCbNl');
   assert.equal(result.title, 'Cut To The Feeling');
   assert.equal(result.artistName, 'Carly Rae Jepsen');
   assert.equal(result.albumName, 'Cut To The Feeling');
