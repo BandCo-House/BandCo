@@ -44,7 +44,11 @@ test('Spotify 곡 미리보기 서비스는 Spotify track 조회를 위임한다
   const result = await service.previewSpotifyTrack('11dFghVXANMlKmJXsNCbNl');
 
   assert.equal(capturedTrackId, '11dFghVXANMlKmJXsNCbNl');
+  assert.equal(result.externalTrackId, '11dFghVXANMlKmJXsNCbNl');
   assert.equal(result.title, 'Cut To The Feeling');
+  assert.equal(result.artistName, 'Carly Rae Jepsen');
+  assert.equal(result.albumName, 'Cut To The Feeling');
+  assert.equal(result.sourceUrl, 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl');
   assert.equal(result.sourceType, 'SPOTIFY');
 });
 
@@ -89,5 +93,9 @@ test('Deezer 곡 미리보기 서비스는 Deezer track 검색 결과를 목록�
   assert.equal(result.length, 1);
   assert.equal(result[0]?.externalTrackId, '3135556');
   assert.equal(result[0]?.title, 'Harder, Better, Faster, Stronger');
+  assert.equal(result[0]?.artistName, 'Daft Punk');
+  assert.equal(result[0]?.albumName, 'Discovery');
+  assert.equal(result[0]?.durationMs, 224000);
+  assert.equal(result[0]?.sourceUrl, 'https://www.deezer.com/track/3135556');
   assert.equal(result[0]?.sourceType, 'DEEZER');
 });
