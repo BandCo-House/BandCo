@@ -20,7 +20,7 @@ if ! command -v gh &>/dev/null; then
 fi
 
 # ─── 인증 확인 ───────────────────────────────────────────────────────────────
-if [ -z "$GH_TOKEN" ] && ! gh auth status &>/dev/null; then
+if ! gh auth status &>/dev/null; then
   echo -e "${RED}✖ ${RESET}GitHub 인증 정보가 없습니다."
   echo ""
   echo -e "  ${BOLD}인증 방법을 선택하세요:${RESET}"
@@ -41,23 +41,12 @@ if [ -z "$GH_TOKEN" ] && ! gh auth status &>/dev/null; then
       echo -e "  ${BOLD}Scopes:${RESET} ${GREEN}repo${RESET}, ${GREEN}workflow${RESET}"
       echo "  (workflow는 .github/workflows 파일 수정 시 push에 필요)"
       echo ""
-      read -rp "$(echo -e "  ${BOLD}[2단계]${RESET} 발급받은 토큰 붙여넣기: ")" INPUT_TOKEN
+      read -rsp "$(echo -e "  ${BOLD}[2단계]${RESET} 발급받은 토큰 붙여넣기: ")" INPUT_TOKEN
+      echo ""
       [ -z "$INPUT_TOKEN" ] && error "토큰이 입력되지 않았습니다."
 
-      # 저장할 파일 결정 (zsh → ~/.zshenv, bash → ~/.profile)
-      CURRENT_SHELL=$(basename "$SHELL")
-      if [ "$CURRENT_SHELL" = "zsh" ]; then
-        ENV_FILE="$HOME/.zshenv"
-      else
-        ENV_FILE="$HOME/.profile"
-      fi
-
-      echo "" >> "$ENV_FILE"
-      echo "# GitHub CLI token (pnpm run pr)" >> "$ENV_FILE"
-      echo "export GH_TOKEN=$INPUT_TOKEN" >> "$ENV_FILE"
-
-      export GH_TOKEN="$INPUT_TOKEN"
-      success "토큰이 ${BOLD}$ENV_FILE${RESET}에 저장되었습니다. 이후 터미널에서 자동 적용됩니다."
+      echo "$INPUT_TOKEN" | gh auth login --with-token || error "토큰 인증에 실패했습니다."
+      success "토큰이 gh CLI keychain에 저장되었습니다."
       echo ""
       ;;
     *)
@@ -190,6 +179,7 @@ done
 # ─── Draft PR 생성 ───────────────────────────────────────────────────────────
 PR_URL=$(gh pr create \
   --draft \
+  --base dev \
   --title "$FULL_TITLE" \
   --body-file "$BODY_FILE" \
   "${LABEL_ARGS[@]}")
