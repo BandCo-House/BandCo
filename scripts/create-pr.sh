@@ -54,39 +54,58 @@ fi
 
 success "최종 제목: ${BOLD}$FULL_TITLE${RESET}"
 
-# ─── 타입 라벨: 브랜치 prefix → 자동 결정 ────────────────────────────────────
-# 지원 라벨: feat / bug / chore / docs / refactor / hotfix / test / story
-TYPE_LABEL=""
+# ─── 라벨 선택 ────────────────────────────────────────────────────────────────
+ALL_LABELS=("feat" "bug" "chore" "docs" "refactor" "hotfix" "test" "story" "FE" "BE" "infra")
+
+# 브랜치 prefix로 기본 선택 인덱스 추론
+DEFAULT_IDX=""
 case "$BRANCH" in
-  feat/*)     TYPE_LABEL="feat" ;;
-  fix/*)      TYPE_LABEL="bug" ;;
-  chore/*)    TYPE_LABEL="chore" ;;
-  docs/*)     TYPE_LABEL="docs" ;;
-  refactor/*) TYPE_LABEL="refactor" ;;
-  hotfix/*)   TYPE_LABEL="hotfix" ;;
-  test/*)     TYPE_LABEL="test" ;;
-  story/*)    TYPE_LABEL="story" ;;
+  feat/*)     DEFAULT_IDX=1 ;;
+  fix/*)      DEFAULT_IDX=2 ;;
+  chore/*)    DEFAULT_IDX=3 ;;
+  docs/*)     DEFAULT_IDX=4 ;;
+  refactor/*) DEFAULT_IDX=5 ;;
+  hotfix/*)   DEFAULT_IDX=6 ;;
+  test/*)     DEFAULT_IDX=7 ;;
+  story/*)    DEFAULT_IDX=8 ;;
 esac
 
-[ -n "$TYPE_LABEL" ] && info "타입 라벨 자동 감지: ${BOLD}$TYPE_LABEL${RESET}"
-
-# ─── 영역 라벨: 사용자 선택 (BE / FE / infra) ────────────────────────────────
 echo ""
-echo -e "${BOLD}영역 라벨 선택${RESET} (Enter = 건너뜀)"
-echo "  1) FE"
-echo "  2) BE"
-echo "  3) infra"
-read -rp "번호 입력: " AREA_NUM
+echo -e "${BOLD}라벨 선택${RESET} — 번호를 띄어쓰기로 구분해 입력하세요 (Enter = 건너뜀)"
+echo ""
+for i in "${!ALL_LABELS[@]}"; do
+  NUM=$((i + 1))
+  LABEL="${ALL_LABELS[$i]}"
+  if [ "$NUM" = "$DEFAULT_IDX" ]; then
+    printf "  ${GREEN}%2d) %-12s${RESET}" "$NUM" "$LABEL  ←"
+  else
+    printf "  %2d) %-12s" "$NUM" "$LABEL"
+  fi
+  # 4열로 줄바꿈
+  [ $(( NUM % 4 )) -eq 0 ] && echo ""
+done
+echo ""
+echo ""
 
-AREA_LABEL=""
-case "$AREA_NUM" in
-  1) AREA_LABEL="FE" ;;
-  2) AREA_LABEL="BE" ;;
-  3) AREA_LABEL="infra" ;;
-  *) ;;
-esac
+DEFAULT_HINT=""
+[ -n "$DEFAULT_IDX" ] && DEFAULT_HINT=" (기본값: ${DEFAULT_IDX})"
+read -rp "$(echo -e "${BOLD}번호 입력${RESET}${DEFAULT_HINT}: ")" LABEL_INPUT
 
-[ -n "$AREA_LABEL" ] && info "영역 라벨: ${BOLD}$AREA_LABEL${RESET}"
+# 입력 없으면 기본값 사용
+[ -z "$LABEL_INPUT" ] && [ -n "$DEFAULT_IDX" ] && LABEL_INPUT="$DEFAULT_IDX"
+
+SELECTED_LABELS=()
+for num in $LABEL_INPUT; do
+  if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#ALL_LABELS[@]}" ]; then
+    SELECTED_LABELS+=("${ALL_LABELS[$((num - 1))]}")
+  else
+    warn "유효하지 않은 번호 '$num' — 건너뜁니다."
+  fi
+done
+
+if [ "${#SELECTED_LABELS[@]}" -gt 0 ]; then
+  info "선택된 라벨: ${BOLD}${SELECTED_LABELS[*]}${RESET}"
+fi
 
 # ─── 브랜치 push ─────────────────────────────────────────────────────────────
 echo ""
@@ -120,15 +139,10 @@ apply_label_if_exists() {
 
 CREATE_CMD=(gh pr create --draft --title "$FULL_TITLE" --body "$PR_BODY")
 
-if [ -n "$TYPE_LABEL" ]; then
-  VALID=$(apply_label_if_exists "$TYPE_LABEL")
+for label in "${SELECTED_LABELS[@]}"; do
+  VALID=$(apply_label_if_exists "$label")
   [ -n "$VALID" ] && CREATE_CMD+=(--label "$VALID")
-fi
-
-if [ -n "$AREA_LABEL" ]; then
-  VALID=$(apply_label_if_exists "$AREA_LABEL")
-  [ -n "$VALID" ] && CREATE_CMD+=(--label "$VALID")
-fi
+done
 
 PR_URL=$("${CREATE_CMD[@]}")
 
