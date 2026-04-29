@@ -113,38 +113,39 @@ info "브랜치를 origin에 push 중..."
 git push -u origin HEAD
 success "Push 완료"
 
-# ─── PR 본문: 템플릿 읽기 ────────────────────────────────────────────────────
-REPO_ROOT=$(git rev-parse --show-top-level 2>/dev/null || git rev-parse --show-toplevel)
+# ─── PR 본문: 템플릿을 임시 파일로 준비 ──────────────────────────────────────
+REPO_ROOT=$(git rev-parse --show-toplevel)
 TEMPLATE_PATH="$REPO_ROOT/.github/pull_request_template.md"
-PR_BODY=""
-[ -f "$TEMPLATE_PATH" ] && PR_BODY=$(cat "$TEMPLATE_PATH")
+BODY_FILE=$(mktemp)
+trap 'rm -f "$BODY_FILE"' EXIT
 
-# ─── 라벨 유효성 확인 후 PR 생성 ─────────────────────────────────────────────
+[ -f "$TEMPLATE_PATH" ] && cat "$TEMPLATE_PATH" > "$BODY_FILE"
+
+# ─── 라벨 유효성 확인 ────────────────────────────────────────────────────────
 echo ""
 info "Draft PR 생성 중..."
 
-REPO_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
+REPO_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
 EXISTING_LABELS=""
-[ -n "$REPO_NAME" ] && EXISTING_LABELS=$(gh label list --repo "$REPO_NAME" --json name -q '.[].name' 2>/dev/null || true)
+if [ -n "$REPO_NAME" ]; then
+  EXISTING_LABELS=$(gh label list --repo "$REPO_NAME" --json name -q '.[].name' 2>/dev/null || true)
+fi
 
-apply_label_if_exists() {
-  local label="$1"
-  if echo "$EXISTING_LABELS" | grep -qx "$label"; then
-    echo "$label"
-  else
-    warn "라벨 '${label}'이 저장소에 없어 건너뜁니다."
-    echo ""
-  fi
-}
-
-CREATE_CMD=(gh pr create --draft --title "$FULL_TITLE" --body "$PR_BODY")
-
+LABEL_ARGS=()
 for label in "${SELECTED_LABELS[@]}"; do
-  VALID=$(apply_label_if_exists "$label")
-  [ -n "$VALID" ] && CREATE_CMD+=(--label "$VALID")
+  if echo "$EXISTING_LABELS" | grep -qx "$label"; then
+    LABEL_ARGS+=(--label "$label")
+  else
+    warn "라벨 '${label}'이 저장소에 없어 건너뜁니다." >&2
+  fi
 done
 
-PR_URL=$("${CREATE_CMD[@]}")
+# ─── Draft PR 생성 ───────────────────────────────────────────────────────────
+PR_URL=$(gh pr create \
+  --draft \
+  --title "$FULL_TITLE" \
+  --body-file "$BODY_FILE" \
+  "${LABEL_ARGS[@]}")
 
 echo ""
 success "Draft PR이 생성되었습니다!"
