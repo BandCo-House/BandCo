@@ -19,6 +19,53 @@ if ! command -v gh &>/dev/null; then
   error "gh CLI가 설치되어 있지 않습니다. https://cli.github.com 에서 설치해주세요."
 fi
 
+# ─── 인증 확인 ───────────────────────────────────────────────────────────────
+if [ -z "$GH_TOKEN" ] && ! gh auth status &>/dev/null; then
+  echo -e "${RED}✖ ${RESET}GitHub 인증 정보가 없습니다."
+  echo ""
+  echo -e "  ${BOLD}인증 방법을 선택하세요:${RESET}"
+  echo "  1) gh auth login (gh CLI로 로그인, GUI 지원)"
+  echo "  2) GH_TOKEN 설정  (Personal Access Token)"
+  echo ""
+  read -rp "$(echo -e "${BOLD}번호 입력${RESET}: ")" AUTH_CHOICE
+
+  case "$AUTH_CHOICE" in
+    1)
+      gh auth login || error "인증에 실패했습니다."
+      ;;
+    2)
+      echo ""
+      echo -e "  ${BOLD}[1단계]${RESET} 아래 URL에서 Classic 토큰을 발급받으세요:"
+      echo -e "  https://github.com/settings/tokens/new"
+      echo ""
+      echo -e "  ${BOLD}Scopes:${RESET} ${GREEN}repo${RESET}, ${GREEN}workflow${RESET}"
+      echo "  (workflow는 .github/workflows 파일 수정 시 push에 필요)"
+      echo ""
+      read -rp "$(echo -e "  ${BOLD}[2단계]${RESET} 발급받은 토큰 붙여넣기: ")" INPUT_TOKEN
+      [ -z "$INPUT_TOKEN" ] && error "토큰이 입력되지 않았습니다."
+
+      # 저장할 파일 결정 (zsh → ~/.zshenv, bash → ~/.profile)
+      CURRENT_SHELL=$(basename "$SHELL")
+      if [ "$CURRENT_SHELL" = "zsh" ]; then
+        ENV_FILE="$HOME/.zshenv"
+      else
+        ENV_FILE="$HOME/.profile"
+      fi
+
+      echo "" >> "$ENV_FILE"
+      echo "# GitHub CLI token (pnpm run pr)" >> "$ENV_FILE"
+      echo "export GH_TOKEN=$INPUT_TOKEN" >> "$ENV_FILE"
+
+      export GH_TOKEN="$INPUT_TOKEN"
+      success "토큰이 ${BOLD}$ENV_FILE${RESET}에 저장되었습니다. 이후 터미널에서 자동 적용됩니다."
+      echo ""
+      ;;
+    *)
+      error "취소되었습니다."
+      ;;
+  esac
+fi
+
 # ─── 현재 브랜치 확인 ────────────────────────────────────────────────────────
 BRANCH=$(git branch --show-current)
 [ -z "$BRANCH" ] && error "브랜치 위에 있지 않습니다."
