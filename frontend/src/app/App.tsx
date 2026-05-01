@@ -8,11 +8,11 @@ const router = createAppRouter();
 const shouldShowRouterDevtools = import.meta.env.MODE === 'development';
 
 function AppContent() {
-  const user = useAuth();
+  const auth = useAuth();
 
   return (
     <>
-      <RouterProvider router={router} context={{ user }} />
+      <RouterProvider router={router} context={{ user: auth.user }} />
       {shouldShowRouterDevtools ? (
         <TanStackRouterDevtools router={router} />
       ) : null}

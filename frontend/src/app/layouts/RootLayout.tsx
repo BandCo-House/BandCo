@@ -14,16 +14,17 @@ export const RootLayout = () => {
   const currentPathname = router.state.location.pathname;
   const currentParams = (activeMatch?.params ?? {}) as Record<string, string>;
 
-  const header = resolveHeader(activeMatch?.staticData as RouteStaticData | undefined, {
-    params: currentParams,
-    loaderData: activeMatch?.loaderData,
-  });
+  const header = resolveHeader(
+    activeMatch?.staticData as RouteStaticData | undefined,
+    {
+      params: currentParams,
+      loaderData: activeMatch?.loaderData,
+    },
+  );
 
   const onRightActionClick = header?.rightActionTo
     ? () => {
-        const params = header.getRightActionParams?.(
-          currentParams,
-        );
+        const params = header.getRightActionParams?.(currentParams);
 
         router.navigate({
           to: header.rightActionTo as never,
@@ -55,7 +56,9 @@ export const RootLayout = () => {
       params: currentParams,
     });
     const isActiveByPath = tab.activePathPrefixes
-      ? tab.activePathPrefixes.some((prefix) => currentPathname.startsWith(prefix))
+      ? tab.activePathPrefixes.some((prefix) =>
+          currentPathname.startsWith(prefix),
+        )
       : undefined;
 
     return {
