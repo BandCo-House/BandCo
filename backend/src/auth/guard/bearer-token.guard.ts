@@ -3,7 +3,7 @@ import { AuthService } from '../auth.service';
 import { MembersService } from 'src/modules/members/members.service';
 
 @Injectable()
-export class bearerTokenGuard implements CanActivate {
+export class BearerTokenGuard implements CanActivate {
   constructor(
     private readonly authService: AuthService,
     private readonly memberService: MembersService,
@@ -26,7 +26,7 @@ export class bearerTokenGuard implements CanActivate {
 }
 
 @Injectable()
-export class AccessTokenGuard extends bearerTokenGuard {
+export class AccessTokenGuard extends BearerTokenGuard {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     await super.canActivate(context);
     const req = context.switchToHttp().getRequest();
@@ -38,7 +38,7 @@ export class AccessTokenGuard extends bearerTokenGuard {
 }
 
 @Injectable()
-export class RefreshTokenGuard extends bearerTokenGuard {
+export class RefreshTokenGuard extends BearerTokenGuard {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     await super.canActivate(context);
     const req = context.switchToHttp().getRequest();
