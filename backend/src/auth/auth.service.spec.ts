@@ -1,0 +1,176 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { AuthService } from './auth.service';
+import { MembersService } from 'src/modules/members/members.service';
+
+const mockJwtService = {
+  sign: jest.fn(),
+  verify: jest.fn(),
+};
+
+const mockMembersService = {
+  getUserByEmail: jest.fn(),
+  createUserWithEmail: jest.fn(),
+};
+
+describe('AuthService', () => {
+  let service: AuthService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        { provide: JwtService, useValue: mockJwtService },
+        { provide: MembersService, useValue: mockMembersService },
+      ],
+    }).compile();
+
+    service = module.get<AuthService>(AuthService);
+    jest.clearAllMocks();
+  });
+
+  describe('extractTokenFromHeader', () => {
+    it('Bearer 토큰을 정상적으로 추출한다', () => {
+      expect(service.extractTokenFromHeader('Bearer mytoken', true)).toBe('mytoken');
+    });
+
+    it('Basic 토큰을 정상적으로 추출한다', () => {
+      expect(service.extractTokenFromHeader('Basic mytoken', false)).toBe('mytoken');
+    });
+
+    it('prefix가 틀리면 UnauthorizedException을 던진다', () => {
+      expect(() => service.extractTokenFromHeader('Token mytoken', true)).toThrow(UnauthorizedException);
+    });
+
+    it('공백으로 분리된 부분이 2개가 아니면 UnauthorizedException을 던진다', () => {
+      expect(() => service.extractTokenFromHeader('Beareronly', true)).toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('decodeBasicToken', () => {
+    it('base64로 인코딩된 email:password를 정상적으로 디코딩한다', () => {
+      const encoded = Buffer.from('user@test.com:secret').toString('base64');
+      expect(service.decodeBasicToken(encoded)).toEqual({ email: 'user@test.com', password: 'secret' });
+    });
+
+    it('콜론이 없는 토큰은 UnauthorizedException을 던진다', () => {
+      const encoded = Buffer.from('nodivider').toString('base64');
+      expect(() => service.decodeBasicToken(encoded)).toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('signToken', () => {
+    it('access 타입으로 서명 시 5m 만료로 호출된다', () => {
+      mockJwtService.sign.mockReturnValue('signed-access');
+      const result = service.signToken('u@u.com', 'uid', false);
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        { email: 'u@u.com', id: 'uid', type: 'access' },
+        { secret: 'jamplay', expiresIn: '5m' },
+      );
+      expect(result).toBe('signed-access');
+    });
+
+    it('refresh 타입으로 서명 시 1h 만료로 호출된다', () => {
+      mockJwtService.sign.mockReturnValue('signed-refresh');
+      const result = service.signToken('u@u.com', 'uid', true);
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        { email: 'u@u.com', id: 'uid', type: 'refresh' },
+        { secret: 'jamplay', expiresIn: '1h' },
+      );
+      expect(result).toBe('signed-refresh');
+    });
+  });
+
+  describe('loginUser', () => {
+    it('accessToken과 refreshToken을 함께 반환한다', () => {
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+      expect(service.loginUser('u@u.com', 'uid')).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    });
+  });
+
+  describe('verifyToken', () => {
+    it('jamplay secret으로 토큰을 검증한다', () => {
+      const payload = { email: 'u@u.com', id: 'uid', type: 'access' };
+      mockJwtService.verify.mockReturnValue(payload);
+      expect(service.verifyToken('some.token')).toEqual(payload);
+      expect(mockJwtService.verify).toHaveBeenCalledWith('some.token', { secret: 'jamplay' });
+    });
+  });
+
+  describe('rotateToken', () => {
+    it('refresh 토큰을 재발급한다', () => {
+      mockJwtService.verify.mockReturnValue({ email: 'u@u.com', id: 'uid', type: 'refresh' });
+      mockJwtService.sign.mockReturnValue('new-refresh');
+      expect(service.rotateToken('old', true)).toBe('new-refresh');
+    });
+
+    it('access 토큰을 재발급한다', () => {
+      mockJwtService.verify.mockReturnValue({ email: 'u@u.com', id: 'uid', type: 'access' });
+      mockJwtService.sign.mockReturnValue('new-access');
+      expect(service.rotateToken('old', false)).toBe('new-access');
+    });
+
+    it('토큰 타입이 isRefreshToken 인자와 다르면 UnauthorizedException을 던진다', () => {
+      mockJwtService.verify.mockReturnValue({ email: 'u@u.com', id: 'uid', type: 'access' });
+      expect(() => service.rotateToken('old', true)).toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('authenticateWithEmailAndPassword', () => {
+    it('유저가 존재하지 않으면 UnauthorizedException을 던진다', async () => {
+      mockMembersService.getUserByEmail.mockResolvedValue(null);
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'pw')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('유저에 email이 없으면 UnauthorizedException을 던진다', async () => {
+      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: null, passwordHash: 'hash' });
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'pw')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('유저에 passwordHash가 없으면 UnauthorizedException을 던진다', async () => {
+      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: null });
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'pw')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('비밀번호가 틀리면 UnauthorizedException을 던진다', async () => {
+      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'wrong')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('인증 성공 시 id와 email을 반환한다', async () => {
+      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'correct')).resolves.toEqual({
+        id: 'uid',
+        email: 'u@u.com',
+      });
+    });
+  });
+
+  describe('loginWithEmail', () => {
+    it('인증 성공 시 토큰 쌍을 반환한다', async () => {
+      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+      await expect(service.loginWithEmail('u@u.com', 'correct')).resolves.toEqual({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+      });
+    });
+  });
+
+  describe('registerWithEmail', () => {
+    it('비밀번호를 해싱하고 토큰 쌍을 반환한다', async () => {
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
+      mockMembersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+
+      const result = await service.registerWithEmail('new@u.com', 'pw');
+      expect(bcrypt.hash).toHaveBeenCalledWith('pw', 10);
+      expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    });
+  });
+});
