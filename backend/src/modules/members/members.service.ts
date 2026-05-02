@@ -10,9 +10,6 @@ export class MembersService {
   ) {}
   async getUserByEmail(email: string) {
     const user = await this.membersRepository.findByEmail(email);
-    if (!user) {
-      throw new BadRequestException('사용자를 찾을 수 없습니다.');
-    }
     return user;
   }
 
