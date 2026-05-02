@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Headers, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { RegisterEmailDto } from './dto/register-email.dto';
 import { RefreshTokenGuard } from './guard/bearer-token.guard';
 import { BasicTokenGuard } from './guard/basic-token.guard';
 
@@ -32,7 +33,7 @@ export class AuthController {
   }
 
   @Post('register/email')
-  async registerEmail(@Body('email') email: string, @Body('password') password: string) {
+  async registerEmail(@Body() { email, password }: RegisterEmailDto) {
     return this.authService.registerWithEmail(email, password);
   }
 }
