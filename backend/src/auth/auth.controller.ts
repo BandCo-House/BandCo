@@ -29,7 +29,7 @@ export class AuthController {
     const token = this.authService.extractTokenFromHeader(authHeader, false);
     const { email, password } = this.authService.decodeBasicToken(token);
 
-    return this.authService.loginWithEmail(email, password);
+    return this.authService.loginUser(email, password);
   }
 
   @Post('register/email')
