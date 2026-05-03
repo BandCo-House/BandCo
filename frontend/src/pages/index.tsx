@@ -7,7 +7,9 @@ export const Route = createFileRoute('/')({
     header: {
       title: 'BandCo',
       showBack: false,
+      showUtilities: true,
       showSearchBar: true,
+      showProfileAvatar: true,
       showNotificationTrigger: true,
     },
   },
