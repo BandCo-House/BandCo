@@ -386,14 +386,14 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.summerLeader },
     update: {
-      spaceId: seedIds.spaces.summerShow,
+      bandSpaceId: seedIds.spaces.summerShow,
       userId: seedIds.users.minjun,
       role: 'LEADER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.summerLeader,
-      spaceId: seedIds.spaces.summerShow,
+      bandSpaceId: seedIds.spaces.summerShow,
       userId: seedIds.users.minjun,
       role: 'LEADER',
       status: 'ACTIVE',
@@ -403,14 +403,14 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.summerMember },
     update: {
-      spaceId: seedIds.spaces.summerShow,
+      bandSpaceId: seedIds.spaces.summerShow,
       userId: seedIds.users.seoyeon,
       role: 'MEMBER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.summerMember,
-      spaceId: seedIds.spaces.summerShow,
+      bandSpaceId: seedIds.spaces.summerShow,
       userId: seedIds.users.seoyeon,
       role: 'MEMBER',
       status: 'ACTIVE',
@@ -420,14 +420,14 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.acousticLeader },
     update: {
-      spaceId: seedIds.spaces.acousticSession,
+      bandSpaceId: seedIds.spaces.acousticSession,
       userId: seedIds.users.seoyeon,
       role: 'LEADER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.acousticLeader,
-      spaceId: seedIds.spaces.acousticSession,
+      bandSpaceId: seedIds.spaces.acousticSession,
       userId: seedIds.users.seoyeon,
       role: 'LEADER',
       status: 'ACTIVE',
@@ -437,14 +437,14 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.acousticMember },
     update: {
-      spaceId: seedIds.spaces.acousticSession,
+      bandSpaceId: seedIds.spaces.acousticSession,
       userId: seedIds.users.minjun,
       role: 'MEMBER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.acousticMember,
-      spaceId: seedIds.spaces.acousticSession,
+      bandSpaceId: seedIds.spaces.acousticSession,
       userId: seedIds.users.minjun,
       role: 'MEMBER',
       status: 'ACTIVE',

@@ -106,7 +106,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
       }),
       this.prisma.spaceMember.findFirst({
         where: {
-          spaceId,
+          bandSpaceId: spaceId,
           userId: input.userId,
         },
         select: {
@@ -129,7 +129,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
 
     const createdMember = await this.prisma.spaceMember.create({
       data: {
-        spaceId,
+        bandSpaceId: spaceId,
         userId: input.userId,
         role: input.role,
         status: 'ACTIVE',
@@ -138,7 +138,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
 
     return {
       memberId: createdMember.id,
-      spaceId: createdMember.spaceId,
+      spaceId: createdMember.bandSpaceId,
       userId: createdMember.userId,
       role: createdMember.role,
       status: createdMember.status,
@@ -185,7 +185,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
 
       await transaction.spaceMember.create({
         data: {
-          spaceId: bandSpace.id,
+          bandSpaceId: bandSpace.id,
           userId: DEMO_VIEWER_USER_ID,
           role: 'LEADER',
           status: 'ACTIVE',

@@ -353,14 +353,14 @@ model BandSpace {
 }
 
 model SpaceMember {
-  id       String                @id @default(uuid()) @db.Uuid
-  spaceId  String                @map("space_id") @db.Uuid
-  userId   String                @map("band_member_id") @db.Uuid
-  role     BandSpaceMemberRole   @default(MEMBER)
-  status   BandSpaceMemberStatus @default(ACTIVE)
-  joinedAt DateTime              @default(now()) @map("joined_at") @db.Timestamptz(6)
-  space    BandSpace             @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String                @id @default(uuid()) @db.Uuid
+  bandSpaceId String                @map("band_space_id") @db.Uuid
+  userId      String                @map("band_member_id") @db.Uuid
+  role        BandSpaceMemberRole   @default(MEMBER)
+  status      BandSpaceMemberStatus @default(ACTIVE)
+  joinedAt    DateTime              @default(now()) @map("joined_at") @db.Timestamptz(6)
+  bandSpace   BandSpace             @relation(fields: [bandSpaceId], references: [id], onDelete: Cascade)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("space_members")
 }
@@ -401,7 +401,7 @@ model SongSkill {
 
 model Schedule {
   id              String                @id @default(uuid()) @db.Uuid
-  bandSpaceId     String                @map("space_id") @db.Uuid
+  bandSpaceId     String                @map("band_space_id") @db.Uuid
   placeId         String                @map("place_id") @db.Uuid
   title           String?               @db.VarChar(150)
   scheduleType    ScheduleType?         @map("schedule_type")

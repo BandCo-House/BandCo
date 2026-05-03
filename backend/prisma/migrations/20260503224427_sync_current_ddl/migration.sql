@@ -60,6 +60,9 @@ ALTER TABLE "band_members" DROP CONSTRAINT "band_members_user_id_fkey";
 ALTER TABLE "space_members" DROP CONSTRAINT "space_members_user_id_fkey";
 
 -- DropForeignKey
+ALTER TABLE "space_members" DROP CONSTRAINT "space_members_space_id_fkey";
+
+-- DropForeignKey
 ALTER TABLE "schedules" DROP CONSTRAINT "schedules_band_space_id_fkey";
 
 -- DropForeignKey
@@ -94,13 +97,13 @@ ALTER TABLE "band_spaces" ALTER COLUMN "start_date" SET DATA TYPE TIMESTAMPTZ(6)
 ALTER COLUMN "end_date" SET DATA TYPE TIMESTAMPTZ(6);
 
 -- AlterTable
+ALTER TABLE "space_members" RENAME COLUMN "space_id" TO "band_space_id";
 ALTER TABLE "space_members" RENAME COLUMN "user_id" TO "band_member_id";
 
 -- AlterTable
 ALTER TABLE "songs" ADD COLUMN     "status" VARCHAR(20);
 
 -- AlterTable
-ALTER TABLE "schedules" RENAME COLUMN "band_space_id" TO "space_id";
 ALTER TABLE "schedules" RENAME COLUMN "created_by_user_id" TO "band_member_id";
 
 -- AlterTable
@@ -186,10 +189,13 @@ ALTER TABLE "band_invite_link" ADD CONSTRAINT "band_invite_link_create_user_id_f
 ALTER TABLE "band_members" ADD CONSTRAINT "band_members_band_member_id_fkey" FOREIGN KEY ("band_member_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "space_members" ADD CONSTRAINT "space_members_band_space_id_fkey" FOREIGN KEY ("band_space_id") REFERENCES "band_spaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "space_members" ADD CONSTRAINT "space_members_band_member_id_fkey" FOREIGN KEY ("band_member_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "schedules" ADD CONSTRAINT "schedules_space_id_fkey" FOREIGN KEY ("space_id") REFERENCES "band_spaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "schedules" ADD CONSTRAINT "schedules_band_space_id_fkey" FOREIGN KEY ("band_space_id") REFERENCES "band_spaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "schedules" ADD CONSTRAINT "schedules_band_member_id_fkey" FOREIGN KEY ("band_member_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
