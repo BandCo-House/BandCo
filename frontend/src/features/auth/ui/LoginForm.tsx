@@ -1,15 +1,109 @@
 import React, { useState } from 'react';
 import { loginSchema } from '../model/auth.schema';
 import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import { SocialLoginSection } from '@/shared/ui/social-login-section';
 import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
+import { cn } from '@/shared/lib/utils';
 
 interface LoginFormProps {
   onSubmit: (email: string, password: string) => void;
   isLoading?: boolean;
 }
 
-import { FloatingInput } from '@/shared/ui/floating-input';
+interface AuthRoundedInputProps {
+  id: 'email' | 'password';
+  type: 'email' | 'password';
+  value: string;
+  placeholder: string;
+  hasError: boolean;
+  errorMessage?: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
 
+interface SplitLinkRowProps {
+  left: ReactNode;
+  right: ReactNode;
+  className?: string;
+}
+
+type AuthRowLinkProps =
+  | {
+      children: ReactNode;
+      to: '/signup' | '/forgot-password';
+      onClick?: never;
+    }
+  | {
+      children: ReactNode;
+      to?: never;
+      onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+    };
+
+const AuthRoundedInput = ({
+  id,
+  type,
+  value,
+  placeholder,
+  hasError,
+  errorMessage,
+  onChange,
+}: AuthRoundedInputProps) => {
+  const label = id === 'email' ? '이메일' : '비밀번호';
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <Input
+        id={id}
+        type={type}
+        variant="roundedFull"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        aria-invalid={hasError}
+      />
+      {errorMessage ? (
+        <p className="ml-4 text-xs text-destructive">{errorMessage}</p>
+      ) : null}
+    </div>
+  );
+};
+
+const SplitLinkRow = ({ left, right, className }: SplitLinkRowProps) => {
+  return (
+    <div className={cn(className, 'flex')}>
+      <div className="flex-1">{left}</div>
+      <span className="h-7 w-px shrink-0 bg-overlay-40"></span>
+      <div className="flex-1">{right}</div>
+    </div>
+  );
+};
+
+const authRowLinkClassName =
+  'block px-2 py-1 text-center text-grey-200 transition-colors hover:text-grey-50 hover:underline';
+
+const AuthRowLink = ({ children, to, onClick }: AuthRowLinkProps) => {
+  if (to) {
+    return (
+      <Link to={to} className={authRowLinkClassName}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a href="#" onClick={onClick} className={authRowLinkClassName}>
+      {children}
+    </a>
+  );
+};
+
+/**
+ * 이메일과 비밀번호를 입력받아 로그인 요청을 제출하는 폼을 렌더링한다.
+ */
 export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,9 +111,12 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
     {},
   );
 
-  const isFormEmpty = email.trim() === '' || password.trim() === '';
+  const isFormValid = loginSchema.safeParse({ email, password }).success;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * 입력값을 검증하고 유효한 경우 로그인 요청 콜백을 호출한다.
+   */
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({});
 
@@ -40,72 +137,64 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
   };
 
   return (
-    <div>
-      <div className="text-center mb-10">
-        <Link
-          to="/"
-          className="text-[46px] font-extrabold tracking-tight text-primary-dark"
-        >
+    <div className="flex min-h-full w-full flex-col justify-center px-4 py-10 text-muted">
+      <div className="mb-16 text-center">
+        <h1 className="text-[3rem] font-extrabold tracking-tight text-grey-50">
           BandCo
-        </Link>
+        </h1>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
-        <div className="flex flex-col gap-1.5">
-          <FloatingInput
-            id="email"
-            type="email"
-            label="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="이메일을 입력하세요."
-            aria-invalid={!!errors.email}
-          />
-          {errors.email && (
-            <p className="text-xs text-destructive ml-4">{errors.email}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <FloatingInput
-            id="password"
-            type="password"
-            label="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호를 입력하세요."
-            aria-invalid={!!errors.password}
-          />
-          {errors.password && (
-            <p className="text-xs text-destructive ml-4">{errors.password}</p>
-          )}
-        </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
+        <AuthRoundedInput
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="이메일을 입력하세요."
+          hasError={!!errors.email}
+          errorMessage={errors.email}
+        />
+        <AuthRoundedInput
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="비밀번호를 입력하세요."
+          hasError={!!errors.password}
+          errorMessage={errors.password}
+        />
 
         <Button
           type="submit"
-          disabled={isLoading || isFormEmpty}
-          className={` opacity-100! mt-4 w-full rounded-[14px] h-12 text-lg ${isFormEmpty ? 'cursor-not-allowed bg-primary-surface text-primary-light' : ''}`}
+          variant="secondary"
+          size="lg"
+          disabled={isLoading || !isFormValid}
+          className="mt-4 w-full"
         >
           {isLoading ? '로그인 중...' : '로그인'}
         </Button>
       </form>
-      <div className="mt-8 pt-6 ">
-        <div className="flex items-center justify-center gap-4 text-sm text-primary-light typo-base-m">
-          <Link
-            to="/signup"
-            className=" hover:text-primary transition-colors font-medium"
-          >
-            회원가입
-          </Link>
-          <span className="w-px h-3 bg-slate-300"></span>
-          <a href="#" className="hover:text-primary transition-colors">
-            아이디 찾기
-          </a>
-          <span className="w-px h-3 bg-slate-300"></span>
-          <a href="#" className="hover:text-primary transition-colors">
-            비밀번호 찾기
-          </a>
-        </div>
-      </div>
+
+      <SplitLinkRow
+        className="mt-7"
+        left={<AuthRowLink to="/signup">회원가입</AuthRowLink>}
+        right={<AuthRowLink to="/forgot-password">비밀번호 찾기</AuthRowLink>}
+      />
+
+      <SocialLoginSection className="mt-20" />
+
+      <SplitLinkRow
+        className="mt-20 typo-base-m"
+        left={
+          <AuthRowLink onClick={(event) => event.preventDefault()}>
+            개인정보처리방침
+          </AuthRowLink>
+        }
+        right={
+          <AuthRowLink onClick={(event) => event.preventDefault()}>
+            이용약관
+          </AuthRowLink>
+        }
+      />
     </div>
   );
 };

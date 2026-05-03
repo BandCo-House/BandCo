@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/app/providers/auth-context';
 import { registerEmail } from '@/features/auth/api/auth.service';
 import { SignupForm } from '@/features/auth/ui/SignupForm';
+import { updateMyProfile } from '@/features/profile-update/api/profile-api';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
 import axios from 'axios';
@@ -10,6 +11,12 @@ import axios from 'axios';
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
   component: SignupPage,
+  staticData: {
+    header: {
+      title: '회원가입',
+      backBehavior: 'browser',
+    },
+  },
 });
 
 export function SignupPage() {
@@ -25,7 +32,15 @@ export function SignupPage() {
       const res = await registerEmail(data);
       // 회원가입 성공 시 자동 로그인
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/' });
+      await updateMyProfile({
+        profile: {
+          nickname: data.name,
+        },
+        personalInfo: {
+          email: data.email,
+        },
+      });
+      await navigate({ to: '/onboarding', search: { name: data.name } });
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
         setError(err.response?.data?.message || '회원가입에 실패했습니다.');
@@ -37,9 +52,9 @@ export function SignupPage() {
   };
 
   return (
-    <div className="max-w-145 mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center">
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full flex-col">
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
+        <div className="mb-6 rounded-2xl bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
           {error}
         </div>
       )}

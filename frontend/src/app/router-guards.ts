@@ -7,12 +7,38 @@ export type RouterContext = {
 
 type UserGuardPredicate = (user: UserAccess) => boolean;
 
+const PUBLIC_ONLY_PATHS = new Set(['/login', '/signup', '/forgot-password']);
+
 /**
  * 라우터 진입 전 사용자 상태 동기화 지점
  * 현재는 AuthProvider의 값을 그대로 사용하고, 추후 토큰 재검증/권한 동기화 로직을 붙일 수 있다.
  */
-export const syncAuthenticatedUser = async (user: UserAccess): Promise<UserAccess> => {
+export const syncAuthenticatedUser = async (
+  user: UserAccess,
+): Promise<UserAccess> => {
   return user;
+};
+
+/**
+ * 로그인 없이 접근 가능한 공개 경로인지 확인한다.
+ */
+export const isPublicGuestPath = (pathname: string): boolean => {
+  return PUBLIC_ONLY_PATHS.has(pathname);
+};
+
+/**
+ * 게스트 전용 경로를 제외한 모든 페이지에 로그인 요구 조건을 적용한다.
+ */
+export const enforceProtectedRoute = ({
+  context,
+  pathname,
+}: {
+  context: RouterContext;
+  pathname: string;
+}) => {
+  if (!context.user.isLoggedIn && !isPublicGuestPath(pathname)) {
+    throw redirect({ to: '/login' });
+  }
 };
 
 /**

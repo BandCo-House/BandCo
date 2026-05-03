@@ -42,9 +42,9 @@ export function LoginPage() {
   };
 
   return (
-    <div className="max-w-145 mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center">
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col justify-center">
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
+        <div className="mb-6 rounded-2xl bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
           {error}
         </div>
       )}

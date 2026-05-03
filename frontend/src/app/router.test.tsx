@@ -1,18 +1,26 @@
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { UserAccess } from '@/app/providers/auth-context';
+import { AuthContext, type UserAccess } from '@/app/providers/auth-context';
 import { createAppRouter } from '@/app/router';
 
 const renderWithRouter = (router: ReturnType<typeof createAppRouter>) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const authContextValue = {
+    user: router.options.context.user,
+    login: vi.fn(),
+    logout: vi.fn(),
+  };
+
   return render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <AuthContext.Provider value={authContextValue}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AuthContext.Provider>,
   );
 };
 
@@ -53,7 +61,20 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
-  it('로그아웃 사용자가 프로필 경로로 접근하면 루트로 리다이렉트된다', async () => {
+  it('로그아웃 사용자가 루트 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/', {
+      isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그아웃 사용자가 프로필 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: false,
       isAdmin: false,
@@ -61,7 +82,22 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그아웃 사용자가 비밀번호 찾기 경로로 접근하면 비밀번호 재설정 페이지를 렌더링한다', async () => {
+    const router = createRouterForTest('/forgot-password', {
+      isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '재설정 메일 보내기' }),
+    ).toBeInTheDocument();
   });
 
   it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
@@ -122,7 +158,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('SongsPage');
     fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
@@ -136,7 +172,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
     fireEvent.click(screen.getByRole('button', { name: '곡 라이브러리' }));
@@ -183,7 +219,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={songsRouter} />);
+    renderWithRouter(songsRouter);
     expect(await screen.findByText('SongsPage')).toBeInTheDocument();
     expect(
       screen.queryByPlaceholderText('밴드/사용자를 찾아보세요'),
@@ -212,7 +248,7 @@ describe('앱 라우터', () => {
       isLoggedIn: true,
       isAdmin: false,
     });
-    const { unmount } = render(<RouterProvider router={profileRouter} />);
+    const { unmount } = renderWithRouter(profileRouter);
 
     expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
     expect(screen.queryByLabelText('프로필 열기')).not.toBeInTheDocument();
@@ -267,7 +303,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
@@ -281,11 +317,13 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
     fireEvent.click(screen.getByRole('button', { name: '설정' }));
 
-    expect(await screen.findByText('PerformanceSettingsPage')).toBeInTheDocument();
+    expect(
+      await screen.findByText('PerformanceSettingsPage'),
+    ).toBeInTheDocument();
   });
 });

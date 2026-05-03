@@ -39,6 +39,11 @@ describe("authSchema", () => {
       const result = loginSchema.safeParse({ email: "t@t.com", password: "pass12한글" });
       expect(result.success).toBe(false);
     });
+
+    it("비밀번호에 허용되지 않은 특수문자가 포함되면 실패해야 한다", () => {
+      const result = loginSchema.safeParse({ email: "t@t.com", password: "pass12_" });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("signupSchema (이름 추가 검증)", () => {
