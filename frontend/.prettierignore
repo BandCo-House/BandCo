@@ -1,1 +1,5 @@
-**/routeTree.gen.ts
+dist
+coverage
+node_modules
+public/mockServiceWorker.js
+src/routeTree.gen.ts
