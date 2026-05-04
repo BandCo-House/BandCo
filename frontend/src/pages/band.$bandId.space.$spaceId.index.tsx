@@ -5,9 +5,7 @@ import {
 } from './-band-header-utils';
 import { WeeklyCalendar } from '@/widgets/weekly-calendar/ui/WeeklyCalendar';
 
-export const Route = createFileRoute(
-  '/band/$bandId/space/$spaceId/',
-)({
+export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
   component: BandPerformanceRoutePage,
   staticData: {
     header: {
@@ -32,6 +30,7 @@ export const Route = createFileRoute(
 function BandPerformanceRoutePage() {
   return (
     <div>
+      <span className="sr-only">BandPerformancePage</span>
       <WeeklyCalendar />
     </div>
   );

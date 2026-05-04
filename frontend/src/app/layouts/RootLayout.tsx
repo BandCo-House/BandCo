@@ -1,5 +1,6 @@
-import { Outlet, useMatches, useRouter } from '@tanstack/react-router';
+import { Link, Outlet, useMatches, useRouter } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
 import {
   HomeHeaderUtilities,
   PageHeader,
@@ -41,17 +42,87 @@ export const RootLayout = () => {
       }
     : undefined;
 
+  const rightContent = (() => {
+    if (!header) return undefined;
+
+    if (header.showUtilities) {
+      return (
+        <HomeHeaderUtilities
+          showSearchBar={header.showSearchBar}
+          showProfileAvatar={header.showProfileAvatar}
+          showNotificationTrigger={header.showNotificationTrigger}
+        />
+      );
+    }
+
+    const tabs = header.tabs?.map((tab) => {
+      const tabTo = tab.getTo?.(currentParams) ?? tab.to;
+      const [tabPath, tabSearchString] = tabTo?.split('?') ?? [];
+      const tabSearch = tabSearchString
+        ? Object.fromEntries(new URLSearchParams(tabSearchString))
+        : undefined;
+      const tabParams = tab.getParams?.(currentParams);
+      const isActive =
+        tab.active ??
+        tab.isActive?.({
+          pathname: router.state.location.pathname,
+          params: currentParams,
+        }) ??
+        false;
+      const tabButton = (
+        <Button
+          type="button"
+          variant={isActive ? 'default' : 'outline'}
+          size="sm"
+          data-variant={isActive ? 'default' : 'outline'}
+          onClick={tab.onClick}
+        >
+          {tab.label}
+        </Button>
+      );
+
+      return tabPath ? (
+        <Link
+          key={tab.key}
+          to={tabPath as never}
+          {...(tabParams ? { params: tabParams as never } : {})}
+          {...(tabSearch ? { search: tabSearch as never } : {})}
+        >
+          {tabButton}
+        </Link>
+      ) : (
+        <span key={tab.key}>{tabButton}</span>
+      );
+    });
+
+    const rightActionParams = header.getRightActionParams?.(currentParams);
+    const rightAction =
+      header.rightActionLabel && header.rightActionTo ? (
+        <Link
+          to={header.rightActionTo as never}
+          {...(rightActionParams ? { params: rightActionParams as never } : {})}
+        >
+          <Button type="button" variant="outline" size="sm">
+            {header.rightActionLabel}
+          </Button>
+        </Link>
+      ) : null;
+
+    if (!tabs?.length && !rightAction) return undefined;
+
+    return (
+      <div className="flex items-center gap-2">
+        {tabs}
+        {rightAction}
+      </div>
+    );
+  })();
+
   const pageHeaderProps = header
     ? {
         title: header.title ?? '',
         showBack: header.showBack,
-        rightContent: header.showUtilities ? (
-          <HomeHeaderUtilities
-            showSearchBar={header.showSearchBar}
-            showProfileAvatar={header.showProfileAvatar}
-            showNotificationTrigger={header.showNotificationTrigger}
-          />
-        ) : undefined,
+        rightContent,
       }
     : null;
 
@@ -62,7 +133,7 @@ export const RootLayout = () => {
       ) : null}
       <main
         className={cn(
-          'mx-auto w-full max-w-5xl px-6 py-8',
+          'mx-auto w-full max-w-7xl px-6 py-8',
           pageHeaderProps ? 'pt-24 md:pt-40' : undefined,
         )}
       >

@@ -100,6 +100,45 @@ describe('앱 라우터', () => {
     ).toBeInTheDocument();
   });
 
+  it('로그인 사용자가 비밀번호 찾기 경로로 접근하면 루트로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/forgot-password', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+  });
+
+  it('로그아웃 사용자가 온보딩 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/onboarding', {
+      isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그인 사용자가 온보딩 경로로 접근하면 온보딩 페이지를 렌더링한다', async () => {
+    const router = createRouterForTest('/onboarding?name=테스터', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /반가워요, 테스터님\s+어떤 음악을 추구하나요/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: true,
@@ -264,7 +303,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('BandDetailPage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
@@ -278,7 +317,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('ProfilePage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
@@ -292,7 +331,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('TeamDetailPage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByText('SongTeamsPage')).toBeInTheDocument();
   });
@@ -306,7 +345,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });
