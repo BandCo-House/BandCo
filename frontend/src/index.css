@@ -5,13 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: 1rem;
-  --radius-md: 1rem;
-  --radius-lg: 1.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
   --radius-xl: 1.25rem;
-  --radius-2xl: 1.25rem;
-  --radius-3xl: 1.25rem;
-  --radius-4xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--background);
@@ -79,7 +79,7 @@
 }
 
 .dark {
-  --background: var(--primary);
+  --background: var(--primary-main);
   --foreground: var(--greyScale-200);
   --gradient-top: #1b1b32;
   --gradient-bottom: #020119;

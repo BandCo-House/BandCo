@@ -3,7 +3,10 @@ import { cn } from '@/shared/lib/utils';
 interface SocialLoginSectionProps {
   className?: string;
   buttonGapClassName?: string;
+  onProviderLogin?: (provider: SocialLoginProvider) => void;
 }
+
+type SocialLoginProvider = 'google' | 'naver' | 'kakao';
 
 const googleLogo = new URL('../../assets/images/Google.svg', import.meta.url)
   .href;
@@ -14,16 +17,19 @@ const kakaoLogo = new URL('../../assets/images/Kakaotalk.svg', import.meta.url)
 
 const socialLoginButtons = [
   {
+    provider: 'google',
     label: 'Google',
     src: googleLogo,
     className: 'bg-white',
   },
   {
+    provider: 'naver',
     label: 'Naver',
     src: naverLogo,
     className: 'bg-[#03A94D]',
   },
   {
+    provider: 'kakao',
     label: 'Kakao',
     src: kakaoLogo,
     className: 'bg-[#FAE100]',
@@ -36,6 +42,7 @@ const socialLoginButtons = [
 export const SocialLoginSection = ({
   className,
   buttonGapClassName = 'gap-5',
+  onProviderLogin,
 }: SocialLoginSectionProps) => {
   return (
     <section className={cn('flex flex-col', className)}>
@@ -52,15 +59,20 @@ export const SocialLoginSection = ({
         )}
       >
         {socialLoginButtons.map(
-          ({ label, src, className: buttonClassName }) => (
+          ({ provider, label, src, className: buttonClassName }) => (
             <button
               key={label}
               type="button"
               aria-label={label}
+              aria-disabled={!onProviderLogin}
+              disabled={!onProviderLogin}
               className={cn(
                 'flex h-14 w-14 items-center justify-center rounded-full transition-transform duration-200 hover:-translate-y-0.5',
+                !onProviderLogin &&
+                  'cursor-not-allowed opacity-60 hover:translate-y-0',
                 buttonClassName,
               )}
+              onClick={() => onProviderLogin?.(provider)}
             >
               <img src={src} alt="" className="h-6 w-6" />
             </button>
