@@ -4,10 +4,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { OnboardingFlow } from './OnboardingFlow';
 
 describe('OnboardingFlow', () => {
+  const fixtureGenres = [{ id: 'fixture-rock', label: '테스트 록' }];
+  const fixtureParts = [{ id: 'fixture-vocal', label: '테스트 보컬' }];
+
   it('초기 단계에서 장르를 선택하면 선택 순서를 표시하고 다음 단계로 이동해야 한다', async () => {
     const user = userEvent.setup();
 
-    render(<OnboardingFlow userName="테스터" onComplete={vi.fn()} />);
+    render(
+      <OnboardingFlow
+        userName="테스터"
+        genres={fixtureGenres}
+        parts={fixtureParts}
+        onComplete={vi.fn()}
+      />,
+    );
 
     expect(
       screen.getByRole('heading', {
@@ -15,7 +25,9 @@ describe('OnboardingFlow', () => {
       }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '록 (Rock)' }));
+    await user.click(
+      screen.getByRole('button', { name: fixtureGenres[0].label }),
+    );
     expect(screen.getByText('1')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '다음' }));
@@ -31,16 +43,27 @@ describe('OnboardingFlow', () => {
     const user = userEvent.setup();
     const handleComplete = vi.fn();
 
-    render(<OnboardingFlow userName="테스터" onComplete={handleComplete} />);
+    render(
+      <OnboardingFlow
+        userName="테스터"
+        genres={fixtureGenres}
+        parts={fixtureParts}
+        onComplete={handleComplete}
+      />,
+    );
 
-    await user.click(screen.getByRole('button', { name: '록 (Rock)' }));
+    await user.click(
+      screen.getByRole('button', { name: fixtureGenres[0].label }),
+    );
     await user.click(screen.getByRole('button', { name: '다음' }));
-    await user.click(screen.getByRole('button', { name: '보컬' }));
+    await user.click(
+      screen.getByRole('button', { name: fixtureParts[0].label }),
+    );
     await user.click(screen.getByRole('button', { name: '시작하기' }));
 
     expect(handleComplete).toHaveBeenCalledWith({
-      favoriteGenreIds: ['rock'],
-      skillTypeIds: ['vocal'],
+      favoriteGenreIds: [fixtureGenres[0].id],
+      skillTypeIds: [fixtureParts[0].id],
     });
   });
 

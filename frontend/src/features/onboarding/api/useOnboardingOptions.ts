@@ -7,6 +7,8 @@ export const onboardingOptionKeys = {
   parts: () => [...onboardingOptionKeys.all, 'parts'] as const,
 };
 
+const onboardingOptionsStaleTime = 5 * 60 * 1000;
+
 /**
  * 온보딩 장르 선택지를 조회한다.
  */
@@ -14,6 +16,7 @@ export const useGenreOptions = () => {
   return useQuery({
     queryKey: onboardingOptionKeys.genres(),
     queryFn: getGenreOptions,
+    staleTime: onboardingOptionsStaleTime,
   });
 };
 
@@ -24,5 +27,6 @@ export const usePartOptions = () => {
   return useQuery({
     queryKey: onboardingOptionKeys.parts(),
     queryFn: getPartOptions,
+    staleTime: onboardingOptionsStaleTime,
   });
 };
