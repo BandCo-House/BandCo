@@ -27,7 +27,7 @@ describe('SignupForm', () => {
     expect(
       screen.getByPlaceholderText('이름을 입력하세요.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('불일치')).toBeInTheDocument();
+    expect(screen.queryByText('불일치')).not.toBeInTheDocument();
   });
 
   it('올바른 입력과 필수 약관 동의 후 가입하기 버튼을 누르면 onSubmit이 호출되어야 한다', () => {

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { requireGuest } from '@/app/router-guards';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -11,6 +11,19 @@ export const Route = createFileRoute('/forgot-password')({
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+
+  /**
+   * 비밀번호 재설정 메일 발송 요청을 처리한다.
+   */
+  const handleResetSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) return;
+
+    setMessage(`${trimmedEmail}로 비밀번호 재설정 안내를 보냈습니다.`);
+  };
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col justify-center">
@@ -24,7 +37,7 @@ export function ForgotPasswordPage() {
           </p>
         </div>
 
-        <form className="flex flex-col gap-3.5">
+        <form onSubmit={handleResetSubmit} className="flex flex-col gap-3.5">
           <div className="flex flex-col gap-2">
             <label htmlFor="reset-email" className="sr-only">
               이메일
@@ -49,6 +62,11 @@ export function ForgotPasswordPage() {
           >
             재설정 메일 보내기
           </Button>
+          {message ? (
+            <p aria-live="polite" className="px-4 typo-sm-m text-secondary">
+              {message}
+            </p>
+          ) : null}
         </form>
 
         <div className="mt-8">

@@ -34,6 +34,9 @@ type TermsState = {
 };
 
 type EmailDuplicateStatus = 'idle' | 'checking' | 'available' | 'duplicated';
+type SignupFormErrors = Partial<
+  Record<keyof SignupReq | 'requiredTerms', string>
+>;
 
 interface TermsCheckboxRowProps {
   id: keyof TermsState;
@@ -205,9 +208,7 @@ export const SignupForm = ({
     password: '',
     name: '',
   });
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof SignupReq, string>>
-  >({});
+  const [errors, setErrors] = useState<SignupFormErrors>({});
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [emailDuplicateStatus, setEmailDuplicateStatus] =
     useState<EmailDuplicateStatus>('idle');
@@ -217,13 +218,15 @@ export const SignupForm = ({
     privacy: false,
   });
 
+  const hasPasswordConfirmInput = passwordConfirm.length > 0;
   const isPasswordConfirmed =
-    formData.password.length > 0 && formData.password === passwordConfirm;
+    hasPasswordConfirmInput && formData.password === passwordConfirm;
   const isRequiredTermsChecked = terms.service && terms.privacy;
   const isFormValid =
     signupSchema.safeParse(formData).success &&
     isPasswordConfirmed &&
-    isRequiredTermsChecked;
+    isRequiredTermsChecked &&
+    emailDuplicateStatus !== 'duplicated';
 
   /**
    * 입력 필드의 id를 기준으로 회원가입 폼 상태를 갱신한다.
@@ -235,6 +238,7 @@ export const SignupForm = ({
 
     if (id === 'email') {
       setEmailDuplicateStatus('idle');
+      setErrors((prev) => ({ ...prev, email: undefined }));
     }
   };
 
@@ -296,7 +300,7 @@ export const SignupForm = ({
     setErrors({});
 
     const result = signupSchema.safeParse(formData);
-    const nextErrors: Partial<Record<keyof SignupReq, string>> = {};
+    const nextErrors: SignupFormErrors = {};
 
     if (!result.success) {
       result.error.issues.forEach((issue) => {
@@ -308,6 +312,14 @@ export const SignupForm = ({
     if (!isPasswordConfirmed) {
       nextErrors.password =
         nextErrors.password ?? '비밀번호가 일치하지 않습니다.';
+    }
+
+    if (emailDuplicateStatus === 'duplicated') {
+      nextErrors.email = '이미 사용 중인 이메일입니다.';
+    }
+
+    if (!isRequiredTermsChecked) {
+      nextErrors.requiredTerms = '필수 이용약관에 동의해주세요.';
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -371,7 +383,11 @@ export const SignupForm = ({
           onChange={(event) => setPasswordConfirm(event.target.value)}
           placeholder="비밀번호를 다시 입력하세요."
           action={
-            <PasswordConfirmAction isPasswordConfirmed={isPasswordConfirmed} />
+            hasPasswordConfirmInput ? (
+              <PasswordConfirmAction
+                isPasswordConfirmed={isPasswordConfirmed}
+              />
+            ) : null
           }
         />
 
@@ -408,6 +424,9 @@ export const SignupForm = ({
               개인정보 수집 및 이용 동의(필수)
             </TermsCheckboxRow>
           </div>
+          {errors.requiredTerms ? (
+            <p className="typo-xs-m text-destructive">{errors.requiredTerms}</p>
+          ) : null}
         </section>
 
         <Button

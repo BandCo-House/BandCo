@@ -36,9 +36,13 @@ export function LoginPage() {
         } else {
           setError('로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
+      } else {
+        console.error('로그인 중 예상하지 못한 오류가 발생했습니다.', err);
+        setError('로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

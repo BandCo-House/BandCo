@@ -37,7 +37,7 @@ type AuthRowLinkProps =
   | {
       children: ReactNode;
       to?: never;
-      onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+      onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     };
 
 const AuthRoundedInput = ({
@@ -95,9 +95,9 @@ const AuthRowLink = ({ children, to, onClick }: AuthRowLinkProps) => {
   }
 
   return (
-    <a href="#" onClick={onClick} className={authRowLinkClassName}>
+    <button type="button" onClick={onClick} className={authRowLinkClassName}>
       {children}
-    </a>
+    </button>
   );
 };
 
@@ -185,15 +185,9 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
       <SplitLinkRow
         className="mt-20 typo-base-m"
         left={
-          <AuthRowLink onClick={(event) => event.preventDefault()}>
-            개인정보처리방침
-          </AuthRowLink>
+          <AuthRowLink onClick={() => undefined}>개인정보처리방침</AuthRowLink>
         }
-        right={
-          <AuthRowLink onClick={(event) => event.preventDefault()}>
-            이용약관
-          </AuthRowLink>
-        }
+        right={<AuthRowLink onClick={() => undefined}>이용약관</AuthRowLink>}
       />
     </div>
   );

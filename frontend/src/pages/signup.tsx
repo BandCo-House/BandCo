@@ -32,23 +32,38 @@ export function SignupPage() {
       const res = await registerEmail(data);
       // 회원가입 성공 시 자동 로그인
       login(res.accessToken, res.refreshToken);
-      await updateMyProfile({
-        profile: {
-          nickname: data.name,
-        },
-        personalInfo: {
-          email: data.email,
-        },
-      });
-      await navigate({ to: '/onboarding', search: { name: data.name } });
+      try {
+        await updateMyProfile({
+          profile: {
+            nickname: data.name,
+          },
+          personalInfo: {
+            email: data.email,
+          },
+        });
+        await navigate({ to: '/onboarding', search: { name: data.name } });
+      } catch (profileUpdateError) {
+        console.error(
+          '회원가입 후 프로필 저장에 실패했습니다.',
+          profileUpdateError,
+        );
+        setError(
+          '회원가입은 완료됐지만 프로필 저장에 실패했습니다. 온보딩에서 이어서 설정해주세요.',
+        );
+        await navigate({
+          to: '/onboarding',
+          search: { name: data.name, profileUpdateFailed: '1' },
+        });
+      }
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
         setError(err.response?.data?.message || '회원가입에 실패했습니다.');
       } else {
         setError('회원가입에 실패했습니다.');
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
