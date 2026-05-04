@@ -64,7 +64,6 @@ export const SocialLoginSection = ({
               key={label}
               type="button"
               aria-label={label}
-              aria-disabled={!onProviderLogin}
               disabled={!onProviderLogin}
               className={cn(
                 'flex h-14 w-14 items-center justify-center rounded-full transition-transform duration-200 hover:-translate-y-0.5',

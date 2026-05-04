@@ -139,6 +139,24 @@ describe('앱 라우터', () => {
     ).toBeInTheDocument();
   });
 
+  it('온보딩 경로에 프로필 저장 실패 플래그가 있으면 안내 메시지를 표시한다', async () => {
+    const router = createRouterForTest(
+      '/onboarding?name=테스터&profileUpdateFailed=1',
+      {
+        isLoggedIn: true,
+        isAdmin: false,
+      },
+    );
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByText(
+        /회원가입은 완료됐지만 프로필 저장에 실패했습니다/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: true,

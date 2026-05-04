@@ -47,9 +47,6 @@ export function SignupPage() {
           '회원가입 후 프로필 저장에 실패했습니다.',
           profileUpdateError,
         );
-        setError(
-          '회원가입은 완료됐지만 프로필 저장에 실패했습니다. 온보딩에서 이어서 설정해주세요.',
-        );
         await navigate({
           to: '/onboarding',
           search: { name: data.name, profileUpdateFailed: '1' },

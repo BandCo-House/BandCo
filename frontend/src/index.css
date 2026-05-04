@@ -14,9 +14,9 @@
   --radius-4xl: 2rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--background);
+  --color-card: var(--surface-card);
   --color-card-foreground: var(--foreground);
-  --color-popover: var(--background);
+  --color-popover: var(--surface-popover);
   --color-popover-foreground: var(--foreground);
   --color-overlay-40: var(--overlay-40);
   --color-overlay-24: var(--overlay-24);
@@ -59,6 +59,8 @@
 :root {
   --background: #fcfcfc;
   --foreground: var(--greyScale-500);
+  --surface-card: #ffffff;
+  --surface-popover: #ffffff;
   --gradient-top: #faf9f0;
   --gradient-bottom: #e6e9f0;
   --overlay-40: rgb(255 255 255 / 0.4);
@@ -89,6 +91,8 @@
 .dark {
   --background: var(--primary-main);
   --foreground: var(--greyScale-200);
+  --surface-card: var(--overlay-24);
+  --surface-popover: var(--primary-dark);
   --gradient-top: #1b1b32;
   --gradient-bottom: #020119;
   --overlay-40: rgb(255 255 255 / 0.4);
@@ -122,6 +126,7 @@
   }
   body {
     @apply text-foreground;
+
     background-color: var(--gradient-top);
     background-image: linear-gradient(
       135deg,

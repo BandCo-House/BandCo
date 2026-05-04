@@ -257,13 +257,23 @@ export const SignupForm = ({
     }
 
     setEmailDuplicateStatus('checking');
-    const result = await checkEmailDuplicate(formData.email);
 
-    setEmailDuplicateStatus(result.duplicated ? 'duplicated' : 'available');
-    setErrors((prev) => ({
-      ...prev,
-      email: result.duplicated ? '이미 사용 중인 이메일입니다.' : undefined,
-    }));
+    try {
+      const result = await checkEmailDuplicate(formData.email);
+
+      setEmailDuplicateStatus(result.duplicated ? 'duplicated' : 'available');
+      setErrors((prev) => ({
+        ...prev,
+        email: result.duplicated ? '이미 사용 중인 이메일입니다.' : undefined,
+      }));
+    } catch (error) {
+      console.error('이메일 중복 확인에 실패했습니다.', error);
+      setEmailDuplicateStatus('idle');
+      setErrors((prev) => ({
+        ...prev,
+        email: '이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.',
+      }));
+    }
   };
 
   /**

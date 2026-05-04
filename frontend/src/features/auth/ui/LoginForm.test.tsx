@@ -20,14 +20,16 @@ describe('LoginForm', () => {
   });
 
   it('스키마를 만족하지 않는 입력값에서는 로그인 버튼이 비활성 상태여야 한다', async () => {
+    const user = userEvent.setup();
+
     render(<LoginForm onSubmit={vi.fn()} />);
 
     const emailInput = screen.getByLabelText(/이메일/i);
     const passwordInput = screen.getByLabelText(/비밀번호/i);
     const submitButton = screen.getByRole('button', { name: /로그인/i });
 
-    await userEvent.type(emailInput, 'invalid-email');
-    await userEvent.type(passwordInput, 'password123!');
+    await user.type(emailInput, 'invalid-email');
+    await user.type(passwordInput, 'password123!');
 
     expect(submitButton).toBeDisabled();
   });

@@ -1,7 +1,9 @@
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { SignupForm } from './SignupForm';
+import { server } from '@/mocks/server';
 
 describe('SignupForm', () => {
   beforeAll(() => {
@@ -146,5 +148,38 @@ describe('SignupForm', () => {
       screen.getByRole('button', { name: '중복 확인' }),
     ).toBeInTheDocument();
     expect(screen.getByText('중복')).toBeInTheDocument();
+  });
+
+  it('이메일 중복 확인 요청이 실패하면 오류 메시지를 표시하고 확인 버튼 상태를 복구해야 한다', async () => {
+    const user = userEvent.setup();
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    server.use(
+      http.post('*/auth/email/duplicate-check', () => {
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+
+    render(<SignupForm onSubmit={vi.fn()} />);
+
+    await user.type(
+      screen.getByPlaceholderText('이메일을 입력하세요.'),
+      'error-check@test.com',
+    );
+    await user.click(screen.getByRole('button', { name: '중복 확인' }));
+
+    expect(
+      await screen.findByText(
+        '이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '중복 확인' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('확인 중')).not.toBeInTheDocument();
+
+    consoleErrorSpy.mockRestore();
   });
 });
