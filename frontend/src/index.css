@@ -43,6 +43,10 @@
   --color-border: var(--overlay-40);
   --color-input: var(--overlay-24);
   --color-ring: var(--secondary);
+  --color-key: var(--key);
+  --color-key-foreground: var(--key-foreground);
+  --color-key-surface: var(--key-surface);
+  --color-key-muted: var(--key-muted);
   --color-grey-50: var(--greyScale-50);
   --color-grey-100: var(--greyScale-100);
   --color-grey-200: var(--greyScale-200);
@@ -72,6 +76,10 @@
   --primary-dark: #020119;
   --secondary-surface: #ecfcab;
   --secondary: #ddfe55;
+  --key: var(--primary-main);
+  --key-foreground: var(--greyScale-50);
+  --key-surface: var(--primary-surface);
+  --key-muted: var(--primary-light);
   --success-surface: #ebfef5;
   --success: #05e173;
   --destructive-surface: #fee6e1;
@@ -98,6 +106,10 @@
   --primary-dark: #020114;
   --secondary-surface: #ecfcab;
   --secondary: #ddfe55;
+  --key: var(--secondary);
+  --key-foreground: var(--primary-dark);
+  --key-surface: var(--secondary-surface);
+  --key-muted: var(--secondary);
   --success-surface: #ebfef5;
   --success: #05e173;
   --destructive-surface: #fee6e1;

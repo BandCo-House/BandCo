@@ -36,7 +36,7 @@ export const PageHeader = ({
             <button
               type="button"
               aria-label="뒤로 가기"
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-secondary"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
               onClick={onBack}
             >
               <ArrowRightIcon

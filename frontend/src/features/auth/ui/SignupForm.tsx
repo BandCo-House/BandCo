@@ -158,8 +158,8 @@ const EmailDuplicateResult = ({ status }: EmailDuplicateResultProps) => {
           'flex h-14 items-center justify-center overflow-hidden rounded-full transition-transform duration-300 ease-out',
           isVisible ? 'scale-100' : 'pointer-events-none scale-90',
           isDuplicated
-            ? 'border border-primary-light px-6 typo-base-m text-grey-200'
-            : 'w-14 bg-primary-light text-grey-50',
+            ? 'border border-key-muted px-6 typo-base-m text-grey-200'
+            : 'w-14 bg-key-muted text-key-foreground',
         )}
       >
         {isDuplicated ? (
@@ -180,7 +180,7 @@ const PasswordConfirmAction = ({
 }: PasswordConfirmActionProps) => {
   if (!isPasswordConfirmed) {
     return (
-      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-primary-light px-6 typo-base-m text-grey-200">
+      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-key-muted px-6 typo-base-m text-grey-200">
         불일치
       </div>
     );
@@ -189,7 +189,7 @@ const PasswordConfirmAction = ({
   return (
     <div
       aria-label="비밀번호 일치"
-      className="mb-1 flex size-14 shrink-0 items-center justify-center rounded-full bg-primary-light text-grey-50"
+      className="mb-1 flex size-14 shrink-0 items-center justify-center rounded-full bg-key-muted text-key-foreground"
     >
       <CheckIcon aria-hidden="true" className="size-5" />
     </div>
@@ -357,7 +357,7 @@ export const SignupForm = ({
                 size="sm"
                 disabled={emailDuplicateStatus === 'checking'}
                 onClick={handleEmailDuplicateCheck}
-                className="mb-1 h-14 shrink-0 rounded-full border-primary-light px-6 typo-base-m text-grey-200"
+                className="mb-1 h-14 shrink-0 rounded-full border-key-muted px-6 typo-base-m text-grey-200"
               >
                 {emailDuplicateStatus === 'checking' ? '확인 중' : '중복 확인'}
               </Button>
@@ -431,7 +431,7 @@ export const SignupForm = ({
 
         <Button
           type="submit"
-          variant="secondary"
+          variant="key"
           size="lg"
           disabled={isLoading || !isFormValid}
           className="mt-4 w-full"

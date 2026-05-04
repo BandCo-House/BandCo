@@ -107,9 +107,7 @@ describe('SignupForm', () => {
     );
 
     expect(screen.queryByText('불일치')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('비밀번호 일치')).toHaveClass(
-      'bg-primary-light',
-    );
+    expect(screen.getByLabelText('비밀번호 일치')).toHaveClass('bg-key-muted');
   });
 
   it('비밀번호 확인 값이 일치하지 않으면 불일치 액션을 표시해야 한다', async () => {

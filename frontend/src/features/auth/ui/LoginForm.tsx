@@ -165,7 +165,7 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
 
         <Button
           type="submit"
-          variant="secondary"
+          variant="key"
           size="lg"
           disabled={isLoading || !isFormValid}
           className="mt-4 w-full"

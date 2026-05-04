@@ -5,10 +5,11 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground',
+        default: 'bg-key text-key-foreground',
+        key: 'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
         secondary:
-          'bg-secondary text-secondary-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
-        outline: 'border border-primary-light bg-transparent text-foreground',
+          'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
+        outline: 'border border-key-muted bg-transparent text-foreground',
         ghost: 'bg-transparent text-foreground',
       },
       size: {

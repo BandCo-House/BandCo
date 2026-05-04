@@ -81,7 +81,7 @@ function OnboardingPage() {
         </p>
         <button
           type="button"
-          className="rounded-full border border-primary-light px-6 py-3 typo-base-m text-grey-200"
+          className="rounded-full border border-key-muted px-6 py-3 typo-base-m text-grey-200"
           onClick={() => {
             void genreOptionsQuery.refetch();
             void partOptionsQuery.refetch();

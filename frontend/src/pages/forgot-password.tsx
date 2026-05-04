@@ -55,7 +55,7 @@ export function ForgotPasswordPage() {
 
           <Button
             type="submit"
-            variant="secondary"
+            variant="key"
             size="lg"
             disabled={email.trim() === ''}
             className="mt-5 w-full"
@@ -63,7 +63,7 @@ export function ForgotPasswordPage() {
             재설정 메일 보내기
           </Button>
           {message ? (
-            <p aria-live="polite" className="px-4 typo-sm-m text-secondary">
+            <p aria-live="polite" className="px-4 typo-sm-m text-key">
               {message}
             </p>
           ) : null}

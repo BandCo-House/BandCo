@@ -38,7 +38,7 @@ export const FloatingInput = ({
     <fieldset
       className={cn(
         'group relative w-full rounded-[14px] border-2 bg-background px-3 transition-colors duration-200',
-        'border-transparent focus-within:border-primary-light',
+        'border-transparent focus-within:border-key-muted',
         containerClassName,
       )}
     >

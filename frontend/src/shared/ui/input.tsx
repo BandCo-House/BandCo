@@ -4,9 +4,9 @@ import { Search } from 'lucide-react';
 
 const inputVariantClassNames = {
   roundedFull:
-    'rounded-full border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-secondary focus-visible:outline-2 focus-visible:outline-secondary',
+    'rounded-full border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-key focus-visible:outline-2 focus-visible:outline-key',
   underline:
-    'rounded-none border-0 border-b bg-transparent px-0 py-3 outline-none hover:border-secondary focus-visible:border-secondary focus-visible:ring-0',
+    'rounded-none border-0 border-b bg-transparent px-0 py-3 outline-none hover:border-key focus-visible:border-key focus-visible:ring-0',
 } as const;
 
 type InputProps = React.ComponentProps<'input'> & {
@@ -50,9 +50,9 @@ const Input = ({
       type={type}
       data-slot="input"
       className={cn(
-        'file:text-sm file:font-medium file:text-foreground text-grey-50 placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-border w-full transition-[border-color,color,box-shadow,outline-color,outline-width] file:inline-flex file:h-7 file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed',
+        'w-full border-border text-grey-50 transition-[border-color,color,box-shadow,outline-color,outline-width] selection:bg-key selection:text-key-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed',
         inputVariantClassNames[variant],
-        'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive aria-invalid:outline-destructive',
+        'aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-invalid:outline-destructive dark:aria-invalid:ring-destructive/40',
         isSearchBar && 'pl-11',
         className,
       )}
