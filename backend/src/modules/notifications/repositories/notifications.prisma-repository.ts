@@ -31,6 +31,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
         lte: query.to,
       },
     };
+
     const paginationOffset = (query.page - 1) * query.size;
     const orderBy = this.createOrderBy(query.sort);
 
