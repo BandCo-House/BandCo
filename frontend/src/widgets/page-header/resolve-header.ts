@@ -15,9 +15,9 @@ const HEADER_DEFAULTS: Pick<
 > = {
   showBack: true,
   backBehavior: 'route',
-  showUtilities: true,
+  showUtilities: false,
   showSearchBar: false,
-  showProfileAvatar: true,
+  showProfileAvatar: false,
   showNotificationTrigger: false,
 };
 

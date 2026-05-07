@@ -4,6 +4,7 @@ import { useAuth } from '@/app/providers/auth-context';
 import { loginEmail } from '@/features/auth/api/auth.service';
 import { LoginForm } from '@/features/auth/ui/LoginForm';
 import { requireGuest } from '@/app/router-guards';
+import { reportClientError } from '@/shared/lib/report-client-error';
 import axios from 'axios';
 
 export const Route = createFileRoute('/login')({
@@ -23,7 +24,7 @@ export function LoginPage() {
       setError(null);
       const res = await loginEmail(email, password);
       login(res.accessToken, res.refreshToken);
-      navigate({ to: '/' });
+      await navigate({ to: '/' });
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
         if (
@@ -36,15 +37,22 @@ export function LoginPage() {
         } else {
           setError('로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
+      } else {
+        reportClientError(err, {
+          message: '로그인 중 예상하지 못한 오류가 발생했습니다.',
+          source: 'LoginPage.handleLogin',
+        });
+        setError('로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <div className="max-w-145 mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center">
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col justify-center">
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
+        <div className="mb-6 rounded-2xl bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
           {error}
         </div>
       )}

@@ -5,109 +5,119 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--surface-card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--surface-popover);
+  --color-popover-foreground: var(--foreground);
+  --color-overlay-40: var(--overlay-40);
+  --color-overlay-24: var(--overlay-24);
+  --color-primary: var(--primary-main);
+  --color-primary-foreground: var(--greyScale-50);
   --color-primary-surface: var(--primary-surface);
   --color-primary-light: var(--primary-light);
   --color-primary-dark: var(--primary-dark);
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-foreground: var(--primary-dark);
   --color-secondary-surface: var(--secondary-surface);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent-surface: var(--accent-surface);
-  --color-accent-light: var(--accent-light);
+  --color-muted: var(--overlay-24);
+  --color-muted-foreground: var(--greyScale-300);
+  --color-accent: var(--secondary);
+  --color-accent-foreground: var(--primary-dark);
+  --color-accent-surface: var(--secondary-surface);
+  --color-accent-light: var(--primary-light);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-foreground: var(--greyScale-0);
   --color-destructive-surface: var(--destructive-surface);
   --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
+  --color-success-foreground: var(--primary-dark);
   --color-success-surface: var(--success-surface);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-border: var(--overlay-40);
+  --color-input: var(--overlay-24);
+  --color-ring: var(--secondary);
+  --color-key: var(--key);
+  --color-key-foreground: var(--key-foreground);
+  --color-key-surface: var(--key-surface);
+  --color-key-muted: var(--key-muted);
+  --color-grey-50: var(--greyScale-50);
+  --color-grey-100: var(--greyScale-100);
+  --color-grey-200: var(--greyScale-200);
+  --color-grey-300: var(--greyScale-300);
+  --color-grey-400: var(--greyScale-400);
+  --color-grey-500: var(--greyScale-500);
+  --color-grey-600: var(--greyScale-600);
 }
 
 :root {
-  --radius: 1rem;
-  --gradient-page-start: #faf9f0;
-  --gradient-page-end: #e6e9f0;
-  --primary-surface: #bdbcdc;
+  --background: #fcfcfc;
+  --foreground: var(--greyScale-500);
+  --surface-card: #ffffff;
+  --surface-popover: #ffffff;
+  --gradient-top: #faf9f0;
+  --gradient-bottom: #e6e9f0;
+  --overlay-40: rgb(255 255 255 / 0.4);
+  --overlay-24: rgb(255 255 255 / 0.24);
+  --greyScale-50: #ffffff;
+  --greyScale-100: #e5e6e5;
+  --greyScale-200: #cccccc;
+  --greyScale-300: #949694;
+  --greyScale-400: #4f524f;
+  --greyScale-500: #383c38;
+  --greyScale-600: #0f120f;
+  --primary-surface: #e5e5f0;
   --primary-light: #7473b5;
+  --primary-main: #1b1b32;
   --primary-dark: #020119;
-  --primary: #1b1b32;
+  --secondary-surface: #ecfcab;
   --secondary: #ddfe55;
-  --secondary-surface: #f1ffb8;
-  --accent-surface: #f2cfd1;
-  --accent-light: #d35f64;
-  --accent: #c8393f;
-  --accent-foreground: #faf9f0;
-  --destructive: #fa2e05;
-  --destructive-surface: #fee6e1;
-  --destructive-foreground: #faf9f0;
+  --key: var(--primary-main);
+  --key-foreground: var(--greyScale-50);
+  --key-surface: var(--primary-surface);
+  --key-muted: var(--primary-light);
   --success-surface: #ebfef5;
   --success: #05e173;
-  --success-foreground: #020119;
-  --background: #f7f7f7;
-  --foreground: #1b1b32;
-  --primary-foreground: #faf9f0;
-  --secondary-foreground: #020119;
-  --muted: #737373;
-  --muted-foreground: #b1b1b2;
-  --card: rgb(255 255 255 / 0.7);
-  --card-foreground: #1b1b32;
-  --popover: #f7f7f7;
-  --popover-foreground: #1b1b32;
-  --border: rgb(189 188 220 / 0.85);
-  --input: rgb(255 255 255 / 0.82);
-  --ring: #7473b5;
+  --destructive-surface: #fee6e1;
+  --destructive: #fa2e05;
 }
 
 .dark {
-  --background: #020119;
-  --foreground: #f7f7f7;
-  --card: rgb(27 27 50 / 0.88);
-  --card-foreground: #faf9f0;
-  --popover: #020119;
-  --popover-foreground: #faf9f0;
-  --primary-surface: rgb(189 188 220 / 0.2);
-  --primary-light: #7473b5;
-  --primary: #1b1b32;
-  --primary-foreground: #faf9f0;
-  --primary-dark: #020119;
-  --secondary-surface: #f1ffb8;
+  --background: var(--primary-main);
+  --foreground: var(--greyScale-200);
+  --surface-card: var(--overlay-24);
+  --surface-popover: var(--primary-dark);
+  --gradient-top: #1b1b32;
+  --gradient-bottom: #020119;
+  --overlay-40: rgb(255 255 255 / 0.4);
+  --overlay-24: rgb(255 255 255 / 0.24);
+  --greyScale-50: #ffffff;
+  --greyScale-100: #e5e6e5;
+  --greyScale-200: #cccccc;
+  --greyScale-300: #797a79;
+  --greyScale-400: #4f524f;
+  --greyScale-500: #383c38;
+  --greyScale-600: #0f120f;
+  --primary-surface: #f2f2fc;
+  --primary-light: #58578a;
+  --primary-main: #1b1b32;
+  --primary-dark: #020114;
+  --secondary-surface: #ecfcab;
   --secondary: #ddfe55;
-  --secondary-foreground: #020119;
-  --muted: #1b1b32;
-  --muted-foreground: #d9dadd;
-  --accent-surface: rgb(242 207 209 / 0.16);
-  --accent-light: #d35f64;
-  --accent: #c8393f;
-  --accent-foreground: #faf9f0;
-  --success-surface: rgb(235 254 245 / 0.12);
+  --key: var(--secondary);
+  --key-foreground: var(--primary-dark);
+  --key-surface: var(--secondary-surface);
+  --key-muted: var(--secondary);
+  --success-surface: #ebfef5;
   --success: #05e173;
-  --success-foreground: #faf9f0;
-  --destructive-surface: rgb(254 230 225 / 0.12);
+  --destructive-surface: #fee6e1;
   --destructive: #fa2e05;
-  --destructive-foreground: #faf9f0;
-  --border: rgb(189 188 220 / 0.22);
-  --input: rgb(255 255 255 / 0.08);
-  --ring: #ddfe55;
 }
 
 @layer base {
@@ -116,11 +126,12 @@
   }
   body {
     @apply text-foreground;
-    background-color: var(--background);
+
+    background-color: var(--gradient-top);
     background-image: linear-gradient(
       135deg,
-      var(--gradient-page-start) 0%,
-      var(--gradient-page-end) 100%
+      var(--gradient-top) 0%,
+      var(--gradient-bottom) 100%
     );
     background-attachment: fixed;
     font-family:
@@ -241,106 +252,6 @@
   line-height: 1.4;
   font-weight: 400;
 }
-
-/* 타이포그래피 끝 */
-
-/* @layer utilities {
-  .typo-3xl-b {
-    font-size: 2rem;
-    line-height: 1.4;
-    font-weight: 700;
-  }
-
-  .typo-2xl-b {
-    font-size: 1.75rem;
-    line-height: 1.4;
-    font-weight: 700;
-  }
-
-  .typo-xl-sb {
-    font-size: 1.5rem;
-    line-height: 1.4;
-    font-weight: 600;
-  }
-
-  .typo-lg-b {
-    font-size: 1.125rem;
-    line-height: 1.4;
-    font-weight: 700;
-  }
-
-  .typo-lg-sb {
-    font-size: 1.125rem;
-    line-height: 1.4;
-    font-weight: 600;
-  }
-
-  .typo-base-b {
-    font-size: 1rem;
-    line-height: 1.4;
-    font-weight: 700;
-  }
-
-  .typo-base-sb {
-    font-size: 1rem;
-    line-height: 1.4;
-    font-weight: 600;
-  }
-
-  .typo-base-m {
-    font-size: 1rem;
-    line-height: 1.4;
-    font-weight: 500;
-  }
-
-  .typo-base-r {
-    font-size: 1rem;
-    line-height: 1.4;
-    font-weight: 400;
-  }
-
-  .typo-sm-b {
-    font-size: 0.875rem;
-    line-height: 1.4;
-    font-weight: 700;
-  }
-
-  .typo-sm-sb {
-    font-size: 0.875rem;
-    line-height: 1.4;
-    font-weight: 600;
-  }
-
-  .typo-sm-m {
-    font-size: 0.875rem;
-    line-height: 1.4;
-    font-weight: 500;
-  }
-
-  .typo-sm-r {
-    font-size: 0.875rem;
-    line-height: 1.4;
-    font-weight: 400;
-  }
-
-  .typo-xs-sb {
-    font-size: 0.75rem;
-    line-height: 1.4;
-    font-weight: 600;
-  }
-
-  .typo-xs-m {
-    font-size: 0.75rem;
-    line-height: 1.4;
-    font-weight: 500;
-  }
-
-  .typo-xs-r {
-    font-size: 0.75rem;
-    line-height: 1.4;
-    font-weight: 400;
-  }
-} */
 
 button {
   cursor: pointer;

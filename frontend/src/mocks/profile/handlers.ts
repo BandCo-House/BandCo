@@ -1,6 +1,10 @@
 import { http, HttpResponse } from 'msw';
 import type { ApiResponse } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
+import type {
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+} from '@/features/profile-update/api/profile-api';
 import { API_URL } from '../config';
 
 const profile: Profile = {
@@ -30,13 +34,18 @@ export const profileHandlers = [
     });
   }),
   http.patch(`${API_URL}/me/profile`, async ({ request }) => {
-    const body = (await request.json()) as Partial<Profile>;
+    const body = (await request.json()) as UpdateProfileRequest;
+    const updated = {
+      profile: Boolean(body.profile),
+      personalInfo: Boolean(body.personalInfo),
+      skills: Boolean(body.skills),
+      favoriteGenres: Boolean(body.favoriteGenres),
+    };
 
-    return HttpResponse.json<ApiResponse<Profile>>({
+    return HttpResponse.json<ApiResponse<UpdateProfileResponse>>({
       success: true,
       data: {
-        ...profile,
-        ...body,
+        updated,
       },
     });
   }),

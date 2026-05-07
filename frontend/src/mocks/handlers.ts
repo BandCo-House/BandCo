@@ -2,6 +2,7 @@ import { authHandlers } from './auth/handlers';
 import { bandHandlers } from './band/handlers';
 import { inviteHandlers } from './invite/handlers';
 import { notificationHandlers } from './notification/handlers';
+import { onboardingHandlers } from './onboarding/handlers';
 import { profileHandlers } from './profile/handlers';
 import { scheduleHandlers } from './schedule/handlers';
 import { songHandlers } from './song/handlers';
@@ -13,6 +14,7 @@ export const handlers = [
   ...bandHandlers,
   ...inviteHandlers,
   ...notificationHandlers,
+  ...onboardingHandlers,
   ...profileHandlers,
   ...scheduleHandlers,
   ...songHandlers,

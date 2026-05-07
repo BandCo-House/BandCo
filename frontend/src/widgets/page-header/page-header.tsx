@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { cn } from '@/shared/lib/utils';
-import { BackButton } from '@/shared/ui/back-button';
-import { Button } from '@/shared/ui/button';
-import type { HeaderTab } from './types';
 
 export type PageHeaderProps = {
   title: string;
@@ -11,9 +9,6 @@ export type PageHeaderProps = {
   showBack?: boolean;
   onBack?: () => void;
   meta?: string[];
-  tabs?: HeaderTab[];
-  rightActionLabel?: string;
-  onRightActionClick?: () => void;
   rightContent?: ReactNode;
   className?: string;
 };
@@ -23,14 +18,8 @@ export type PageHeaderProps = {
  */
 export const PageHeader = ({
   title,
-  subtitle,
-  brandLabel,
   showBack = false,
   onBack,
-  meta,
-  tabs,
-  rightActionLabel,
-  onRightActionClick,
   rightContent,
   className,
 }: PageHeaderProps) => {
@@ -41,93 +30,33 @@ export const PageHeader = ({
         className,
       )}
     >
-      <div className="mx-auto grid min-h-24 w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-6 sm:gap-5">
-        <div className="min-w-0 flex items-center gap-3 sm:gap-4">
-          {!showBack ? (
-            <span
-              aria-hidden="true"
-              className="size-11 shrink-0 rounded-xl bg-foreground"
-            />
-          ) : null}
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-3 sm:gap-4">
-              {showBack ? (
-                <BackButton
-                  label="뒤로"
-                  variant="ghost"
-                  className="typo-sm-sb"
-                  onClick={onBack}
-                />
-              ) : null}
-
-              <div className="min-w-0">
-                {brandLabel ? (
-                  <p className="mb-1 typo-xs-sb text-muted">
-                    {brandLabel}
-                  </p>
-                ) : null}
-                <h1
-                  className={cn(
-                    'typo-2xl-b truncate',
-                    title === 'BandCo' ? 'sr-only sm:not-sr-only' : undefined,
-                  )}
-                >
-                  {title}
-                </h1>
-                {subtitle ? (
-                  <p className="typo-base-r mt-1 text-muted">
-                    {subtitle}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            {meta && meta.length > 0 ? (
-              <div className="typo-sm-m mt-4 flex flex-wrap items-center gap-4 text-muted">
-                {meta.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="min-w-0">{rightContent}</div>
-
-        <div className="flex items-center justify-end gap-5">
-          {tabs && tabs.length > 0 ? (
-            <nav className="hidden items-center gap-2 md:flex">
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.key}
-                  type="button"
-                  variant={tab.active ? 'default' : 'outline'}
-                  className={cn(
-                    'typo-sm-sb h-9 rounded-lg px-4',
-                    tab.active
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'bg-transparent text-foreground hover:bg-muted',
-                  )}
-                  onClick={tab.onClick}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </nav>
-          ) : null}
-
-          {rightActionLabel ? (
-            <Button
+      <div className="mx-auto grid min-h-20 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 sm:min-h-24">
+        <div className="flex min-w-0 items-center gap-3">
+          {showBack ? (
+            <button
               type="button"
-              variant="outline"
-              className="typo-sm-sb h-9 rounded-lg border border-border px-4"
-              onClick={onRightActionClick}
+              aria-label="뒤로 가기"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
+              onClick={onBack}
             >
-              {rightActionLabel}
-            </Button>
+              <ArrowRightIcon
+                aria-hidden="true"
+                data-slot="svg-icon"
+                className="size-6 rotate-180"
+              />
+            </button>
           ) : null}
+
+          <h1 className="min-w-0 truncate typo-xl-sb text-foreground sm:typo-2xl-b">
+            {title}
+          </h1>
         </div>
+
+        {rightContent ? (
+          <div className="flex min-w-0 items-center justify-end">
+            {rightContent}
+          </div>
+        ) : null}
       </div>
     </header>
   );

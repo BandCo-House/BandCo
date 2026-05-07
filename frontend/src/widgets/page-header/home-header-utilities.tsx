@@ -34,7 +34,7 @@ const NotificationTriggerButton = () => {
         >
           <SVGIcon icon="Bell" size="md" />
           {unreadSummary && unreadSummary.unreadCount > 0 ? (
-            <span className="typo-xs-sb absolute -top-0.5 -right-0.5 inline-flex size-5 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+            <span className="absolute -top-0.5 -right-0.5 inline-flex size-5 items-center justify-center rounded-md bg-key typo-xs-sb text-key-foreground">
               {unreadSummary.unreadCount}
             </span>
           ) : null}
@@ -81,15 +81,13 @@ export const HomeHeaderUtilities = ({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="밴드/사용자를 찾아보세요"
-          className="h-11 min-w-3xs max-w-96 rounded-full border border-border/90 bg-input md:min-w-sm"
+          className="h-11 max-w-96 min-w-3xs rounded-full border border-border/90 bg-input md:min-w-sm"
         />
       ) : null}
 
       {showNotificationTrigger || showProfileAvatar ? (
         <div className="flex shrink-0 items-center gap-3">
-          {showNotificationTrigger ? (
-            <NotificationTriggerButton />
-          ) : null}
+          {showNotificationTrigger ? <NotificationTriggerButton /> : null}
 
           {showNotificationTrigger && showProfileAvatar ? (
             <div aria-hidden="true" className="h-6 w-px bg-border/90" />
@@ -101,10 +99,7 @@ export const HomeHeaderUtilities = ({
               aria-label="프로필 열기"
               className="rounded-full hover:opacity-90"
             >
-              <Avatar
-                size="lg"
-                className="border border-border bg-card"
-              >
+              <Avatar size="lg" className="border border-border bg-card">
                 {profileImageUrlFromApi ? (
                   <AvatarImage
                     src={profileImageUrlFromApi}

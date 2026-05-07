@@ -11,29 +11,44 @@ afterEach(() => {
 });
 
 describe('profile update 어댑터', () => {
-  it('내 프로필을 수정한다', async () => {
+  it('내 프로필 통합 수정 요청은 변경된 영역 플래그를 반환해야 한다', async () => {
     const requestBody = {
-      bio: '수정된 소개',
-      preferredGenres: ['Rock'],
-      skills: ['일렉기타'],
+      profile: {
+        nickname: 'devjun',
+        selfDescription: '기타 좋아함',
+      },
+      personalInfo: {
+        email: 'newmail@gmail.com',
+      },
+      skills: [
+        {
+          skillTypeId: 'electric-guitar',
+          level: 'ADVANCED' as const,
+          isPrimary: true,
+        },
+      ],
+      favoriteGenres: ['rock'],
     };
 
     mock.onPatch('/me/profile', requestBody).reply(200, {
       success: true,
       data: {
-        id: 'profile-1',
-        nickname: '김민준',
-        displayName: '김민준',
-        bio: '수정된 소개',
-        preferredGenres: ['Rock'],
-        profileMusic: null,
-        bandSummaries: [],
-        skills: ['일렉기타'],
+        updated: {
+          profile: true,
+          personalInfo: true,
+          skills: true,
+          favoriteGenres: true,
+        },
       },
     });
 
     const result = await updateMyProfile(requestBody);
 
-    expect(result.bio).toBe('수정된 소개');
+    expect(result.updated).toEqual({
+      profile: true,
+      personalInfo: true,
+      skills: true,
+      favoriteGenres: true,
+    });
   });
 });
