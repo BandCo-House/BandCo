@@ -81,9 +81,7 @@ jobs:
               '',
               `👤 ${pullRequest.merged_by?.login ?? pullRequest.user.login}`,
               `🌿 ${pullRequest.head.ref} → ${pullRequest.base.ref}`,
-              '',
-              '🔎 Preview',
-              previewUrl || 'Preview URL을 찾지 못했습니다.',
+              ...(previewUrl ? ['', '🔎 Preview', previewUrl] : []),
             ].join('\n');
 
             const payload = { content };
