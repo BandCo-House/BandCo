@@ -43,3 +43,4 @@ node_modules
 .worktrees/
 AGENTS.md
 CLAUDE.md
+.claude/
