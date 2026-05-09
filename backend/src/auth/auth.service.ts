@@ -1,14 +1,14 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './types/auth.types';
-import { MembersService } from 'src/modules/members/members.service';
 import * as bcrypt from 'bcrypt';
+import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly membersService: MembersService,
+    private readonly usersService: UsersService,
   ) {}
 
   async loginWithEmail(email: string, password: string) {
@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   async authenticateWithEmailAndPassword(email: string, password: string): Promise<{ id: string; email: string }> {
-    const user = await this.membersService.getUserByEmail(email);
+    const user = await this.usersService.getUserByEmail(email);
 
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 유저입니다.');
@@ -59,7 +59,7 @@ export class AuthService {
 
   async registerWithEmail(email: string, password: string) {
     const hash = await bcrypt.hash(password, 10);
-    const newUser = await this.membersService.createUserWithEmail(email, hash);
+    const newUser = await this.usersService.createUserWithEmail(email, hash);
     return this.loginUser(email, newUser.id);
   }
 
