@@ -3,6 +3,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import type { Prisma, User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
+import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 import { generateRandomNickname } from '../util/nickname_maker';
@@ -135,5 +136,44 @@ export class UsersPrismaRepository implements UsersRepository {
         name: g.genre.name,
       })),
     };
+  }
+
+  async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult> {
+    const run = async (client: Prisma.TransactionClient) => {
+      if (data.profile) {
+        await client.userProfile.update({ where: { userId }, data: data.profile });
+      }
+
+      if (data.personalInfo?.email) {
+        await client.user.update({ where: { id: userId }, data: { email: data.personalInfo.email } });
+      }
+
+      if (data.skills !== undefined) {
+        await client.userSkill.deleteMany({ where: { userId } });
+        if (data.skills.length > 0) {
+          await client.userSkill.createMany({
+            data: data.skills.map(s => ({ userId, skillTypeId: s.skillTypeId, skillLevel: s.level, isPrimary: s.isPrimary })),
+          });
+        }
+      }
+
+      if (data.favoriteGenres !== undefined) {
+        await client.favoriteGenre.deleteMany({ where: { userId } });
+        if (data.favoriteGenres.length > 0) {
+          await client.favoriteGenre.createMany({
+            data: data.favoriteGenres.map(genreId => ({ userId, genreId })),
+          });
+        }
+      }
+    };
+
+    if (tx) {
+      await run(tx);
+    } else {
+      await this.prisma.$transaction(run);
+    }
+
+    const result = await this.findUserProfileById(userId, tx);
+    return result!;
   }
 }

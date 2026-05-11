@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import { Prisma } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from './dto/get-users-query.dto';
+import type { UpdateUserProfileData } from './dto/update-user-profile.dto';
 import { USERS_REPOSITORY, UsersRepository } from './repositoreis/user.repository';
 
 @Injectable()
@@ -33,5 +34,9 @@ export class UsersService {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
     return result;
+  }
+
+  async updateUserProfile(userId: string, data: UpdateUserProfileData) {
+    return this.usersRepository.updateUserProfile(userId, data);
   }
 }
