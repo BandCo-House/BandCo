@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from './dto/get-users-query.dto';
@@ -25,5 +25,13 @@ export class UsersService {
 
   async getUsers(query: GetUsersQuery) {
     return this.usersRepository.findUsers(query);
+  }
+
+  async getUserProfile(userId: string) {
+    const result = await this.usersRepository.findUserProfileById(userId);
+    if (!result) {
+      throw new NotFoundException('존재하지 않는 유저입니다.');
+    }
+    return result;
   }
 }

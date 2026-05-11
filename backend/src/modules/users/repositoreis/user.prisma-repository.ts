@@ -4,6 +4,7 @@ import type { Prisma, User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
+import type { GetUserProfileResult } from '../types/user-profile.type';
 import { generateRandomNickname } from '../util/nickname_maker';
 
 import type { UsersRepository } from './user.repository';
@@ -88,5 +89,51 @@ export class UsersPrismaRepository implements UsersRepository {
     const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].id } : null;
 
     return { items, meta: { count, take: query.take, cursor, next } };
+  }
+
+  async findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null> {
+    const client = tx ?? this.prisma;
+
+    const user = await client.user.findUnique({
+      where: { id: userId, deletedAt: null },
+      include: {
+        profile: true,
+        userSkills: {
+          include: { skillType: true },
+        },
+        favoriteGenres: {
+          include: { genre: true },
+        },
+      },
+    });
+
+    if (!user) return null;
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        status: user.status,
+        createdAt: user.createdAt.toISOString(),
+      },
+      profile: user.profile
+        ? {
+            nickname: user.profile.nickname,
+            selfDescription: user.profile.selfDescription,
+            profileMusicUrl: user.profile.profileMusicUrl,
+            avatarUrl: user.profile.avatarUrl,
+          }
+        : null,
+      skills: user.userSkills.map(s => ({
+        skillTypeId: s.skillTypeId,
+        skillName: s.skillType.name,
+        level: s.skillLevel,
+        isPrimary: s.isPrimary,
+      })),
+      favoriteGenres: user.favoriteGenres.map(g => ({
+        genreId: g.genreId,
+        name: g.genre.name,
+      })),
+    };
   }
 }
