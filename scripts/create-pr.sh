@@ -38,7 +38,7 @@ if ! gh auth status &>/dev/null; then
       echo -e "  ${BOLD}[1단계]${RESET} 아래 URL에서 Classic 토큰을 발급받으세요:"
       echo -e "  https://github.com/settings/tokens/new"
       echo ""
-      echo -e "  ${BOLD}Scopes:${RESET} ${GREEN}repo${RESET}, ${GREEN}workflow${RESET}"
+      echo -e "  ${BOLD}Scopes:${RESET} ${GREEN}repo${RESET}, ${GREEN}workflow${RESET}, ${GREEN}read:org${RESET}"
       echo "  (workflow는 .github/workflows 파일 수정 시 push에 필요)"
       echo ""
       read -rsp "$(echo -e "  ${BOLD}[2단계]${RESET} 발급받은 토큰 붙여넣기: ")" INPUT_TOKEN
