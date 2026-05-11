@@ -1,7 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { BasicTokenGuard } from './basic-token.guard';
+import { type ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+
 import { AuthService } from '../auth.service';
+
+import { BasicTokenGuard } from './basic-token.guard';
 
 const mockAuthService = {
   extractTokenFromHeader: jest.fn(),

@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Test, type TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
-import { AuthService } from './auth.service';
 import { UsersService } from 'src/modules/users/users.service';
+
+import { AuthService } from './auth.service';
 
 const mockJwtService = {
   sign: jest.fn(),

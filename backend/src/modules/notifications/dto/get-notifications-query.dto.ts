@@ -1,5 +1,11 @@
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsDate, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
+import { dateValidationMessage } from 'src/common/validation-message/date-validation.message';
+import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
+import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
+import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 
 import {
   normalizeOptionalStringValue,
@@ -8,12 +14,6 @@ import {
   parseOptionalPositiveIntegerValue,
 } from '../../../common/validation/transform.util';
 import { NotificationType } from '../../../generated/prisma';
-import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
-import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
-import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
-import { dateValidationMessage } from 'src/common/validation-message/date-validation.message';
-import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
-import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 
 export type NotificationListType = NotificationType;
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
 import { NotFoundException } from '@nestjs/common';
-import test from 'node:test';
 
 import type { SpacesRepository } from './repositories/spaces.repository';
 import { SpacesService } from './spaces.service';

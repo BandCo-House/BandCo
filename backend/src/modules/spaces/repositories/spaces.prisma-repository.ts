@@ -1,17 +1,16 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-
-import { createPagination } from '../../../common/pagination';
-import { PrismaService } from '../../../database/prisma';
-import type { Prisma } from '../../../generated/prisma';
-import type { AddSpaceMemberInput } from '../dto/add-space-member.dto';
-import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
-import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
-import type { AddSpaceMemberResult } from '../types/add-space-member-result.type';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
-import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
 
+import type { AddSpaceMemberInput } from '../dto/add-space-member.dto';
+import type { AddSpaceMemberResult } from '../types/add-space-member-result.type';
+import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
+import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
+import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
+import type { Prisma } from '../../../generated/prisma';
+import { PrismaService } from '../../../database/prisma';
 import type { SpacesRepository } from './spaces.repository';
+import { createPagination } from '../../../common/pagination';
 
 const DEMO_VIEWER_USER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -26,7 +25,7 @@ type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
         };
       };
     };
-    members: {
+    users: {
       where: {
         userId: string;
       };
@@ -53,7 +52,7 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
         };
       };
     };
-    members: {
+    users: {
       include: {
         user: {
           include: {
@@ -130,7 +129,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
     const createdMember = await this.prisma.spaceMember.create({
       data: {
         bandSpaceId: spaceId,
-        userId: input.userId,
+        bandMemberId: input.userId,
         role: input.role,
         status: 'ACTIVE',
       },
@@ -139,7 +138,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return {
       memberId: createdMember.id,
       spaceId: createdMember.bandSpaceId,
-      userId: createdMember.userId,
+      userId: createdMember.bandMemberId,
       role: createdMember.role,
       status: createdMember.status,
       joinedAt: createdMember.joinedAt.toISOString(),
@@ -186,7 +185,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
       await transaction.spaceMember.create({
         data: {
           bandSpaceId: bandSpace.id,
-          userId: DEMO_VIEWER_USER_ID,
+          bandMemberId: DEMO_VIEWER_USER_ID,
           role: 'LEADER',
           status: 'ACTIVE',
         },
@@ -200,7 +199,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
       bandId: createdSpace.bandId,
       name: createdSpace.name ?? '',
       description: createdSpace.description ?? '',
-      spaceType: createdSpace.spaceType ?? 'ETC',
+      spaceType: createdSpace.spaceType ?? 'PERFORMANCE',
       status: createdSpace.status ?? 'INACTIVE',
       startDate: this.formatDateOnly(createdSpace.startDate),
       endDate: this.formatDateOnly(createdSpace.endDate),
@@ -243,7 +242,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
           },
           members: {
             where: {
-              userId: DEMO_VIEWER_USER_ID,
+              bandMemberId: DEMO_VIEWER_USER_ID,
             },
             select: {
               role: true,

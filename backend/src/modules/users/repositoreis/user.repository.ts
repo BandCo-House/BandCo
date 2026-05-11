@@ -1,4 +1,4 @@
-import { User } from 'src/generated/prisma';
+import type { User } from 'src/generated/prisma';
 
 export const USERS_REPOSITORY = Symbol('USERS_REPOSITORY');
 

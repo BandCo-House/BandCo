@@ -1,12 +1,13 @@
-import { CanActivate, UnauthorizedException, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from 'src/modules/users/users.service';
+
 import { AuthService } from '../auth.service';
-import { MembersService } from 'src/modules/members/members.service';
 
 @Injectable()
 export class BearerTokenGuard implements CanActivate {
   constructor(
     private readonly authService: AuthService,
-    private readonly memberService: MembersService,
+    private readonly userService: UsersService,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
@@ -17,7 +18,7 @@ export class BearerTokenGuard implements CanActivate {
     }
     const token = this.authService.extractTokenFromHeader(rawToken, true);
     const result = await this.authService.verifyToken(token);
-    const user = await this.memberService.getUserByEmail(result.email);
+    const user = await this.userService.getUserByEmail(result.email);
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 유저입니다.');
     }

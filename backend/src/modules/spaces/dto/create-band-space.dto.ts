@@ -1,15 +1,15 @@
 import { Transform } from 'class-transformer';
 import { IsEnum, IsISO8601, IsNotEmpty, IsString, Matches, Validate } from 'class-validator';
+import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
+import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
+import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
+import { notemptyValidationMessage } from 'src/common/validation-message/notempty-validation.message';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 
 import { EndDateNotBeforeStartDateConstraint } from '../../../common/validation/date-order.validator';
 import { trimStringValue } from '../../../common/validation/transform.util';
 import { BandSpaceStatus, BandSpaceType } from '../../../generated/prisma';
 import type { SpaceStatus, SpaceType } from '../types/band-space-list-item.type';
-import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
-import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
-import { notemptyValidationMessage } from 'src/common/validation-message/notempty-validation.message';
-import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
-import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 

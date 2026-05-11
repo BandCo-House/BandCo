@@ -1,8 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AccessTokenGuard, BearerTokenGuard, RefreshTokenGuard } from './bearer-token.guard';
-import { AuthService } from '../auth.service';
+import { type ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { MembersService } from 'src/modules/members/members.service';
+
+import { AuthService } from '../auth.service';
+
+import { AccessTokenGuard, BearerTokenGuard, RefreshTokenGuard } from './bearer-token.guard';
 
 const mockAuthService = {
   extractTokenFromHeader: jest.fn(),
@@ -34,11 +36,7 @@ describe('BearerTokenGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        BearerTokenGuard,
-        { provide: AuthService, useValue: mockAuthService },
-        { provide: MembersService, useValue: mockMembersService },
-      ],
+      providers: [BearerTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: MembersService, useValue: mockMembersService }],
     }).compile();
 
     guard = module.get<BearerTokenGuard>(BearerTokenGuard);
@@ -77,11 +75,7 @@ describe('AccessTokenGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AccessTokenGuard,
-        { provide: AuthService, useValue: mockAuthService },
-        { provide: MembersService, useValue: mockMembersService },
-      ],
+      providers: [AccessTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: MembersService, useValue: mockMembersService }],
     }).compile();
 
     guard = module.get<AccessTokenGuard>(AccessTokenGuard);
@@ -106,11 +100,7 @@ describe('RefreshTokenGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RefreshTokenGuard,
-        { provide: AuthService, useValue: mockAuthService },
-        { provide: MembersService, useValue: mockMembersService },
-      ],
+      providers: [RefreshTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: MembersService, useValue: mockMembersService }],
     }).compile();
 
     guard = module.get<RefreshTokenGuard>(RefreshTokenGuard);
