@@ -18,7 +18,7 @@ export class AddSpaceMemberBodyDto {
   @Matches(UUID_PATTERN, {
     message: uuidValidationMessage,
   })
-  userId!: string;
+  bandMemberId!: string;
 
   @IsString({
     message: stringValidationMessage,

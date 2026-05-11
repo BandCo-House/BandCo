@@ -9,6 +9,6 @@ export interface CreateBandSpaceResult {
   status: SpaceStatus;
   startDate: string;
   endDate: string;
-  createdByUserId: string;
+  createdByBandMemberId: string;
   createdAt: string;
 }

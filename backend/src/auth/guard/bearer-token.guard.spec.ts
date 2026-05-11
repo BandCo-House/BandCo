@@ -1,6 +1,6 @@
 import { type ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { MembersService } from 'src/modules/members/members.service';
+import { UsersService } from 'src/modules/users/users.service';
 
 import { AuthService } from '../auth.service';
 
@@ -11,7 +11,7 @@ const mockAuthService = {
   verifyToken: jest.fn(),
 };
 
-const mockMembersService = {
+const mockUsersService = {
   getUserByEmail: jest.fn(),
 };
 
@@ -28,7 +28,7 @@ const createContext = (authHeader?: string) => {
 const setupValidBearer = (tokenType: 'access' | 'refresh') => {
   mockAuthService.extractTokenFromHeader.mockReturnValue('token');
   mockAuthService.verifyToken.mockReturnValue({ email: 'u@u.com', type: tokenType });
-  mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com' });
+  mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com' });
 };
 
 describe('BearerTokenGuard', () => {
@@ -36,7 +36,7 @@ describe('BearerTokenGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [BearerTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: MembersService, useValue: mockMembersService }],
+      providers: [BearerTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: UsersService, useValue: mockUsersService }],
     }).compile();
 
     guard = module.get<BearerTokenGuard>(BearerTokenGuard);
@@ -52,7 +52,7 @@ describe('BearerTokenGuard', () => {
     const { ctx } = createContext('Bearer token');
     mockAuthService.extractTokenFromHeader.mockReturnValue('token');
     mockAuthService.verifyToken.mockReturnValue({ email: 'ghost@u.com', type: 'access' });
-    mockMembersService.getUserByEmail.mockResolvedValue(null);
+    mockUsersService.getUserByEmail.mockResolvedValue(null);
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
   });
@@ -75,7 +75,7 @@ describe('AccessTokenGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AccessTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: MembersService, useValue: mockMembersService }],
+      providers: [AccessTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: UsersService, useValue: mockUsersService }],
     }).compile();
 
     guard = module.get<AccessTokenGuard>(AccessTokenGuard);
@@ -100,7 +100,7 @@ describe('RefreshTokenGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RefreshTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: MembersService, useValue: mockMembersService }],
+      providers: [RefreshTokenGuard, { provide: AuthService, useValue: mockAuthService }, { provide: UsersService, useValue: mockUsersService }],
     }).compile();
 
     guard = module.get<RefreshTokenGuard>(RefreshTokenGuard);
