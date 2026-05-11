@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from 'src/generated/prisma';
 
+import type { GetUsersQuery } from './dto/get-users-query.dto';
 import { USERS_REPOSITORY, UsersRepository } from './repositoreis/user.repository';
 
 @Injectable()
@@ -9,9 +10,9 @@ export class UsersService {
     @Inject(USERS_REPOSITORY)
     private readonly usersRepository: UsersRepository,
   ) {}
+
   async getUserByEmail(email: string) {
-    const user = await this.usersRepository.findByEmail(email);
-    return user;
+    return this.usersRepository.findByEmail(email);
   }
 
   async createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient) {
@@ -20,5 +21,9 @@ export class UsersService {
       throw new BadRequestException('이미 존재하는 이메일입니다.');
     }
     return this.usersRepository.createUserWithEmail(email, passwordHash, tx);
+  }
+
+  async getUsers(query: GetUsersQuery) {
+    return this.usersRepository.findUsers(query);
   }
 }
