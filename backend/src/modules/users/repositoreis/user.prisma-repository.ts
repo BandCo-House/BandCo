@@ -174,6 +174,9 @@ export class UsersPrismaRepository implements UsersRepository {
     }
 
     const result = await this.findUserProfileById(userId, tx);
-    return result!;
+    if (!result) {
+      throw new Error('업데이트된 유저 프로필을 불러오는 데 실패했습니다.');
+    }
+    return result;
   }
 }
