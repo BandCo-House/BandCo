@@ -1,8 +1,12 @@
-import { Controller, Post, Body, Headers, UseGuards } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
+
+import { type ApiSuccessResponse, createSuccessResponse } from '../common/api-response';
+
+import { CheckEmailDto } from './dto/check-email.dto';
 import { RegisterEmailDto } from './dto/register-email.dto';
-import { AccessTokenGuard, RefreshTokenGuard } from './guard/bearer-token.guard';
 import { BasicTokenGuard } from './guard/basic-token.guard';
+import { AccessTokenGuard, RefreshTokenGuard } from './guard/bearer-token.guard';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -35,5 +39,12 @@ export class AuthController {
   @Post('register/email')
   async registerEmail(@Body() { email, password }: RegisterEmailDto) {
     return this.authService.registerWithEmail(email, password);
+  }
+
+  @Post('email')
+  async checkEmail(@Body() { email }: CheckEmailDto): Promise<ApiSuccessResponse<{ email: string }>> {
+    const isDuplicate = await this.authService.checkEmailDuplicate(email);
+    const message = isDuplicate ? '중복 된 이메일입니다.' : '사용할 수 있는 이메일입니다.';
+    return createSuccessResponse(message, { email });
   }
 }

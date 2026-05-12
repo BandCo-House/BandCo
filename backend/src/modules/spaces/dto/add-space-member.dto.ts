@@ -1,10 +1,10 @@
 import { IsEnum, IsString, Matches } from 'class-validator';
+import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
+import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
 
 import { BandSpaceMemberRole } from '../../../generated/prisma';
 import type { SpaceMemberRole } from '../types/band-space-list-item.type';
-import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
-import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
-import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -18,7 +18,7 @@ export class AddSpaceMemberBodyDto {
   @Matches(UUID_PATTERN, {
     message: uuidValidationMessage,
   })
-  userId!: string;
+  bandMemberId!: string;
 
   @IsString({
     message: stringValidationMessage,

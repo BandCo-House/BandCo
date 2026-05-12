@@ -13,7 +13,7 @@ import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-det
 
 import type { SpacesRepository } from './spaces.repository';
 
-const DEMO_VIEWER_USER_ID = '11111111-1111-1111-1111-111111111111';
+const DEMO_BAND_MEMBER_ID = '11111111-1111-1111-1111-111111111111';
 
 type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
   include: {
@@ -28,7 +28,7 @@ type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
     };
     members: {
       where: {
-        userId: string;
+        bandMemberId: string;
       };
       select: {
         role: true;
@@ -55,11 +55,15 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
     };
     members: {
       include: {
-        user: {
+        bandMember: {
           include: {
-            profile: {
-              select: {
-                nickname: true;
+            user: {
+              include: {
+                profile: {
+                  select: {
+                    nickname: true;
+                  };
+                };
               };
             };
           };
@@ -70,23 +74,12 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
   };
 }>;
 
-/**
- * 인증이 아직 붙지 않은 단계에서는 데모 사용자 하나를 기준으로
- * onlyMine, myMembership 응답을 고정해 두어 프론트와 API 확인이 가능하게 한다.
- */
 @Injectable()
 export class SpacesPrismaRepository implements SpacesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * 합주 공간 멤버를 추가한다.
-   *
-   * @param {string} spaceId - 멤버를 추가할 합주 공간 ID
-   * @param {AddSpaceMemberInput} input - 검증이 끝난 멤버 추가 입력값
-   * @returns {Promise<AddSpaceMemberResult>} 멤버 추가 응답 데이터
-   */
   async addSpaceMember(spaceId: string, input: AddSpaceMemberInput): Promise<AddSpaceMemberResult> {
-    const [space, user, existingMember] = await Promise.all([
+    const [space, bandMember, existingMember] = await Promise.all([
       this.prisma.bandSpace.findFirst({
         where: {
           id: spaceId,
@@ -96,9 +89,9 @@ export class SpacesPrismaRepository implements SpacesRepository {
           id: true,
         },
       }),
-      this.prisma.user.findUnique({
+      this.prisma.bandMember.findUnique({
         where: {
-          id: input.userId,
+          id: input.bandMemberId,
         },
         select: {
           id: true,
@@ -107,7 +100,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
       this.prisma.spaceMember.findFirst({
         where: {
           bandSpaceId: spaceId,
-          userId: input.userId,
+          bandMemberId: input.bandMemberId,
         },
         select: {
           id: true,
@@ -119,18 +112,18 @@ export class SpacesPrismaRepository implements SpacesRepository {
       throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
     }
 
-    if (user === null) {
-      throw new NotFoundException('추가할 사용자를 찾을 수 없습니다.');
+    if (bandMember === null) {
+      throw new NotFoundException('추가할 밴드 멤버를 찾을 수 없습니다.');
     }
 
     if (existingMember !== null) {
-      throw new ConflictException('이미 합주 공간에 참여 중인 사용자입니다.');
+      throw new ConflictException('이미 합주 공간에 참여 중인 멤버입니다.');
     }
 
     const createdMember = await this.prisma.spaceMember.create({
       data: {
         bandSpaceId: spaceId,
-        userId: input.userId,
+        bandMemberId: input.bandMemberId,
         role: input.role,
         status: 'ACTIVE',
       },
@@ -139,21 +132,13 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return {
       memberId: createdMember.id,
       spaceId: createdMember.bandSpaceId,
-      userId: createdMember.userId,
+      bandMemberId: createdMember.bandMemberId,
       role: createdMember.role,
       status: createdMember.status,
       joinedAt: createdMember.joinedAt.toISOString(),
     };
   }
 
-  /**
-   * 밴드 아래에 새 합주 공간을 만들고,
-   * 생성자를 기본 리더 멤버로 함께 연결한다.
-   *
-   * @param {string} bandId - 공간을 만들 대상 밴드 ID
-   * @param {CreateBandSpaceInput} input - 검증이 끝난 생성 요청값
-   * @returns {Promise<CreateBandSpaceResult>} 생성 응답 데이터
-   */
   async createBandSpace(bandId: string, input: CreateBandSpaceInput): Promise<CreateBandSpaceResult> {
     const band = await this.prisma.band.findFirst({
       where: {
@@ -179,14 +164,14 @@ export class SpacesPrismaRepository implements SpacesRepository {
           status: input.status,
           startDate: new Date(`${input.startDate}T00:00:00.000Z`),
           endDate: new Date(`${input.endDate}T00:00:00.000Z`),
-          createdByUserId: DEMO_VIEWER_USER_ID,
+          createdByBandMemberId: DEMO_BAND_MEMBER_ID,
         },
       });
 
       await transaction.spaceMember.create({
         data: {
           bandSpaceId: bandSpace.id,
-          userId: DEMO_VIEWER_USER_ID,
+          bandMemberId: DEMO_BAND_MEMBER_ID,
           role: 'LEADER',
           status: 'ACTIVE',
         },
@@ -198,25 +183,17 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return {
       spaceId: createdSpace.id,
       bandId: createdSpace.bandId,
-      name: createdSpace.name ?? '',
+      name: createdSpace.name,
       description: createdSpace.description ?? '',
-      spaceType: createdSpace.spaceType ?? 'ETC',
-      status: createdSpace.status ?? 'INACTIVE',
+      spaceType: createdSpace.spaceType ?? 'ONLINE',
+      status: createdSpace.status,
       startDate: this.formatDateOnly(createdSpace.startDate),
       endDate: this.formatDateOnly(createdSpace.endDate),
-      createdByUserId: createdSpace.createdByUserId,
+      createdByBandMemberId: createdSpace.createdByBandMemberId,
       createdAt: createdSpace.createdAt.toISOString(),
     };
   }
 
-  /**
-   * 밴드 소속 합주 공간 목록을 실제 DB에서 조회하고,
-   * 현재 화면이 기대하는 응답 형태로 매핑한다.
-   *
-   * @param {string} bandId - 조회 대상 밴드 ID
-   * @param {GetBandSpacesQuery} query - 검색, 정렬, 페이지네이션 조건
-   * @returns {Promise<GetBandSpacesResult>} 목록 응답 데이터
-   */
   async findBandSpaces(bandId: string, query: GetBandSpacesQuery): Promise<GetBandSpacesResult> {
     const where = this.createBandSpaceWhereInput(bandId, query);
     const orderBy = this.createBandSpaceOrderByInput(query.sort);
@@ -243,7 +220,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
           },
           members: {
             where: {
-              userId: DEMO_VIEWER_USER_ID,
+              bandMemberId: DEMO_BAND_MEMBER_ID,
             },
             select: {
               role: true,
@@ -267,12 +244,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
     };
   }
 
-  /**
-   * 합주 공간 상세와 멤버 목록을 함께 조회한다.
-   *
-   * @param {string} spaceId - 조회할 합주 공간 ID
-   * @returns {Promise<GetSpaceDetailResult | undefined>} 상세 응답 또는 undefined
-   */
   async findDetailBySpaceId(spaceId: string): Promise<GetSpaceDetailResult | undefined> {
     const space = await this.prisma.bandSpace.findFirst({
       where: {
@@ -291,11 +262,15 @@ export class SpacesPrismaRepository implements SpacesRepository {
         },
         members: {
           include: {
-            user: {
+            bandMember: {
               include: {
-                profile: {
-                  select: {
-                    nickname: true,
+                user: {
+                  include: {
+                    profile: {
+                      select: {
+                        nickname: true,
+                      },
+                    },
                   },
                 },
               },
@@ -313,13 +288,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return this.mapBandSpaceDetail(space);
   }
 
-  /**
-   * 서비스가 넘겨준 검색 조건을 Prisma where 조건으로 변환한다.
-   *
-   * @param {string} bandId - 조회 대상 밴드 ID
-   * @param {GetBandSpacesQuery} query - 검색, 상태, 생성자 조건
-   * @returns {Prisma.BandSpaceWhereInput} Prisma 조회 조건
-   */
   private createBandSpaceWhereInput(bandId: string, query: GetBandSpacesQuery): Prisma.BandSpaceWhereInput {
     const where: Prisma.BandSpaceWhereInput = {
       bandId,
@@ -344,7 +312,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
     }
 
     if (query.onlyMine === true) {
-      where.createdByUserId = DEMO_VIEWER_USER_ID;
+      where.createdByBandMemberId = DEMO_BAND_MEMBER_ID;
     }
 
     if (query.inProgressOnly === true) {
@@ -354,12 +322,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return where;
   }
 
-  /**
-   * 허용한 정렬 옵션만 DB 정렬로 바꾼다.
-   *
-   * @param {string | undefined} sort - 요청 정렬 문자열
-   * @returns {Prisma.BandSpaceOrderByWithRelationInput[]} Prisma orderBy 배열
-   */
   private createBandSpaceOrderByInput(sort: string | undefined): Prisma.BandSpaceOrderByWithRelationInput[] {
     if (sort === 'createdAt,asc') {
       return [{ createdAt: 'asc' }];
@@ -376,28 +338,22 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return [{ createdAt: 'desc' }];
   }
 
-  /**
-   * DB 레코드를 목록 응답 DTO로 변환한다.
-   *
-   * @param {BandSpaceListRecord} space - Prisma 조회 결과
-   * @returns {BandSpaceListItem} API 응답용 목록 아이템
-   */
   private mapBandSpaceListItem(space: BandSpaceListRecord): BandSpaceListItem {
     const myMembership = space.members[0];
 
     return {
       spaceId: space.id,
       bandId: space.bandId,
-      createdByUserId: space.createdByUserId,
-      name: space.name ?? '',
+      createdByBandMemberId: space.createdByBandMemberId,
+      name: space.name,
       description: space.description ?? '',
-      spaceType: space.spaceType ?? 'ETC',
-      status: space.status ?? 'INACTIVE',
+      spaceType: space.spaceType ?? 'ONLINE',
+      status: space.status,
       startDate: this.formatDateOnly(space.startDate),
       endDate: this.formatDateOnly(space.endDate),
       memberCount: space._count.members,
       songCount: space.band._count.songs,
-      isMine: space.createdByUserId === DEMO_VIEWER_USER_ID,
+      isMine: space.createdByBandMemberId === DEMO_BAND_MEMBER_ID,
       myMembership: {
         isMember: myMembership !== undefined,
         role: this.normalizeSpaceMemberRole(myMembership?.role),
@@ -407,12 +363,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
     };
   }
 
-  /**
-   * DB 레코드를 상세 응답 DTO로 변환한다.
-   *
-   * @param {BandSpaceDetailRecord} space - Prisma 조회 결과
-   * @returns {GetSpaceDetailResult} API 응답용 상세 데이터
-   */
   private mapBandSpaceDetail(space: BandSpaceDetailRecord): GetSpaceDetailResult {
     const sortedMembers = [...space.members].sort((leftMember, rightMember) => {
       const leftPriority = leftMember.role === 'LEADER' ? 0 : 1;
@@ -429,10 +379,10 @@ export class SpacesPrismaRepository implements SpacesRepository {
       space: {
         spaceId: space.id,
         bandId: space.bandId,
-        name: space.name ?? '',
+        name: space.name,
         description: space.description ?? '',
-        spaceType: space.spaceType ?? 'ETC',
-        status: space.status ?? 'INACTIVE',
+        spaceType: space.spaceType ?? 'ONLINE',
+        status: space.status,
         startDate: this.formatDateOnly(space.startDate),
         endDate: this.formatDateOnly(space.endDate),
         createdAt: space.createdAt.toISOString(),
@@ -444,28 +394,16 @@ export class SpacesPrismaRepository implements SpacesRepository {
     };
   }
 
-  /**
-   * 멤버 상세 응답에서 화면에 필요한 정보만 추려낸다.
-   *
-   * @param {BandSpaceDetailRecord['members'][number]} member - 공간 멤버 조회 결과
-   * @returns {SpaceMemberDetail} API 응답용 멤버 정보
-   */
   private mapSpaceMemberDetail(member: BandSpaceDetailRecord['members'][number]): SpaceMemberDetail {
     return {
-      userId: member.userId,
-      nickname: member.user.profile?.nickname ?? '알 수 없는 사용자',
+      bandMemberId: member.bandMemberId,
+      nickname: member.bandMember.user.profile?.nickname ?? '알 수 없는 사용자',
       role: this.normalizeSpaceMemberRole(member.role),
       status: member.status,
       joinedAt: member.joinedAt.toISOString(),
     };
   }
 
-  /**
-   * Date 타입 컬럼을 화면에서 쓰는 yyyy-mm-dd 문자열로 고정한다.
-   *
-   * @param {Date | null} value - DB에서 읽은 날짜 값
-   * @returns {string} 날짜 문자열
-   */
   private formatDateOnly(value: Date | null): string {
     if (value === null) {
       return '';
@@ -474,13 +412,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return value.toISOString().slice(0, 10);
   }
 
-  /**
-   * 업데이트 시간이 없으면 생성 시간을 대신 써서 응답 스펙을 유지한다.
-   *
-   * @param {Date | null} value - 수정 시간
-   * @param {Date} fallbackValue - 대체할 생성 시간
-   * @returns {string} ISO 날짜 문자열
-   */
   private formatDateTime(value: Date | null, fallbackValue: Date): string {
     if (value === null) {
       return fallbackValue.toISOString();
@@ -489,12 +420,6 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return value.toISOString();
   }
 
-  /**
-   * 멤버 정보가 없을 때도 응답 타입을 깨지 않도록 기본 역할을 맞춘다.
-   *
-   * @param {SpaceMemberRole | null | undefined} role - DB에서 읽은 역할
-   * @returns {SpaceMemberRole} 응답에 사용할 역할
-   */
   private normalizeSpaceMemberRole(role: SpaceMemberRole | null | undefined): SpaceMemberRole {
     if (role === undefined || role === null) {
       return 'MEMBER';

@@ -1,16 +1,17 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Test, type TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import { UsersService } from 'src/modules/users/users.service';
+
 import { AuthService } from './auth.service';
-import { MembersService } from 'src/modules/members/members.service';
 
 const mockJwtService = {
   sign: jest.fn(),
   verify: jest.fn(),
 };
 
-const mockMembersService = {
+const mockUsersService = {
   getUserByEmail: jest.fn(),
   createUserWithEmail: jest.fn(),
 };
@@ -20,11 +21,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        { provide: JwtService, useValue: mockJwtService },
-        { provide: MembersService, useValue: mockMembersService },
-      ],
+      providers: [AuthService, { provide: JwtService, useValue: mockJwtService }, { provide: UsersService, useValue: mockUsersService }],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
@@ -65,20 +62,14 @@ describe('AuthService', () => {
     it('access 타입으로 서명 시 5m 만료로 호출된다', () => {
       mockJwtService.sign.mockReturnValue('signed-access');
       const result = service.signToken('u@u.com', 'uid', false);
-      expect(mockJwtService.sign).toHaveBeenCalledWith(
-        { email: 'u@u.com', id: 'uid', type: 'access' },
-        { secret: 'jamplay', expiresIn: '5m' },
-      );
+      expect(mockJwtService.sign).toHaveBeenCalledWith({ email: 'u@u.com', id: 'uid', type: 'access' }, { secret: 'jamplay', expiresIn: '5m' });
       expect(result).toBe('signed-access');
     });
 
     it('refresh 타입으로 서명 시 1h 만료로 호출된다', () => {
       mockJwtService.sign.mockReturnValue('signed-refresh');
       const result = service.signToken('u@u.com', 'uid', true);
-      expect(mockJwtService.sign).toHaveBeenCalledWith(
-        { email: 'u@u.com', id: 'uid', type: 'refresh' },
-        { secret: 'jamplay', expiresIn: '1h' },
-      );
+      expect(mockJwtService.sign).toHaveBeenCalledWith({ email: 'u@u.com', id: 'uid', type: 'refresh' }, { secret: 'jamplay', expiresIn: '1h' });
       expect(result).toBe('signed-refresh');
     });
   });
@@ -120,28 +111,28 @@ describe('AuthService', () => {
 
   describe('authenticateWithEmailAndPassword', () => {
     it('유저가 존재하지 않으면 UnauthorizedException을 던진다', async () => {
-      mockMembersService.getUserByEmail.mockResolvedValue(null);
+      mockUsersService.getUserByEmail.mockResolvedValue(null);
       await expect(service.authenticateWithEmailAndPassword('u@u.com', 'pw')).rejects.toThrow(UnauthorizedException);
     });
 
     it('유저에 email이 없으면 UnauthorizedException을 던진다', async () => {
-      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: null, passwordHash: 'hash' });
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: null, passwordHash: 'hash' });
       await expect(service.authenticateWithEmailAndPassword('u@u.com', 'pw')).rejects.toThrow(UnauthorizedException);
     });
 
     it('유저에 passwordHash가 없으면 UnauthorizedException을 던진다', async () => {
-      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: null });
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: null });
       await expect(service.authenticateWithEmailAndPassword('u@u.com', 'pw')).rejects.toThrow(UnauthorizedException);
     });
 
     it('비밀번호가 틀리면 UnauthorizedException을 던진다', async () => {
-      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
       await expect(service.authenticateWithEmailAndPassword('u@u.com', 'wrong')).rejects.toThrow(UnauthorizedException);
     });
 
     it('인증 성공 시 id와 email을 반환한다', async () => {
-      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
       await expect(service.authenticateWithEmailAndPassword('u@u.com', 'correct')).resolves.toEqual({
         id: 'uid',
@@ -152,7 +143,7 @@ describe('AuthService', () => {
 
   describe('loginWithEmail', () => {
     it('인증 성공 시 토큰 쌍을 반환한다', async () => {
-      mockMembersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
       mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
       await expect(service.loginWithEmail('u@u.com', 'correct')).resolves.toEqual({
@@ -162,10 +153,22 @@ describe('AuthService', () => {
     });
   });
 
+  describe('checkEmailDuplicate', () => {
+    it('이메일이 존재하면 true를 반환한다', async () => {
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com' });
+      await expect(service.checkEmailDuplicate('u@u.com')).resolves.toBe(true);
+    });
+
+    it('이메일이 존재하지 않으면 false를 반환한다', async () => {
+      mockUsersService.getUserByEmail.mockResolvedValue(null);
+      await expect(service.checkEmailDuplicate('new@u.com')).resolves.toBe(false);
+    });
+  });
+
   describe('registerWithEmail', () => {
     it('비밀번호를 해싱하고 토큰 쌍을 반환한다', async () => {
       jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
-      mockMembersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
+      mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
       mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
 
       const result = await service.registerWithEmail('new@u.com', 'pw');
