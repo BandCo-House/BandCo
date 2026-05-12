@@ -153,6 +153,18 @@ describe('AuthService', () => {
     });
   });
 
+  describe('checkEmailDuplicate', () => {
+    it('이메일이 존재하면 true를 반환한다', async () => {
+      mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com' });
+      await expect(service.checkEmailDuplicate('u@u.com')).resolves.toBe(true);
+    });
+
+    it('이메일이 존재하지 않으면 false를 반환한다', async () => {
+      mockUsersService.getUserByEmail.mockResolvedValue(null);
+      await expect(service.checkEmailDuplicate('new@u.com')).resolves.toBe(false);
+    });
+  });
+
   describe('registerWithEmail', () => {
     it('비밀번호를 해싱하고 토큰 쌍을 반환한다', async () => {
       jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');

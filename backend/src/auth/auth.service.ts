@@ -58,6 +58,11 @@ export class AuthService {
     };
   }
 
+  async checkEmailDuplicate(email: string): Promise<boolean> {
+    const user = await this.usersService.getUserByEmail(email);
+    return user !== null;
+  }
+
   async registerWithEmail(email: string, password: string) {
     const hash = await bcrypt.hash(password, 10);
     const newUser = await this.usersService.createUserWithEmail(email, hash);
