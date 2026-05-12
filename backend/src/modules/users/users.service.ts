@@ -12,31 +12,31 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  async getUserByEmail(email: string) {
-    return this.usersRepository.findByEmail(email);
+  async getUserByEmail(email: string, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.findByEmail(email, tx);
   }
 
   async createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient) {
-    const existingUser = await this.usersRepository.findByEmail(email);
+    const existingUser = await this.usersRepository.findByEmail(email, tx);
     if (existingUser) {
       throw new BadRequestException('이미 존재하는 이메일입니다.');
     }
     return this.usersRepository.createUserWithEmail(email, passwordHash, tx);
   }
 
-  async getUsers(query: GetUsersQuery) {
-    return this.usersRepository.findUsers(query);
+  async getUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.findUsers(query, tx);
   }
 
-  async getUserProfile(userId: string) {
-    const result = await this.usersRepository.findUserProfileById(userId);
+  async getUserProfile(userId: string, tx?: Prisma.TransactionClient) {
+    const result = await this.usersRepository.findUserProfileById(userId, tx);
     if (!result) {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
     return result;
   }
 
-  async updateUserProfile(userId: string, data: UpdateUserProfileData) {
-    return this.usersRepository.updateUserProfile(userId, data);
+  async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.updateUserProfile(userId, data, tx);
   }
 }
