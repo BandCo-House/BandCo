@@ -1,8 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
-import { SPACES_REPOSITORY } from './repositories/spaces.repository';
 import type { SpacesRepository } from './repositories/spaces.repository';
+import { SPACES_REPOSITORY } from './repositories/spaces.repository';
 import { SpacesService } from './spaces.service';
 
 const repositoryStub: SpacesRepository = {
@@ -85,10 +85,7 @@ describe('SpacesService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        SpacesService,
-        { provide: SPACES_REPOSITORY, useValue: repositoryStub },
-      ],
+      providers: [SpacesService, { provide: SPACES_REPOSITORY, useValue: repositoryStub }],
     }).compile();
 
     service = module.get(SpacesService);
