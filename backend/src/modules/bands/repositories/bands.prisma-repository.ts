@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
+import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 
 import type { BandsRepository, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
 
@@ -125,6 +127,64 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 권한 변경 권한 판단에 필요한 최소 밴드 정보만 조회한다.
+   *
+   * @param {string} bandId - 확인할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; bandMasterUserId: string } | null>} 삭제되지 않은 밴드 정보
+   */
+  async findBandForMemberRoleUpdate(
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandMasterUserId: string;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        bandMasterUserId: true,
+      },
+    });
+  }
+
+  /**
+   * 권한을 변경할 밴드 멤버를 밴드와 사용자 기준으로 조회한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {string} userId - 대상 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; userId: string } | null>} 밴드 멤버 정보
+   */
+  async findBandMemberForRoleUpdate(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    userId: string;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandMember.findFirst({
+      where: {
+        bandId,
+        userId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+  }
+
+  /**
    * 삭제 가능 여부 판단에 필요한 최소 밴드 정보만 조회한다.
    *
    * @param {string} bandId - 확인할 밴드 ID
@@ -150,6 +210,42 @@ export class BandsPrismaRepository implements BandsRepository {
         bandMasterUserId: true,
       },
     });
+  }
+
+  /**
+   * 밴드 멤버 역할을 ADMIN 또는 MEMBER로 변경한다.
+   *
+   * @param {string} bandMemberId - 권한을 변경할 밴드 멤버 ID
+   * @param {UpdateBandMemberRoleInput} input - 검증이 끝난 권한 변경 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateBandMemberRoleResult>} 변경된 밴드 멤버 권한
+   */
+  async updateBandMemberRole(
+    bandMemberId: string,
+    input: UpdateBandMemberRoleInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UpdateBandMemberRoleResult> {
+    const client = tx ?? this.prisma;
+
+    const member = await client.bandMember.update({
+      where: {
+        id: bandMemberId,
+      },
+      data: {
+        role: input.role,
+      },
+      select: {
+        userId: true,
+        role: true,
+      },
+    });
+
+    return {
+      member: {
+        userId: member.userId,
+        role: member.role,
+      },
+    };
   }
 
   /**

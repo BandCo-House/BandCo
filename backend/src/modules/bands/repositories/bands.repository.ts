@@ -1,7 +1,9 @@
 import type { Prisma } from '../../../generated/prisma';
 import type { CreateBandInput } from '../dto/create-band.dto';
+import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { CreateBandInvitationSuccessItem, CreateBandResult } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 
 export const BANDS_REPOSITORY = Symbol('BANDS_REPOSITORY');
 
@@ -23,6 +25,21 @@ export interface CreateBandRepositoryResult extends CreateBandResult {
 export interface BandsRepository {
   createBand(input: CreateBandRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandRepositoryResult>;
   deleteBand(bandId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteBandResult>;
+  findBandForMemberRoleUpdate(
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandMasterUserId: string;
+  } | null>;
+  findBandMemberForRoleUpdate(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    userId: string;
+  } | null>;
   findBandForDelete(
     bandId: string,
     tx?: Prisma.TransactionClient,
@@ -32,4 +49,5 @@ export interface BandsRepository {
   } | null>;
   findExistingGenreIds(genreIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
   findExistingUserIds(userIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
+  updateBandMemberRole(bandMemberId: string, input: UpdateBandMemberRoleInput, tx?: Prisma.TransactionClient): Promise<UpdateBandMemberRoleResult>;
 }

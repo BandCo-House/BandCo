@@ -1,12 +1,14 @@
-import { Body, Controller, Delete, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 import type { User } from '../../generated/prisma';
 
 import { CreateBandBodyDto } from './dto/create-band.dto';
+import { UpdateBandMemberRoleBodyDto } from './dto/update-band-member-role.dto';
 import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
@@ -31,5 +33,18 @@ export class BandsController {
     const deletedBand = await this.bandsService.deleteBand(request.user.id, bandId);
 
     return createSuccessResponse('밴드가 삭제되었습니다.', deletedBand);
+  }
+
+  @Patch(':bandId/users/:userId')
+  @UseGuards(AccessTokenGuard)
+  async updateBandMemberRole(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Param('userId') userId: string,
+    @Body() input: UpdateBandMemberRoleBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateBandMemberRoleResult>> {
+    const updatedMember = await this.bandsService.updateBandMemberRole(request.user.id, bandId, userId, input);
+
+    return createSuccessResponse('밴드 멤버 권한이 변경되었습니다.', updatedMember);
   }
 }

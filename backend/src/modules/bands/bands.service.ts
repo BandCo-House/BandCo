@@ -1,12 +1,14 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import type { Prisma } from '../../generated/prisma';
+import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import type { CreateBandInput } from './dto/create-band.dto';
+import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 
 @Injectable()
 export class BandsService {
@@ -80,6 +82,54 @@ export class BandsService {
       }
 
       return this.bandsRepository.deleteBand(bandId, new Date(), client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드장은 부리더와 일반 멤버 간 역할만 변경할 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {string} targetUserId - 역할을 변경할 사용자 ID
+   * @param {UpdateBandMemberRoleInput} input - 검증이 끝난 역할 변경 요청값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateBandMemberRoleResult>} 변경된 밴드 멤버 권한
+   */
+  async updateBandMemberRole(
+    requesterUserId: string,
+    bandId: string,
+    targetUserId: string,
+    input: UpdateBandMemberRoleInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UpdateBandMemberRoleResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<UpdateBandMemberRoleResult> => {
+      if (input.role === BandMemberRole.BM) {
+        throw new BadRequestException('밴드장 권한은 이 API에서 부여할 수 없습니다.');
+      }
+
+      const band = await this.bandsRepository.findBandForMemberRoleUpdate(bandId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      if (band.bandMasterUserId !== requesterUserId) {
+        throw new ForbiddenException('밴드 멤버 권한 변경 권한이 없습니다.');
+      }
+
+      const member = await this.bandsRepository.findBandMemberForRoleUpdate(bandId, targetUserId, client);
+
+      if (member === null) {
+        throw new NotFoundException('요청한 밴드 멤버를 찾을 수 없습니다.');
+      }
+
+      return this.bandsRepository.updateBandMemberRole(member.id, input, client);
     };
 
     if (tx !== undefined) {
