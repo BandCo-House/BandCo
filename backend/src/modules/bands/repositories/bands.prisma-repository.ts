@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
+import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
+import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
@@ -125,6 +127,115 @@ export class BandsPrismaRepository implements BandsRepository {
     return {
       bandId: deletedBand.id,
       deletedAt: (deletedBand.deletedAt ?? deletedAt).toISOString(),
+    };
+  }
+
+  /**
+   * 밴드 존재 여부와 요청자의 밴드 멤버 여부 판단에 필요한 정보만 조회한다.
+   *
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; requesterMemberId: string | null } | null>} 삭제되지 않은 밴드와 요청자 멤버 ID
+   */
+  async findBandForMemberList(
+    bandId: string,
+    requesterUserId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    requesterMemberId: string | null;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    const band = await client.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        members: {
+          where: {
+            userId: requesterUserId,
+          },
+          select: {
+            id: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (band === null) {
+      return null;
+    }
+
+    return {
+      id: band.id,
+      requesterMemberId: band.members[0]?.id ?? null,
+    };
+  }
+
+  /**
+   * 밴드 멤버를 가입 시점과 ID 기준으로 정렬해 조회한다.
+   *
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {GetBandMembersQuery} query - 정렬과 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandMembersResult>} 밴드 멤버 목록
+   */
+  async findBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult> {
+    const client = tx ?? this.prisma;
+
+    const bandMembers = await client.bandMember.findMany({
+      where: {
+        bandId,
+        user: {
+          deletedAt: null,
+        },
+        ...this.createBandMembersCursorWhere(query),
+      },
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                nickname: true,
+                avatarUrl: true,
+              },
+            },
+            userSkills: {
+              include: {
+                skillType: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
+            },
+          },
+        },
+      },
+      orderBy: [{ joinedAt: query.order__joined_at }, { id: query.order__id }],
+      take: query.take,
+    });
+
+    const members = bandMembers.map(member => this.mapBandMemberListItem(member));
+    const count = members.length;
+    const cursor = count > 0 ? { joinedAt: members[0].joinedAt, id: members[0].bandMemberId } : null;
+    const next = count === query.take ? { joinedAt: members[count - 1].joinedAt, id: members[count - 1].bandMemberId } : null;
+
+    return {
+      bandId,
+      members,
+      meta: {
+        count,
+        take: query.take,
+        cursor,
+        next,
+      },
     };
   }
 
@@ -387,6 +498,80 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       ],
+    };
+  }
+
+  private createBandMembersCursorWhere(query: GetBandMembersQuery): Prisma.BandMemberWhereInput {
+    if (query.cursor__joined_at === undefined || query.cursor__id === undefined) {
+      return {};
+    }
+
+    const cursorJoinedAt = new Date(query.cursor__joined_at);
+    const cursorOperator = this.getCursorOperator(query.order__joined_at);
+
+    return {
+      OR: [
+        {
+          joinedAt: {
+            [cursorOperator]: cursorJoinedAt,
+          },
+        },
+        {
+          joinedAt: cursorJoinedAt,
+          id: {
+            [cursorOperator]: query.cursor__id,
+          },
+        },
+      ],
+    };
+  }
+
+  private getCursorOperator(orderDirection: BandMemberOrderDirection): 'lt' | 'gt' {
+    if (orderDirection === 'desc') {
+      return 'lt';
+    }
+
+    return 'gt';
+  }
+
+  private mapBandMemberListItem(
+    member: Prisma.BandMemberGetPayload<{
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                nickname: true;
+                avatarUrl: true;
+              };
+            };
+            userSkills: {
+              include: {
+                skillType: {
+                  select: {
+                    name: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    }>,
+  ): BandMemberListItem {
+    return {
+      bandMemberId: member.id,
+      userId: member.userId,
+      nickname: member.user.profile?.nickname ?? '',
+      avatarUrl: member.user.profile?.avatarUrl ?? null,
+      role: member.role,
+      joinedAt: member.joinedAt.toISOString(),
+      skills: member.user.userSkills.map(skill => ({
+        skillTypeId: skill.skillTypeId,
+        skillName: skill.skillType.name,
+        skillLevel: skill.skillLevel,
+        isPrimary: skill.isPrimary,
+      })),
     };
   }
 

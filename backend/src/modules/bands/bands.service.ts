@@ -4,9 +4,11 @@ import { PrismaService } from '../../database/prisma';
 import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import type { CreateBandInput } from './dto/create-band.dto';
+import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
+import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
@@ -105,6 +107,36 @@ export class BandsService {
     this.validateCursorPair(query);
 
     return this.bandsRepository.findMyBands(userId, query, tx);
+  }
+
+  /**
+   * 밴드 멤버만 같은 밴드의 멤버 목록을 조회할 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {GetBandMembersQuery} query - 정렬과 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandMembersResult>} 밴드 멤버 목록
+   */
+  async getBandMembers(
+    requesterUserId: string,
+    bandId: string,
+    query: GetBandMembersQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetBandMembersResult> {
+    this.validateBandMemberListQuery(query);
+
+    const band = await this.bandsRepository.findBandForMemberList(bandId, requesterUserId, tx);
+
+    if (band === null) {
+      throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+    }
+
+    if (band.requesterMemberId === null) {
+      throw new ForbiddenException('밴드 멤버 조회 권한이 없습니다.');
+    }
+
+    return this.bandsRepository.findBandMembers(bandId, query, tx);
   }
 
   /**
@@ -224,6 +256,29 @@ export class BandsService {
 
     if (Number.isNaN(cursorCreatedAt.getTime())) {
       throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
+    }
+  }
+
+  private validateBandMemberListQuery(query: GetBandMembersQuery): void {
+    if (query.order__joined_at !== query.order__id) {
+      throw new BadRequestException('order__joined_at과 order__id는 같은 방향이어야 합니다.');
+    }
+
+    const hasCursorJoinedAt = query.cursor__joined_at !== undefined;
+    const hasCursorId = query.cursor__id !== undefined;
+
+    if (hasCursorJoinedAt !== hasCursorId) {
+      throw new BadRequestException('커서 조회에는 cursor__joined_at과 cursor__id가 함께 필요합니다.');
+    }
+
+    if (query.cursor__joined_at === undefined) {
+      return;
+    }
+
+    const cursorJoinedAt = new Date(query.cursor__joined_at);
+
+    if (Number.isNaN(cursorJoinedAt.getTime())) {
+      throw new BadRequestException('cursor__joined_at은 유효한 날짜여야 합니다.');
     }
   }
 }

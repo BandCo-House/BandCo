@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import type { PrismaService } from 'src/database/prisma';
 import { BandMemberRole } from 'src/generated/prisma';
 
+import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { BandsRepository, CreateBandRepositoryInput } from './repositories/bands.repository';
 import { BandsService } from './bands.service';
@@ -19,6 +20,10 @@ function createBandsRepositoryStub(options?: {
     id: string;
     bandMasterUserId: string;
   } | null;
+  bandForMemberList?: {
+    id: string;
+    requesterMemberId: string | null;
+  } | null;
   bandForRoleUpdate?: {
     id: string;
     bandMasterUserId: string;
@@ -30,8 +35,10 @@ function createBandsRepositoryStub(options?: {
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
   onFindBandForDelete?: (tx: unknown) => void;
+  onFindBandForMemberList?: (bandId: string, requesterUserId: string, tx: unknown) => void;
   onFindBandForRoleUpdate?: (tx: unknown) => void;
   onFindBandMemberForRoleUpdate?: (tx: unknown) => void;
+  onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
   onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
@@ -82,6 +89,52 @@ function createBandsRepositoryStub(options?: {
       return {
         id: 'band-001',
         bandMasterUserId: BAND_MASTER_USER_ID,
+      };
+    },
+    async findBandForMemberList(bandId, requesterUserId, tx) {
+      options?.onFindBandForMemberList?.(bandId, requesterUserId, tx);
+
+      if (options?.bandForMemberList !== undefined) {
+        return options.bandForMemberList;
+      }
+
+      return {
+        id: bandId,
+        requesterMemberId: 'band-member-requester',
+      };
+    },
+    async findBandMembers(bandId, query, tx) {
+      options?.onFindBandMembers?.(bandId, query, tx);
+
+      return {
+        bandId,
+        members: [
+          {
+            bandMemberId: 'band-member-001',
+            userId: BAND_MASTER_USER_ID,
+            nickname: 'Jun',
+            avatarUrl: null,
+            role: BandMemberRole.BM,
+            joinedAt: '2026-04-10T00:00:00.000Z',
+            skills: [
+              {
+                skillTypeId: 'skill-type-001',
+                skillName: 'Guitar',
+                skillLevel: 'ADVANCED',
+                isPrimary: true,
+              },
+            ],
+          },
+        ],
+        meta: {
+          count: 1,
+          take: query.take,
+          cursor: {
+            joinedAt: '2026-04-10T00:00:00.000Z',
+            id: 'band-member-001',
+          },
+          next: null,
+        },
       };
     },
     async findMyBands(userId, query, tx) {
@@ -445,6 +498,140 @@ describe('BandsService', () => {
       );
 
       expect(capturedTransaction).toBe(externalTx);
+    });
+  });
+
+  describe('getBandMembers', () => {
+    it('밴드 멤버가 요청하면 밴드 멤버 목록을 조회한다', async () => {
+      let capturedBandId: string | undefined;
+      let capturedQuery: GetBandMembersQuery | undefined;
+      const query: GetBandMembersQuery = {
+        order__joined_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      };
+      const repository = createBandsRepositoryStub({
+        onFindBandMembers(bandId, inputQuery) {
+          capturedBandId = bandId;
+          capturedQuery = inputQuery;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', query);
+
+      expect(capturedBandId).toBe('band-001');
+      expect(capturedQuery).toBe(query);
+      expect(result.bandId).toBe('band-001');
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0].skills[0].skillName).toBe('Guitar');
+      expect(result.meta.take).toBe(20);
+    });
+
+    it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForMemberList: null,
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getBandMembers(BAND_MASTER_USER_ID, 'band-missing', {
+          order__joined_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드 멤버가 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForMemberList: {
+          id: 'band-001',
+          requesterMemberId: null,
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+          order__joined_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('정렬 방향이 서로 다르면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+          order__joined_at: 'desc',
+          order__id: 'asc',
+          take: 20,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('커서 가입일과 ID는 함께 입력해야 한다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+          order__joined_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+          cursor__joined_at: '2026-04-10T00:00:00.000Z',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('커서 가입일이 유효하지 않으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+          order__joined_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+          cursor__joined_at: 'invalid-date',
+          cursor__id: '11111111-1111-4111-8111-111111111111',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('외부 transaction client를 repository로 전달한다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindBandForMemberList(_bandId, _requesterUserId, tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandMembers(_bandId, _query, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.getBandMembers(
+        BAND_MASTER_USER_ID,
+        'band-001',
+        {
+          order__joined_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+        },
+        externalTx as never,
+      );
+
+      expect(capturedTransactions).toHaveLength(2);
+      expect(capturedTransactions[0]).toBe(externalTx);
+      expect(capturedTransactions[1]).toBe(externalTx);
     });
   });
 

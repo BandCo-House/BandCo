@@ -5,8 +5,10 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import type { User } from '../../generated/prisma';
 
 import { CreateBandBodyDto } from './dto/create-band.dto';
+import { GetBandMembersQueryDto } from './dto/get-band-members-query.dto';
 import { GetMyBandsQueryDto } from './dto/get-my-bands-query.dto';
 import { UpdateBandMemberRoleBodyDto } from './dto/update-band-member-role.dto';
+import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
@@ -43,6 +45,18 @@ export class BandsController {
     const bands = await this.bandsService.getMyBands(request.user.id, query);
 
     return createSuccessResponse('내 밴드 목록 조회 성공', bands);
+  }
+
+  @Get(':bandId/users')
+  @UseGuards(AccessTokenGuard)
+  async getBandMembers(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Query() query: GetBandMembersQueryDto,
+  ): Promise<ApiSuccessResponse<GetBandMembersResult>> {
+    const members = await this.bandsService.getBandMembers(request.user.id, bandId, query);
+
+    return createSuccessResponse('밴드 내 멤버 조회 완료', members);
   }
 
   @Patch(':bandId/users/:userId')
