@@ -4,6 +4,7 @@ import { BandMemberRole } from 'src/generated/prisma';
 
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
+import type { SearchBandsQuery } from './dto/search-bands-query.dto';
 import type { BandsRepository, CreateBandRepositoryInput } from './repositories/bands.repository';
 import { BandsService } from './bands.service';
 
@@ -42,6 +43,7 @@ function createBandsRepositoryStub(options?: {
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
   onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
+  onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
 }): BandsRepository {
   return {
@@ -158,6 +160,36 @@ function createBandsRepositoryStub(options?: {
           take: query.take,
           cursor: {
             createdAt: '2026-03-01T12:00:00.000Z',
+            id: 'band-001',
+          },
+          next: null,
+        },
+      };
+    },
+    async searchBands(query, tx) {
+      options?.onSearchBands?.(query, tx);
+
+      return {
+        keyword: query.where__name__contain ?? null,
+        items: [
+          {
+            bandId: 'band-001',
+            name: 'Rocking Stars',
+            description: '주 1회 합주하는 직장인 밴드',
+            visibility: true,
+            memberCount: 5,
+            bandMaster: {
+              userId: BAND_MASTER_USER_ID,
+              nickname: 'Jun',
+            },
+            createdAt: '2026-04-10T00:00:00.000Z',
+          },
+        ],
+        meta: {
+          count: 1,
+          take: query.take,
+          cursor: {
+            createdAt: '2026-04-10T00:00:00.000Z',
             id: 'band-001',
           },
           next: null,
@@ -632,6 +664,98 @@ describe('BandsService', () => {
       expect(capturedTransactions).toHaveLength(2);
       expect(capturedTransactions[0]).toBe(externalTx);
       expect(capturedTransactions[1]).toBe(externalTx);
+    });
+  });
+
+  describe('searchBands', () => {
+    it('공개 밴드를 이름 기준으로 검색한다', async () => {
+      let capturedQuery: SearchBandsQuery | undefined;
+      const query: SearchBandsQuery = {
+        where__name__contain: 'rock',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      };
+      const repository = createBandsRepositoryStub({
+        onSearchBands(inputQuery) {
+          capturedQuery = inputQuery;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.searchBands(query);
+
+      expect(capturedQuery).toBe(query);
+      expect(result.keyword).toBe('rock');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].bandMaster.nickname).toBe('Jun');
+      expect(result.meta.take).toBe(20);
+    });
+
+    it('정렬 방향이 서로 다르면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.searchBands({
+          order__created_at: 'desc',
+          order__id: 'asc',
+          take: 20,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('커서 생성일과 ID는 함께 입력해야 한다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.searchBands({
+          order__created_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+          cursor__created_at: '2026-04-10T00:00:00.000Z',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('커서 생성일이 유효하지 않으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.searchBands({
+          order__created_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+          cursor__created_at: 'invalid-date',
+          cursor__id: '11111111-1111-4111-8111-111111111111',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('외부 transaction client를 repository로 전달한다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      let capturedTransaction: unknown;
+      const repository = createBandsRepositoryStub({
+        onSearchBands(_query, tx) {
+          capturedTransaction = tx;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.searchBands(
+        {
+          order__created_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+        },
+        externalTx as never,
+      );
+
+      expect(capturedTransaction).toBe(externalTx);
     });
   });
 

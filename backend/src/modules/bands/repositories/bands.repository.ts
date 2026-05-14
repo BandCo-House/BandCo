@@ -2,8 +2,10 @@ import type { Prisma } from '../../../generated/prisma';
 import type { CreateBandInput } from '../dto/create-band.dto';
 import type { GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
+import type { SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { GetBandMembersResult } from '../types/band-member-list.type';
+import type { SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationSuccessItem, CreateBandResult } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { GetMyBandsResult } from '../types/my-band-list.type';
@@ -39,6 +41,7 @@ export interface BandsRepository {
   } | null>;
   findBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult>;
   findMyBands(userId: string, query: GetMyBandsQuery, tx?: Prisma.TransactionClient): Promise<GetMyBandsResult>;
+  searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult>;
   findBandForMemberRoleUpdate(
     bandId: string,
     tx?: Prisma.TransactionClient,

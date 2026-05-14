@@ -6,9 +6,11 @@ import { BandMemberRole, type Prisma } from '../../generated/prisma';
 import type { CreateBandInput } from './dto/create-band.dto';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
+import type { SearchBandsQuery } from './dto/search-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { GetBandMembersResult } from './types/band-member-list.type';
+import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
@@ -137,6 +139,19 @@ export class BandsService {
     }
 
     return this.bandsRepository.findBandMembers(bandId, query, tx);
+  }
+
+  /**
+   * 공개 밴드 검색은 인증 없이 이름 기준으로만 조회한다.
+   *
+   * @param {SearchBandsQuery} query - 검색어, 정렬, 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<SearchBandsResult>} 공개 밴드 검색 결과
+   */
+  async searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult> {
+    this.validateBandSearchQuery(query);
+
+    return this.bandsRepository.searchBands(query, tx);
   }
 
   /**
@@ -279,6 +294,29 @@ export class BandsService {
 
     if (Number.isNaN(cursorJoinedAt.getTime())) {
       throw new BadRequestException('cursor__joined_at은 유효한 날짜여야 합니다.');
+    }
+  }
+
+  private validateBandSearchQuery(query: SearchBandsQuery): void {
+    if (query.order__created_at !== query.order__id) {
+      throw new BadRequestException('order__created_at과 order__id는 같은 방향이어야 합니다.');
+    }
+
+    const hasCursorCreatedAt = query.cursor__created_at !== undefined;
+    const hasCursorId = query.cursor__id !== undefined;
+
+    if (hasCursorCreatedAt !== hasCursorId) {
+      throw new BadRequestException('커서 조회에는 cursor__created_at과 cursor__id가 함께 필요합니다.');
+    }
+
+    if (query.cursor__created_at === undefined) {
+      return;
+    }
+
+    const cursorCreatedAt = new Date(query.cursor__created_at);
+
+    if (Number.isNaN(cursorCreatedAt.getTime())) {
+      throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
     }
   }
 }

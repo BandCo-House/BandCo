@@ -4,8 +4,10 @@ import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
+import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
+import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
@@ -230,6 +232,60 @@ export class BandsPrismaRepository implements BandsRepository {
     return {
       bandId,
       members,
+      meta: {
+        count,
+        take: query.take,
+        cursor,
+        next,
+      },
+    };
+  }
+
+  /**
+   * 공개 밴드를 이름 기준으로 검색한다.
+   *
+   * @param {SearchBandsQuery} query - 검색어, 정렬, 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<SearchBandsResult>} 공개 밴드 검색 결과
+   */
+  async searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult> {
+    const client = tx ?? this.prisma;
+
+    const bands = await client.band.findMany({
+      where: {
+        deletedAt: null,
+        visibility: true,
+        ...this.createBandSearchKeywordWhere(query),
+        ...this.createBandSearchCursorWhere(query),
+      },
+      include: {
+        bandMasterUser: {
+          include: {
+            profile: {
+              select: {
+                nickname: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      take: query.take,
+    });
+
+    const items = bands.map(band => this.mapBandSearchListItem(band));
+    const count = items.length;
+    const cursor = count > 0 ? { createdAt: items[0].createdAt, id: items[0].bandId } : null;
+    const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].bandId } : null;
+
+    return {
+      keyword: query.where__name__contain ?? null,
+      items,
       meta: {
         count,
         take: query.take,
@@ -526,7 +582,53 @@ export class BandsPrismaRepository implements BandsRepository {
     };
   }
 
+  private createBandSearchKeywordWhere(query: SearchBandsQuery): Prisma.BandWhereInput {
+    if (query.where__name__contain === undefined) {
+      return {};
+    }
+
+    return {
+      name: {
+        contains: query.where__name__contain,
+        mode: 'insensitive',
+      },
+    };
+  }
+
+  private createBandSearchCursorWhere(query: SearchBandsQuery): Prisma.BandWhereInput {
+    if (query.cursor__created_at === undefined || query.cursor__id === undefined) {
+      return {};
+    }
+
+    const cursorCreatedAt = new Date(query.cursor__created_at);
+    const cursorOperator = this.getBandSearchCursorOperator(query.order__created_at);
+
+    return {
+      OR: [
+        {
+          createdAt: {
+            [cursorOperator]: cursorCreatedAt,
+          },
+        },
+        {
+          createdAt: cursorCreatedAt,
+          id: {
+            [cursorOperator]: query.cursor__id,
+          },
+        },
+      ],
+    };
+  }
+
   private getCursorOperator(orderDirection: BandMemberOrderDirection): 'lt' | 'gt' {
+    if (orderDirection === 'desc') {
+      return 'lt';
+    }
+
+    return 'gt';
+  }
+
+  private getBandSearchCursorOperator(orderDirection: BandSearchOrderDirection): 'lt' | 'gt' {
     if (orderDirection === 'desc') {
       return 'lt';
     }
@@ -572,6 +674,40 @@ export class BandsPrismaRepository implements BandsRepository {
         skillLevel: skill.skillLevel,
         isPrimary: skill.isPrimary,
       })),
+    };
+  }
+
+  private mapBandSearchListItem(
+    band: Prisma.BandGetPayload<{
+      include: {
+        bandMasterUser: {
+          include: {
+            profile: {
+              select: {
+                nickname: true;
+              };
+            };
+          };
+        };
+        _count: {
+          select: {
+            members: true;
+          };
+        };
+      };
+    }>,
+  ): BandSearchListItem {
+    return {
+      bandId: band.id,
+      name: band.name ?? '',
+      description: band.description,
+      visibility: band.visibility ?? true,
+      memberCount: band._count.members,
+      bandMaster: {
+        userId: band.bandMasterUserId,
+        nickname: band.bandMasterUser.profile?.nickname ?? '',
+      },
+      createdAt: band.createdAt.toISOString(),
     };
   }
 
