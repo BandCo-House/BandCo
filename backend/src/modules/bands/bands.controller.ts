@@ -8,6 +8,7 @@ import { CreateBandBodyDto } from './dto/create-band.dto';
 import { GetBandMembersQueryDto } from './dto/get-band-members-query.dto';
 import { GetMyBandsQueryDto } from './dto/get-my-bands-query.dto';
 import { SearchBandsQueryDto } from './dto/search-bands-query.dto';
+import { UpdateBandBodyDto } from './dto/update-band.dto';
 import { UpdateBandMemberRoleBodyDto } from './dto/update-band-member-role.dto';
 import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
@@ -15,6 +16,7 @@ import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
+import type { UpdateBandResult } from './types/update-band-result.type';
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
@@ -54,6 +56,18 @@ export class BandsController {
     const bands = await this.bandsService.searchBands(query);
 
     return createSuccessResponse('밴드 검색 완료', bands);
+  }
+
+  @Patch(':bandId')
+  @UseGuards(AccessTokenGuard)
+  async updateBand(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Body() input: UpdateBandBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateBandResult>> {
+    const updatedBand = await this.bandsService.updateBand(request.user.id, bandId, input);
+
+    return createSuccessResponse('밴드 정보 수정 완료', updatedBand);
   }
 
   @Get(':bandId/users')

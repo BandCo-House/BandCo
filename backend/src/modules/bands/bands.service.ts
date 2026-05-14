@@ -7,6 +7,7 @@ import type { CreateBandInput } from './dto/create-band.dto';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { SearchBandsQuery } from './dto/search-bands-query.dto';
+import type { UpdateBandInput } from './dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { GetBandMembersResult } from './types/band-member-list.type';
@@ -15,6 +16,7 @@ import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/c
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
+import type { UpdateBandResult } from './types/update-band-result.type';
 
 @Injectable()
 export class BandsService {
@@ -152,6 +154,39 @@ export class BandsService {
     this.validateBandSearchQuery(query);
 
     return this.bandsRepository.searchBands(query, tx);
+  }
+
+  /**
+   * 밴드장만 밴드의 기본 정보를 수정할 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 수정할 밴드 ID
+   * @param {UpdateBandInput} input - 검증이 끝난 밴드 수정 요청값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateBandResult>} 수정된 밴드 정보
+   */
+  async updateBand(requesterUserId: string, bandId: string, input: UpdateBandInput, tx?: Prisma.TransactionClient): Promise<UpdateBandResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<UpdateBandResult> => {
+      this.validateUpdateBandInput(input);
+
+      const band = await this.bandsRepository.findBandForUpdate(bandId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      if (band.bandMasterUserId !== requesterUserId) {
+        throw new ForbiddenException('밴드 정보 수정 권한이 없습니다.');
+      }
+
+      return this.bandsRepository.updateBand(bandId, input, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
   }
 
   /**
@@ -317,6 +352,21 @@ export class BandsService {
 
     if (Number.isNaN(cursorCreatedAt.getTime())) {
       throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
+    }
+  }
+
+  private validateUpdateBandInput(input: UpdateBandInput): void {
+    const hasName = input.name !== undefined;
+    const hasDescription = input.description !== undefined;
+    const hasVisibility = input.visibility !== undefined;
+    const hasCoverImgUrl = input.coverImgUrl !== undefined;
+
+    if (!hasName && !hasDescription && !hasVisibility && !hasCoverImgUrl) {
+      throw new BadRequestException('수정할 밴드 정보가 필요합니다.');
+    }
+
+    if (input.name !== undefined && input.name.trim().length === 0) {
+      throw new BadRequestException('밴드 이름은 비어 있을 수 없습니다.');
     }
   }
 }

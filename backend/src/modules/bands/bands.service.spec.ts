@@ -5,6 +5,7 @@ import { BandMemberRole } from 'src/generated/prisma';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { SearchBandsQuery } from './dto/search-bands-query.dto';
+import type { UpdateBandInput } from './dto/update-band.dto';
 import type { BandsRepository, CreateBandRepositoryInput } from './repositories/bands.repository';
 import { BandsService } from './bands.service';
 
@@ -29,6 +30,10 @@ function createBandsRepositoryStub(options?: {
     id: string;
     bandMasterUserId: string;
   } | null;
+  bandForUpdate?: {
+    id: string;
+    bandMasterUserId: string;
+  } | null;
   bandMemberForRoleUpdate?: {
     id: string;
     userId: string;
@@ -40,10 +45,12 @@ function createBandsRepositoryStub(options?: {
   onFindBandForRoleUpdate?: (tx: unknown) => void;
   onFindBandMemberForRoleUpdate?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
+  onFindBandForUpdate?: (tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
   onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
   onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
+  onUpdateBand?: (bandId: string, input: UpdateBandInput, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
 }): BandsRepository {
   return {
@@ -194,6 +201,30 @@ function createBandsRepositoryStub(options?: {
           },
           next: null,
         },
+      };
+    },
+    async findBandForUpdate(_bandId, tx) {
+      options?.onFindBandForUpdate?.(tx);
+
+      if (options?.bandForUpdate !== undefined) {
+        return options.bandForUpdate;
+      }
+
+      return {
+        id: 'band-001',
+        bandMasterUserId: BAND_MASTER_USER_ID,
+      };
+    },
+    async updateBand(bandId, input, tx) {
+      options?.onUpdateBand?.(bandId, input, tx);
+
+      return {
+        bandId,
+        name: input.name ?? '합주하자',
+        description: input.description ?? null,
+        visibility: input.visibility ?? true,
+        coverImgUrl: input.coverImgUrl ?? null,
+        updatedAt: '2026-04-10T12:00:00.000Z',
       };
     },
     async findBandForMemberRoleUpdate(_bandId, tx) {
@@ -756,6 +787,127 @@ describe('BandsService', () => {
       );
 
       expect(capturedTransaction).toBe(externalTx);
+    });
+  });
+
+  describe('updateBand', () => {
+    it('밴드장이 기본 정보를 수정할 수 있다', async () => {
+      let capturedInput: UpdateBandInput | undefined;
+      const repository = createBandsRepositoryStub({
+        onUpdateBand(_bandId, input) {
+          capturedInput = input;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.updateBand(BAND_MASTER_USER_ID, 'band-001', {
+        name: 'Rocking Stars',
+        description: '주 2회 합주하는 밴드',
+        visibility: true,
+        coverImgUrl: 'https://cdn.example.com/bands/cover.png',
+      });
+
+      expect(capturedInput?.name).toBe('Rocking Stars');
+      expect(result.bandId).toBe('band-001');
+      expect(result.name).toBe('Rocking Stars');
+      expect(result.description).toBe('주 2회 합주하는 밴드');
+      expect(result.coverImgUrl).toBe('https://cdn.example.com/bands/cover.png');
+    });
+
+    it('description과 coverImgUrl을 null로 제거할 수 있다', async () => {
+      let capturedInput: UpdateBandInput | undefined;
+      const repository = createBandsRepositoryStub({
+        onUpdateBand(_bandId, input) {
+          capturedInput = input;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.updateBand(BAND_MASTER_USER_ID, 'band-001', {
+        description: null,
+        coverImgUrl: null,
+      });
+
+      expect(capturedInput?.description).toBeNull();
+      expect(capturedInput?.coverImgUrl).toBeNull();
+      expect(result.description).toBeNull();
+      expect(result.coverImgUrl).toBeNull();
+    });
+
+    it('수정할 필드가 없으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.updateBand(BAND_MASTER_USER_ID, 'band-001', {})).rejects.toThrow(BadRequestException);
+    });
+
+    it('밴드 이름이 빈 문자열이면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.updateBand(BAND_MASTER_USER_ID, 'band-001', {
+          name: '',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForUpdate: null,
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.updateBand(BAND_MASTER_USER_ID, 'band-missing', {
+          name: 'Rocking Stars',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드장이 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForUpdate: {
+          id: 'band-001',
+          bandMasterUserId: '22222222-2222-4222-8222-222222222222',
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.updateBand(BAND_MASTER_USER_ID, 'band-001', {
+          name: 'Rocking Stars',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindBandForUpdate(tx) {
+          capturedTransactions.push(tx);
+        },
+        onUpdateBand(_bandId, _input, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.updateBand(
+        BAND_MASTER_USER_ID,
+        'band-001',
+        {
+          name: 'Rocking Stars',
+        },
+        externalTx as never,
+      );
+
+      expect(capturedTransactions).toHaveLength(2);
+      expect(capturedTransactions[0]).toBe(externalTx);
+      expect(capturedTransactions[1]).toBe(externalTx);
     });
   });
 

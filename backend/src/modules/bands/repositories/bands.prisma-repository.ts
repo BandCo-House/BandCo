@@ -5,6 +5,7 @@ import type { Prisma } from '../../../generated/prisma';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
+import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
@@ -12,6 +13,7 @@ import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/cr
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
+import type { UpdateBandResult } from '../types/update-band-result.type';
 
 import type { BandsRepository, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
 
@@ -292,6 +294,70 @@ export class BandsPrismaRepository implements BandsRepository {
         cursor,
         next,
       },
+    };
+  }
+
+  /**
+   * 밴드 수정 권한 판단에 필요한 최소 밴드 정보만 조회한다.
+   *
+   * @param {string} bandId - 수정할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; bandMasterUserId: string } | null>} 삭제되지 않은 밴드 정보
+   */
+  async findBandForUpdate(
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandMasterUserId: string;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        bandMasterUserId: true,
+      },
+    });
+  }
+
+  /**
+   * 밴드장 변경과 장르 변경을 제외한 기본 정보만 수정한다.
+   *
+   * @param {string} bandId - 수정할 밴드 ID
+   * @param {UpdateBandInput} input - Service 검증이 끝난 수정 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateBandResult>} 수정된 밴드 정보
+   */
+  async updateBand(bandId: string, input: UpdateBandInput, tx?: Prisma.TransactionClient): Promise<UpdateBandResult> {
+    const client = tx ?? this.prisma;
+
+    const updatedBand = await client.band.update({
+      where: {
+        id: bandId,
+      },
+      data: this.createUpdateBandData(input),
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        visibility: true,
+        coverImgUrl: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      bandId: updatedBand.id,
+      name: updatedBand.name ?? '',
+      description: updatedBand.description,
+      visibility: updatedBand.visibility ?? true,
+      coverImgUrl: updatedBand.coverImgUrl,
+      updatedAt: updatedBand.updatedAt.toISOString(),
     };
   }
 
@@ -618,6 +684,28 @@ export class BandsPrismaRepository implements BandsRepository {
         },
       ],
     };
+  }
+
+  private createUpdateBandData(input: UpdateBandInput): Prisma.BandUpdateInput {
+    const data: Prisma.BandUpdateInput = {};
+
+    if (input.name !== undefined) {
+      data.name = input.name;
+    }
+
+    if (input.description !== undefined) {
+      data.description = input.description;
+    }
+
+    if (input.visibility !== undefined) {
+      data.visibility = input.visibility;
+    }
+
+    if (input.coverImgUrl !== undefined) {
+      data.coverImgUrl = input.coverImgUrl;
+    }
+
+    return data;
   }
 
   private getCursorOperator(orderDirection: BandMemberOrderDirection): 'lt' | 'gt' {
