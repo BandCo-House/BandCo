@@ -4,10 +4,12 @@ import { PrismaService } from '../../database/prisma';
 import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import type { CreateBandInput } from './dto/create-band.dto';
+import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 
 @Injectable()
@@ -89,6 +91,20 @@ export class BandsService {
     }
 
     return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 인증 사용자가 멤버로 속한 삭제되지 않은 밴드 목록을 조회한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {GetMyBandsQuery} query - 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetMyBandsResult>} 내가 속한 밴드 목록
+   */
+  async getMyBands(userId: string, query: GetMyBandsQuery, tx?: Prisma.TransactionClient): Promise<GetMyBandsResult> {
+    this.validateCursorPair(query);
+
+    return this.bandsRepository.findMyBands(userId, query, tx);
   }
 
   /**
@@ -190,5 +206,24 @@ export class BandsService {
 
   private removeDuplicatedIds(ids: string[]): string[] {
     return [...new Set(ids)];
+  }
+
+  private validateCursorPair(query: GetMyBandsQuery): void {
+    const hasCursorCreatedAt = query.cursor__created_at !== undefined;
+    const hasCursorId = query.cursor__id !== undefined;
+
+    if (hasCursorCreatedAt !== hasCursorId) {
+      throw new BadRequestException('커서 조회에는 cursor__created_at과 cursor__id가 함께 필요합니다.');
+    }
+
+    if (query.cursor__created_at === undefined) {
+      return;
+    }
+
+    const cursorCreatedAt = new Date(query.cursor__created_at);
+
+    if (Number.isNaN(cursorCreatedAt.getTime())) {
+      throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
+    }
   }
 }

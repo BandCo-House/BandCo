@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
+import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 
 import type { BandsRepository, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
@@ -123,6 +125,64 @@ export class BandsPrismaRepository implements BandsRepository {
     return {
       bandId: deletedBand.id,
       deletedAt: (deletedBand.deletedAt ?? deletedAt).toISOString(),
+    };
+  }
+
+  /**
+   * 사용자가 멤버로 속한 삭제되지 않은 밴드를 고정 정렬 기준으로 조회한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {GetMyBandsQuery} query - 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetMyBandsResult>} 내가 속한 밴드 목록
+   */
+  async findMyBands(userId: string, query: GetMyBandsQuery, tx?: Prisma.TransactionClient): Promise<GetMyBandsResult> {
+    const client = tx ?? this.prisma;
+
+    const bands = await client.band.findMany({
+      where: {
+        deletedAt: null,
+        members: {
+          some: {
+            userId,
+          },
+        },
+        ...this.createMyBandsCursorWhere(query),
+      },
+      include: {
+        members: {
+          where: {
+            userId,
+          },
+          select: {
+            role: true,
+            joinedAt: true,
+          },
+          take: 1,
+        },
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: query.take,
+    });
+
+    const items = bands.flatMap(band => this.mapMyBandListItem(band));
+    const count = items.length;
+    const cursor = count > 0 ? { createdAt: items[0].createdAt, id: items[0].id } : null;
+    const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].id } : null;
+
+    return {
+      items,
+      meta: {
+        count,
+        take: query.take,
+        cursor,
+        next,
+      },
     };
   }
 
@@ -304,6 +364,67 @@ export class BandsPrismaRepository implements BandsRepository {
     });
 
     return users.map(user => user.id);
+  }
+
+  private createMyBandsCursorWhere(query: GetMyBandsQuery): Prisma.BandWhereInput {
+    if (query.cursor__created_at === undefined || query.cursor__id === undefined) {
+      return {};
+    }
+
+    const cursorCreatedAt = new Date(query.cursor__created_at);
+
+    return {
+      OR: [
+        {
+          createdAt: {
+            lt: cursorCreatedAt,
+          },
+        },
+        {
+          createdAt: cursorCreatedAt,
+          id: {
+            lt: query.cursor__id,
+          },
+        },
+      ],
+    };
+  }
+
+  private mapMyBandListItem(
+    band: Prisma.BandGetPayload<{
+      include: {
+        members: {
+          select: {
+            role: true;
+            joinedAt: true;
+          };
+        };
+        _count: {
+          select: {
+            members: true;
+          };
+        };
+      };
+    }>,
+  ): MyBandListItem[] {
+    const myMember = band.members[0];
+
+    if (myMember === undefined) {
+      return [];
+    }
+
+    return [
+      {
+        id: band.id,
+        name: band.name ?? '',
+        description: band.description,
+        visibility: band.visibility ?? true,
+        myRole: myMember.role,
+        joinedAt: myMember.joinedAt.toISOString(),
+        createdAt: band.createdAt.toISOString(),
+        memberCount: band._count.members,
+      },
+    ];
   }
 
   private mapGenres(

@@ -1,13 +1,15 @@
-import { Body, Controller, Delete, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 import type { User } from '../../generated/prisma';
 
 import { CreateBandBodyDto } from './dto/create-band.dto';
+import { GetMyBandsQueryDto } from './dto/get-my-bands-query.dto';
 import { UpdateBandMemberRoleBodyDto } from './dto/update-band-member-role.dto';
 import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import { BandsService } from './bands.service';
 
@@ -33,6 +35,14 @@ export class BandsController {
     const deletedBand = await this.bandsService.deleteBand(request.user.id, bandId);
 
     return createSuccessResponse('밴드가 삭제되었습니다.', deletedBand);
+  }
+
+  @Get('me')
+  @UseGuards(AccessTokenGuard)
+  async getMyBands(@Req() request: AuthenticatedRequest, @Query() query: GetMyBandsQueryDto): Promise<ApiSuccessResponse<GetMyBandsResult>> {
+    const bands = await this.bandsService.getMyBands(request.user.id, query);
+
+    return createSuccessResponse('내 밴드 목록 조회 성공', bands);
   }
 
   @Patch(':bandId/users/:userId')

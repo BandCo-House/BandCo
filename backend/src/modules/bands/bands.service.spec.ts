@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import type { PrismaService } from 'src/database/prisma';
 import { BandMemberRole } from 'src/generated/prisma';
 
+import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { BandsRepository, CreateBandRepositoryInput } from './repositories/bands.repository';
 import { BandsService } from './bands.service';
 
@@ -33,6 +34,7 @@ function createBandsRepositoryStub(options?: {
   onFindBandMemberForRoleUpdate?: (tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
+  onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
 }): BandsRepository {
   return {
@@ -80,6 +82,33 @@ function createBandsRepositoryStub(options?: {
       return {
         id: 'band-001',
         bandMasterUserId: BAND_MASTER_USER_ID,
+      };
+    },
+    async findMyBands(userId, query, tx) {
+      options?.onFindMyBands?.(userId, query, tx);
+
+      return {
+        items: [
+          {
+            id: 'band-001',
+            name: '합주하자',
+            description: '주 1회 합주',
+            visibility: true,
+            myRole: BandMemberRole.BM,
+            joinedAt: '2026-03-01T12:10:00.000Z',
+            createdAt: '2026-03-01T12:00:00.000Z',
+            memberCount: 20,
+          },
+        ],
+        meta: {
+          count: 1,
+          take: query.take,
+          cursor: {
+            createdAt: '2026-03-01T12:00:00.000Z',
+            id: 'band-001',
+          },
+          next: null,
+        },
       };
     },
     async findBandForMemberRoleUpdate(_bandId, tx) {
@@ -343,6 +372,79 @@ describe('BandsService', () => {
       expect(capturedTransactions).toHaveLength(2);
       expect(capturedTransactions[0]).toBe(externalTx);
       expect(capturedTransactions[1]).toBe(externalTx);
+    });
+  });
+
+  describe('getMyBands', () => {
+    it('인증 사용자가 속한 밴드 목록을 조회한다', async () => {
+      let capturedUserId: string | undefined;
+      let capturedQuery: GetMyBandsQuery | undefined;
+      const query: GetMyBandsQuery = {
+        take: 20,
+      };
+      const repository = createBandsRepositoryStub({
+        onFindMyBands(userId, inputQuery) {
+          capturedUserId = userId;
+          capturedQuery = inputQuery;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.getMyBands(BAND_MASTER_USER_ID, query);
+
+      expect(capturedUserId).toBe(BAND_MASTER_USER_ID);
+      expect(capturedQuery).toBe(query);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].myRole).toBe(BandMemberRole.BM);
+      expect(result.meta.take).toBe(20);
+    });
+
+    it('커서 날짜와 ID는 함께 입력해야 한다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getMyBands(BAND_MASTER_USER_ID, {
+          take: 20,
+          cursor__created_at: '2026-03-01T12:00:00.000Z',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('커서 날짜가 유효하지 않으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.getMyBands(BAND_MASTER_USER_ID, {
+          take: 20,
+          cursor__created_at: 'invalid-date',
+          cursor__id: '11111111-1111-4111-8111-111111111111',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('외부 transaction client를 repository로 전달한다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      let capturedTransaction: unknown;
+      const repository = createBandsRepositoryStub({
+        onFindMyBands(_userId, _query, tx) {
+          capturedTransaction = tx;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.getMyBands(
+        BAND_MASTER_USER_ID,
+        {
+          take: 20,
+        },
+        externalTx as never,
+      );
+
+      expect(capturedTransaction).toBe(externalTx);
     });
   });
 
