@@ -14,6 +14,7 @@ import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import type { UpdateBandResult } from './types/update-band-result.type';
@@ -33,6 +34,14 @@ export class BandsController {
     const createdBand = await this.bandsService.createBand(request.user.id, input);
 
     return createSuccessResponse('밴드 생성 성공', createdBand);
+  }
+
+  @Delete(':bandId/me')
+  @UseGuards(AccessTokenGuard)
+  async leaveBand(@Req() request: AuthenticatedRequest, @Param('bandId') bandId: string): Promise<ApiSuccessResponse<LeaveBandResult>> {
+    const leftBand = await this.bandsService.leaveBand(request.user.id, bandId);
+
+    return createSuccessResponse('밴드 나가기 완료', leftBand);
   }
 
   @Delete(':bandId')

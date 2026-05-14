@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
-import type { Prisma } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
@@ -11,6 +11,7 @@ import type { BandMemberListItem, GetBandMembersResult } from '../types/band-mem
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
@@ -131,6 +132,83 @@ export class BandsPrismaRepository implements BandsRepository {
     return {
       bandId: deletedBand.id,
       deletedAt: (deletedBand.deletedAt ?? deletedAt).toISOString(),
+    };
+  }
+
+  /**
+   * 밴드 나가기 정책 판단에 필요한 밴드와 요청자 멤버 정보를 조회한다.
+   *
+   * @param {string} bandId - 나갈 밴드 ID
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; member: { id: string; role: BandMemberRole } | null } | null>} 삭제되지 않은 밴드와 요청자 멤버 정보
+   */
+  async findBandForLeave(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    member: {
+      id: string;
+      role: BandMemberRole;
+    } | null;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    const band = await client.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        members: {
+          where: {
+            userId,
+          },
+          select: {
+            id: true,
+            role: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (band === null) {
+      return null;
+    }
+
+    return {
+      id: band.id,
+      member: band.members[0] ?? null,
+    };
+  }
+
+  /**
+   * BandMember에는 탈퇴 시각 컬럼이 없으므로 멤버십 row를 삭제한다.
+   *
+   * @param {string} bandMemberId - 삭제할 밴드 멤버 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<LeaveBandResult>} 삭제된 멤버십의 밴드와 사용자 ID
+   */
+  async leaveBand(bandMemberId: string, tx?: Prisma.TransactionClient): Promise<LeaveBandResult> {
+    const client = tx ?? this.prisma;
+
+    const deletedMember = await client.bandMember.delete({
+      where: {
+        id: bandMemberId,
+      },
+      select: {
+        bandId: true,
+        userId: true,
+      },
+    });
+
+    return {
+      bandId: deletedMember.bandId,
+      userId: deletedMember.userId,
     };
   }
 

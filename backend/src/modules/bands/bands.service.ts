@@ -14,6 +14,7 @@ import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import type { UpdateBandResult } from './types/update-band-result.type';
@@ -90,6 +91,40 @@ export class BandsService {
       }
 
       return this.bandsRepository.deleteBand(bandId, new Date(), client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드장은 위임 없이 나갈 수 없고, 일반 밴드 멤버만 자신의 멤버십을 삭제할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} bandId - 나갈 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<LeaveBandResult>} 밴드 나가기 처리 결과
+   */
+  async leaveBand(userId: string, bandId: string, tx?: Prisma.TransactionClient): Promise<LeaveBandResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<LeaveBandResult> => {
+      const band = await this.bandsRepository.findBandForLeave(bandId, userId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      if (band.member === null) {
+        throw new ForbiddenException('밴드 멤버가 아닙니다.');
+      }
+
+      if (band.member.role === BandMemberRole.BM) {
+        throw new ForbiddenException('밴드장은 이 API로 밴드를 나갈 수 없습니다.');
+      }
+
+      return this.bandsRepository.leaveBand(band.member.id, client);
     };
 
     if (tx !== undefined) {

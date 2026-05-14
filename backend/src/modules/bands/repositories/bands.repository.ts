@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { CreateBandInput } from '../dto/create-band.dto';
 import type { GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
@@ -9,6 +9,7 @@ import type { GetBandMembersResult } from '../types/band-member-list.type';
 import type { SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationSuccessItem, CreateBandResult } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult } from '../types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
@@ -33,6 +34,18 @@ export interface CreateBandRepositoryResult extends CreateBandResult {
 export interface BandsRepository {
   createBand(input: CreateBandRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandRepositoryResult>;
   deleteBand(bandId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteBandResult>;
+  findBandForLeave(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    member: {
+      id: string;
+      role: BandMemberRole;
+    } | null;
+  } | null>;
+  leaveBand(bandMemberId: string, tx?: Prisma.TransactionClient): Promise<LeaveBandResult>;
   findBandForMemberList(
     bandId: string,
     requesterUserId: string,

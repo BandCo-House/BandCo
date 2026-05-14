@@ -22,6 +22,13 @@ function createBandsRepositoryStub(options?: {
     id: string;
     bandMasterUserId: string;
   } | null;
+  bandForLeave?: {
+    id: string;
+    member: {
+      id: string;
+      role: BandMemberRole;
+    } | null;
+  } | null;
   bandForMemberList?: {
     id: string;
     requesterMemberId: string | null;
@@ -41,6 +48,7 @@ function createBandsRepositoryStub(options?: {
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
   onFindBandForDelete?: (tx: unknown) => void;
+  onFindBandForLeave?: (tx: unknown) => void;
   onFindBandForMemberList?: (bandId: string, requesterUserId: string, tx: unknown) => void;
   onFindBandForRoleUpdate?: (tx: unknown) => void;
   onFindBandMemberForRoleUpdate?: (tx: unknown) => void;
@@ -49,6 +57,7 @@ function createBandsRepositoryStub(options?: {
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
   onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
+  onLeaveBand?: (bandMemberId: string, tx: unknown) => void;
   onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
   onUpdateBand?: (bandId: string, input: UpdateBandInput, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
@@ -98,6 +107,29 @@ function createBandsRepositoryStub(options?: {
       return {
         id: 'band-001',
         bandMasterUserId: BAND_MASTER_USER_ID,
+      };
+    },
+    async findBandForLeave(_bandId, _userId, tx) {
+      options?.onFindBandForLeave?.(tx);
+
+      if (options?.bandForLeave !== undefined) {
+        return options.bandForLeave;
+      }
+
+      return {
+        id: 'band-001',
+        member: {
+          id: 'band-member-001',
+          role: BandMemberRole.MEMBER,
+        },
+      };
+    },
+    async leaveBand(bandMemberId, tx) {
+      options?.onLeaveBand?.(bandMemberId, tx);
+
+      return {
+        bandId: 'band-001',
+        userId: INVITEE_USER_ID,
       };
     },
     async findBandForMemberList(bandId, requesterUserId, tx) {
@@ -484,6 +516,84 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
 
       await service.deleteBand(BAND_MASTER_USER_ID, 'band-001', externalTx as never);
+
+      expect(capturedTransactions).toHaveLength(2);
+      expect(capturedTransactions[0]).toBe(externalTx);
+      expect(capturedTransactions[1]).toBe(externalTx);
+    });
+  });
+
+  describe('leaveBand', () => {
+    it('일반 멤버가 밴드를 나가면 멤버십을 삭제한다', async () => {
+      let capturedBandMemberId: string | undefined;
+      const repository = createBandsRepositoryStub({
+        onLeaveBand(bandMemberId) {
+          capturedBandMemberId = bandMemberId;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.leaveBand(INVITEE_USER_ID, 'band-001');
+
+      expect(capturedBandMemberId).toBe('band-member-001');
+      expect(result).toEqual({
+        bandId: 'band-001',
+        userId: INVITEE_USER_ID,
+      });
+    });
+
+    it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForLeave: null,
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.leaveBand(INVITEE_USER_ID, 'band-missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드 멤버가 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForLeave: {
+          id: 'band-001',
+          member: null,
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.leaveBand(INVITEE_USER_ID, 'band-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('밴드장은 이 API로 밴드를 나갈 수 없다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForLeave: {
+          id: 'band-001',
+          member: {
+            id: 'band-member-001',
+            role: BandMemberRole.BM,
+          },
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.leaveBand(BAND_MASTER_USER_ID, 'band-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindBandForLeave(tx) {
+          capturedTransactions.push(tx);
+        },
+        onLeaveBand(_bandMemberId, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.leaveBand(INVITEE_USER_ID, 'band-001', externalTx as never);
 
       expect(capturedTransactions).toHaveLength(2);
       expect(capturedTransactions[0]).toBe(externalTx);
