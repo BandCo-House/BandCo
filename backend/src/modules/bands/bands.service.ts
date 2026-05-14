@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
@@ -6,6 +6,7 @@ import type { Prisma } from '../../generated/prisma';
 import type { CreateBandInput } from './dto/create-band.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
+import type { DeleteBandResult } from './types/delete-band-result.type';
 
 @Injectable()
 export class BandsService {
@@ -49,6 +50,36 @@ export class BandsService {
           },
         },
       };
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 하위 데이터를 보존하기 위해 deletedAt을 채워 삭제 상태로 표시한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} bandId - 삭제할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteBandResult>} 삭제 처리 결과
+   */
+  async deleteBand(userId: string, bandId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<DeleteBandResult> => {
+      const band = await this.bandsRepository.findBandForDelete(bandId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      if (band.bandMasterUserId !== userId) {
+        throw new ForbiddenException('밴드 삭제 권한이 없습니다.');
+      }
+
+      return this.bandsRepository.deleteBand(bandId, new Date(), client);
     };
 
     if (tx !== undefined) {

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
+import type { DeleteBandResult } from '../types/delete-band-result.type';
 
 import type { BandsRepository, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
 
@@ -91,6 +92,64 @@ export class BandsPrismaRepository implements BandsRepository {
         },
       },
     };
+  }
+
+  /**
+   * 하위 데이터를 보존해야 하므로 Band.deletedAt만 채워 soft delete 한다.
+   *
+   * @param {string} bandId - 삭제할 밴드 ID
+   * @param {Date} deletedAt - 삭제 처리 시각
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteBandResult>} 삭제 처리 결과
+   */
+  async deleteBand(bandId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteBandResult> {
+    const client = tx ?? this.prisma;
+
+    const deletedBand = await client.band.update({
+      where: {
+        id: bandId,
+      },
+      data: {
+        deletedAt,
+      },
+      select: {
+        id: true,
+        deletedAt: true,
+      },
+    });
+
+    return {
+      bandId: deletedBand.id,
+      deletedAt: (deletedBand.deletedAt ?? deletedAt).toISOString(),
+    };
+  }
+
+  /**
+   * 삭제 가능 여부 판단에 필요한 최소 밴드 정보만 조회한다.
+   *
+   * @param {string} bandId - 확인할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; bandMasterUserId: string } | null>} 삭제되지 않은 밴드 정보
+   */
+  async findBandForDelete(
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandMasterUserId: string;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        bandMasterUserId: true,
+      },
+    });
   }
 
   /**

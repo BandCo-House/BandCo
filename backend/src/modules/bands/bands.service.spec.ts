@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import test from 'node:test';
 
 import type { PrismaService } from '../../database/prisma';
@@ -17,7 +17,13 @@ const MISSING_USER_ID = '55555555-5555-4555-8555-555555555555';
 function createBandsRepositoryStub(options?: {
   existingGenreIds?: string[];
   existingUserIds?: string[];
+  bandForDelete?: {
+    id: string;
+    bandMasterUserId: string;
+  } | null;
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
+  onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
+  onFindBandForDelete?: (tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
 }): BandsRepository {
@@ -46,6 +52,26 @@ function createBandsRepositoryStub(options?: {
             failed: [],
           },
         },
+      };
+    },
+    async deleteBand(bandId, deletedAt, tx) {
+      options?.onDeleteBand?.(bandId, deletedAt, tx);
+
+      return {
+        bandId,
+        deletedAt: deletedAt.toISOString(),
+      };
+    },
+    async findBandForDelete(_bandId, tx) {
+      options?.onFindBandForDelete?.(tx);
+
+      if (options?.bandForDelete !== undefined) {
+        return options.bandForDelete;
+      }
+
+      return {
+        id: 'band-001',
+        bandMasterUserId: BAND_MASTER_USER_ID,
       };
     },
     async findExistingGenreIds(genreIds, tx) {
@@ -215,4 +241,62 @@ test('밴드 생성 서비스는 외부 transaction client가 있으면 새 tran
   assert.equal(capturedTransactions[0], externalTx);
   assert.equal(capturedTransactions[1], externalTx);
   assert.equal(capturedTransactions[2], externalTx);
+});
+
+test('밴드 삭제 서비스는 밴드장이 요청하면 deletedAt을 설정한다', async () => {
+  let capturedDeletedAt: Date | undefined;
+  const repository = createBandsRepositoryStub({
+    onDeleteBand(_bandId, deletedAt) {
+      capturedDeletedAt = deletedAt;
+    },
+  });
+  const service = new BandsService(repository, createPrismaServiceStub());
+
+  const result = await service.deleteBand(BAND_MASTER_USER_ID, 'band-001');
+
+  assert.equal(result.bandId, 'band-001');
+  assert.equal(result.deletedAt, capturedDeletedAt?.toISOString());
+});
+
+test('밴드 삭제 서비스는 밴드가 없거나 이미 삭제되었으면 예외를 던진다', async () => {
+  const repository = createBandsRepositoryStub({
+    bandForDelete: null,
+  });
+  const service = new BandsService(repository, createPrismaServiceStub());
+
+  await assert.rejects(async () => service.deleteBand(BAND_MASTER_USER_ID, 'band-missing'), NotFoundException);
+});
+
+test('밴드 삭제 서비스는 밴드장이 아니면 예외를 던진다', async () => {
+  const repository = createBandsRepositoryStub({
+    bandForDelete: {
+      id: 'band-001',
+      bandMasterUserId: '22222222-2222-4222-8222-222222222222',
+    },
+  });
+  const service = new BandsService(repository, createPrismaServiceStub());
+
+  await assert.rejects(async () => service.deleteBand(BAND_MASTER_USER_ID, 'band-001'), ForbiddenException);
+});
+
+test('밴드 삭제 서비스는 외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+  const externalTx = {
+    transactionClient: true,
+  };
+  const capturedTransactions: unknown[] = [];
+  const repository = createBandsRepositoryStub({
+    onFindBandForDelete(tx) {
+      capturedTransactions.push(tx);
+    },
+    onDeleteBand(_bandId, _deletedAt, tx) {
+      capturedTransactions.push(tx);
+    },
+  });
+  const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+  await service.deleteBand(BAND_MASTER_USER_ID, 'band-001', externalTx as never);
+
+  assert.equal(capturedTransactions.length, 2);
+  assert.equal(capturedTransactions[0], externalTx);
+  assert.equal(capturedTransactions[1], externalTx);
 });
