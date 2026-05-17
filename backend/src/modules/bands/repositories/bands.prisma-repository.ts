@@ -498,14 +498,14 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 권한을 변경할 밴드 멤버를 밴드와 사용자 기준으로 조회한다.
+   * 밴드와 사용자 기준으로 밴드 멤버를 조회한다.
    *
    * @param {string} bandId - 대상 밴드 ID
    * @param {string} userId - 대상 사용자 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<{ id: string; userId: string } | null>} 밴드 멤버 정보
    */
-  async findBandMemberForRoleUpdate(
+  async findBandMemberByBandIdAndUserId(
     bandId: string,
     userId: string,
     tx?: Prisma.TransactionClient,

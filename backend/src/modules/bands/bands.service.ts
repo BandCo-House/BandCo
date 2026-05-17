@@ -258,7 +258,7 @@ export class BandsService {
         throw new ForbiddenException('밴드 멤버 권한 변경 권한이 없습니다.');
       }
 
-      const member = await this.bandsRepository.findBandMemberForRoleUpdate(bandId, targetUserId, client);
+      const member = await this.bandsRepository.findBandMemberByBandIdAndUserId(bandId, targetUserId, client);
 
       if (member === null) {
         throw new NotFoundException('요청한 밴드 멤버를 찾을 수 없습니다.');

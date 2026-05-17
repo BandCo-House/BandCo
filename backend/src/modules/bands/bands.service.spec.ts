@@ -42,7 +42,7 @@ function createBandsRepositoryStub(options?: {
   onFindActiveBandById?: (tx: unknown) => void;
   onFindBandForLeave?: (tx: unknown) => void;
   onFindBandForMemberList?: (bandId: string, requesterUserId: string, tx: unknown) => void;
-  onFindBandMemberForRoleUpdate?: (tx: unknown) => void;
+  onFindBandMemberByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
@@ -237,8 +237,8 @@ function createBandsRepositoryStub(options?: {
         updatedAt: '2026-04-10T12:00:00.000Z',
       };
     },
-    async findBandMemberForRoleUpdate(_bandId, userId, tx) {
-      options?.onFindBandMemberForRoleUpdate?.(tx);
+    async findBandMemberByBandIdAndUserId(_bandId, userId, tx) {
+      options?.onFindBandMemberByBandIdAndUserId?.(tx);
 
       if (options?.bandMemberForRoleUpdate !== undefined) {
         return options.bandMemberForRoleUpdate;
@@ -1094,7 +1094,7 @@ describe('BandsService', () => {
         onFindActiveBandById(tx) {
           capturedTransactions.push(tx);
         },
-        onFindBandMemberForRoleUpdate(tx) {
+        onFindBandMemberByBandIdAndUserId(tx) {
           capturedTransactions.push(tx);
         },
         onUpdateBandMemberRole(_bandMemberId, _role, tx) {

@@ -65,7 +65,7 @@ export interface BandsRepository {
     bandMasterUserId: string;
   } | null>;
   updateBand(bandId: string, input: UpdateBandInput, tx?: Prisma.TransactionClient): Promise<UpdateBandResult>;
-  findBandMemberForRoleUpdate(
+  findBandMemberByBandIdAndUserId(
     bandId: string,
     userId: string,
     tx?: Prisma.TransactionClient,
