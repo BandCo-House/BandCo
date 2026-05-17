@@ -342,8 +342,8 @@ describe('BandsService', () => {
         description: '주 1회 합주하는 밴드입니다.',
         visibility: true,
         coverImgUrl: 'https://cdn.example.com/bands/cover.png',
-        genreIds: [ROCK_GENRE_ID, ROCK_GENRE_ID, JAZZ_GENRE_ID],
-        inviteeUserIds: [INVITEE_USER_ID, INVITEE_USER_ID],
+        genreIds: [ROCK_GENRE_ID, JAZZ_GENRE_ID],
+        inviteeUserIds: [INVITEE_USER_ID],
       });
 
       expect(capturedInput?.bandMasterUserId).toBe(BAND_MASTER_USER_ID);
@@ -353,6 +353,32 @@ describe('BandsService', () => {
       expect(result.band.genres).toHaveLength(2);
       expect(result.band.invitations.success).toHaveLength(1);
       expect(result.band.invitations.failed).toHaveLength(0);
+    });
+
+    it('중복된 장르가 있으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.createBand(BAND_MASTER_USER_ID, {
+          name: '합주하자',
+          visibility: true,
+          genreIds: [ROCK_GENRE_ID, ROCK_GENRE_ID],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('중복된 초대 대상이 있으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.createBand(BAND_MASTER_USER_ID, {
+          name: '합주하자',
+          visibility: true,
+          inviteeUserIds: [INVITEE_USER_ID, INVITEE_USER_ID],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('존재하지 않는 장르가 있으면 예외를 던진다', async () => {

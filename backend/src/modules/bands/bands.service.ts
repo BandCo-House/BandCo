@@ -36,10 +36,12 @@ export class BandsService {
    */
   async createBand(bandMasterUserId: string, input: CreateBandInput, tx?: Prisma.TransactionClient): Promise<CreateBandResult> {
     const run = async (client: Prisma.TransactionClient): Promise<CreateBandResult> => {
-      const genreIds = this.removeDuplicatedIds(input.genreIds ?? []);
+      const genreIds = input.genreIds ?? [];
+      this.validateDuplicatedIds(genreIds, '중복된 장르가 포함되어 있습니다.');
       await this.validateGenres(genreIds, client);
 
-      const inviteeUserIds = this.removeDuplicatedIds(input.inviteeUserIds ?? []);
+      const inviteeUserIds = input.inviteeUserIds ?? [];
+      this.validateDuplicatedIds(inviteeUserIds, '중복된 초대 대상이 포함되어 있습니다.');
       const invitationTarget = await this.createInvitationTarget(bandMasterUserId, inviteeUserIds, client);
 
       const result = await this.bandsRepository.createBand(
@@ -321,8 +323,12 @@ export class BandsService {
     };
   }
 
-  private removeDuplicatedIds(ids: string[]): string[] {
-    return [...new Set(ids)];
+  private validateDuplicatedIds(ids: string[], message: string): void {
+    const uniqueIds = new Set(ids);
+
+    if (uniqueIds.size !== ids.length) {
+      throw new BadRequestException(message);
+    }
   }
 
   private validateCursorPair(query: GetMyBandsQuery): void {
