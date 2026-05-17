@@ -213,53 +213,6 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 밴드 존재 여부와 요청자의 밴드 멤버 여부 판단에 필요한 정보만 조회한다.
-   *
-   * @param {string} bandId - 조회할 밴드 ID
-   * @param {string} requesterUserId - 인증된 사용자 ID
-   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; requesterMemberId: string | null } | null>} 삭제되지 않은 밴드와 요청자 멤버 ID
-   */
-  async findBandForMemberList(
-    bandId: string,
-    requesterUserId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    requesterMemberId: string | null;
-  } | null> {
-    const client = tx ?? this.prisma;
-
-    const band = await client.band.findFirst({
-      where: {
-        id: bandId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        members: {
-          where: {
-            userId: requesterUserId,
-          },
-          select: {
-            id: true,
-          },
-          take: 1,
-        },
-      },
-    });
-
-    if (band === null) {
-      return null;
-    }
-
-    return {
-      id: band.id,
-      requesterMemberId: band.members[0]?.id ?? null,
-    };
-  }
-
-  /**
    * 밴드 멤버를 가입 시점과 ID 기준으로 정렬해 조회한다.
    *
    * @param {string} bandId - 조회할 밴드 ID

@@ -46,14 +46,6 @@ export interface BandsRepository {
     } | null;
   } | null>;
   leaveBand(bandMemberId: string, tx?: Prisma.TransactionClient): Promise<LeaveBandResult>;
-  findBandForMemberList(
-    bandId: string,
-    requesterUserId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    requesterMemberId: string | null;
-  } | null>;
   findBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult>;
   findMyBands(userId: string, query: GetMyBandsQuery, tx?: Prisma.TransactionClient): Promise<GetMyBandsResult>;
   searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult>;

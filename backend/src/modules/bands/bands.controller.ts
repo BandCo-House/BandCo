@@ -80,13 +80,8 @@ export class BandsController {
   }
 
   @Get(':bandId/users')
-  @UseGuards(AccessTokenGuard)
-  async getBandMembers(
-    @Req() request: AuthenticatedRequest,
-    @Param('bandId') bandId: string,
-    @Query() query: GetBandMembersQueryDto,
-  ): Promise<ApiSuccessResponse<GetBandMembersResult>> {
-    const members = await this.bandsService.getBandMembers(request.user.id, bandId, query);
+  async getBandMembers(@Param('bandId') bandId: string, @Query() query: GetBandMembersQueryDto): Promise<ApiSuccessResponse<GetBandMembersResult>> {
+    const members = await this.bandsService.getBandMembers(bandId, query);
 
     return createSuccessResponse('밴드 내 멤버 조회 완료', members);
   }

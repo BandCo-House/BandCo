@@ -29,10 +29,6 @@ function createBandsRepositoryStub(options?: {
       role: BandMemberRole;
     } | null;
   } | null;
-  bandForMemberList?: {
-    id: string;
-    requesterMemberId: string | null;
-  } | null;
   bandMemberForRoleUpdate?: {
     id: string;
     userId: string;
@@ -41,7 +37,6 @@ function createBandsRepositoryStub(options?: {
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
   onFindActiveBandById?: (tx: unknown) => void;
   onFindBandForLeave?: (tx: unknown) => void;
-  onFindBandForMemberList?: (bandId: string, requesterUserId: string, tx: unknown) => void;
   onFindBandMemberByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
@@ -120,18 +115,6 @@ function createBandsRepositoryStub(options?: {
       return {
         bandId: 'band-001',
         userId: INVITEE_USER_ID,
-      };
-    },
-    async findBandForMemberList(bandId, requesterUserId, tx) {
-      options?.onFindBandForMemberList?.(bandId, requesterUserId, tx);
-
-      if (options?.bandForMemberList !== undefined) {
-        return options.bandForMemberList;
-      }
-
-      return {
-        id: bandId,
-        requesterMemberId: 'band-member-requester',
       };
     },
     async findBandMembers(bandId, query, tx) {
@@ -667,7 +650,7 @@ describe('BandsService', () => {
   });
 
   describe('getBandMembers', () => {
-    it('밴드 멤버가 요청하면 밴드 멤버 목록을 조회한다', async () => {
+    it('삭제되지 않은 밴드의 멤버 목록을 조회한다', async () => {
       let capturedBandId: string | undefined;
       let capturedQuery: GetBandMembersQuery | undefined;
       const query: GetBandMembersQuery = {
@@ -683,7 +666,7 @@ describe('BandsService', () => {
       });
       const service = new BandsService(repository, createPrismaServiceStub());
 
-      const result = await service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', query);
+      const result = await service.getBandMembers('band-001', query);
 
       expect(capturedBandId).toBe('band-001');
       expect(capturedQuery).toBe(query);
@@ -695,12 +678,12 @@ describe('BandsService', () => {
 
     it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForMemberList: null,
+        activeBand: null,
       });
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(
-        service.getBandMembers(BAND_MASTER_USER_ID, 'band-missing', {
+        service.getBandMembers('band-missing', {
           order__joined_at: 'desc',
           order__id: 'desc',
           take: 20,
@@ -708,30 +691,12 @@ describe('BandsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('밴드 멤버가 아니면 예외를 던진다', async () => {
-      const repository = createBandsRepositoryStub({
-        bandForMemberList: {
-          id: 'band-001',
-          requesterMemberId: null,
-        },
-      });
-      const service = new BandsService(repository, createPrismaServiceStub());
-
-      await expect(
-        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
-          order__joined_at: 'desc',
-          order__id: 'desc',
-          take: 20,
-        }),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
     it('정렬 방향이 서로 다르면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub();
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(
-        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+        service.getBandMembers('band-001', {
           order__joined_at: 'desc',
           order__id: 'asc',
           take: 20,
@@ -744,7 +709,7 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(
-        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+        service.getBandMembers('band-001', {
           order__joined_at: 'desc',
           order__id: 'desc',
           take: 20,
@@ -758,7 +723,7 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(
-        service.getBandMembers(BAND_MASTER_USER_ID, 'band-001', {
+        service.getBandMembers('band-001', {
           order__joined_at: 'desc',
           order__id: 'desc',
           take: 20,
@@ -774,7 +739,7 @@ describe('BandsService', () => {
       };
       const capturedTransactions: unknown[] = [];
       const repository = createBandsRepositoryStub({
-        onFindBandForMemberList(_bandId, _requesterUserId, tx) {
+        onFindActiveBandById(tx) {
           capturedTransactions.push(tx);
         },
         onFindBandMembers(_bandId, _query, tx) {
@@ -784,7 +749,6 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
 
       await service.getBandMembers(
-        BAND_MASTER_USER_ID,
         'band-001',
         {
           order__joined_at: 'desc',

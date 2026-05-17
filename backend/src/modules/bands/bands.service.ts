@@ -151,30 +151,20 @@ export class BandsService {
   }
 
   /**
-   * 밴드 멤버만 같은 밴드의 멤버 목록을 조회할 수 있다.
+   * MVP에서는 가입 전 미리보기를 위해 삭제되지 않은 밴드의 멤버 목록을 공개 조회한다.
    *
-   * @param {string} requesterUserId - 인증된 사용자 ID
    * @param {string} bandId - 조회할 밴드 ID
    * @param {GetBandMembersQuery} query - 정렬과 커서 기반 목록 조회 조건
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<GetBandMembersResult>} 밴드 멤버 목록
    */
-  async getBandMembers(
-    requesterUserId: string,
-    bandId: string,
-    query: GetBandMembersQuery,
-    tx?: Prisma.TransactionClient,
-  ): Promise<GetBandMembersResult> {
+  async getBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult> {
     this.validateBandMemberListQuery(query);
 
-    const band = await this.bandsRepository.findBandForMemberList(bandId, requesterUserId, tx);
+    const band = await this.bandsRepository.findActiveBandById(bandId, tx);
 
     if (band === null) {
       throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
-    }
-
-    if (band.requesterMemberId === null) {
-      throw new ForbiddenException('밴드 멤버 조회 권한이 없습니다.');
     }
 
     return this.bandsRepository.findBandMembers(bandId, query, tx);
