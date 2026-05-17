@@ -1007,6 +1007,17 @@ describe('BandsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('밴드장의 권한 변경을 허용하지 않는다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.updateBandMemberRole(BAND_MASTER_USER_ID, 'band-001', BAND_MASTER_USER_ID, {
+          role: BandMemberRole.ADMIN,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
         activeBand: null,

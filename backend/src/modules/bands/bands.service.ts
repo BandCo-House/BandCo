@@ -248,6 +248,10 @@ export class BandsService {
         throw new ForbiddenException('밴드 멤버 권한 변경 권한이 없습니다.');
       }
 
+      if (targetUserId === band.bandMasterUserId) {
+        throw new BadRequestException('밴드장 권한은 이 API에서 변경할 수 없습니다.');
+      }
+
       const member = await this.bandsRepository.findBandMemberByBandIdAndUserId(bandId, targetUserId, client);
 
       if (member === null) {
