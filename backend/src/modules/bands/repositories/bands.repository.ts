@@ -57,7 +57,7 @@ export interface BandsRepository {
   findBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult>;
   findMyBands(userId: string, query: GetMyBandsQuery, tx?: Prisma.TransactionClient): Promise<GetMyBandsResult>;
   searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult>;
-  findBandForUpdate(
+  findActiveBandById(
     bandId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{
@@ -65,13 +65,6 @@ export interface BandsRepository {
     bandMasterUserId: string;
   } | null>;
   updateBand(bandId: string, input: UpdateBandInput, tx?: Prisma.TransactionClient): Promise<UpdateBandResult>;
-  findBandForMemberRoleUpdate(
-    bandId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    bandMasterUserId: string;
-  } | null>;
   findBandMemberForRoleUpdate(
     bandId: string,
     userId: string,
@@ -79,13 +72,6 @@ export interface BandsRepository {
   ): Promise<{
     id: string;
     userId: string;
-  } | null>;
-  findBandForDelete(
-    bandId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    bandMasterUserId: string;
   } | null>;
   findExistingGenreIds(genreIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
   findExistingUserIds(userIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;

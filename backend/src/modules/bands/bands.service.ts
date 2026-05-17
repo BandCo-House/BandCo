@@ -82,7 +82,7 @@ export class BandsService {
    */
   async deleteBand(userId: string, bandId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandResult> {
     const run = async (client: Prisma.TransactionClient): Promise<DeleteBandResult> => {
-      const band = await this.bandsRepository.findBandForDelete(bandId, client);
+      const band = await this.bandsRepository.findActiveBandById(bandId, client);
 
       if (band === null) {
         throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
@@ -206,7 +206,7 @@ export class BandsService {
     const run = async (client: Prisma.TransactionClient): Promise<UpdateBandResult> => {
       this.validateUpdateBandInput(input);
 
-      const band = await this.bandsRepository.findBandForUpdate(bandId, client);
+      const band = await this.bandsRepository.findActiveBandById(bandId, client);
 
       if (band === null) {
         throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
@@ -248,7 +248,7 @@ export class BandsService {
         throw new BadRequestException('밴드장 권한은 이 API에서 부여할 수 없습니다.');
       }
 
-      const band = await this.bandsRepository.findBandForMemberRoleUpdate(bandId, client);
+      const band = await this.bandsRepository.findActiveBandById(bandId, client);
 
       if (band === null) {
         throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');

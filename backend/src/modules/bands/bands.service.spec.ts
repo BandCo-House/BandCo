@@ -18,7 +18,7 @@ const MISSING_USER_ID = '55555555-5555-4555-8555-555555555555';
 function createBandsRepositoryStub(options?: {
   existingGenreIds?: string[];
   existingUserIds?: string[];
-  bandForDelete?: {
+  activeBand?: {
     id: string;
     bandMasterUserId: string;
   } | null;
@@ -33,27 +33,17 @@ function createBandsRepositoryStub(options?: {
     id: string;
     requesterMemberId: string | null;
   } | null;
-  bandForRoleUpdate?: {
-    id: string;
-    bandMasterUserId: string;
-  } | null;
-  bandForUpdate?: {
-    id: string;
-    bandMasterUserId: string;
-  } | null;
   bandMemberForRoleUpdate?: {
     id: string;
     userId: string;
   } | null;
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
-  onFindBandForDelete?: (tx: unknown) => void;
+  onFindActiveBandById?: (tx: unknown) => void;
   onFindBandForLeave?: (tx: unknown) => void;
   onFindBandForMemberList?: (bandId: string, requesterUserId: string, tx: unknown) => void;
-  onFindBandForRoleUpdate?: (tx: unknown) => void;
   onFindBandMemberForRoleUpdate?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
-  onFindBandForUpdate?: (tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
   onFindExistingUserIds?: (tx: unknown) => void;
   onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
@@ -97,11 +87,11 @@ function createBandsRepositoryStub(options?: {
         deletedAt: deletedAt.toISOString(),
       };
     },
-    async findBandForDelete(_bandId, tx) {
-      options?.onFindBandForDelete?.(tx);
+    async findActiveBandById(_bandId, tx) {
+      options?.onFindActiveBandById?.(tx);
 
-      if (options?.bandForDelete !== undefined) {
-        return options.bandForDelete;
+      if (options?.activeBand !== undefined) {
+        return options.activeBand;
       }
 
       return {
@@ -235,18 +225,6 @@ function createBandsRepositoryStub(options?: {
         },
       };
     },
-    async findBandForUpdate(_bandId, tx) {
-      options?.onFindBandForUpdate?.(tx);
-
-      if (options?.bandForUpdate !== undefined) {
-        return options.bandForUpdate;
-      }
-
-      return {
-        id: 'band-001',
-        bandMasterUserId: BAND_MASTER_USER_ID,
-      };
-    },
     async updateBand(bandId, input, tx) {
       options?.onUpdateBand?.(bandId, input, tx);
 
@@ -257,18 +235,6 @@ function createBandsRepositoryStub(options?: {
         visibility: input.visibility ?? true,
         coverImgUrl: input.coverImgUrl ?? null,
         updatedAt: '2026-04-10T12:00:00.000Z',
-      };
-    },
-    async findBandForMemberRoleUpdate(_bandId, tx) {
-      options?.onFindBandForRoleUpdate?.(tx);
-
-      if (options?.bandForRoleUpdate !== undefined) {
-        return options.bandForRoleUpdate;
-      }
-
-      return {
-        id: 'band-001',
-        bandMasterUserId: BAND_MASTER_USER_ID,
       };
     },
     async findBandMemberForRoleUpdate(_bandId, userId, tx) {
@@ -507,7 +473,7 @@ describe('BandsService', () => {
 
     it('밴드가 없거나 이미 삭제되었으면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForDelete: null,
+        activeBand: null,
       });
       const service = new BandsService(repository, createPrismaServiceStub());
 
@@ -516,7 +482,7 @@ describe('BandsService', () => {
 
     it('밴드장이 아니면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForDelete: {
+        activeBand: {
           id: 'band-001',
           bandMasterUserId: '22222222-2222-4222-8222-222222222222',
         },
@@ -532,7 +498,7 @@ describe('BandsService', () => {
       };
       const capturedTransactions: unknown[] = [];
       const repository = createBandsRepositoryStub({
-        onFindBandForDelete(tx) {
+        onFindActiveBandById(tx) {
           capturedTransactions.push(tx);
         },
         onDeleteBand(_bandId, _deletedAt, tx) {
@@ -990,7 +956,7 @@ describe('BandsService', () => {
 
     it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForUpdate: null,
+        activeBand: null,
       });
       const service = new BandsService(repository, createPrismaServiceStub());
 
@@ -1003,7 +969,7 @@ describe('BandsService', () => {
 
     it('밴드장이 아니면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForUpdate: {
+        activeBand: {
           id: 'band-001',
           bandMasterUserId: '22222222-2222-4222-8222-222222222222',
         },
@@ -1023,7 +989,7 @@ describe('BandsService', () => {
       };
       const capturedTransactions: unknown[] = [];
       const repository = createBandsRepositoryStub({
-        onFindBandForUpdate(tx) {
+        onFindActiveBandById(tx) {
           capturedTransactions.push(tx);
         },
         onUpdateBand(_bandId, _input, tx) {
@@ -1079,7 +1045,7 @@ describe('BandsService', () => {
 
     it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForRoleUpdate: null,
+        activeBand: null,
       });
       const service = new BandsService(repository, createPrismaServiceStub());
 
@@ -1092,7 +1058,7 @@ describe('BandsService', () => {
 
     it('밴드장이 아니면 예외를 던진다', async () => {
       const repository = createBandsRepositoryStub({
-        bandForRoleUpdate: {
+        activeBand: {
           id: 'band-001',
           bandMasterUserId: '22222222-2222-4222-8222-222222222222',
         },
@@ -1125,7 +1091,7 @@ describe('BandsService', () => {
       };
       const capturedTransactions: unknown[] = [];
       const repository = createBandsRepositoryStub({
-        onFindBandForRoleUpdate(tx) {
+        onFindActiveBandById(tx) {
           capturedTransactions.push(tx);
         },
         onFindBandMemberForRoleUpdate(tx) {

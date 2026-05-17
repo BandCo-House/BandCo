@@ -376,13 +376,13 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 밴드 수정 권한 판단에 필요한 최소 밴드 정보만 조회한다.
+   * 권한 판단에 필요한 삭제되지 않은 밴드 정보를 조회한다.
    *
-   * @param {string} bandId - 수정할 밴드 ID
+   * @param {string} bandId - 확인할 밴드 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<{ id: string; bandMasterUserId: string } | null>} 삭제되지 않은 밴드 정보
    */
-  async findBandForUpdate(
+  async findActiveBandById(
     bandId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{
@@ -498,34 +498,6 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 권한 변경 권한 판단에 필요한 최소 밴드 정보만 조회한다.
-   *
-   * @param {string} bandId - 확인할 밴드 ID
-   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; bandMasterUserId: string } | null>} 삭제되지 않은 밴드 정보
-   */
-  async findBandForMemberRoleUpdate(
-    bandId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    bandMasterUserId: string;
-  } | null> {
-    const client = tx ?? this.prisma;
-
-    return client.band.findFirst({
-      where: {
-        id: bandId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        bandMasterUserId: true,
-      },
-    });
-  }
-
-  /**
    * 권한을 변경할 밴드 멤버를 밴드와 사용자 기준으로 조회한다.
    *
    * @param {string} bandId - 대상 밴드 ID
@@ -551,34 +523,6 @@ export class BandsPrismaRepository implements BandsRepository {
       select: {
         id: true,
         userId: true,
-      },
-    });
-  }
-
-  /**
-   * 삭제 가능 여부 판단에 필요한 최소 밴드 정보만 조회한다.
-   *
-   * @param {string} bandId - 확인할 밴드 ID
-   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; bandMasterUserId: string } | null>} 삭제되지 않은 밴드 정보
-   */
-  async findBandForDelete(
-    bandId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    bandMasterUserId: string;
-  } | null> {
-    const client = tx ?? this.prisma;
-
-    return client.band.findFirst({
-      where: {
-        id: bandId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        bandMasterUserId: true,
       },
     });
   }
