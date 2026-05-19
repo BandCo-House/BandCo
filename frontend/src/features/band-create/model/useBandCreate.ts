@@ -1,11 +1,11 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createBand } from '../api/band-api';
-import type { BandCreateRequest } from '../api/band-api';
+import type { BandCreateFormValues } from './schema';
 import { bandKeys } from '@/entities/band/api/useBands';
 
 export interface UseBandCreateResult {
-  submit: (data: BandCreateRequest) => Promise<void>;
+  submit: (data: BandCreateFormValues) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
@@ -17,13 +17,12 @@ export const useBandCreate = (): UseBandCreateResult => {
   const mutation = useMutation({
     mutationFn: createBand,
     onSuccess: async () => {
-      // 밴드 생성 성공 시 밴드 목록 쿼리 무효화 (데이터 갱신 트리거)
       await queryClient.invalidateQueries({ queryKey: bandKeys.lists() });
       await navigate({ to: '/' });
     },
   });
 
-  const submit = async (data: BandCreateRequest) => {
+  const submit = async (data: BandCreateFormValues) => {
     try {
       await mutation.mutateAsync(data);
     } catch {

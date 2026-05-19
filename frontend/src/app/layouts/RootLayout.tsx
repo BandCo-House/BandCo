@@ -127,13 +127,13 @@ export const RootLayout = () => {
     : null;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-primary-light">
       {pageHeaderProps ? (
         <PageHeader {...pageHeaderProps} onBack={onBack} />
       ) : null}
       <main
         className={cn(
-          'mx-auto w-full max-w-7xl px-6 py-8',
+          'mx-auto w-full max-w-[648px] px-6 py-8 bg-primary min-h-screen',
           pageHeaderProps ? 'pt-24 md:pt-40' : undefined,
         )}
       >

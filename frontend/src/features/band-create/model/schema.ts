@@ -8,7 +8,7 @@ export const bandCreateSchema = z.object({
     .max(200, '밴드 소개는 200자 이하로 입력해주세요')
     .nullable()
     .default(null),
-  visibility: z.boolean().default(true),
+  visibility: z.boolean().default(false),
 });
 
 export type BandCreateFormValues = z.infer<typeof bandCreateSchema>;

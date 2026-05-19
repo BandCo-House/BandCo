@@ -26,7 +26,7 @@ export const PageHeader = ({
   return (
     <header
       className={cn(
-        'fixed inset-x-0 top-0 z-40 bg-background/72 shadow-xl/5 backdrop-blur-xl',
+        'fixed inset-x-0 top-0 z-40 mx-auto max-w-[648px] bg-primary-dark shadow-xl/5 backdrop-blur-xl',
         className,
       )}
     >

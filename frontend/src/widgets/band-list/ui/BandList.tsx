@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Button } from '@/shared/ui/button';
-import { SVGIcon } from '@/shared/ui/icon';
 import { BandCard } from '@/entities/band/ui/BandCard';
 import { useBands } from '@/entities/band/api/useBands';
 import { BandCreateDialog } from './BandCreateDialog';
 import { InviteCodeDialog } from './InviteCodeDialog';
+import { BandListFAB } from './BandListFAB';
 
 export const BandList = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -14,60 +13,53 @@ export const BandList = () => {
   if (isLoading) return <div data-testid="band-list">로딩 중...</div>;
 
   if (bands.length === 0)
-    return <div data-testid="band-list">아직 참여한 밴드가 없어요</div>;
+    return (
+      <>
+        <div data-testid="band-list">아직 참여한 밴드가 없어요</div>
+        <BandListFAB
+          onCreateClick={() => setIsCreateDialogOpen(true)}
+          onInviteClick={() => setIsInviteCodeDialogOpen(true)}
+        />
+        <BandCreateDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+        />
+        <InviteCodeDialog
+          open={isInviteCodeDialogOpen}
+          onOpenChange={setIsInviteCodeDialogOpen}
+        />
+      </>
+    );
 
   return (
-    <section data-testid="band-list" className="space-y-7">
-      <div className="flex items-start justify-between gap-6">
-        <div className="space-y-5">
-          <h2 className="typo-3xl-b">밴드</h2>
+    <>
+      <section
+        data-testid="band-list"
+        className="relative space-y-7 bg-primary"
+      >
+        <ul className="relative z-30 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+          {bands.map((band) => (
+            <li key={band.id}>
+              <BandCard band={band} />
+            </li>
+          ))}
+        </ul>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              className="bg-secondary-surface  text-secondary-foreground shadow-xl/5"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <span>밴드 만들기</span>
-              <SVGIcon icon="AddWithCircle" size="sm" />
-            </Button>
+        <BandListFAB
+          onCreateClick={() => setIsCreateDialogOpen(true)}
+          onInviteClick={() => setIsInviteCodeDialogOpen(true)}
+        />
 
-            <Button
-              type="button"
-              className="bg-secondary-surface text-secondary-foreground shadow-xl/5"
-              onClick={() => setIsInviteCodeDialogOpen(true)}
-            >
-              <span>초대 코드 입력</span>
-            </Button>
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          variant="ghost"
-          className="typo-sm-m gap-2 px-0 text-muted hover:text-foreground"
-        >
-          <span>목록 편집</span>
-          <SVGIcon icon="Setting" size="sm" />
-        </Button>
-      </div>
-
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {bands.map((band) => (
-          <li key={band.id}>
-            <BandCard band={band} />
-          </li>
-        ))}
-      </ul>
-
-      <BandCreateDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-      />
-      <InviteCodeDialog
-        open={isInviteCodeDialogOpen}
-        onOpenChange={setIsInviteCodeDialogOpen}
-      />
-    </section>
+        <BandCreateDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+        />
+        <InviteCodeDialog
+          open={isInviteCodeDialogOpen}
+          onOpenChange={setIsInviteCodeDialogOpen}
+        />
+        <div className="fixed top-20 left-1/2 z-10 h-full w-full max-w-[648px] -translate-x-1/2 bg-linear-to-b from-black/50 via-black/20 to-white/10" />
+      </section>
+    </>
   );
 };

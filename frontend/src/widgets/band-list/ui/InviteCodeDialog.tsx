@@ -1,14 +1,13 @@
-import { useState } from 'react';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
+import { useInviteAccept } from '@/features/invite-accept/model/useInviteAccept';
 
 type InviteCodeDialogProps = {
   open: boolean;
@@ -19,27 +18,30 @@ export const InviteCodeDialog = ({
   open,
   onOpenChange,
 }: InviteCodeDialogProps) => {
-  const [inviteCode, setInviteCode] = useState('');
+  const { code, setCode, submit, isLoading, isDisabled, error } =
+    useInviteAccept({
+      onSuccess: () => onOpenChange(false),
+    });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>초대 코드 입력</DialogTitle>
-          <DialogDescription>
-            초대 코드를 입력하는 UI만 먼저 연결합니다.
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="pt-4">
+        <div className="space-y-4 pt-4">
           <Input
-            value={inviteCode}
-            onChange={(event) => setInviteCode(event.target.value)}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
             placeholder="초대 코드를 입력하세요"
           />
+          {error ? (
+            <p className="typo-sm-r text-destructive">{error}</p>
+          ) : null}
         </div>
 
-        <DialogFooter className="sm:justify-end">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -47,7 +49,13 @@ export const InviteCodeDialog = ({
           >
             취소
           </Button>
-          <Button type="button" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            disabled={isDisabled}
+            isLoading={isLoading}
+            loadingContent="처리 중..."
+            onClick={submit}
+          >
             확인
           </Button>
         </DialogFooter>
