@@ -1,12 +1,14 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
 import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { NotificationsRepository } from './repositories/notifications.repository';
 import { NOTIFICATIONS_REPOSITORY } from './repositories/notifications.repository';
+import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import { NotificationsService } from './notifications.service';
 
-const mockResult: GetNotificationsResult = {
+const mockListResult: GetNotificationsResult = {
   items: [
     {
       notificationId: 'noti-001',
@@ -21,9 +23,22 @@ const mockResult: GetNotificationsResult = {
   meta: { count: 1, take: 20, next: null },
 };
 
+const mockReadResult: MarkNotificationReadResult = {
+  notificationId: 'noti-001',
+  type: 'INVITE',
+  title: '밴드 초대',
+  description: '초대가 도착했습니다.',
+  isRead: true,
+  targetPath: '/invites/noti-001',
+  createdAt: '2026-01-01T00:00:00.000Z',
+};
+
 const repositoryStub: NotificationsRepository = {
   async findNotifications() {
-    return mockResult;
+    return mockListResult;
+  },
+  async markNotificationAsRead(_userId, notificationId) {
+    return notificationId === 'noti-001' ? mockReadResult : undefined;
   },
 };
 
@@ -46,6 +61,19 @@ describe('NotificationsService', () => {
       expect(result.items[0]?.type).toBe('INVITE');
       expect(result.meta.count).toBe(1);
       expect(result.meta.next).toBeNull();
+    });
+  });
+
+  describe('markNotificationAsRead', () => {
+    it('알림이 존재하면 읽음 처리 결과를 반환한다', async () => {
+      const result = await service.markNotificationAsRead('user-001', 'noti-001');
+      expect(result.notificationId).toBe('noti-001');
+      expect(result.isRead).toBe(true);
+      expect(result.type).toBe('INVITE');
+    });
+
+    it('알림이 존재하지 않으면 NotFoundException을 던진다', async () => {
+      await expect(service.markNotificationAsRead('user-001', 'unknown')).rejects.toThrow(NotFoundException);
     });
   });
 });

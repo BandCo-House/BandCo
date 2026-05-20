@@ -16,6 +16,8 @@ const mockNotification = {
 const mockPrisma = {
   notification: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
   },
 };
 
@@ -106,6 +108,30 @@ describe('NotificationsPrismaRepository', () => {
 
       expect(result.meta.next).toBeNull();
       expect(result.items).toHaveLength(0);
+    });
+  });
+
+  describe('markNotificationAsRead', () => {
+    it('알림이 존재하면 읽음 처리 후 전체 필드를 반환한다', async () => {
+      mockPrisma.notification.findFirst.mockResolvedValue({ id: 'noti-001' });
+      mockPrisma.notification.update.mockResolvedValue({ ...mockNotification, isRead: true });
+
+      const result = await repository.markNotificationAsRead('user-001', 'noti-001');
+
+      expect(result).not.toBeUndefined();
+      expect(result?.notificationId).toBe('noti-001');
+      expect(result?.isRead).toBe(true);
+      expect(result?.type).toBe('INVITE');
+      expect(result?.title).toBe('밴드 초대');
+    });
+
+    it('알림이 존재하지 않으면 undefined를 반환한다', async () => {
+      mockPrisma.notification.findFirst.mockResolvedValue(null);
+
+      const result = await repository.markNotificationAsRead('user-001', 'unknown');
+
+      expect(result).toBeUndefined();
+      expect(mockPrisma.notification.update).not.toHaveBeenCalled();
     });
   });
 });

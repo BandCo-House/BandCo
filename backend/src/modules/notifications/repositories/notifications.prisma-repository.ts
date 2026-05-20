@@ -3,6 +3,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 
 import type { NotificationType } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
 
 import type { NotificationsRepository } from './notifications.repository';
@@ -53,6 +54,41 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
     return {
       items: notifications.map(n => this.mapNotification(n)),
       meta: { count, take: query.take, next },
+    };
+  }
+
+  async markNotificationAsRead(userId: string, notificationId: string): Promise<MarkNotificationReadResult | undefined> {
+    const notification = await this.prisma.notification.findFirst({
+      where: { id: notificationId, userId },
+      select: { id: true },
+    });
+
+    if (notification === null) {
+      return undefined;
+    }
+
+    const updated = await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { isRead: true },
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        description: true,
+        isRead: true,
+        targetPath: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      notificationId: updated.id,
+      type: updated.type,
+      title: updated.title ?? '',
+      description: updated.description ?? '',
+      isRead: updated.isRead,
+      targetPath: updated.targetPath ?? '',
+      createdAt: updated.createdAt?.toISOString() ?? '',
     };
   }
 
