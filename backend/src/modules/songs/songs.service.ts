@@ -1,5 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
+import { PrismaService } from '../../database/prisma';
+import type { Prisma } from '../../generated/prisma';
+
+import type { CreateSongInput } from './dto/create-song.dto';
+import { SONGS_REPOSITORY, type SongsRepository } from './repositories/songs.repository';
+import type { CreateSongResult } from './types/create-song-result.type';
 import type { SongPreview } from './types/song-preview.type';
 import { DeezerTrackClient, type DeezerTrackSearcher } from './deezer-track.client';
 import { parseDeezerTrackToSongPreview } from './deezer-track.parser';
@@ -9,6 +15,9 @@ import { parseSpotifyTrackToSongPreview } from './spotify-track.parser';
 @Injectable()
 export class SongsService {
   constructor(
+    @Inject(SONGS_REPOSITORY)
+    private readonly songsRepository: SongsRepository,
+    private readonly prisma: PrismaService,
     @Inject(SpotifyTrackClient)
     private readonly spotifyTrackReader: SpotifyTrackReader,
     @Inject(DeezerTrackClient)
@@ -37,5 +46,71 @@ export class SongsService {
     const deezerTracks = await this.deezerTrackSearcher.searchTracks(query);
 
     return deezerTracks.map(deezerTrack => parseDeezerTrackToSongPreview(deezerTrack));
+  }
+
+  /**
+   * 밴드 멤버만 곡을 생성할 수 있으므로 멤버십과 세션 타입을 검증한 뒤 저장한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} bandId - 곡을 추가할 밴드 ID
+   * @param {CreateSongInput} input - 곡 생성 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<CreateSongResult>} 생성된 곡 정보
+   */
+  async createSong(userId: string, bandId: string, input: CreateSongInput, tx?: Prisma.TransactionClient): Promise<CreateSongResult> {
+    const createSong = async (client: Prisma.TransactionClient): Promise<CreateSongResult> => {
+      const skillTypeIds = input.skillTypeIds ?? [];
+
+      this.validateDuplicatedIds(skillTypeIds);
+
+      const band = await this.songsRepository.findBandForSongCreate(bandId, userId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      if (band.member === null) {
+        throw new ForbiddenException('밴드 멤버만 곡을 생성할 수 있습니다.');
+      }
+
+      await this.validateSkillTypes(skillTypeIds, client);
+
+      return this.songsRepository.createSong(
+        {
+          ...input,
+          bandId: band.id,
+          userId,
+          createdByBandMemberId: band.member.id,
+          skillTypeIds,
+        },
+        client,
+      );
+    };
+
+    if (tx !== undefined) {
+      return createSong(tx);
+    }
+
+    return this.prisma.$transaction(createSong);
+  }
+
+  private validateDuplicatedIds(ids: string[]): void {
+    const uniqueIds = new Set(ids);
+
+    if (uniqueIds.size !== ids.length) {
+      throw new BadRequestException('중복된 세션이 포함되어 있습니다.');
+    }
+  }
+
+  private async validateSkillTypes(skillTypeIds: string[], tx: Prisma.TransactionClient): Promise<void> {
+    if (skillTypeIds.length === 0) {
+      return;
+    }
+
+    const existingSkillTypeIds = await this.songsRepository.findExistingSkillTypeIds(skillTypeIds, tx);
+
+    if (existingSkillTypeIds.length !== skillTypeIds.length) {
+      throw new BadRequestException('존재하지 않는 세션이 포함되어 있습니다.');
+    }
   }
 }
