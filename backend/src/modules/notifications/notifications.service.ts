@@ -14,6 +14,10 @@ export class NotificationsService {
     return this.notificationsRepository.findNotifications(userId, query);
   }
 
+  async markManyNotificationsAsRead(userId: string, notificationIds: string[]) {
+    return this.notificationsRepository.markManyNotificationsAsRead(userId, notificationIds);
+  }
+
   async markAllNotificationsAsRead(userId: string) {
     return this.notificationsRepository.markAllNotificationsAsRead(userId);
   }

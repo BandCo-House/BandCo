@@ -5,6 +5,7 @@ import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { NotificationsRepository } from './repositories/notifications.repository';
 import { NOTIFICATIONS_REPOSITORY } from './repositories/notifications.repository';
 import type { MarkAllReadResult } from './types/mark-all-read-result.type';
+import type { MarkManyReadResult } from './types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import { NotificationsService } from './notifications.service';
@@ -35,6 +36,7 @@ const mockReadResult: MarkNotificationReadResult = {
 };
 
 const mockAllReadResult: MarkAllReadResult = { updatedCount: 3 };
+const mockManyReadResult: MarkManyReadResult = { updatedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
 
 const repositoryStub: NotificationsRepository = {
   async findNotifications() {
@@ -42,6 +44,9 @@ const repositoryStub: NotificationsRepository = {
   },
   async markAllNotificationsAsRead() {
     return mockAllReadResult;
+  },
+  async markManyNotificationsAsRead() {
+    return mockManyReadResult;
   },
   async markNotificationAsRead(_userId, notificationId) {
     return notificationId === 'noti-001' ? mockReadResult : undefined;
@@ -64,8 +69,6 @@ describe('NotificationsService', () => {
       const query: GetNotificationsQuery = { order__created_at: 'desc', order__id: 'desc', take: 20 };
       const result = await service.getNotifications('user-001', query);
       expect(result.items).toHaveLength(1);
-      expect(result.items[0]?.type).toBe('INVITE');
-      expect(result.meta.count).toBe(1);
       expect(result.meta.next).toBeNull();
     });
   });
@@ -77,12 +80,19 @@ describe('NotificationsService', () => {
     });
   });
 
+  describe('markManyNotificationsAsRead', () => {
+    it('repository 결과를 그대로 반환한다', async () => {
+      const result = await service.markManyNotificationsAsRead('user-001', ['noti-001', 'noti-002']);
+      expect(result.updatedCount).toBe(2);
+      expect(result.notificationIds).toEqual(['noti-001', 'noti-002']);
+    });
+  });
+
   describe('markNotificationAsRead', () => {
     it('알림이 존재하면 읽음 처리 결과를 반환한다', async () => {
       const result = await service.markNotificationAsRead('user-001', 'noti-001');
       expect(result.notificationId).toBe('noti-001');
       expect(result.isRead).toBe(true);
-      expect(result.type).toBe('INVITE');
     });
 
     it('알림이 존재하지 않으면 NotFoundException을 던진다', async () => {

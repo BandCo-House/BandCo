@@ -20,6 +20,7 @@ const mockPrisma = {
     update: jest.fn(),
     updateMany: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
 
 describe('NotificationsPrismaRepository', () => {
@@ -32,6 +33,7 @@ describe('NotificationsPrismaRepository', () => {
 
     repository = module.get(NotificationsPrismaRepository);
     jest.clearAllMocks();
+    mockPrisma.$transaction.mockImplementation((fn: (tx: typeof mockPrisma) => unknown) => fn(mockPrisma));
   });
 
   describe('findNotifications', () => {
@@ -131,6 +133,31 @@ describe('NotificationsPrismaRepository', () => {
       const result = await repository.markAllNotificationsAsRead('user-001');
 
       expect(result.updatedCount).toBe(0);
+    });
+  });
+
+  describe('markManyNotificationsAsRead', () => {
+    it('실제 존재하는 읽지 않은 ID만 처리하고 결과를 반환한다', async () => {
+      mockPrisma.notification.findMany.mockResolvedValue([{ id: 'noti-001' }, { id: 'noti-002' }]);
+      mockPrisma.notification.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await repository.markManyNotificationsAsRead('user-001', ['noti-001', 'noti-002', 'noti-999']);
+
+      expect(mockPrisma.notification.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-001', id: { in: ['noti-001', 'noti-002', 'noti-999'] }, isRead: false } }),
+      );
+      expect(result.updatedCount).toBe(2);
+      expect(result.notificationIds).toEqual(['noti-001', 'noti-002']);
+    });
+
+    it('해당 알림이 없으면 updatedCount가 0이다', async () => {
+      mockPrisma.notification.findMany.mockResolvedValue([]);
+      mockPrisma.notification.updateMany.mockResolvedValue({ count: 0 });
+
+      const result = await repository.markManyNotificationsAsRead('user-001', ['noti-999']);
+
+      expect(result.updatedCount).toBe(0);
+      expect(result.notificationIds).toEqual([]);
     });
   });
 

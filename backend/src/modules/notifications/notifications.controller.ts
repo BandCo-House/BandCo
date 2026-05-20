@@ -1,11 +1,13 @@
-import { Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import type { User } from 'src/generated/prisma';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { GetNotificationsQueryDto } from './dto/get-notifications-query.dto';
+import { MarkManyReadDto } from './dto/mark-many-read.dto';
 import type { MarkAllReadResult } from './types/mark-all-read-result.type';
+import type { MarkManyReadResult } from './types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import { NotificationsService } from './notifications.service';
@@ -25,6 +27,12 @@ export class NotificationsController {
   async markAllNotificationsAsRead(@Req() req: { user: User }): Promise<ApiSuccessResponse<MarkAllReadResult>> {
     const result = await this.notificationsService.markAllNotificationsAsRead(req.user.id);
     return createSuccessResponse('전체 알림 읽음 처리 성공', result);
+  }
+
+  @Patch('read')
+  async markManyNotificationsAsRead(@Req() req: { user: User }, @Body() dto: MarkManyReadDto): Promise<ApiSuccessResponse<MarkManyReadResult>> {
+    const result = await this.notificationsService.markManyNotificationsAsRead(req.user.id, dto.notificationIds);
+    return createSuccessResponse('다건 알림 읽음 처리 성공', result);
   }
 
   @Patch(':notificationId/read')
