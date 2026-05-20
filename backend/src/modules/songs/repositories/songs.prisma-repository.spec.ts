@@ -11,6 +11,7 @@ const createPrismaMock = () => ({
   },
   song: {
     create: jest.fn(),
+    findMany: jest.fn(),
   },
   songSkill: {
     createMany: jest.fn(),
@@ -26,7 +27,7 @@ describe('SongsPrismaRepository', () => {
     repository = new SongsPrismaRepository(prisma as unknown as PrismaService);
   });
 
-  describe('findBandForSongCreate', () => {
+  describe('findActiveBandWithMemberByBandIdAndUserId', () => {
     it('삭제되지 않은 밴드와 요청자 멤버를 조회한다', async () => {
       prisma.band.findFirst.mockResolvedValue({
         id: 'band-id',
@@ -38,7 +39,7 @@ describe('SongsPrismaRepository', () => {
         ],
       });
 
-      const result = await repository.findBandForSongCreate('band-id', 'user-id');
+      const result = await repository.findActiveBandWithMemberByBandIdAndUserId('band-id', 'user-id');
 
       expect(prisma.band.findFirst).toHaveBeenCalledWith({
         where: {
@@ -71,7 +72,7 @@ describe('SongsPrismaRepository', () => {
     it('밴드가 없으면 null을 반환한다', async () => {
       prisma.band.findFirst.mockResolvedValue(null);
 
-      const result = await repository.findBandForSongCreate('band-id', 'user-id');
+      const result = await repository.findActiveBandWithMemberByBandIdAndUserId('band-id', 'user-id');
 
       expect(result).toBeNull();
     });
@@ -82,7 +83,7 @@ describe('SongsPrismaRepository', () => {
         members: [],
       });
 
-      const result = await repository.findBandForSongCreate('band-id', 'user-id');
+      const result = await repository.findActiveBandWithMemberByBandIdAndUserId('band-id', 'user-id');
 
       expect(result).toEqual({
         id: 'band-id',
@@ -97,7 +98,7 @@ describe('SongsPrismaRepository', () => {
         },
       };
 
-      await repository.findBandForSongCreate('band-id', 'user-id', tx as never);
+      await repository.findActiveBandWithMemberByBandIdAndUserId('band-id', 'user-id', tx as never);
 
       expect(tx.band.findFirst).toHaveBeenCalled();
       expect(prisma.band.findFirst).not.toHaveBeenCalled();
@@ -121,6 +122,176 @@ describe('SongsPrismaRepository', () => {
         },
       });
       expect(result).toEqual(['skill-type-1', 'skill-type-2']);
+    });
+  });
+
+  describe('findBandSongs', () => {
+    it('검색어와 커서 조건으로 곡 목록을 조회한다', async () => {
+      prisma.song.findMany.mockResolvedValue([]);
+
+      await repository.findBandSongs('band-id', {
+        where__title__contain: 'Harder',
+        where__artist_name__contain: 'Daft',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        cursor__created_at: '2026-05-20T00:00:00.000Z',
+        cursor__id: 'cursor-song-id',
+      });
+
+      expect(prisma.song.findMany).toHaveBeenCalledWith({
+        where: {
+          bandId: 'band-id',
+          AND: [
+            {
+              title: {
+                contains: 'Harder',
+                mode: 'insensitive',
+              },
+            },
+            {
+              artistName: {
+                contains: 'Daft',
+                mode: 'insensitive',
+              },
+            },
+          ],
+          OR: [
+            {
+              createdAt: {
+                lt: new Date('2026-05-20T00:00:00.000Z'),
+              },
+            },
+            {
+              createdAt: new Date('2026-05-20T00:00:00.000Z'),
+              id: {
+                lt: 'cursor-song-id',
+              },
+            },
+          ],
+        },
+        include: {
+          songSkills: {
+            include: {
+              skillType: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              skillTypeId: 'asc',
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 20,
+      });
+    });
+
+    it('조회 결과를 목록 응답으로 매핑한다', async () => {
+      prisma.song.findMany.mockResolvedValue([
+        {
+          id: 'song-id-1',
+          bandId: 'band-id',
+          title: 'Harder, Better, Faster, Stronger',
+          artistName: 'Daft Punk',
+          key: null,
+          bpm: null,
+          difficultyLevel: null,
+          sourceUrl: 'https://www.deezer.com/track/3135556',
+          sourceType: 'DEEZER',
+          createdAt: new Date('2026-05-20T00:00:00.000Z'),
+          songSkills: [
+            {
+              skillTypeId: 'skill-type-1',
+              skillType: {
+                name: '기타',
+              },
+            },
+          ],
+        },
+        {
+          id: 'song-id-2',
+          bandId: 'band-id',
+          title: 'Around the World',
+          artistName: 'Daft Punk',
+          key: null,
+          bpm: null,
+          difficultyLevel: null,
+          sourceUrl: 'https://www.deezer.com/track/3135557',
+          sourceType: 'DEEZER',
+          createdAt: new Date('2026-05-19T00:00:00.000Z'),
+          songSkills: [],
+        },
+      ]);
+
+      const result = await repository.findBandSongs('band-id', {
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 2,
+      });
+
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'song-id-1',
+            bandId: 'band-id',
+            title: 'Harder, Better, Faster, Stronger',
+            artistName: 'Daft Punk',
+            key: null,
+            bpm: null,
+            difficultyLevel: null,
+            sourceUrl: 'https://www.deezer.com/track/3135556',
+            sourceType: 'DEEZER',
+            createdAt: '2026-05-20T00:00:00.000Z',
+            skills: [
+              {
+                skillTypeId: 'skill-type-1',
+                skillName: '기타',
+              },
+            ],
+          },
+          {
+            id: 'song-id-2',
+            bandId: 'band-id',
+            title: 'Around the World',
+            artistName: 'Daft Punk',
+            key: null,
+            bpm: null,
+            difficultyLevel: null,
+            sourceUrl: 'https://www.deezer.com/track/3135557',
+            sourceType: 'DEEZER',
+            createdAt: '2026-05-19T00:00:00.000Z',
+            skills: [],
+          },
+        ],
+        meta: {
+          count: 2,
+          take: 2,
+          cursor: {
+            createdAt: '2026-05-20T00:00:00.000Z',
+            id: 'song-id-1',
+          },
+          next: {
+            createdAt: '2026-05-19T00:00:00.000Z',
+            id: 'song-id-2',
+          },
+        },
+      });
+    });
+
+    it('결과가 없으면 cursor와 next가 null이다', async () => {
+      prisma.song.findMany.mockResolvedValue([]);
+
+      const result = await repository.findBandSongs('band-id', {
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(result.meta.cursor).toBeNull();
+      expect(result.meta.next).toBeNull();
     });
   });
 

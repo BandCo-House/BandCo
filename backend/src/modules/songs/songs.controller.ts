@@ -5,8 +5,10 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import type { User } from '../../generated/prisma';
 
 import { CreateSongBodyDto } from './dto/create-song.dto';
+import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
 import { SearchDeezerTrackPreviewsQueryDto } from './dto/search-deezer-track-previews-query.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
+import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
 import { SongsService } from './songs.service';
 
@@ -28,6 +30,18 @@ export class SongsController {
     const result = await this.songsService.createSong(req.user.id, bandId, body);
 
     return createSuccessResponse('곡 생성 성공', result);
+  }
+
+  @Get('bands/:bandId/songs')
+  @UseGuards(AccessTokenGuard)
+  async getBandSongs(
+    @Req() req: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Query() query: GetBandSongsQueryDto,
+  ): Promise<ApiSuccessResponse<GetBandSongsResult>> {
+    const result = await this.songsService.getBandSongs(req.user.id, bandId, query);
+
+    return createSuccessResponse('곡 목록 조회 성공', result);
   }
 
   @Get('songs/spotify/tracks/:trackId')

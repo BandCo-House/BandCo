@@ -4,8 +4,10 @@ import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
 
 import type { CreateSongInput } from './dto/create-song.dto';
+import type { GetBandSongsQuery } from './dto/get-band-songs-query.dto';
 import { SONGS_REPOSITORY, type SongsRepository } from './repositories/songs.repository';
 import type { CreateSongResult } from './types/create-song-result.type';
+import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
 import { DeezerTrackClient, type DeezerTrackSearcher } from './deezer-track.client';
 import { parseDeezerTrackToSongPreview } from './deezer-track.parser';
@@ -63,7 +65,7 @@ export class SongsService {
 
       this.validateDuplicatedIds(skillTypeIds);
 
-      const band = await this.songsRepository.findBandForSongCreate(bandId, userId, client);
+      const band = await this.songsRepository.findActiveBandWithMemberByBandIdAndUserId(bandId, userId, client);
 
       if (band === null) {
         throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
@@ -94,6 +96,31 @@ export class SongsService {
     return this.prisma.$transaction(createSong);
   }
 
+  /**
+   * 밴드 멤버만 밴드 곡 목록을 조회할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {GetBandSongsQuery} query - 검색어와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandSongsResult>} 밴드 곡 목록
+   */
+  async getBandSongs(userId: string, bandId: string, query: GetBandSongsQuery, tx?: Prisma.TransactionClient): Promise<GetBandSongsResult> {
+    this.validateSongListQuery(query);
+
+    const band = await this.songsRepository.findActiveBandWithMemberByBandIdAndUserId(bandId, userId, tx);
+
+    if (band === null) {
+      throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+    }
+
+    if (band.member === null) {
+      throw new ForbiddenException('밴드 멤버만 곡 목록을 조회할 수 있습니다.');
+    }
+
+    return this.songsRepository.findBandSongs(band.id, query, tx);
+  }
+
   private validateDuplicatedIds(ids: string[]): void {
     const uniqueIds = new Set(ids);
 
@@ -111,6 +138,29 @@ export class SongsService {
 
     if (existingSkillTypeIds.length !== skillTypeIds.length) {
       throw new BadRequestException('존재하지 않는 세션이 포함되어 있습니다.');
+    }
+  }
+
+  private validateSongListQuery(query: GetBandSongsQuery): void {
+    if (query.order__created_at !== query.order__id) {
+      throw new BadRequestException('order__created_at과 order__id는 같은 방향이어야 합니다.');
+    }
+
+    const hasCursorCreatedAt = query.cursor__created_at !== undefined;
+    const hasCursorId = query.cursor__id !== undefined;
+
+    if (hasCursorCreatedAt !== hasCursorId) {
+      throw new BadRequestException('커서 조회에는 cursor__created_at과 cursor__id가 함께 필요합니다.');
+    }
+
+    if (query.cursor__created_at === undefined) {
+      return;
+    }
+
+    const cursorCreatedAt = new Date(query.cursor__created_at);
+
+    if (Number.isNaN(cursorCreatedAt.getTime())) {
+      throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
     }
   }
 }

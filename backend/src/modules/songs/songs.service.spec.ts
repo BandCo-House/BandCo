@@ -15,9 +15,10 @@ describe('SongsService', () => {
     } as unknown as PrismaService;
 
     const repository: jest.Mocked<SongsRepository> = {
-      findBandForSongCreate: jest.fn(),
+      findActiveBandWithMemberByBandIdAndUserId: jest.fn(),
       findExistingSkillTypeIds: jest.fn(),
       createSong: jest.fn(),
+      findBandSongs: jest.fn(),
       ...repositoryOverrides,
     } as jest.Mocked<SongsRepository>;
 
@@ -117,7 +118,7 @@ describe('SongsService', () => {
   it('밴드 멤버가 곡을 생성하면 세션 타입을 검증하고 곡을 저장한다', async () => {
     const { service, repository, transactionClient } = createService();
 
-    repository.findBandForSongCreate.mockResolvedValue({
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
       id: 'band-id',
       member: {
         id: 'band-member-id',
@@ -161,7 +162,7 @@ describe('SongsService', () => {
       skillTypeIds: ['skill-type-1', 'skill-type-2'],
     });
 
-    expect(repository.findBandForSongCreate).toHaveBeenCalledWith('band-id', 'user-id', transactionClient);
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).toHaveBeenCalledWith('band-id', 'user-id', transactionClient);
     expect(repository.findExistingSkillTypeIds).toHaveBeenCalledWith(['skill-type-1', 'skill-type-2'], transactionClient);
     expect(repository.createSong).toHaveBeenCalledWith(
       {
@@ -184,7 +185,7 @@ describe('SongsService', () => {
     const { service, repository, prisma } = createService();
     const tx = {};
 
-    repository.findBandForSongCreate.mockResolvedValue({
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
       id: 'band-id',
       member: {
         id: 'band-member-id',
@@ -222,7 +223,7 @@ describe('SongsService', () => {
     );
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(repository.findBandForSongCreate).toHaveBeenCalledWith('band-id', 'user-id', tx);
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).toHaveBeenCalledWith('band-id', 'user-id', tx);
     expect(repository.findExistingSkillTypeIds).not.toHaveBeenCalled();
   });
 
@@ -238,13 +239,13 @@ describe('SongsService', () => {
         skillTypeIds: ['skill-type-1', 'skill-type-1'],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(repository.findBandForSongCreate).not.toHaveBeenCalled();
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
   });
 
   it('밴드가 없으면 NotFoundException을 던진다', async () => {
     const { service, repository } = createService();
 
-    repository.findBandForSongCreate.mockResolvedValue(null);
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue(null);
 
     await expect(
       service.createSong('user-id', 'band-id', {
@@ -259,7 +260,7 @@ describe('SongsService', () => {
   it('밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
     const { service, repository } = createService();
 
-    repository.findBandForSongCreate.mockResolvedValue({
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
       id: 'band-id',
       member: null,
     });
@@ -277,7 +278,7 @@ describe('SongsService', () => {
   it('존재하지 않는 세션 타입이 있으면 BadRequestException을 던진다', async () => {
     const { service, repository } = createService();
 
-    repository.findBandForSongCreate.mockResolvedValue({
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
       id: 'band-id',
       member: {
         id: 'band-member-id',
@@ -296,5 +297,134 @@ describe('SongsService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(repository.createSong).not.toHaveBeenCalled();
+  });
+
+  it('밴드 멤버가 곡 목록을 조회한다', async () => {
+    const { service, repository } = createService();
+
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
+      id: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.findBandSongs.mockResolvedValue({
+      items: [
+        {
+          id: 'song-id',
+          bandId: 'band-id',
+          title: 'Harder, Better, Faster, Stronger',
+          artistName: 'Daft Punk',
+          key: null,
+          bpm: null,
+          difficultyLevel: null,
+          sourceUrl: 'https://www.deezer.com/track/3135556',
+          sourceType: 'DEEZER',
+          createdAt: '2026-05-20T00:00:00.000Z',
+          skills: [
+            {
+              skillTypeId: 'skill-type-id',
+              skillName: '기타',
+            },
+          ],
+        },
+      ],
+      meta: {
+        count: 1,
+        take: 20,
+        cursor: {
+          createdAt: '2026-05-20T00:00:00.000Z',
+          id: 'song-id',
+        },
+        next: null,
+      },
+    });
+
+    const query = {
+      order__created_at: 'desc' as const,
+      order__id: 'desc' as const,
+      take: 20,
+      where__title__contain: 'Harder',
+    };
+
+    const result = await service.getBandSongs('user-id', 'band-id', query);
+
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).toHaveBeenCalledWith('band-id', 'user-id', undefined);
+    expect(repository.findBandSongs).toHaveBeenCalledWith('band-id', query, undefined);
+    expect(result.items).toHaveLength(1);
+  });
+
+  it('곡 목록 조회 시 밴드가 없으면 NotFoundException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue(null);
+
+    await expect(
+      service.getBandSongs('user-id', 'band-id', {
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('곡 목록 조회 시 밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
+      id: 'band-id',
+      member: null,
+    });
+
+    await expect(
+      service.getBandSongs('user-id', 'band-id', {
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('곡 목록 조회 정렬 방향이 다르면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.getBandSongs('user-id', 'band-id', {
+        order__created_at: 'desc',
+        order__id: 'asc',
+        take: 20,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
+  });
+
+  it('곡 목록 조회 커서 값이 한쪽만 있으면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.getBandSongs('user-id', 'band-id', {
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        cursor__created_at: '2026-05-20T00:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
+  });
+
+  it('곡 목록 조회 커서 날짜가 잘못되면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(
+      service.getBandSongs('user-id', 'band-id', {
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        cursor__created_at: 'invalid-date',
+        cursor__id: 'song-id',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
   });
 });
