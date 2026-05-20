@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { NotificationsRepository } from './repositories/notifications.repository';
 import { NOTIFICATIONS_REPOSITORY } from './repositories/notifications.repository';
+import type { DeleteNotificationResult } from './types/delete-notification-result.type';
 import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkManyReadResult } from './types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
@@ -37,6 +38,7 @@ const mockReadResult: MarkNotificationReadResult = {
 
 const mockAllReadResult: MarkAllReadResult = { updatedCount: 3 };
 const mockManyReadResult: MarkManyReadResult = { updatedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
+const mockDeleteResult: DeleteNotificationResult = { notificationId: 'noti-001' };
 
 const repositoryStub: NotificationsRepository = {
   async findNotifications() {
@@ -50,6 +52,9 @@ const repositoryStub: NotificationsRepository = {
   },
   async markNotificationAsRead(_userId, notificationId) {
     return notificationId === 'noti-001' ? mockReadResult : undefined;
+  },
+  async deleteNotification(_userId, notificationId) {
+    return notificationId === 'noti-001' ? mockDeleteResult : undefined;
   },
 };
 
@@ -97,6 +102,17 @@ describe('NotificationsService', () => {
 
     it('알림이 존재하지 않으면 NotFoundException을 던진다', async () => {
       await expect(service.markNotificationAsRead('user-001', 'unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deleteNotification', () => {
+    it('알림이 존재하면 삭제 결과를 반환한다', async () => {
+      const result = await service.deleteNotification('user-001', 'noti-001');
+      expect(result.notificationId).toBe('noti-001');
+    });
+
+    it('알림이 존재하지 않으면 NotFoundException을 던진다', async () => {
+      await expect(service.deleteNotification('user-001', 'unknown')).rejects.toThrow(NotFoundException);
     });
   });
 });

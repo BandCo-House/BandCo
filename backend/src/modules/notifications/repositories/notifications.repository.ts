@@ -1,4 +1,5 @@
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
@@ -11,4 +12,5 @@ export interface NotificationsRepository {
   markAllNotificationsAsRead(userId: string): Promise<MarkAllReadResult>;
   markManyNotificationsAsRead(userId: string, notificationIds: string[]): Promise<MarkManyReadResult>;
   markNotificationAsRead(userId: string, notificationId: string): Promise<MarkNotificationReadResult | undefined>;
+  deleteNotification(userId: string, notificationId: string): Promise<DeleteNotificationResult | undefined>;
 }

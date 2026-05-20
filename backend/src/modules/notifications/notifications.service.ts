@@ -22,6 +22,14 @@ export class NotificationsService {
     return this.notificationsRepository.markAllNotificationsAsRead(userId);
   }
 
+  async deleteNotification(userId: string, notificationId: string) {
+    const result = await this.notificationsRepository.deleteNotification(userId, notificationId);
+    if (result === undefined) {
+      throw new NotFoundException('요청한 알림을 찾을 수 없습니다.');
+    }
+    return result;
+  }
+
   async markNotificationAsRead(userId: string, notificationId: string) {
     const result = await this.notificationsRepository.markNotificationAsRead(userId, notificationId);
     if (result === undefined) {

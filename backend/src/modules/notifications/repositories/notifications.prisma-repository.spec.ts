@@ -19,6 +19,7 @@ const mockPrisma = {
     findFirst: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
+    delete: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -182,6 +183,27 @@ describe('NotificationsPrismaRepository', () => {
 
       expect(result).toBeUndefined();
       expect(mockPrisma.notification.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteNotification', () => {
+    it('알림이 존재하면 삭제 후 notificationId를 반환한다', async () => {
+      mockPrisma.notification.findFirst.mockResolvedValue({ id: 'noti-001' });
+      mockPrisma.notification.delete.mockResolvedValue(undefined);
+
+      const result = await repository.deleteNotification('user-001', 'noti-001');
+
+      expect(mockPrisma.notification.delete).toHaveBeenCalledWith({ where: { id: 'noti-001' } });
+      expect(result).toEqual({ notificationId: 'noti-001' });
+    });
+
+    it('알림이 존재하지 않으면 undefined를 반환한다', async () => {
+      mockPrisma.notification.findFirst.mockResolvedValue(null);
+
+      const result = await repository.deleteNotification('user-001', 'unknown');
+
+      expect(result).toBeUndefined();
+      expect(mockPrisma.notification.delete).not.toHaveBeenCalled();
     });
   });
 });

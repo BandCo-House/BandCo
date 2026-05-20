@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import type { User } from 'src/generated/prisma';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
@@ -6,6 +6,7 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 
 import { GetNotificationsQueryDto } from './dto/get-notifications-query.dto';
 import { MarkManyReadDto } from './dto/mark-many-read.dto';
+import type { DeleteNotificationResult } from './types/delete-notification-result.type';
 import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkManyReadResult } from './types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
@@ -42,5 +43,14 @@ export class NotificationsController {
   ): Promise<ApiSuccessResponse<MarkNotificationReadResult>> {
     const result = await this.notificationsService.markNotificationAsRead(req.user.id, notificationId);
     return createSuccessResponse('알림 읽음 처리 성공', result);
+  }
+
+  @Delete(':notificationId')
+  async deleteNotification(
+    @Req() req: { user: User },
+    @Param('notificationId') notificationId: string,
+  ): Promise<ApiSuccessResponse<DeleteNotificationResult>> {
+    const result = await this.notificationsService.deleteNotification(req.user.id, notificationId);
+    return createSuccessResponse('알림 삭제 성공', result);
   }
 }
