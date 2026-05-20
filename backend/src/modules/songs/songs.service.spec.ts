@@ -19,6 +19,8 @@ describe('SongsService', () => {
       findExistingSkillTypeIds: jest.fn(),
       createSong: jest.fn(),
       findBandSongs: jest.fn(),
+      findSongWithBandMemberBySongIdAndUserId: jest.fn(),
+      updateSong: jest.fn(),
       ...repositoryOverrides,
     } as jest.Mocked<SongsRepository>;
 
@@ -426,5 +428,150 @@ describe('SongsService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
+  });
+
+  it('밴드 멤버가 곡을 수정하면 세션 타입을 검증하고 저장한다', async () => {
+    const { service, repository, transactionClient } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.findExistingSkillTypeIds.mockResolvedValue(['skill-type-1']);
+    repository.updateSong.mockResolvedValue({
+      song: {
+        id: 'song-id',
+        bandId: 'band-id',
+        title: 'Harder, Better, Faster, Stronger',
+        artistName: 'Daft Punk',
+        sourceUrl: 'https://www.deezer.com/track/3135556',
+        sourceType: 'DEEZER',
+        memo: '템포 124 기준으로 연습',
+        key: null,
+        bpm: null,
+        difficultyLevel: null,
+        updatedAt: '2026-05-20T00:00:00.000Z',
+        skills: [
+          {
+            skillTypeId: 'skill-type-1',
+            skillName: '기타',
+          },
+        ],
+      },
+    });
+
+    const input = {
+      memo: '템포 124 기준으로 연습',
+      skillTypeIds: ['skill-type-1'],
+    };
+
+    const result = await service.updateSong('user-id', 'song-id', input);
+
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).toHaveBeenCalledWith('song-id', 'user-id', transactionClient);
+    expect(repository.findExistingSkillTypeIds).toHaveBeenCalledWith(['skill-type-1'], transactionClient);
+    expect(repository.updateSong).toHaveBeenCalledWith('song-id', input, transactionClient);
+    expect(result.song.memo).toBe('템포 124 기준으로 연습');
+  });
+
+  it('곡 수정 시 상위 트랜잭션이 있으면 새 트랜잭션을 열지 않는다', async () => {
+    const { service, repository, prisma } = createService();
+    const tx = {};
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.updateSong.mockResolvedValue({
+      song: {
+        id: 'song-id',
+        bandId: 'band-id',
+        title: 'Song',
+        artistName: 'Artist',
+        sourceUrl: null,
+        sourceType: null,
+        memo: null,
+        key: null,
+        bpm: null,
+        difficultyLevel: null,
+        updatedAt: '2026-05-20T00:00:00.000Z',
+        skills: [],
+      },
+    });
+
+    await service.updateSong('user-id', 'song-id', { memo: null }, tx as never);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).toHaveBeenCalledWith('song-id', 'user-id', tx);
+    expect(repository.updateSong).toHaveBeenCalledWith('song-id', { memo: null }, tx);
+  });
+
+  it('곡 수정 본문이 비어 있으면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(service.updateSong('user-id', 'song-id', {})).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).not.toHaveBeenCalled();
+  });
+
+  it('곡 수정 시 곡이 없으면 NotFoundException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue(null);
+
+    await expect(service.updateSong('user-id', 'song-id', { memo: '메모' })).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('곡 수정 시 밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: null,
+    });
+
+    await expect(service.updateSong('user-id', 'song-id', { memo: '메모' })).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('곡 수정 시 세션 타입 ID가 중복되면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+
+    await expect(service.updateSong('user-id', 'song-id', { skillTypeIds: ['skill-type-1', 'skill-type-1'] })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(repository.updateSong).not.toHaveBeenCalled();
+  });
+
+  it('곡 수정 시 존재하지 않는 세션 타입이 있으면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.findExistingSkillTypeIds.mockResolvedValue([]);
+
+    await expect(service.updateSong('user-id', 'song-id', { skillTypeIds: ['skill-type-1'] })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.updateSong).not.toHaveBeenCalled();
   });
 });

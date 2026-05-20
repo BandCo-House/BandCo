@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -7,9 +7,11 @@ import type { User } from '../../generated/prisma';
 import { CreateSongBodyDto } from './dto/create-song.dto';
 import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
 import { SearchDeezerTrackPreviewsQueryDto } from './dto/search-deezer-track-previews-query.dto';
+import { UpdateSongBodyDto } from './dto/update-song.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
+import type { UpdateSongResult } from './types/update-song-result.type';
 import { SongsService } from './songs.service';
 
 interface AuthenticatedRequest {
@@ -42,6 +44,18 @@ export class SongsController {
     const result = await this.songsService.getBandSongs(req.user.id, bandId, query);
 
     return createSuccessResponse('곡 목록 조회 성공', result);
+  }
+
+  @Patch('songs/:songId')
+  @UseGuards(AccessTokenGuard)
+  async updateSong(
+    @Req() req: AuthenticatedRequest,
+    @Param('songId') songId: string,
+    @Body() body: UpdateSongBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateSongResult>> {
+    const result = await this.songsService.updateSong(req.user.id, songId, body);
+
+    return createSuccessResponse('곡이 수정되었습니다.', result);
   }
 
   @Get('songs/spotify/tracks/:trackId')

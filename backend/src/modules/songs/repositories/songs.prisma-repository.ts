@@ -3,9 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { GetBandSongsQuery, SongListOrderDirection } from '../dto/get-band-songs-query.dto';
+import type { UpdateSongInput } from '../dto/update-song.dto';
 import type { CreatedSongSkillType, CreateSongResult } from '../types/create-song-result.type';
 import type { GetBandSongsResult, SongListItem } from '../types/song-list.type';
 import type { SongSourceType } from '../types/song-preview.type';
+import type { UpdateSongResult } from '../types/update-song-result.type';
 
 import type { CreateSongRepositoryInput, SongsRepository } from './songs.repository';
 
@@ -116,6 +118,66 @@ export class SongsPrismaRepository implements SongsRepository {
   }
 
   /**
+   * 곡 수정 권한 판단에 필요한 곡의 밴드와 요청자 멤버 정보를 조회한다.
+   *
+   * @param {string} songId - 수정할 곡 ID
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; bandId: string; member: { id: string; userId: string } | null } | null>} 곡과 요청자 멤버 정보
+   */
+  async findSongWithBandMemberBySongIdAndUserId(
+    songId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandId: string;
+    member: {
+      id: string;
+      userId: string;
+    } | null;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    const song = await client.song.findFirst({
+      where: {
+        id: songId,
+        band: {
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        bandId: true,
+        band: {
+          select: {
+            members: {
+              where: {
+                userId,
+              },
+              select: {
+                id: true,
+                userId: true,
+              },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (song === null) {
+      return null;
+    }
+
+    return {
+      id: song.id,
+      bandId: song.bandId,
+      member: song.band.members[0] ?? null,
+    };
+  }
+
+  /**
    * 요청받은 세션 타입 ID가 실제로 존재하는지 확인한다.
    *
    * @param {string[]} skillTypeIds - 확인할 세션 타입 ID 목록
@@ -214,6 +276,76 @@ export class SongsPrismaRepository implements SongsRepository {
     };
   }
 
+  /**
+   * 곡 기본 정보와 곡 세션 타입 연결을 수정한다.
+   *
+   * @param {string} songId - 수정할 곡 ID
+   * @param {UpdateSongInput} input - Service 검증이 끝난 곡 수정 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateSongResult>} 수정된 곡 정보
+   */
+  async updateSong(songId: string, input: UpdateSongInput, tx?: Prisma.TransactionClient): Promise<UpdateSongResult> {
+    const client = tx ?? this.prisma;
+
+    if (input.skillTypeIds !== undefined) {
+      await client.songSkill.deleteMany({
+        where: {
+          songId,
+        },
+      });
+
+      if (input.skillTypeIds.length > 0) {
+        await client.songSkill.createMany({
+          data: input.skillTypeIds.map(skillTypeId => ({
+            songId,
+            skillTypeId,
+          })),
+        });
+      }
+    }
+
+    const updatedSong = await client.song.update({
+      where: {
+        id: songId,
+      },
+      data: this.createUpdateSongData(input),
+      include: {
+        songSkills: {
+          include: {
+            skillType: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            skillTypeId: 'asc',
+          },
+        },
+      },
+    });
+
+    return {
+      song: {
+        id: updatedSong.id,
+        bandId: updatedSong.bandId,
+        title: updatedSong.title,
+        artistName: updatedSong.artistName,
+        sourceUrl: updatedSong.sourceUrl,
+        sourceType: updatedSong.sourceType as SongSourceType | null,
+        memo: updatedSong.memo,
+        key: updatedSong.key,
+        bpm: updatedSong.bpm,
+        difficultyLevel: updatedSong.difficultyLevel,
+        updatedAt: updatedSong.updatedAt.toISOString(),
+        skills: updatedSong.songSkills.map(songSkill => ({
+          skillTypeId: songSkill.skillTypeId,
+          skillName: songSkill.skillType.name,
+        })),
+      },
+    };
+  }
+
   private mapSkillTypes(skillTypeIds: string[], skillTypes: CreatedSongSkillType[]): CreatedSongSkillType[] {
     return skillTypeIds
       .map(skillTypeId => skillTypes.find(skillType => skillType.id === skillTypeId))
@@ -281,6 +413,32 @@ export class SongsPrismaRepository implements SongsRepository {
     }
 
     return 'gt';
+  }
+
+  private createUpdateSongData(input: UpdateSongInput): Prisma.SongUpdateInput {
+    const data: Prisma.SongUpdateInput = {};
+
+    if (input.title !== undefined) {
+      data.title = input.title;
+    }
+
+    if (input.artistName !== undefined) {
+      data.artistName = input.artistName;
+    }
+
+    if (input.sourceUrl !== undefined) {
+      data.sourceUrl = input.sourceUrl;
+    }
+
+    if (input.sourceType !== undefined) {
+      data.sourceType = input.sourceType;
+    }
+
+    if (input.memo !== undefined) {
+      data.memo = input.memo;
+    }
+
+    return data;
   }
 
   private mapSongListItem(

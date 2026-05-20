@@ -12,9 +12,12 @@ const createPrismaMock = () => ({
   song: {
     create: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
   },
   songSkill: {
     createMany: jest.fn(),
+    deleteMany: jest.fn(),
   },
 });
 
@@ -295,6 +298,86 @@ describe('SongsPrismaRepository', () => {
     });
   });
 
+  describe('findSongWithBandMemberBySongIdAndUserId', () => {
+    it('삭제되지 않은 밴드의 곡과 요청자 멤버를 조회한다', async () => {
+      prisma.song.findFirst.mockResolvedValue({
+        id: 'song-id',
+        bandId: 'band-id',
+        band: {
+          members: [
+            {
+              id: 'band-member-id',
+              userId: 'user-id',
+            },
+          ],
+        },
+      });
+
+      const result = await repository.findSongWithBandMemberBySongIdAndUserId('song-id', 'user-id');
+
+      expect(prisma.song.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'song-id',
+          band: {
+            deletedAt: null,
+          },
+        },
+        select: {
+          id: true,
+          bandId: true,
+          band: {
+            select: {
+              members: {
+                where: {
+                  userId: 'user-id',
+                },
+                select: {
+                  id: true,
+                  userId: true,
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+      });
+      expect(result).toEqual({
+        id: 'song-id',
+        bandId: 'band-id',
+        member: {
+          id: 'band-member-id',
+          userId: 'user-id',
+        },
+      });
+    });
+
+    it('곡이 없으면 null을 반환한다', async () => {
+      prisma.song.findFirst.mockResolvedValue(null);
+
+      const result = await repository.findSongWithBandMemberBySongIdAndUserId('song-id', 'user-id');
+
+      expect(result).toBeNull();
+    });
+
+    it('곡은 있지만 요청자가 밴드 멤버가 아니면 member를 null로 반환한다', async () => {
+      prisma.song.findFirst.mockResolvedValue({
+        id: 'song-id',
+        bandId: 'band-id',
+        band: {
+          members: [],
+        },
+      });
+
+      const result = await repository.findSongWithBandMemberBySongIdAndUserId('song-id', 'user-id');
+
+      expect(result).toEqual({
+        id: 'song-id',
+        bandId: 'band-id',
+        member: null,
+      });
+    });
+  });
+
   describe('createSong', () => {
     const input = {
       bandId: 'band-id',
@@ -414,6 +497,130 @@ describe('SongsPrismaRepository', () => {
       });
 
       expect(prisma.songSkill.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateSong', () => {
+    beforeEach(() => {
+      prisma.songSkill.deleteMany.mockResolvedValue({ count: 2 });
+      prisma.songSkill.createMany.mockResolvedValue({ count: 1 });
+      prisma.song.update.mockResolvedValue({
+        id: 'song-id',
+        bandId: 'band-id',
+        title: 'Harder, Better, Faster, Stronger',
+        artistName: 'Daft Punk',
+        sourceUrl: 'https://www.deezer.com/track/3135556',
+        sourceType: 'DEEZER',
+        memo: '템포 124 기준으로 연습',
+        key: null,
+        bpm: null,
+        difficultyLevel: null,
+        updatedAt: new Date('2026-05-20T00:00:00.000Z'),
+        songSkills: [
+          {
+            skillTypeId: 'skill-type-1',
+            skillType: {
+              name: '기타',
+            },
+          },
+        ],
+      });
+    });
+
+    it('곡 기본 정보와 곡 세션 타입 연결을 수정한다', async () => {
+      await repository.updateSong('song-id', {
+        title: 'Harder, Better, Faster, Stronger',
+        memo: '템포 124 기준으로 연습',
+        skillTypeIds: ['skill-type-1'],
+      });
+
+      expect(prisma.songSkill.deleteMany).toHaveBeenCalledWith({
+        where: {
+          songId: 'song-id',
+        },
+      });
+      expect(prisma.songSkill.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            songId: 'song-id',
+            skillTypeId: 'skill-type-1',
+          },
+        ],
+      });
+      expect(prisma.song.update).toHaveBeenCalledWith({
+        where: {
+          id: 'song-id',
+        },
+        data: {
+          title: 'Harder, Better, Faster, Stronger',
+          memo: '템포 124 기준으로 연습',
+        },
+        include: {
+          songSkills: {
+            include: {
+              skillType: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              skillTypeId: 'asc',
+            },
+          },
+        },
+      });
+    });
+
+    it('skillTypeIds가 없으면 곡 세션 타입 연결을 수정하지 않는다', async () => {
+      await repository.updateSong('song-id', {
+        memo: null,
+      });
+
+      expect(prisma.songSkill.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.songSkill.createMany).not.toHaveBeenCalled();
+      expect(prisma.song.update).toHaveBeenCalledWith(expect.objectContaining({ data: { memo: null } }));
+    });
+
+    it('skillTypeIds가 빈 배열이면 기존 연결만 삭제한다', async () => {
+      await repository.updateSong('song-id', {
+        skillTypeIds: [],
+      });
+
+      expect(prisma.songSkill.deleteMany).toHaveBeenCalledWith({
+        where: {
+          songId: 'song-id',
+        },
+      });
+      expect(prisma.songSkill.createMany).not.toHaveBeenCalled();
+    });
+
+    it('수정된 곡 정보를 응답 형태로 매핑한다', async () => {
+      const result = await repository.updateSong('song-id', {
+        memo: '템포 124 기준으로 연습',
+      });
+
+      expect(result).toEqual({
+        song: {
+          id: 'song-id',
+          bandId: 'band-id',
+          title: 'Harder, Better, Faster, Stronger',
+          artistName: 'Daft Punk',
+          sourceUrl: 'https://www.deezer.com/track/3135556',
+          sourceType: 'DEEZER',
+          memo: '템포 124 기준으로 연습',
+          key: null,
+          bpm: null,
+          difficultyLevel: null,
+          updatedAt: '2026-05-20T00:00:00.000Z',
+          skills: [
+            {
+              skillTypeId: 'skill-type-1',
+              skillName: '기타',
+            },
+          ],
+        },
+      });
     });
   });
 });

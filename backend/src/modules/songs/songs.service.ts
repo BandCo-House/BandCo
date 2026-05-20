@@ -5,10 +5,12 @@ import type { Prisma } from '../../generated/prisma';
 
 import type { CreateSongInput } from './dto/create-song.dto';
 import type { GetBandSongsQuery } from './dto/get-band-songs-query.dto';
+import type { UpdateSongInput } from './dto/update-song.dto';
 import { SONGS_REPOSITORY, type SongsRepository } from './repositories/songs.repository';
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
+import type { UpdateSongResult } from './types/update-song-result.type';
 import { DeezerTrackClient, type DeezerTrackSearcher } from './deezer-track.client';
 import { parseDeezerTrackToSongPreview } from './deezer-track.parser';
 import { SpotifyTrackClient, type SpotifyTrackReader } from './spotify-track.client';
@@ -121,6 +123,44 @@ export class SongsService {
     return this.songsRepository.findBandSongs(band.id, query, tx);
   }
 
+  /**
+   * 밴드 멤버만 곡 기본 정보와 세션 타입 연결을 수정할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} songId - 수정할 곡 ID
+   * @param {UpdateSongInput} input - 곡 수정 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateSongResult>} 수정된 곡 정보
+   */
+  async updateSong(userId: string, songId: string, input: UpdateSongInput, tx?: Prisma.TransactionClient): Promise<UpdateSongResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<UpdateSongResult> => {
+      this.validateUpdateSongInput(input);
+
+      const song = await this.songsRepository.findSongWithBandMemberBySongIdAndUserId(songId, userId, client);
+
+      if (song === null) {
+        throw new NotFoundException('요청한 곡을 찾을 수 없습니다.');
+      }
+
+      if (song.member === null) {
+        throw new ForbiddenException('밴드 멤버만 곡을 수정할 수 있습니다.');
+      }
+
+      if (input.skillTypeIds !== undefined) {
+        this.validateDuplicatedIds(input.skillTypeIds);
+        await this.validateSkillTypes(input.skillTypeIds, client);
+      }
+
+      return this.songsRepository.updateSong(song.id, input, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
   private validateDuplicatedIds(ids: string[]): void {
     const uniqueIds = new Set(ids);
 
@@ -161,6 +201,19 @@ export class SongsService {
 
     if (Number.isNaN(cursorCreatedAt.getTime())) {
       throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
+    }
+  }
+
+  private validateUpdateSongInput(input: UpdateSongInput): void {
+    const hasTitle = input.title !== undefined;
+    const hasArtistName = input.artistName !== undefined;
+    const hasSourceUrl = input.sourceUrl !== undefined;
+    const hasSourceType = input.sourceType !== undefined;
+    const hasMemo = input.memo !== undefined;
+    const hasSkillTypeIds = input.skillTypeIds !== undefined;
+
+    if (!hasTitle && !hasArtistName && !hasSourceUrl && !hasSourceType && !hasMemo && !hasSkillTypeIds) {
+      throw new BadRequestException('수정할 곡 정보가 필요합니다.');
     }
   }
 }
