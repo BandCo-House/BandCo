@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -9,6 +9,7 @@ import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
 import { SearchDeezerTrackPreviewsQueryDto } from './dto/search-deezer-track-previews-query.dto';
 import { UpdateSongBodyDto } from './dto/update-song.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
+import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
@@ -56,6 +57,14 @@ export class SongsController {
     const result = await this.songsService.updateSong(req.user.id, songId, body);
 
     return createSuccessResponse('곡이 수정되었습니다.', result);
+  }
+
+  @Delete('songs/:songId')
+  @UseGuards(AccessTokenGuard)
+  async deleteSong(@Req() req: AuthenticatedRequest, @Param('songId') songId: string): Promise<ApiSuccessResponse<DeleteSongResult>> {
+    const result = await this.songsService.deleteSong(req.user.id, songId);
+
+    return createSuccessResponse('곡이 삭제되었습니다.', result);
   }
 
   @Get('songs/spotify/tracks/:trackId')

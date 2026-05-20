@@ -5,6 +5,7 @@ import type { Prisma } from '../../../generated/prisma';
 import type { GetBandSongsQuery, SongListOrderDirection } from '../dto/get-band-songs-query.dto';
 import type { UpdateSongInput } from '../dto/update-song.dto';
 import type { CreatedSongSkillType, CreateSongResult } from '../types/create-song-result.type';
+import type { DeleteSongResult } from '../types/delete-song-result.type';
 import type { GetBandSongsResult, SongListItem } from '../types/song-list.type';
 import type { SongSourceType } from '../types/song-preview.type';
 import type { UpdateSongResult } from '../types/update-song-result.type';
@@ -343,6 +344,32 @@ export class SongsPrismaRepository implements SongsRepository {
           skillName: songSkill.skillType.name,
         })),
       },
+    };
+  }
+
+  /**
+   * Song은 삭제 상태 컬럼이 없으므로 hard delete 한다.
+   *
+   * @param {string} songId - 삭제할 곡 ID
+   * @param {Date} deletedAt - 응답에 표시할 삭제 처리 시각
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteSongResult>} 삭제 처리 결과
+   */
+  async deleteSong(songId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteSongResult> {
+    const client = tx ?? this.prisma;
+
+    const deletedSong = await client.song.delete({
+      where: {
+        id: songId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return {
+      songId: deletedSong.id,
+      deletedAt: deletedAt.toISOString(),
     };
   }
 

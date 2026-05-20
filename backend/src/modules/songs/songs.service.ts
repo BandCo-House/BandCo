@@ -8,6 +8,7 @@ import type { GetBandSongsQuery } from './dto/get-band-songs-query.dto';
 import type { UpdateSongInput } from './dto/update-song.dto';
 import { SONGS_REPOSITORY, type SongsRepository } from './repositories/songs.repository';
 import type { CreateSongResult } from './types/create-song-result.type';
+import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
@@ -152,6 +153,36 @@ export class SongsService {
       }
 
       return this.songsRepository.updateSong(song.id, input, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 멤버만 곡을 hard delete 할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} songId - 삭제할 곡 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteSongResult>} 삭제 처리 결과
+   */
+  async deleteSong(userId: string, songId: string, tx?: Prisma.TransactionClient): Promise<DeleteSongResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<DeleteSongResult> => {
+      const song = await this.songsRepository.findSongWithBandMemberBySongIdAndUserId(songId, userId, client);
+
+      if (song === null) {
+        throw new NotFoundException('요청한 곡을 찾을 수 없습니다.');
+      }
+
+      if (song.member === null) {
+        throw new ForbiddenException('밴드 멤버만 곡을 삭제할 수 있습니다.');
+      }
+
+      return this.songsRepository.deleteSong(song.id, new Date(), client);
     };
 
     if (tx !== undefined) {

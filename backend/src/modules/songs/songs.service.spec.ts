@@ -21,6 +21,7 @@ describe('SongsService', () => {
       findBandSongs: jest.fn(),
       findSongWithBandMemberBySongIdAndUserId: jest.fn(),
       updateSong: jest.fn(),
+      deleteSong: jest.fn(),
       ...repositoryOverrides,
     } as jest.Mocked<SongsRepository>;
 
@@ -573,5 +574,74 @@ describe('SongsService', () => {
 
     await expect(service.updateSong('user-id', 'song-id', { skillTypeIds: ['skill-type-1'] })).rejects.toBeInstanceOf(BadRequestException);
     expect(repository.updateSong).not.toHaveBeenCalled();
+  });
+
+  it('밴드 멤버가 곡을 삭제한다', async () => {
+    const { service, repository, transactionClient } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.deleteSong.mockResolvedValue({
+      songId: 'song-id',
+      deletedAt: '2026-05-20T00:00:00.000Z',
+    });
+
+    const result = await service.deleteSong('user-id', 'song-id');
+
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).toHaveBeenCalledWith('song-id', 'user-id', transactionClient);
+    expect(repository.deleteSong).toHaveBeenCalledWith('song-id', expect.any(Date), transactionClient);
+    expect(result.songId).toBe('song-id');
+  });
+
+  it('곡 삭제 시 상위 트랜잭션이 있으면 새 트랜잭션을 열지 않는다', async () => {
+    const { service, repository, prisma } = createService();
+    const tx = {};
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.deleteSong.mockResolvedValue({
+      songId: 'song-id',
+      deletedAt: '2026-05-20T00:00:00.000Z',
+    });
+
+    await service.deleteSong('user-id', 'song-id', tx as never);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).toHaveBeenCalledWith('song-id', 'user-id', tx);
+    expect(repository.deleteSong).toHaveBeenCalledWith('song-id', expect.any(Date), tx);
+  });
+
+  it('곡 삭제 시 곡이 없으면 NotFoundException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue(null);
+
+    await expect(service.deleteSong('user-id', 'song-id')).rejects.toBeInstanceOf(NotFoundException);
+    expect(repository.deleteSong).not.toHaveBeenCalled();
+  });
+
+  it('곡 삭제 시 밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: null,
+    });
+
+    await expect(service.deleteSong('user-id', 'song-id')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repository.deleteSong).not.toHaveBeenCalled();
   });
 });

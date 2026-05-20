@@ -14,6 +14,7 @@ const createPrismaMock = () => ({
     findMany: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   },
   songSkill: {
     createMany: jest.fn(),
@@ -621,6 +622,45 @@ describe('SongsPrismaRepository', () => {
           ],
         },
       });
+    });
+  });
+
+  describe('deleteSong', () => {
+    it('곡을 hard delete하고 삭제 처리 시각을 응답한다', async () => {
+      prisma.song.delete.mockResolvedValue({
+        id: 'song-id',
+      });
+
+      const deletedAt = new Date('2026-05-20T00:00:00.000Z');
+      const result = await repository.deleteSong('song-id', deletedAt);
+
+      expect(prisma.song.delete).toHaveBeenCalledWith({
+        where: {
+          id: 'song-id',
+        },
+        select: {
+          id: true,
+        },
+      });
+      expect(result).toEqual({
+        songId: 'song-id',
+        deletedAt: '2026-05-20T00:00:00.000Z',
+      });
+    });
+
+    it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
+      const tx = {
+        song: {
+          delete: jest.fn().mockResolvedValue({
+            id: 'song-id',
+          }),
+        },
+      };
+
+      await repository.deleteSong('song-id', new Date('2026-05-20T00:00:00.000Z'), tx as never);
+
+      expect(tx.song.delete).toHaveBeenCalled();
+      expect(prisma.song.delete).not.toHaveBeenCalled();
     });
   });
 });

@@ -3,6 +3,7 @@ import type { CreateSongInput } from '../dto/create-song.dto';
 import type { GetBandSongsQuery } from '../dto/get-band-songs-query.dto';
 import type { UpdateSongInput } from '../dto/update-song.dto';
 import type { CreateSongResult } from '../types/create-song-result.type';
+import type { DeleteSongResult } from '../types/delete-song-result.type';
 import type { GetBandSongsResult } from '../types/song-list.type';
 import type { UpdateSongResult } from '../types/update-song-result.type';
 
@@ -43,4 +44,5 @@ export interface SongsRepository {
     } | null;
   } | null>;
   updateSong(songId: string, input: UpdateSongInput, tx?: Prisma.TransactionClient): Promise<UpdateSongResult>;
+  deleteSong(songId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteSongResult>;
 }
