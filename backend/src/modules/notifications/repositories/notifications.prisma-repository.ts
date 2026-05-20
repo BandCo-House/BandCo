@@ -3,6 +3,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 
 import type { NotificationType } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
 
@@ -90,6 +91,14 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
       targetPath: updated.targetPath ?? '',
       createdAt: updated.createdAt?.toISOString() ?? '',
     };
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<MarkAllReadResult> {
+    const result = await this.prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+    return { updatedCount: result.count };
   }
 
   private buildNextUrl(query: GetNotificationsQuery, lastItem: NotificationRow): string {

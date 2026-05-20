@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { NotificationsRepository } from './repositories/notifications.repository';
 import { NOTIFICATIONS_REPOSITORY } from './repositories/notifications.repository';
+import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import { NotificationsService } from './notifications.service';
@@ -33,9 +34,14 @@ const mockReadResult: MarkNotificationReadResult = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
+const mockAllReadResult: MarkAllReadResult = { updatedCount: 3 };
+
 const repositoryStub: NotificationsRepository = {
   async findNotifications() {
     return mockListResult;
+  },
+  async markAllNotificationsAsRead() {
+    return mockAllReadResult;
   },
   async markNotificationAsRead(_userId, notificationId) {
     return notificationId === 'noti-001' ? mockReadResult : undefined;
@@ -61,6 +67,13 @@ describe('NotificationsService', () => {
       expect(result.items[0]?.type).toBe('INVITE');
       expect(result.meta.count).toBe(1);
       expect(result.meta.next).toBeNull();
+    });
+  });
+
+  describe('markAllNotificationsAsRead', () => {
+    it('repository 결과를 그대로 반환한다', async () => {
+      const result = await service.markAllNotificationsAsRead('user-001');
+      expect(result.updatedCount).toBe(3);
     });
   });
 

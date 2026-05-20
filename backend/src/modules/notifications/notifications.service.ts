@@ -14,6 +14,10 @@ export class NotificationsService {
     return this.notificationsRepository.findNotifications(userId, query);
   }
 
+  async markAllNotificationsAsRead(userId: string) {
+    return this.notificationsRepository.markAllNotificationsAsRead(userId);
+  }
+
   async markNotificationAsRead(userId: string, notificationId: string) {
     const result = await this.notificationsRepository.markNotificationAsRead(userId, notificationId);
     if (result === undefined) {

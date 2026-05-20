@@ -18,6 +18,7 @@ const mockPrisma = {
     findMany: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
   },
 };
 
@@ -108,6 +109,28 @@ describe('NotificationsPrismaRepository', () => {
 
       expect(result.meta.next).toBeNull();
       expect(result.items).toHaveLength(0);
+    });
+  });
+
+  describe('markAllNotificationsAsRead', () => {
+    it('읽지 않은 알림을 모두 읽음 처리하고 updatedCount를 반환한다', async () => {
+      mockPrisma.notification.updateMany.mockResolvedValue({ count: 5 });
+
+      const result = await repository.markAllNotificationsAsRead('user-001');
+
+      expect(mockPrisma.notification.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-001', isRead: false },
+        data: { isRead: true },
+      });
+      expect(result.updatedCount).toBe(5);
+    });
+
+    it('읽지 않은 알림이 없으면 updatedCount가 0이다', async () => {
+      mockPrisma.notification.updateMany.mockResolvedValue({ count: 0 });
+
+      const result = await repository.markAllNotificationsAsRead('user-001');
+
+      expect(result.updatedCount).toBe(0);
     });
   });
 

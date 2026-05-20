@@ -5,6 +5,7 @@ import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { GetNotificationsQueryDto } from './dto/get-notifications-query.dto';
+import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
 import { NotificationsService } from './notifications.service';
@@ -18,6 +19,12 @@ export class NotificationsController {
   async getNotifications(@Req() req: { user: User }, @Query() query: GetNotificationsQueryDto): Promise<ApiSuccessResponse<GetNotificationsResult>> {
     const result = await this.notificationsService.getNotifications(req.user.id, query);
     return createSuccessResponse('알림 목록 조회 성공', result);
+  }
+
+  @Patch('read-all')
+  async markAllNotificationsAsRead(@Req() req: { user: User }): Promise<ApiSuccessResponse<MarkAllReadResult>> {
+    const result = await this.notificationsService.markAllNotificationsAsRead(req.user.id);
+    return createSuccessResponse('전체 알림 읽음 처리 성공', result);
   }
 
   @Patch(':notificationId/read')
