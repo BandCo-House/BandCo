@@ -37,4 +37,8 @@ export class NotificationsService {
     }
     return result;
   }
+
+  async deleteManyNotifications(userId: string, notificationIds: string[]) {
+    return this.notificationsRepository.deleteManyNotifications(userId, notificationIds);
+  }
 }

@@ -20,6 +20,7 @@ const mockPrisma = {
     update: jest.fn(),
     updateMany: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -204,6 +205,32 @@ describe('NotificationsPrismaRepository', () => {
 
       expect(result).toBeUndefined();
       expect(mockPrisma.notification.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteManyNotifications', () => {
+    it('실제 존재하는 ID만 삭제하고 결과를 반환한다', async () => {
+      mockPrisma.notification.findMany.mockResolvedValue([{ id: 'noti-001' }, { id: 'noti-002' }]);
+      mockPrisma.notification.deleteMany.mockResolvedValue({ count: 2 });
+
+      const result = await repository.deleteManyNotifications('user-001', ['noti-001', 'noti-002', 'noti-999']);
+
+      expect(mockPrisma.notification.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-001', id: { in: ['noti-001', 'noti-002', 'noti-999'] } } }),
+      );
+      expect(mockPrisma.notification.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['noti-001', 'noti-002'] } } });
+      expect(result.deletedCount).toBe(2);
+      expect(result.notificationIds).toEqual(['noti-001', 'noti-002']);
+    });
+
+    it('해당 알림이 없으면 deletedCount가 0이다', async () => {
+      mockPrisma.notification.findMany.mockResolvedValue([]);
+      mockPrisma.notification.deleteMany.mockResolvedValue({ count: 0 });
+
+      const result = await repository.deleteManyNotifications('user-001', ['noti-999']);
+
+      expect(result.deletedCount).toBe(0);
+      expect(result.notificationIds).toEqual([]);
     });
   });
 });

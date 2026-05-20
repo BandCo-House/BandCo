@@ -4,8 +4,10 @@ import type { User } from 'src/generated/prisma';
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
+import { DeleteManyNotificationsDto } from './dto/delete-many-notifications.dto';
 import { GetNotificationsQueryDto } from './dto/get-notifications-query.dto';
 import { MarkManyReadDto } from './dto/mark-many-read.dto';
+import type { DeleteManyNotificationsResult } from './types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from './types/delete-notification-result.type';
 import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkManyReadResult } from './types/mark-many-read-result.type';
@@ -43,6 +45,15 @@ export class NotificationsController {
   ): Promise<ApiSuccessResponse<MarkNotificationReadResult>> {
     const result = await this.notificationsService.markNotificationAsRead(req.user.id, notificationId);
     return createSuccessResponse('알림 읽음 처리 성공', result);
+  }
+
+  @Delete()
+  async deleteManyNotifications(
+    @Req() req: { user: User },
+    @Body() dto: DeleteManyNotificationsDto,
+  ): Promise<ApiSuccessResponse<DeleteManyNotificationsResult>> {
+    const result = await this.notificationsService.deleteManyNotifications(req.user.id, dto.notificationIds);
+    return createSuccessResponse('다건 알림 삭제 성공', result);
   }
 
   @Delete(':notificationId')

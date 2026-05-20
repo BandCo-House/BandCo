@@ -3,6 +3,7 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 
 import type { NotificationType } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
@@ -130,6 +131,18 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
 
     await this.prisma.notification.delete({ where: { id: notificationId } });
     return { notificationId };
+  }
+
+  async deleteManyNotifications(userId: string, notificationIds: string[]): Promise<DeleteManyNotificationsResult> {
+    return this.prisma.$transaction(async tx => {
+      const targets = await tx.notification.findMany({
+        where: { userId, id: { in: notificationIds } },
+        select: { id: true },
+      });
+      const targetIds = targets.map(n => n.id);
+      await tx.notification.deleteMany({ where: { id: { in: targetIds } } });
+      return { deletedCount: targetIds.length, notificationIds: targetIds };
+    });
   }
 
   private buildNextUrl(query: GetNotificationsQuery, lastItem: NotificationRow): string {

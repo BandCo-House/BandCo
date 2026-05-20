@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { NotificationsRepository } from './repositories/notifications.repository';
 import { NOTIFICATIONS_REPOSITORY } from './repositories/notifications.repository';
+import type { DeleteManyNotificationsResult } from './types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from './types/delete-notification-result.type';
 import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkManyReadResult } from './types/mark-many-read-result.type';
@@ -39,6 +40,7 @@ const mockReadResult: MarkNotificationReadResult = {
 const mockAllReadResult: MarkAllReadResult = { updatedCount: 3 };
 const mockManyReadResult: MarkManyReadResult = { updatedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
 const mockDeleteResult: DeleteNotificationResult = { notificationId: 'noti-001' };
+const mockDeleteManyResult: DeleteManyNotificationsResult = { deletedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
 
 const repositoryStub: NotificationsRepository = {
   async findNotifications() {
@@ -55,6 +57,9 @@ const repositoryStub: NotificationsRepository = {
   },
   async deleteNotification(_userId, notificationId) {
     return notificationId === 'noti-001' ? mockDeleteResult : undefined;
+  },
+  async deleteManyNotifications() {
+    return mockDeleteManyResult;
   },
 };
 
@@ -113,6 +118,14 @@ describe('NotificationsService', () => {
 
     it('알림이 존재하지 않으면 NotFoundException을 던진다', async () => {
       await expect(service.deleteNotification('user-001', 'unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deleteManyNotifications', () => {
+    it('repository 결과를 그대로 반환한다', async () => {
+      const result = await service.deleteManyNotifications('user-001', ['noti-001', 'noti-002']);
+      expect(result.deletedCount).toBe(2);
+      expect(result.notificationIds).toEqual(['noti-001', 'noti-002']);
     });
   });
 });
