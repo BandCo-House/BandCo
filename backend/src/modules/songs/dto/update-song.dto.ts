@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 import { normalizeOptionalStringValue, trimStringValue } from '../../../common/validation/transform.util';
 import { enumValidationMessage } from '../../../common/validation-message/enum-validation.message';
@@ -16,7 +16,7 @@ import { SONG_SOURCE_TYPES } from './create-song.dto';
  */
 export class UpdateSongBodyDto {
   @Transform(trimStringValue)
-  @ValidateIf((_, value) => value !== undefined)
+  @IsOptional()
   @IsString({
     message: stringValidationMessage,
   })
@@ -29,7 +29,7 @@ export class UpdateSongBodyDto {
   title?: string;
 
   @Transform(trimStringValue)
-  @ValidateIf((_, value) => value !== undefined)
+  @IsOptional()
   @IsString({
     message: stringValidationMessage,
   })
@@ -42,7 +42,7 @@ export class UpdateSongBodyDto {
   artistName?: string;
 
   @Transform(normalizeOptionalStringValue)
-  @ValidateIf((_, value) => value !== undefined && value !== null)
+  @IsOptional()
   @IsString({
     message: stringValidationMessage,
   })
@@ -55,7 +55,7 @@ export class UpdateSongBodyDto {
   sourceType?: SongSourceType | null;
 
   @Transform(normalizeOptionalStringValue)
-  @ValidateIf((_, value) => value !== undefined && value !== null)
+  @IsOptional()
   @IsString({
     message: stringValidationMessage,
   })
