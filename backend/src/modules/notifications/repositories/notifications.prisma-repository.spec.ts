@@ -90,8 +90,9 @@ describe('NotificationsPrismaRepository', () => {
       expect(result.meta.next).toBeNull();
     });
 
-    it('count === take이면 meta.next에 다음 페이지 URL을 반환한다', async () => {
-      const notifications = Array.from({ length: 20 }, (_, i) => ({
+    it('다음 페이지가 있으면 meta.next에 URL을 반환한다', async () => {
+      // take + 1개를 반환해야 hasNext가 true가 됨
+      const notifications = Array.from({ length: 21 }, (_, i) => ({
         ...mockNotification,
         id: `noti-${String(i).padStart(3, '0')}`,
         createdAt: new Date(`2026-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z`),

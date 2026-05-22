@@ -1,3 +1,4 @@
+import type { Prisma } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
@@ -9,10 +10,10 @@ import type { GetNotificationsResult } from '../types/notification-list-item.typ
 export const NOTIFICATIONS_REPOSITORY = Symbol('NOTIFICATIONS_REPOSITORY');
 
 export interface NotificationsRepository {
-  findNotifications(userId: string, query: GetNotificationsQuery): Promise<GetNotificationsResult>;
-  markAllNotificationsAsRead(userId: string): Promise<MarkAllReadResult>;
-  markManyNotificationsAsRead(userId: string, notificationIds: string[]): Promise<MarkManyReadResult>;
-  markNotificationAsRead(userId: string, notificationId: string): Promise<MarkNotificationReadResult | undefined>;
-  deleteNotification(userId: string, notificationId: string): Promise<DeleteNotificationResult | undefined>;
-  deleteManyNotifications(userId: string, notificationIds: string[]): Promise<DeleteManyNotificationsResult>;
+  findNotifications(userId: string, query: GetNotificationsQuery, tx?: Prisma.TransactionClient): Promise<GetNotificationsResult>;
+  markAllNotificationsAsRead(userId: string, tx?: Prisma.TransactionClient): Promise<MarkAllReadResult>;
+  markManyNotificationsAsRead(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient): Promise<MarkManyReadResult>;
+  markNotificationAsRead(userId: string, notificationId: string, tx?: Prisma.TransactionClient): Promise<MarkNotificationReadResult | undefined>;
+  deleteNotification(userId: string, notificationId: string, tx?: Prisma.TransactionClient): Promise<DeleteNotificationResult | undefined>;
+  deleteManyNotifications(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient): Promise<DeleteManyNotificationsResult>;
 }

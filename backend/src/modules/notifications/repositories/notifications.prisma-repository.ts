@@ -1,15 +1,16 @@
-import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/database/prisma/prisma.service';
 
+import type { NotificationType, Prisma } from '../../../generated/prisma';
+import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
-import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
-import { Injectable } from '@nestjs/common';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
-import type { NotificationType } from '../../../generated/prisma';
+import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
+
 import type { NotificationsRepository } from './notifications.repository';
-import { PrismaService } from 'src/database/prisma/prisma.service';
 
 type NotificationRow = {
   id: string;
@@ -25,7 +26,8 @@ type NotificationRow = {
 export class NotificationsPrismaRepository implements NotificationsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findNotifications(userId: string, query: GetNotificationsQuery): Promise<GetNotificationsResult> {
+  async findNotifications(userId: string, query: GetNotificationsQuery, tx?: Prisma.TransactionClient): Promise<GetNotificationsResult> {
+    const client = this.getClient(tx);
     const where = {
       userId,
       isRead: query.where__is_read,
@@ -34,7 +36,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
 
     const cursorId = query.cursor__id;
 
-    const rows = await this.prisma.notification.findMany({
+    const rows = await client.notification.findMany({
       where,
       orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
       take: query.take + 1,
@@ -61,8 +63,14 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
     };
   }
 
-  async markNotificationAsRead(userId: string, notificationId: string): Promise<MarkNotificationReadResult | undefined> {
-    const notification = await this.prisma.notification.findFirst({
+  async markNotificationAsRead(
+    userId: string,
+    notificationId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<MarkNotificationReadResult | undefined> {
+    const client = this.getClient(tx);
+
+    const notification = await client.notification.findFirst({
       where: { id: notificationId, userId },
       select: { id: true },
     });
@@ -71,7 +79,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
       return undefined;
     }
 
-    const updated = await this.prisma.notification.update({
+    const updated = await client.notification.update({
       where: { id: notificationId },
       data: { isRead: true },
       select: {
@@ -96,31 +104,34 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
     };
   }
 
-  async markManyNotificationsAsRead(userId: string, notificationIds: string[]): Promise<MarkManyReadResult> {
-    return this.prisma.$transaction(async tx => {
-      const targets = await tx.notification.findMany({
+  async markManyNotificationsAsRead(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient): Promise<MarkManyReadResult> {
+    const run = async (client: Prisma.TransactionClient) => {
+      const targets = await client.notification.findMany({
         where: { userId, id: { in: notificationIds }, isRead: false },
         select: { id: true },
       });
       const targetIds = targets.map(n => n.id);
-      await tx.notification.updateMany({
+      await client.notification.updateMany({
         where: { id: { in: targetIds } },
         data: { isRead: true },
       });
       return { updatedCount: targetIds.length, notificationIds: targetIds };
-    });
+    };
+    return tx ? run(tx) : this.prisma.$transaction(run);
   }
 
-  async markAllNotificationsAsRead(userId: string): Promise<MarkAllReadResult> {
-    const result = await this.prisma.notification.updateMany({
+  async markAllNotificationsAsRead(userId: string, tx?: Prisma.TransactionClient): Promise<MarkAllReadResult> {
+    const result = await this.getClient(tx).notification.updateMany({
       where: { userId, isRead: false },
       data: { isRead: true },
     });
     return { updatedCount: result.count };
   }
 
-  async deleteNotification(userId: string, notificationId: string): Promise<DeleteNotificationResult | undefined> {
-    const notification = await this.prisma.notification.findFirst({
+  async deleteNotification(userId: string, notificationId: string, tx?: Prisma.TransactionClient): Promise<DeleteNotificationResult | undefined> {
+    const client = this.getClient(tx);
+
+    const notification = await client.notification.findFirst({
       where: { id: notificationId, userId },
       select: { id: true },
     });
@@ -129,20 +140,25 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
       return undefined;
     }
 
-    await this.prisma.notification.delete({ where: { id: notificationId } });
+    await client.notification.delete({ where: { id: notificationId } });
     return { notificationId };
   }
 
-  async deleteManyNotifications(userId: string, notificationIds: string[]): Promise<DeleteManyNotificationsResult> {
-    return this.prisma.$transaction(async tx => {
-      const targets = await tx.notification.findMany({
+  async deleteManyNotifications(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient): Promise<DeleteManyNotificationsResult> {
+    const run = async (client: Prisma.TransactionClient) => {
+      const targets = await client.notification.findMany({
         where: { userId, id: { in: notificationIds } },
         select: { id: true },
       });
       const targetIds = targets.map(n => n.id);
-      await tx.notification.deleteMany({ where: { id: { in: targetIds } } });
+      await client.notification.deleteMany({ where: { id: { in: targetIds } } });
       return { deletedCount: targetIds.length, notificationIds: targetIds };
-    });
+    };
+    return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  private getClient(tx?: Prisma.TransactionClient): Prisma.TransactionClient {
+    return tx ?? (this.prisma as unknown as Prisma.TransactionClient);
   }
 
   private buildNextUrl(query: GetNotificationsQuery, lastItem: NotificationRow): string {
