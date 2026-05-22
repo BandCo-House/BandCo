@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundEx
 
 import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
+import { SkillsService } from '../skills/skills.service';
 
 import type { CreateSongInput } from './dto/create-song.dto';
 import type { GetBandSongsQuery } from './dto/get-band-songs-query.dto';
@@ -23,6 +24,7 @@ export class SongsService {
     @Inject(SONGS_REPOSITORY)
     private readonly songsRepository: SongsRepository,
     private readonly prisma: PrismaService,
+    private readonly skillsService: SkillsService,
     @Inject(SpotifyTrackClient)
     private readonly spotifyTrackReader: SpotifyTrackReader,
     @Inject(DeezerTrackClient)
@@ -211,7 +213,7 @@ export class SongsService {
       return;
     }
 
-    const existingSkillTypeIds = await this.songsRepository.findExistingSkillTypeIds(skillTypeIds, tx);
+    const { skillTypeIds: existingSkillTypeIds } = await this.skillsService.findExistingSkillTypeIds(skillTypeIds, tx);
 
     if (existingSkillTypeIds.length !== skillTypeIds.length) {
       throw new BadRequestException('존재하지 않는 세션이 포함되어 있습니다.');

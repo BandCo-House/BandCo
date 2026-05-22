@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import type { PrismaService } from '../../database/prisma';
+import type { SkillsService } from '../skills/skills.service';
 
 import type { SongsRepository } from './repositories/songs.repository';
 import type { DeezerTrackSearcher } from './deezer-track.client';
@@ -16,7 +17,6 @@ describe('SongsService', () => {
 
     const repository: jest.Mocked<SongsRepository> = {
       findActiveBandWithMemberByBandIdAndUserId: jest.fn(),
-      findExistingSkillTypeIds: jest.fn(),
       createSong: jest.fn(),
       findBandSongs: jest.fn(),
       findSongWithBandMemberBySongIdAndUserId: jest.fn(),
@@ -31,14 +31,18 @@ describe('SongsService', () => {
     const deezerTrackSearcher: jest.Mocked<DeezerTrackSearcher> = {
       searchTracks: jest.fn(),
     };
+    const skillsService: jest.Mocked<SkillsService> = {
+      findExistingSkillTypeIds: jest.fn(),
+    } as unknown as jest.Mocked<SkillsService>;
 
-    const service = new SongsService(repository, prisma, spotifyTrackReader, deezerTrackSearcher);
+    const service = new SongsService(repository, prisma, skillsService, spotifyTrackReader, deezerTrackSearcher);
 
     return {
       service,
       repository,
       prisma,
       transactionClient,
+      skillsService,
       spotifyTrackReader,
       deezerTrackSearcher,
     };
@@ -119,7 +123,7 @@ describe('SongsService', () => {
   });
 
   it('밴드 멤버가 곡을 생성하면 세션 타입을 검증하고 곡을 저장한다', async () => {
-    const { service, repository, transactionClient } = createService();
+    const { service, repository, transactionClient, skillsService } = createService();
 
     repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
       id: 'band-id',
@@ -128,7 +132,7 @@ describe('SongsService', () => {
         userId: 'user-id',
       },
     });
-    repository.findExistingSkillTypeIds.mockResolvedValue(['skill-type-1', 'skill-type-2']);
+    skillsService.findExistingSkillTypeIds.mockResolvedValue({ skillTypeIds: ['skill-type-1', 'skill-type-2'] });
     repository.createSong.mockResolvedValue({
       song: {
         id: 'song-id',
@@ -166,7 +170,7 @@ describe('SongsService', () => {
     });
 
     expect(repository.findActiveBandWithMemberByBandIdAndUserId).toHaveBeenCalledWith('band-id', 'user-id', transactionClient);
-    expect(repository.findExistingSkillTypeIds).toHaveBeenCalledWith(['skill-type-1', 'skill-type-2'], transactionClient);
+    expect(skillsService.findExistingSkillTypeIds).toHaveBeenCalledWith(['skill-type-1', 'skill-type-2'], transactionClient);
     expect(repository.createSong).toHaveBeenCalledWith(
       {
         title: 'Harder, Better, Faster, Stronger',
@@ -185,7 +189,7 @@ describe('SongsService', () => {
   });
 
   it('상위 트랜잭션이 있으면 새 트랜잭션을 열지 않는다', async () => {
-    const { service, repository, prisma } = createService();
+    const { service, repository, prisma, skillsService } = createService();
     const tx = {};
 
     repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
@@ -227,7 +231,7 @@ describe('SongsService', () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.findActiveBandWithMemberByBandIdAndUserId).toHaveBeenCalledWith('band-id', 'user-id', tx);
-    expect(repository.findExistingSkillTypeIds).not.toHaveBeenCalled();
+    expect(skillsService.findExistingSkillTypeIds).not.toHaveBeenCalled();
   });
 
   it('세션 타입 ID가 중복되면 BadRequestException을 던진다', async () => {
@@ -279,7 +283,7 @@ describe('SongsService', () => {
   });
 
   it('존재하지 않는 세션 타입이 있으면 BadRequestException을 던진다', async () => {
-    const { service, repository } = createService();
+    const { service, repository, skillsService } = createService();
 
     repository.findActiveBandWithMemberByBandIdAndUserId.mockResolvedValue({
       id: 'band-id',
@@ -288,7 +292,7 @@ describe('SongsService', () => {
         userId: 'user-id',
       },
     });
-    repository.findExistingSkillTypeIds.mockResolvedValue(['skill-type-1']);
+    skillsService.findExistingSkillTypeIds.mockResolvedValue({ skillTypeIds: ['skill-type-1'] });
 
     await expect(
       service.createSong('user-id', 'band-id', {
@@ -402,7 +406,7 @@ describe('SongsService', () => {
   });
 
   it('밴드 멤버가 곡을 수정하면 세션 타입을 검증하고 저장한다', async () => {
-    const { service, repository, transactionClient } = createService();
+    const { service, repository, transactionClient, skillsService } = createService();
 
     repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
       id: 'song-id',
@@ -412,7 +416,7 @@ describe('SongsService', () => {
         userId: 'user-id',
       },
     });
-    repository.findExistingSkillTypeIds.mockResolvedValue(['skill-type-1']);
+    skillsService.findExistingSkillTypeIds.mockResolvedValue({ skillTypeIds: ['skill-type-1'] });
     repository.updateSong.mockResolvedValue({
       song: {
         id: 'song-id',
@@ -443,7 +447,7 @@ describe('SongsService', () => {
     const result = await service.updateSong('user-id', 'song-id', input);
 
     expect(repository.findSongWithBandMemberBySongIdAndUserId).toHaveBeenCalledWith('song-id', 'user-id', transactionClient);
-    expect(repository.findExistingSkillTypeIds).toHaveBeenCalledWith(['skill-type-1'], transactionClient);
+    expect(skillsService.findExistingSkillTypeIds).toHaveBeenCalledWith(['skill-type-1'], transactionClient);
     expect(repository.updateSong).toHaveBeenCalledWith('song-id', input, transactionClient);
     expect(result.song.memo).toBe('템포 124 기준으로 연습');
   });
@@ -530,7 +534,7 @@ describe('SongsService', () => {
   });
 
   it('곡 수정 시 존재하지 않는 세션 타입이 있으면 BadRequestException을 던진다', async () => {
-    const { service, repository } = createService();
+    const { service, repository, skillsService } = createService();
 
     repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
       id: 'song-id',
@@ -540,7 +544,7 @@ describe('SongsService', () => {
         userId: 'user-id',
       },
     });
-    repository.findExistingSkillTypeIds.mockResolvedValue([]);
+    skillsService.findExistingSkillTypeIds.mockResolvedValue({ skillTypeIds: [] });
 
     await expect(service.updateSong('user-id', 'song-id', { skillTypeIds: ['skill-type-1'] })).rejects.toBeInstanceOf(BadRequestException);
     expect(repository.updateSong).not.toHaveBeenCalled();

@@ -179,30 +179,6 @@ export class SongsPrismaRepository implements SongsRepository {
   }
 
   /**
-   * 요청받은 세션 타입 ID가 실제로 존재하는지 확인한다.
-   *
-   * @param {string[]} skillTypeIds - 확인할 세션 타입 ID 목록
-   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<string[]>} 존재하는 세션 타입 ID 목록
-   */
-  async findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
-    const client = tx ?? this.prisma;
-
-    const skillTypes = await client.skillType.findMany({
-      where: {
-        id: {
-          in: skillTypeIds,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return skillTypes.map(skillType => skillType.id);
-  }
-
-  /**
    * 곡과 곡 세션 타입 연결 정보를 같은 작업 단위에서 생성한다.
    *
    * @param {CreateSongRepositoryInput} input - Service에서 정책 검증이 끝난 곡 생성 입력값

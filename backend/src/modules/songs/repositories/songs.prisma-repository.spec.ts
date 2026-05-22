@@ -109,26 +109,6 @@ describe('SongsPrismaRepository', () => {
     });
   });
 
-  describe('findExistingSkillTypeIds', () => {
-    it('존재하는 세션 타입 ID만 반환한다', async () => {
-      prisma.skillType.findMany.mockResolvedValue([{ id: 'skill-type-1' }, { id: 'skill-type-2' }]);
-
-      const result = await repository.findExistingSkillTypeIds(['skill-type-1', 'skill-type-2']);
-
-      expect(prisma.skillType.findMany).toHaveBeenCalledWith({
-        where: {
-          id: {
-            in: ['skill-type-1', 'skill-type-2'],
-          },
-        },
-        select: {
-          id: true,
-        },
-      });
-      expect(result).toEqual(['skill-type-1', 'skill-type-2']);
-    });
-  });
-
   describe('findBandSongs', () => {
     it('검색어와 커서 ID 조건으로 곡 목록을 조회한다', async () => {
       prisma.song.findMany.mockResolvedValue([]);

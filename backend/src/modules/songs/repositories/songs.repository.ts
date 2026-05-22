@@ -28,7 +28,6 @@ export interface SongsRepository {
       userId: string;
     } | null;
   } | null>;
-  findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
   createSong(input: CreateSongRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateSongResult>;
   findBandSongs(bandId: string, query: GetBandSongsQuery, tx?: Prisma.TransactionClient): Promise<GetBandSongsResult>;
   findSongWithBandMemberBySongIdAndUserId(
