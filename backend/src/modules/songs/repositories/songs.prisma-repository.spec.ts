@@ -130,7 +130,7 @@ describe('SongsPrismaRepository', () => {
   });
 
   describe('findBandSongs', () => {
-    it('검색어와 커서 조건으로 곡 목록을 조회한다', async () => {
+    it('검색어와 커서 ID 조건으로 곡 목록을 조회한다', async () => {
       prisma.song.findMany.mockResolvedValue([]);
 
       await repository.findBandSongs('band-id', {
@@ -139,7 +139,6 @@ describe('SongsPrismaRepository', () => {
         order__created_at: 'desc',
         order__id: 'desc',
         take: 20,
-        cursor__created_at: '2026-05-20T00:00:00.000Z',
         cursor__id: 'cursor-song-id',
       });
 
@@ -160,19 +159,6 @@ describe('SongsPrismaRepository', () => {
               },
             },
           ],
-          OR: [
-            {
-              createdAt: {
-                lt: new Date('2026-05-20T00:00:00.000Z'),
-              },
-            },
-            {
-              createdAt: new Date('2026-05-20T00:00:00.000Z'),
-              id: {
-                lt: 'cursor-song-id',
-              },
-            },
-          ],
         },
         include: {
           songSkills: {
@@ -189,6 +175,8 @@ describe('SongsPrismaRepository', () => {
           },
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        cursor: { id: 'cursor-song-id' },
+        skip: 1,
         take: 20,
       });
     });
@@ -274,11 +262,9 @@ describe('SongsPrismaRepository', () => {
           count: 2,
           take: 2,
           cursor: {
-            createdAt: '2026-05-20T00:00:00.000Z',
             id: 'song-id-1',
           },
           next: {
-            createdAt: '2026-05-19T00:00:00.000Z',
             id: 'song-id-2',
           },
         },

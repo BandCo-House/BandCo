@@ -337,7 +337,6 @@ describe('SongsService', () => {
         count: 1,
         take: 20,
         cursor: {
-          createdAt: '2026-05-20T00:00:00.000Z',
           id: 'song-id',
         },
         next: null,
@@ -397,35 +396,6 @@ describe('SongsService', () => {
         order__created_at: 'desc',
         order__id: 'asc',
         take: 20,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
-  });
-
-  it('곡 목록 조회 커서 값이 한쪽만 있으면 BadRequestException을 던진다', async () => {
-    const { service, repository } = createService();
-
-    await expect(
-      service.getBandSongs('user-id', 'band-id', {
-        order__created_at: 'desc',
-        order__id: 'desc',
-        take: 20,
-        cursor__created_at: '2026-05-20T00:00:00.000Z',
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();
-  });
-
-  it('곡 목록 조회 커서 날짜가 잘못되면 BadRequestException을 던진다', async () => {
-    const { service, repository } = createService();
-
-    await expect(
-      service.getBandSongs('user-id', 'band-id', {
-        order__created_at: 'desc',
-        order__id: 'desc',
-        take: 20,
-        cursor__created_at: 'invalid-date',
-        cursor__id: 'song-id',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(repository.findActiveBandWithMemberByBandIdAndUserId).not.toHaveBeenCalled();

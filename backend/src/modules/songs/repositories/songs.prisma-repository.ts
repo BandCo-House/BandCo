@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
-import type { GetBandSongsQuery, SongListOrderDirection } from '../dto/get-band-songs-query.dto';
+import type { GetBandSongsQuery } from '../dto/get-band-songs-query.dto';
 import type { UpdateSongInput } from '../dto/update-song.dto';
 import type { CreatedSongSkillType, CreateSongResult } from '../types/create-song-result.type';
 import type { DeleteSongResult } from '../types/delete-song-result.type';
@@ -82,7 +82,6 @@ export class SongsPrismaRepository implements SongsRepository {
       where: {
         bandId,
         ...this.createSongListSearchWhere(query),
-        ...this.createSongListCursorWhere(query),
       },
       include: {
         songSkills: {
@@ -99,13 +98,14 @@ export class SongsPrismaRepository implements SongsRepository {
         },
       },
       orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      ...(query.cursor__id ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
       take: query.take,
     });
 
     const items = songs.map(song => this.mapSongListItem(song));
     const count = items.length;
-    const cursor = count > 0 ? { createdAt: items[0].createdAt, id: items[0].id } : null;
-    const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].id } : null;
+    const cursor = count > 0 ? { id: items[0].id } : null;
+    const next = count === query.take ? { id: items[count - 1].id } : null;
 
     return {
       items,
@@ -407,39 +407,6 @@ export class SongsPrismaRepository implements SongsRepository {
     return {
       AND: searchWhere,
     };
-  }
-
-  private createSongListCursorWhere(query: GetBandSongsQuery): Prisma.SongWhereInput {
-    if (query.cursor__created_at === undefined || query.cursor__id === undefined) {
-      return {};
-    }
-
-    const cursorCreatedAt = new Date(query.cursor__created_at);
-    const cursorOperator = this.getCursorOperator(query.order__created_at);
-
-    return {
-      OR: [
-        {
-          createdAt: {
-            [cursorOperator]: cursorCreatedAt,
-          },
-        },
-        {
-          createdAt: cursorCreatedAt,
-          id: {
-            [cursorOperator]: query.cursor__id,
-          },
-        },
-      ],
-    };
-  }
-
-  private getCursorOperator(orderDirection: SongListOrderDirection): 'lt' | 'gt' {
-    if (orderDirection === 'desc') {
-      return 'lt';
-    }
-
-    return 'gt';
   }
 
   private createUpdateSongData(input: UpdateSongInput): Prisma.SongUpdateInput {

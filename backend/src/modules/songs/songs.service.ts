@@ -216,23 +216,6 @@ export class SongsService {
     if (query.order__created_at !== query.order__id) {
       throw new BadRequestException('order__created_at과 order__id는 같은 방향이어야 합니다.');
     }
-
-    const hasCursorCreatedAt = query.cursor__created_at !== undefined;
-    const hasCursorId = query.cursor__id !== undefined;
-
-    if (hasCursorCreatedAt !== hasCursorId) {
-      throw new BadRequestException('커서 조회에는 cursor__created_at과 cursor__id가 함께 필요합니다.');
-    }
-
-    if (query.cursor__created_at === undefined) {
-      return;
-    }
-
-    const cursorCreatedAt = new Date(query.cursor__created_at);
-
-    if (Number.isNaN(cursorCreatedAt.getTime())) {
-      throw new BadRequestException('cursor__created_at은 유효한 날짜여야 합니다.');
-    }
   }
 
   private validateUpdateSongInput(input: UpdateSongInput): void {

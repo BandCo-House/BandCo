@@ -22,7 +22,6 @@ export interface SongListItem {
 }
 
 export interface SongListCursor {
-  createdAt: string;
   id: string;
 }
 

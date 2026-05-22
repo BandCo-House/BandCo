@@ -40,11 +40,6 @@ export class GetBandSongsQueryDto {
 
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
-  @IsString({ message: stringValidationMessage })
-  cursor__created_at?: string;
-
-  @Transform(normalizeOptionalStringValue)
-  @IsOptional()
   @IsUUID(undefined, { message: uuidValidationMessage })
   cursor__id?: string;
 }
