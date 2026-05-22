@@ -1,16 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/database/prisma/prisma.service';
+import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
 
-import type { NotificationType } from '../../../generated/prisma';
-import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
+import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import { Injectable } from '@nestjs/common';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
-import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
-
+import type { NotificationType } from '../../../generated/prisma';
 import type { NotificationsRepository } from './notifications.repository';
+import { PrismaService } from 'src/database/prisma/prisma.service';
 
 type NotificationRow = {
   id: string;
@@ -35,10 +34,10 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
 
     const cursorId = query.cursor__id;
 
-    const notifications = await this.prisma.notification.findMany({
+    const rows = await this.prisma.notification.findMany({
       where,
       orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
-      take: query.take,
+      take: query.take + 1,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
       select: {
         id: true,
@@ -50,10 +49,11 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
         createdAt: true,
       },
     });
-
+    const hasNext = rows.length > query.take;
+    const notifications = hasNext ? rows.slice(0, query.take) : rows;
     const count = notifications.length;
     const lastItem = notifications[count - 1];
-    const next = count === query.take && lastItem ? this.buildNextUrl(query, lastItem) : null;
+    const next = hasNext && lastItem ? this.buildNextUrl(query, lastItem) : null;
 
     return {
       items: notifications.map(n => this.mapNotification(n)),
