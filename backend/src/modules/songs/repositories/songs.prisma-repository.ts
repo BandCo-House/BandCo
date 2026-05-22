@@ -6,6 +6,7 @@ import type { GetBandSongsQuery } from '../dto/get-band-songs-query.dto';
 import type { UpdateSongInput } from '../dto/update-song.dto';
 import type { CreatedSongSkillType, CreateSongResult } from '../types/create-song-result.type';
 import type { DeleteSongResult } from '../types/delete-song-result.type';
+import type { ActiveBandWithMember, SongWithBandMember } from '../types/song-access-context.type';
 import type { GetBandSongsResult, SongListItem } from '../types/song-list.type';
 import type { SongSourceType } from '../types/song-preview.type';
 import type { UpdateSongResult } from '../types/update-song-result.type';
@@ -22,19 +23,13 @@ export class SongsPrismaRepository implements SongsRepository {
    * @param {string} bandId - 곡을 추가할 밴드 ID
    * @param {string} userId - 인증된 사용자 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; member: { id: string; userId: string } | null } | null>} 삭제되지 않은 밴드와 요청자 멤버 정보
+   * @returns {Promise<ActiveBandWithMember | null>} 삭제되지 않은 밴드와 요청자 멤버 정보
    */
   async findActiveBandWithMemberByBandIdAndUserId(
     bandId: string,
     userId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    member: {
-      id: string;
-      userId: string;
-    } | null;
-  } | null> {
+  ): Promise<ActiveBandWithMember | null> {
     const client = tx ?? this.prisma;
 
     const band = await client.band.findFirst({
@@ -124,20 +119,9 @@ export class SongsPrismaRepository implements SongsRepository {
    * @param {string} songId - 수정할 곡 ID
    * @param {string} userId - 인증된 사용자 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; bandId: string; member: { id: string; userId: string } | null } | null>} 곡과 요청자 멤버 정보
+   * @returns {Promise<SongWithBandMember | null>} 곡과 요청자 멤버 정보
    */
-  async findSongWithBandMemberBySongIdAndUserId(
-    songId: string,
-    userId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    bandId: string;
-    member: {
-      id: string;
-      userId: string;
-    } | null;
-  } | null> {
+  async findSongWithBandMemberBySongIdAndUserId(songId: string, userId: string, tx?: Prisma.TransactionClient): Promise<SongWithBandMember | null> {
     const client = tx ?? this.prisma;
 
     const song = await client.song.findFirst({
