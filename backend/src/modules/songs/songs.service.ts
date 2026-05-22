@@ -182,7 +182,13 @@ export class SongsService {
         throw new ForbiddenException('밴드 멤버만 곡을 삭제할 수 있습니다.');
       }
 
-      return this.songsRepository.deleteSong(song.id, new Date(), client);
+      const deletedSong = await this.songsRepository.deleteSong(song.id, new Date(), client);
+
+      if (deletedSong === undefined) {
+        throw new NotFoundException('요청한 곡을 찾을 수 없습니다.');
+      }
+
+      return deletedSong;
     };
 
     if (tx !== undefined) {

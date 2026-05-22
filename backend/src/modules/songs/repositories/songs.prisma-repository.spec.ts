@@ -634,6 +634,23 @@ describe('SongsPrismaRepository', () => {
       });
     });
 
+    it('삭제 대상 곡이 없으면 undefined를 반환한다', async () => {
+      prisma.song.delete.mockRejectedValue({
+        code: 'P2025',
+      });
+
+      const result = await repository.deleteSong('song-id', new Date('2026-05-20T00:00:00.000Z'));
+
+      expect(result).toBeUndefined();
+    });
+
+    it('삭제 실패가 대상 없음이 아니면 예외를 다시 던진다', async () => {
+      const error = new Error('DB 연결 실패');
+      prisma.song.delete.mockRejectedValue(error);
+
+      await expect(repository.deleteSong('song-id', new Date('2026-05-20T00:00:00.000Z'))).rejects.toThrow(error);
+    });
+
     it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
       const tx = {
         song: {

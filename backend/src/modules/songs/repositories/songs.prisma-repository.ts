@@ -353,24 +353,40 @@ export class SongsPrismaRepository implements SongsRepository {
    * @param {string} songId - 삭제할 곡 ID
    * @param {Date} deletedAt - 응답에 표시할 삭제 처리 시각
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<DeleteSongResult>} 삭제 처리 결과
+   * @returns {Promise<DeleteSongResult | undefined>} 삭제 처리 결과 또는 대상 없음
    */
-  async deleteSong(songId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteSongResult> {
+  async deleteSong(songId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteSongResult | undefined> {
     const client = tx ?? this.prisma;
 
-    const deletedSong = await client.song.delete({
-      where: {
-        id: songId,
-      },
-      select: {
-        id: true,
-      },
-    });
+    try {
+      const deletedSong = await client.song.delete({
+        where: {
+          id: songId,
+        },
+        select: {
+          id: true,
+        },
+      });
 
-    return {
-      songId: deletedSong.id,
-      deletedAt: deletedAt.toISOString(),
-    };
+      return {
+        songId: deletedSong.id,
+        deletedAt: deletedAt.toISOString(),
+      };
+    } catch (error) {
+      if (this.isPrismaRecordNotFoundError(error)) {
+        return undefined;
+      }
+
+      throw error;
+    }
+  }
+
+  private isPrismaRecordNotFoundError(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+
+    return 'code' in error && error.code === 'P2025';
   }
 
   private mapSkillTypes(skillTypeIds: string[], skillTypes: CreatedSongSkillType[]): CreatedSongSkillType[] {

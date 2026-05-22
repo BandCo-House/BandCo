@@ -602,6 +602,22 @@ describe('SongsService', () => {
     expect(repository.deleteSong).not.toHaveBeenCalled();
   });
 
+  it('곡 삭제 실행 시 이미 삭제된 곡이면 NotFoundException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.deleteSong.mockResolvedValue(undefined);
+
+    await expect(service.deleteSong('user-id', 'song-id')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
   it('곡 삭제 시 밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
     const { service, repository } = createService();
 
