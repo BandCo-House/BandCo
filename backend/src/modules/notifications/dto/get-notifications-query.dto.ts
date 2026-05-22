@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsUUID, Min } from 'class-validator';
 import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
@@ -42,11 +42,6 @@ export class GetNotificationsQueryDto {
   @IsInt({ message: intValidationMessage })
   @Min(1, { message: minValidationMessage })
   take: number = 20;
-
-  @Transform(normalizeOptionalStringValue)
-  @IsOptional()
-  @IsString()
-  cursor__created_at?: string;
 
   @Transform(normalizeOptionalStringValue)
   @IsOptional()

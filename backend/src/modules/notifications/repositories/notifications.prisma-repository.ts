@@ -168,7 +168,6 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
     params.set('order__created_at', query.order__created_at);
     params.set('order__id', query.order__id);
     params.set('take', String(query.take));
-    params.set('cursor__created_at', lastItem.createdAt?.toISOString() ?? '');
     params.set('cursor__id', lastItem.id);
     return `/notifications/me?${params.toString()}`;
   }
