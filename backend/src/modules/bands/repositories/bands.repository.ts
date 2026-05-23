@@ -1,5 +1,6 @@
-import type { BandMemberRole, Prisma } from '../../../generated/prisma';
+import type { BandInvitationStatus, BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { CreateBandInput } from '../dto/create-band.dto';
+import type { CreateBandInvitationInput } from '../dto/create-band-invitation.dto';
 import type { GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { SearchBandsQuery } from '../dto/search-bands-query.dto';
@@ -7,6 +8,7 @@ import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { GetBandMembersResult } from '../types/band-member-list.type';
 import type { SearchBandsResult } from '../types/band-search-result.type';
+import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
 import type { CreateBandInvitationSuccessItem, CreateBandResult } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
@@ -31,8 +33,14 @@ export interface CreateBandRepositoryResult extends CreateBandResult {
   };
 }
 
+export interface CreateBandInvitationRepositoryInput extends CreateBandInvitationInput {
+  bandId: string;
+  inviterBandMemberId: string;
+}
+
 export interface BandsRepository {
   createBand(input: CreateBandRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandRepositoryResult>;
+  createBandInvitation(input: CreateBandInvitationRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandInvitationResult>;
   deleteBand(bandId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteBandResult>;
   findBandForLeave(
     bandId: string,
@@ -64,6 +72,22 @@ export interface BandsRepository {
   ): Promise<{
     id: string;
     userId: string;
+    role: BandMemberRole;
+  } | null>;
+  findBandInvitationByBandIdAndInviteeUserId(
+    bandId: string,
+    inviteeUserId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    status: BandInvitationStatus;
+  } | null>;
+  findBandBlacklistByBandIdAndUserId(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
   } | null>;
   findExistingGenreIds(genreIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
   findExistingUserIds(userIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;

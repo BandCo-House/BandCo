@@ -5,6 +5,7 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import type { User } from '../../generated/prisma';
 
 import { CreateBandBodyDto } from './dto/create-band.dto';
+import { CreateBandInvitationBodyDto } from './dto/create-band-invitation.dto';
 import { GetBandMembersQueryDto } from './dto/get-band-members-query.dto';
 import { GetMyBandsQueryDto } from './dto/get-my-bands-query.dto';
 import { SearchBandsQueryDto } from './dto/search-bands-query.dto';
@@ -12,6 +13,7 @@ import { UpdateBandBodyDto } from './dto/update-band.dto';
 import { UpdateBandMemberRoleBodyDto } from './dto/update-band-member-role.dto';
 import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
+import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
 import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
@@ -34,6 +36,18 @@ export class BandsController {
     const createdBand = await this.bandsService.createBand(request.user.id, input);
 
     return createSuccessResponse('밴드 생성 성공', createdBand);
+  }
+
+  @Post(':bandId/invitations')
+  @UseGuards(AccessTokenGuard)
+  async createBandInvitation(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Body() input: CreateBandInvitationBodyDto,
+  ): Promise<ApiSuccessResponse<CreateBandInvitationResult>> {
+    const createdInvitation = await this.bandsService.createBandInvitation(request.user.id, bandId, input);
+
+    return createSuccessResponse('밴드 초대 전송 완료', createdInvitation);
   }
 
   @Delete(':bandId/me')

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
-import type { BandMemberRole, Prisma } from '../../../generated/prisma';
+import type { BandInvitationStatus, BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
@@ -9,6 +9,7 @@ import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
+import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
@@ -16,7 +17,7 @@ import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.typ
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
 
-import type { BandsRepository, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
+import type { BandsRepository, CreateBandInvitationRepositoryInput, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
 
 @Injectable()
 export class BandsPrismaRepository implements BandsRepository {
@@ -102,6 +103,47 @@ export class BandsPrismaRepository implements BandsRepository {
           failed: [],
         },
       },
+    };
+  }
+
+  /**
+   * 초대자 밴드 멤버 ID를 기준으로 밴드 초대를 생성한다.
+   *
+   * @param {CreateBandInvitationRepositoryInput} input - Service 정책 검증이 끝난 초대 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<CreateBandInvitationResult>} 생성된 초대 정보
+   */
+  async createBandInvitation(input: CreateBandInvitationRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandInvitationResult> {
+    const client = tx ?? this.prisma;
+
+    const invitation = await client.bandInvitation.create({
+      data: {
+        bandId: input.bandId,
+        inviterBandMemberId: input.inviterBandMemberId,
+        inviteeUserId: input.inviteeUserId,
+        message: input.message,
+      },
+      select: {
+        id: true,
+        bandId: true,
+        inviteeUserId: true,
+        status: true,
+        createdAt: true,
+        inviterBandMember: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    return {
+      invitationId: invitation.id,
+      bandId: invitation.bandId,
+      inviterUserId: invitation.inviterBandMember.userId,
+      inviteeUserId: invitation.inviteeUserId,
+      invitationStatus: invitation.status,
+      createdAt: invitation.createdAt.toISOString(),
     };
   }
 
@@ -465,6 +507,7 @@ export class BandsPrismaRepository implements BandsRepository {
   ): Promise<{
     id: string;
     userId: string;
+    role: BandMemberRole;
   } | null> {
     const client = tx ?? this.prisma;
 
@@ -476,6 +519,65 @@ export class BandsPrismaRepository implements BandsRepository {
       select: {
         id: true,
         userId: true,
+        role: true,
+      },
+    });
+  }
+
+  /**
+   * 같은 밴드와 초대 대상 기준으로 기존 초대가 있는지 확인한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {string} inviteeUserId - 초대 대상 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; status: BandInvitationStatus } | null>} 기존 초대 정보
+   */
+  async findBandInvitationByBandIdAndInviteeUserId(
+    bandId: string,
+    inviteeUserId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    status: BandInvitationStatus;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandInvitation.findFirst({
+      where: {
+        bandId,
+        inviteeUserId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
+   * 밴드가 차단한 사용자인지 확인한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {string} userId - 확인할 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string } | null>} 차단 정보
+   */
+  async findBandBlacklistByBandIdAndUserId(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandBlacklist.findFirst({
+      where: {
+        bandId,
+        userId,
+      },
+      select: {
+        id: true,
       },
     });
   }

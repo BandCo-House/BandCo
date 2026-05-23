@@ -1,9 +1,10 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
 import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import type { CreateBandInput } from './dto/create-band.dto';
+import type { CreateBandInvitationInput } from './dto/create-band-invitation.dto';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { SearchBandsQuery } from './dto/search-bands-query.dto';
@@ -12,6 +13,7 @@ import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dt
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
+import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
@@ -63,6 +65,85 @@ export class BandsService {
           },
         },
       };
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 운영 권한이 있는 멤버만 아직 가입하지 않은 활성 사용자에게 초대를 보낼 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 초대를 보낼 밴드 ID
+   * @param {CreateBandInvitationInput} input - 검증이 끝난 초대 요청값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<CreateBandInvitationResult>} 생성된 초대 정보
+   */
+  async createBandInvitation(
+    requesterUserId: string,
+    bandId: string,
+    input: CreateBandInvitationInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<CreateBandInvitationResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<CreateBandInvitationResult> => {
+      if (requesterUserId === input.inviteeUserId) {
+        throw new BadRequestException('자기 자신에게 밴드 초대를 보낼 수 없습니다.');
+      }
+
+      const band = await this.bandsRepository.findActiveBandById(bandId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      const requesterMember = await this.bandsRepository.findBandMemberByBandIdAndUserId(bandId, requesterUserId, client);
+
+      if (requesterMember === null) {
+        throw new ForbiddenException('밴드 초대 권한이 없습니다.');
+      }
+
+      const canInvite = requesterMember.role === BandMemberRole.BM || requesterMember.role === BandMemberRole.ADMIN;
+
+      if (!canInvite) {
+        throw new ForbiddenException('밴드 초대 권한이 없습니다.');
+      }
+
+      const existingInviteeUserIds = await this.bandsRepository.findExistingUserIds([input.inviteeUserId], client);
+
+      if (existingInviteeUserIds.length === 0) {
+        throw new BadRequestException('존재하지 않거나 비활성화된 사용자입니다.');
+      }
+
+      const inviteeMember = await this.bandsRepository.findBandMemberByBandIdAndUserId(bandId, input.inviteeUserId, client);
+
+      if (inviteeMember !== null) {
+        throw new ConflictException('이미 밴드 멤버인 사용자입니다.');
+      }
+
+      const blacklist = await this.bandsRepository.findBandBlacklistByBandIdAndUserId(bandId, input.inviteeUserId, client);
+
+      if (blacklist !== null) {
+        throw new ForbiddenException('밴드에서 차단된 사용자는 초대할 수 없습니다.');
+      }
+
+      const existingInvitation = await this.bandsRepository.findBandInvitationByBandIdAndInviteeUserId(bandId, input.inviteeUserId, client);
+
+      if (existingInvitation !== null) {
+        throw new ConflictException('이미 밴드 초대가 존재합니다.');
+      }
+
+      return this.bandsRepository.createBandInvitation(
+        {
+          ...input,
+          bandId,
+          inviterBandMemberId: requesterMember.id,
+        },
+        client,
+      );
     };
 
     if (tx !== undefined) {
