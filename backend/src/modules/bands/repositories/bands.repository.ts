@@ -6,6 +6,7 @@ import type { GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from '../dto/get-received-band-invitations-query.dto';
 import type { GetSentBandInvitationsQuery } from '../dto/get-sent-band-invitations-query.dto';
+import type { GetSentBandJoinRequestsQuery } from '../dto/get-sent-band-join-requests-query.dto';
 import type { SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
@@ -22,6 +23,7 @@ import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult } from '../types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult } from '../types/received-band-invitation-list.type';
 import type { GetSentBandInvitationsResult } from '../types/sent-band-invitation-list.type';
+import type { GetSentBandJoinRequestsResult } from '../types/sent-band-join-request-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
 
@@ -85,6 +87,11 @@ export interface BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult>;
   findSentBandInvitations(userId: string, query: GetSentBandInvitationsQuery, tx?: Prisma.TransactionClient): Promise<GetSentBandInvitationsResult>;
+  findSentBandJoinRequests(
+    userId: string,
+    query: GetSentBandJoinRequestsQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSentBandJoinRequestsResult>;
   searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult>;
   findActiveBandById(
     bandId: string,

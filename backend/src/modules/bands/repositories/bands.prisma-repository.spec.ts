@@ -15,6 +15,7 @@ function createPrismaMock() {
     },
     bandJoinRequest: {
       create: jest.fn(),
+      findMany: jest.fn(),
       findFirst: jest.fn(),
     },
     band: {
@@ -186,6 +187,127 @@ describe('BandsPrismaRepository', () => {
       expect(result.items).toHaveLength(1);
       expect(result.meta.next).toEqual({
         id: 'invitation-001',
+      });
+    });
+  });
+
+  describe('findSentBandJoinRequests', () => {
+    it('보낸 가입 요청 목록을 상태와 커서 기준으로 조회하고 매핑한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findMany.mockResolvedValue([
+        {
+          id: 'join-request-001',
+          message: '기타로 합류하고 싶습니다!',
+          status: 'PENDING',
+          createdAt: mockCreatedAt,
+          band: {
+            id: 'band-001',
+            name: 'Rocking Stars',
+            description: '직장인 밴드',
+            visibility: true,
+          },
+        },
+      ]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findSentBandJoinRequests('user-001', {
+        where__join_request_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(prisma.bandJoinRequest.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-001',
+          status: 'PENDING',
+          band: {
+            deletedAt: null,
+          },
+        },
+        include: {
+          band: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              visibility: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 21,
+      });
+      expect(result.items).toEqual([
+        {
+          joinRequestId: 'join-request-001',
+          band: {
+            bandId: 'band-001',
+            name: 'Rocking Stars',
+            description: '직장인 밴드',
+            visibility: true,
+          },
+          joinRequestStatus: 'PENDING',
+          message: '기타로 합류하고 싶습니다!',
+          createdAt: '2026-04-10T12:00:00.000Z',
+        },
+      ]);
+      expect(result.meta).toEqual({
+        count: 1,
+        take: 20,
+        cursor: {
+          id: 'join-request-001',
+        },
+        next: null,
+      });
+    });
+
+    it('cursor__id가 있으면 Prisma cursor와 skip을 사용한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findMany.mockResolvedValue([]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.findSentBandJoinRequests('user-001', {
+        where__join_request_status: 'REJECTED',
+        order__created_at: 'asc',
+        order__id: 'asc',
+        take: 10,
+        cursor__id: 'join-request-001',
+      });
+
+      expect(prisma.bandJoinRequest.findMany).toHaveBeenCalledWith(expect.objectContaining({ cursor: { id: 'join-request-001' }, skip: 1 }));
+    });
+
+    it('take보다 많이 조회되면 next cursor를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findMany.mockResolvedValue([
+        {
+          id: 'join-request-001',
+          message: null,
+          status: 'PENDING',
+          createdAt: mockCreatedAt,
+          band: { id: 'band-001', name: 'Rocking Stars', description: null, visibility: true },
+        },
+        {
+          id: 'join-request-002',
+          message: null,
+          status: 'PENDING',
+          createdAt: new Date('2026-04-09T12:00:00.000Z'),
+          band: { id: 'band-002', name: 'Jazz Stars', description: null, visibility: false },
+        },
+      ]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findSentBandJoinRequests('user-001', {
+        where__join_request_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 1,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.meta.next).toEqual({
+        id: 'join-request-001',
       });
     });
   });

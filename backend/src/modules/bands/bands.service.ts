@@ -10,6 +10,7 @@ import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from './dto/get-received-band-invitations-query.dto';
 import type { GetSentBandInvitationsQuery } from './dto/get-sent-band-invitations-query.dto';
+import type { GetSentBandJoinRequestsQuery } from './dto/get-sent-band-join-requests-query.dto';
 import type { SearchBandsQuery } from './dto/search-bands-query.dto';
 import type { UpdateBandInput } from './dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
@@ -27,6 +28,7 @@ import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
 import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
+import type { GetSentBandJoinRequestsResult } from './types/sent-band-join-request-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import type { UpdateBandResult } from './types/update-band-result.type';
 
@@ -259,6 +261,22 @@ export class BandsService {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandInvitationsResult> {
     return this.bandsRepository.findSentBandInvitations(userId, query, tx);
+  }
+
+  /**
+   * 인증 사용자가 직접 보낸 가입 요청을 상태 필터와 커서 기준으로 조회한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {GetSentBandJoinRequestsQuery} query - 상태 필터와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetSentBandJoinRequestsResult>} 보낸 가입 요청 목록
+   */
+  async getSentBandJoinRequests(
+    userId: string,
+    query: GetSentBandJoinRequestsQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSentBandJoinRequestsResult> {
+    return this.bandsRepository.findSentBandJoinRequests(userId, query, tx);
   }
 
   /**

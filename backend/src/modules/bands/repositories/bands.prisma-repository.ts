@@ -6,6 +6,7 @@ import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-b
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from '../dto/get-received-band-invitations-query.dto';
 import type { GetSentBandInvitationsQuery } from '../dto/get-sent-band-invitations-query.dto';
+import type { GetSentBandJoinRequestsQuery } from '../dto/get-sent-band-join-requests-query.dto';
 import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
@@ -22,6 +23,7 @@ import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from '../types/received-band-invitation-list.type';
 import type { GetSentBandInvitationsResult, SentBandInvitationListItem } from '../types/sent-band-invitation-list.type';
+import type { GetSentBandJoinRequestsResult, SentBandJoinRequestListItem } from '../types/sent-band-join-request-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
 
@@ -827,6 +829,62 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 인증 사용자가 직접 보낸 가입 요청을 상태와 커서 기준으로 조회한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {GetSentBandJoinRequestsQuery} query - 상태 필터와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetSentBandJoinRequestsResult>} 보낸 가입 요청 목록
+   */
+  async findSentBandJoinRequests(
+    userId: string,
+    query: GetSentBandJoinRequestsQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSentBandJoinRequestsResult> {
+    const client = tx ?? this.prisma;
+
+    const joinRequests = await client.bandJoinRequest.findMany({
+      where: {
+        userId,
+        status: query.where__join_request_status,
+        band: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        band: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            visibility: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      take: query.take + 1,
+      ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
+    });
+
+    const hasNext = joinRequests.length > query.take;
+    const rows = hasNext ? joinRequests.slice(0, query.take) : joinRequests;
+    const items = rows.map(joinRequest => this.mapSentBandJoinRequestListItem(joinRequest));
+    const count = items.length;
+    const cursor = count > 0 ? { id: items[0].joinRequestId } : null;
+    const next = hasNext && count > 0 ? { id: items[count - 1].joinRequestId } : null;
+
+    return {
+      items,
+      meta: {
+        count,
+        take: query.take,
+        cursor,
+        next,
+      },
+    };
+  }
+
+  /**
    * 밴드와 사용자 기준으로 밴드 멤버를 조회한다.
    *
    * @param {string} bandId - 대상 밴드 ID
@@ -1442,6 +1500,34 @@ export class BandsPrismaRepository implements BandsRepository {
       message: invitation.message,
       createdAt: invitation.createdAt.toISOString(),
       respondedAt: invitation.respondedAt?.toISOString() ?? null,
+    };
+  }
+
+  private mapSentBandJoinRequestListItem(
+    joinRequest: Prisma.BandJoinRequestGetPayload<{
+      include: {
+        band: {
+          select: {
+            id: true;
+            name: true;
+            description: true;
+            visibility: true;
+          };
+        };
+      };
+    }>,
+  ): SentBandJoinRequestListItem {
+    return {
+      joinRequestId: joinRequest.id,
+      band: {
+        bandId: joinRequest.band.id,
+        name: joinRequest.band.name ?? '',
+        description: joinRequest.band.description,
+        visibility: joinRequest.band.visibility ?? true,
+      },
+      message: joinRequest.message,
+      joinRequestStatus: joinRequest.status,
+      createdAt: joinRequest.createdAt.toISOString(),
     };
   }
 
