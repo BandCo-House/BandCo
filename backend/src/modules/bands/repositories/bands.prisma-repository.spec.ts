@@ -8,6 +8,7 @@ function createPrismaMock() {
   return {
     bandInvitation: {
       create: jest.fn(),
+      delete: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
     },
@@ -156,6 +157,37 @@ describe('BandsPrismaRepository', () => {
     });
   });
 
+  describe('deleteBandInvitation', () => {
+    it('초대 row를 삭제하고 invitationId를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.delete.mockResolvedValue(undefined);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.deleteBandInvitation('invitation-001');
+
+      expect(prisma.bandInvitation.delete).toHaveBeenCalledWith({
+        where: {
+          id: 'invitation-001',
+        },
+      });
+      expect(result).toEqual({
+        invitationId: 'invitation-001',
+      });
+    });
+
+    it('tx가 있으면 tx client로 초대를 삭제한다', async () => {
+      const prisma = createPrismaMock();
+      const tx = createPrismaMock();
+      tx.bandInvitation.delete.mockResolvedValue(undefined);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.deleteBandInvitation('invitation-001', tx as never);
+
+      expect(tx.bandInvitation.delete).toHaveBeenCalled();
+      expect(prisma.bandInvitation.delete).not.toHaveBeenCalled();
+    });
+  });
+
   describe('createBandInvitation', () => {
     it('밴드 초대를 생성하고 응답 필드로 매핑한다', async () => {
       const prisma = createPrismaMock();
@@ -298,6 +330,55 @@ describe('BandsPrismaRepository', () => {
         inviteeUserId: 'user-002',
         status: 'PENDING',
       });
+    });
+  });
+
+  describe('findBandInvitationForDelete', () => {
+    it('삭제되지 않은 밴드의 초대와 초대한 사용자 ID를 조회한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findFirst.mockResolvedValue({
+        id: 'invitation-001',
+        status: 'PENDING',
+        inviterBandMember: {
+          userId: 'user-001',
+        },
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandInvitationForDelete('invitation-001');
+
+      expect(prisma.bandInvitation.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'invitation-001',
+          band: {
+            deletedAt: null,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+          inviterBandMember: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+      expect(result).toEqual({
+        id: 'invitation-001',
+        status: 'PENDING',
+        inviterUserId: 'user-001',
+      });
+    });
+
+    it('초대가 없으면 null을 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findFirst.mockResolvedValue(null);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandInvitationForDelete('invitation-missing');
+
+      expect(result).toBeNull();
     });
   });
 

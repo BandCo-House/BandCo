@@ -13,6 +13,7 @@ import type { BandSearchListItem, SearchBandsResult } from '../types/band-search
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
+import type { DeleteBandInvitationResult } from '../types/delete-band-invitation-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
@@ -114,6 +115,27 @@ export class BandsPrismaRepository implements BandsRepository {
       userId: invitation.inviteeUserId,
       invitationStatus: invitation.status,
       respondedAt: (invitation.respondedAt ?? respondedAt).toISOString(),
+    };
+  }
+
+  /**
+   * 초대 취소는 별도 상태 컬럼이 없으므로 초대 row를 삭제한다.
+   *
+   * @param {string} invitationId - 삭제할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteBandInvitationResult>} 삭제한 초대 ID
+   */
+  async deleteBandInvitation(invitationId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandInvitationResult> {
+    const client = tx ?? this.prisma;
+
+    await client.bandInvitation.delete({
+      where: {
+        id: invitationId,
+      },
+    });
+
+    return {
+      invitationId,
     };
   }
 
@@ -646,6 +668,52 @@ export class BandsPrismaRepository implements BandsRepository {
         status: true,
       },
     });
+  }
+
+  /**
+   * 초대 취소 권한 판단에 필요한 초대자와 삭제되지 않은 밴드 정보를 조회한다.
+   *
+   * @param {string} invitationId - 취소할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; status: BandInvitationStatus; inviterUserId: string } | null>} 초대 취소 판단 정보
+   */
+  async findBandInvitationForDelete(
+    invitationId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    status: BandInvitationStatus;
+    inviterUserId: string;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    const invitation = await client.bandInvitation.findFirst({
+      where: {
+        id: invitationId,
+        band: {
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        inviterBandMember: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (invitation === null) {
+      return null;
+    }
+
+    return {
+      id: invitation.id,
+      status: invitation.status,
+      inviterUserId: invitation.inviterBandMember.userId,
+    };
   }
 
   /**

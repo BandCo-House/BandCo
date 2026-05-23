@@ -52,15 +52,22 @@ function createBandsRepositoryStub(options?: {
     inviteeUserId: string;
     status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
   } | null;
+  invitationForDelete?: {
+    id: string;
+    status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+    inviterUserId: string;
+  } | null;
   bandBlacklist?: { id: string } | null;
   onAcceptBandInvitation?: (invitationId: string, bandId: string, userId: string, respondedAt: Date, tx: unknown) => void;
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
   onCreateBandInvitation?: (input: { bandId: string; inviterBandMemberId: string; inviteeUserId: string; message?: string }, tx: unknown) => void;
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
+  onDeleteBandInvitation?: (invitationId: string, tx: unknown) => void;
   onDeclineBandInvitation?: (invitationId: string, respondedAt: Date, tx: unknown) => void;
   onFindBandBlacklistByBandIdAndUserId?: (tx: unknown) => void;
   onFindActiveBandById?: (tx: unknown) => void;
   onFindBandForLeave?: (tx: unknown) => void;
+  onFindBandInvitationForDelete?: (tx: unknown) => void;
   onFindBandInvitationForResponse?: (tx: unknown) => void;
   onFindBandInvitationByBandIdAndInviteeUserId?: (tx: unknown) => void;
   onFindBandMemberByBandIdAndUserId?: (tx: unknown) => void;
@@ -140,6 +147,13 @@ function createBandsRepositoryStub(options?: {
       return {
         bandId,
         deletedAt: deletedAt.toISOString(),
+      };
+    },
+    async deleteBandInvitation(invitationId, tx) {
+      options?.onDeleteBandInvitation?.(invitationId, tx);
+
+      return {
+        invitationId,
       };
     },
     async findActiveBandById(_bandId, tx) {
@@ -322,6 +336,19 @@ function createBandsRepositoryStub(options?: {
         bandId: 'band-001',
         inviteeUserId: INVITEE_USER_ID,
         status: 'PENDING',
+      };
+    },
+    async findBandInvitationForDelete(_invitationId, tx) {
+      options?.onFindBandInvitationForDelete?.(tx);
+
+      if (options?.invitationForDelete !== undefined) {
+        return options.invitationForDelete;
+      }
+
+      return {
+        id: 'invitation-001',
+        status: 'PENDING',
+        inviterUserId: BAND_MASTER_USER_ID,
       };
     },
     async findBandBlacklistByBandIdAndUserId(_bandId, _userId, tx) {
@@ -942,6 +969,89 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
 
       await service.declineBandInvitation(INVITEE_USER_ID, 'invitation-001', externalTx as never);
+
+      expect(capturedTransactions).toEqual([externalTx]);
+    });
+  });
+
+  describe('deleteBandInvitation', () => {
+    it('초대를 보낸 사용자가 대기 중인 초대를 취소한다', async () => {
+      let capturedInvitationId: string | undefined;
+      const repository = createBandsRepositoryStub({
+        onDeleteBandInvitation(invitationId) {
+          capturedInvitationId = invitationId;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.deleteBandInvitation(BAND_MASTER_USER_ID, 'invitation-001');
+
+      expect(capturedInvitationId).toBe('invitation-001');
+      expect(result).toEqual({
+        invitationId: 'invitation-001',
+      });
+    });
+
+    it('초대가 없거나 밴드가 삭제되었으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        invitationForDelete: null,
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.deleteBandInvitation(BAND_MASTER_USER_ID, 'invitation-missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('초대를 보낸 사용자가 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.deleteBandInvitation(INVITEE_USER_ID, 'invitation-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('대기 중인 초대가 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        invitationForDelete: {
+          id: 'invitation-001',
+          status: 'ACCEPTED',
+          inviterUserId: BAND_MASTER_USER_ID,
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.deleteBandInvitation(BAND_MASTER_USER_ID, 'invitation-001')).rejects.toThrow(ConflictException);
+    });
+
+    it('검증과 삭제를 같은 transaction client로 실행한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindBandInvitationForDelete(tx) {
+          capturedTransactions.push(tx);
+        },
+        onDeleteBandInvitation(_invitationId, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.deleteBandInvitation(BAND_MASTER_USER_ID, 'invitation-001');
+
+      expect(capturedTransactions).toHaveLength(2);
+      expect(new Set(capturedTransactions).size).toBe(1);
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onDeleteBandInvitation(_invitationId, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.deleteBandInvitation(BAND_MASTER_USER_ID, 'invitation-001', externalTx as never);
 
       expect(capturedTransactions).toEqual([externalTx]);
     });

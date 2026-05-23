@@ -17,6 +17,7 @@ import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
 import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
+import type { DeleteBandInvitationResult } from './types/delete-band-invitation-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
@@ -220,6 +221,40 @@ export class BandsService {
       }
 
       return this.bandsRepository.declineBandInvitation(invitation.id, new Date(), client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 초대를 보낸 사용자만 대기 중인 초대를 취소할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} invitationId - 취소할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteBandInvitationResult>} 초대 취소 결과
+   */
+  async deleteBandInvitation(userId: string, invitationId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandInvitationResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<DeleteBandInvitationResult> => {
+      const invitation = await this.bandsRepository.findBandInvitationForDelete(invitationId, client);
+
+      if (invitation === null) {
+        throw new NotFoundException('요청한 밴드 초대를 찾을 수 없습니다.');
+      }
+
+      if (invitation.inviterUserId !== userId) {
+        throw new ForbiddenException('밴드 초대 취소 권한이 없습니다.');
+      }
+
+      if (invitation.status !== 'PENDING') {
+        throw new ConflictException('대기 중인 밴드 초대만 취소할 수 있습니다.');
+      }
+
+      return this.bandsRepository.deleteBandInvitation(invitation.id, client);
     };
 
     if (tx !== undefined) {

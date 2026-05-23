@@ -1,4 +1,4 @@
-import { Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Param, Post, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -6,6 +6,7 @@ import type { User } from '../../generated/prisma';
 
 import type { AcceptBandInvitationResult } from './types/accept-band-invitation-result.type';
 import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
+import type { DeleteBandInvitationResult } from './types/delete-band-invitation-result.type';
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
@@ -36,5 +37,16 @@ export class BandInvitationsController {
     const declinedInvitation = await this.bandsService.declineBandInvitation(request.user.id, invitationId);
 
     return createSuccessResponse('밴드 초대를 거절했습니다.', declinedInvitation);
+  }
+
+  @Delete(':invitationId')
+  @UseGuards(AccessTokenGuard)
+  async deleteBandInvitation(
+    @Req() request: AuthenticatedRequest,
+    @Param('invitationId') invitationId: string,
+  ): Promise<ApiSuccessResponse<DeleteBandInvitationResult>> {
+    const deletedInvitation = await this.bandsService.deleteBandInvitation(request.user.id, invitationId);
+
+    return createSuccessResponse('초대를 취소했습니다.', deletedInvitation);
   }
 }
