@@ -5,10 +5,12 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import type { User } from '../../generated/prisma';
 
 import { GetReceivedBandInvitationsQueryDto } from './dto/get-received-band-invitations-query.dto';
+import { GetSentBandInvitationsQueryDto } from './dto/get-sent-band-invitations-query.dto';
 import type { AcceptBandInvitationResult } from './types/accept-band-invitation-result.type';
 import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from './types/delete-band-invitation-result.type';
 import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
+import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
@@ -28,6 +30,17 @@ export class BandInvitationsController {
     const invitations = await this.bandsService.getReceivedBandInvitations(request.user.id, query);
 
     return createSuccessResponse('받은 초대 목록 조회 성공', invitations);
+  }
+
+  @Get('sent')
+  @UseGuards(AccessTokenGuard)
+  async getSentBandInvitations(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: GetSentBandInvitationsQueryDto,
+  ): Promise<ApiSuccessResponse<GetSentBandInvitationsResult>> {
+    const invitations = await this.bandsService.getSentBandInvitations(request.user.id, query);
+
+    return createSuccessResponse('보낸 초대 목록 조회 성공', invitations);
   }
 
   @Post(':invitationId/accept')

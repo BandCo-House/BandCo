@@ -24,6 +24,165 @@ function createPrismaMock() {
 }
 
 describe('BandsPrismaRepository', () => {
+  describe('findSentBandInvitations', () => {
+    it('보낸 초대 목록을 상태와 커서 기준으로 조회하고 매핑한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([
+        {
+          id: 'invitation-001',
+          message: '같이 합주해요!',
+          status: 'PENDING',
+          createdAt: mockCreatedAt,
+          respondedAt: null,
+          band: {
+            id: 'band-001',
+            name: 'Rocking Stars',
+            description: '직장인 밴드',
+            _count: {
+              members: 5,
+            },
+          },
+          inviteeUserId: 'user-002',
+          inviteeUser: {
+            profile: {
+              nickname: 'Choi',
+              avatarUrl: 'https://cdn.example.com/avatar.png',
+            },
+          },
+        },
+      ]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findSentBandInvitations('user-001', {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(prisma.bandInvitation.findMany).toHaveBeenCalledWith({
+        where: {
+          status: 'PENDING',
+          band: {
+            deletedAt: null,
+          },
+          inviterBandMember: {
+            userId: 'user-001',
+          },
+          inviteeUser: {
+            deletedAt: null,
+          },
+        },
+        include: {
+          band: {
+            include: {
+              _count: {
+                select: {
+                  members: true,
+                },
+              },
+            },
+          },
+          inviteeUser: {
+            include: {
+              profile: {
+                select: {
+                  nickname: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 21,
+      });
+      expect(result.items).toEqual([
+        {
+          invitationId: 'invitation-001',
+          band: {
+            bandId: 'band-001',
+            name: 'Rocking Stars',
+            description: '직장인 밴드',
+            memberCount: 5,
+          },
+          invitee: {
+            userId: 'user-002',
+            nickname: 'Choi',
+            avatarUrl: 'https://cdn.example.com/avatar.png',
+          },
+          invitationStatus: 'PENDING',
+          message: '같이 합주해요!',
+          createdAt: '2026-04-10T12:00:00.000Z',
+          respondedAt: null,
+        },
+      ]);
+      expect(result.meta).toEqual({
+        count: 1,
+        take: 20,
+        cursor: {
+          id: 'invitation-001',
+        },
+        next: null,
+      });
+    });
+
+    it('cursor__id가 있으면 Prisma cursor와 skip을 사용한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.findSentBandInvitations('user-001', {
+        where__invitation_status: 'DECLINED',
+        order__created_at: 'asc',
+        order__id: 'asc',
+        take: 10,
+        cursor__id: 'invitation-001',
+      });
+
+      expect(prisma.bandInvitation.findMany).toHaveBeenCalledWith(expect.objectContaining({ cursor: { id: 'invitation-001' }, skip: 1 }));
+    });
+
+    it('take보다 많이 조회되면 next cursor를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([
+        {
+          id: 'invitation-001',
+          message: null,
+          status: 'PENDING',
+          createdAt: mockCreatedAt,
+          respondedAt: null,
+          band: { id: 'band-001', name: 'Rocking Stars', description: null, _count: { members: 5 } },
+          inviteeUserId: 'user-002',
+          inviteeUser: { profile: null },
+        },
+        {
+          id: 'invitation-002',
+          message: null,
+          status: 'PENDING',
+          createdAt: new Date('2026-04-09T12:00:00.000Z'),
+          respondedAt: null,
+          band: { id: 'band-002', name: 'Jazz Stars', description: null, _count: { members: 4 } },
+          inviteeUserId: 'user-003',
+          inviteeUser: { profile: null },
+        },
+      ]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findSentBandInvitations('user-001', {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 1,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.meta.next).toEqual({
+        id: 'invitation-001',
+      });
+    });
+  });
+
   describe('findReceivedBandInvitations', () => {
     it('받은 초대 목록을 상태와 커서 기준으로 조회하고 매핑한다', async () => {
       const prisma = createPrismaMock();

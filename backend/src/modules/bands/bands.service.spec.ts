@@ -5,6 +5,7 @@ import { BandMemberRole } from 'src/generated/prisma';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from './dto/get-received-band-invitations-query.dto';
+import type { GetSentBandInvitationsQuery } from './dto/get-sent-band-invitations-query.dto';
 import type { SearchBandsQuery } from './dto/search-bands-query.dto';
 import type { UpdateBandInput } from './dto/update-band.dto';
 import type { BandsRepository, CreateBandRepositoryInput } from './repositories/bands.repository';
@@ -77,6 +78,7 @@ function createBandsRepositoryStub(options?: {
   onFindExistingUserIds?: (tx: unknown) => void;
   onFindMyBands?: (userId: string, query: GetMyBandsQuery, tx: unknown) => void;
   onFindReceivedBandInvitations?: (userId: string, query: GetReceivedBandInvitationsQuery, tx: unknown) => void;
+  onFindSentBandInvitations?: (userId: string, query: GetSentBandInvitationsQuery, tx: unknown) => void;
   onLeaveBand?: (bandMemberId: string, tx: unknown) => void;
   onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
   onUpdateBand?: (bandId: string, input: UpdateBandInput, tx: unknown) => void;
@@ -273,6 +275,40 @@ function createBandsRepositoryStub(options?: {
             message: '같이 밴드 하실래요?',
             invitationStatus: query.where__invitation_status,
             createdAt: '2026-04-30T10:00:00.000Z',
+          },
+        ],
+        meta: {
+          count: 1,
+          take: query.take,
+          cursor: {
+            id: 'invitation-001',
+          },
+          next: null,
+        },
+      };
+    },
+    async findSentBandInvitations(userId, query, tx) {
+      options?.onFindSentBandInvitations?.(userId, query, tx);
+
+      return {
+        items: [
+          {
+            invitationId: 'invitation-001',
+            band: {
+              bandId: 'band-001',
+              name: 'Rocking Stars',
+              description: '직장인 밴드',
+              memberCount: 5,
+            },
+            invitee: {
+              userId: INVITEE_USER_ID,
+              nickname: 'Choi',
+              avatarUrl: null,
+            },
+            invitationStatus: query.where__invitation_status,
+            message: '같이 합주해요!',
+            createdAt: '2026-04-30T10:00:00.000Z',
+            respondedAt: null,
           },
         ],
         meta: {
@@ -1342,6 +1378,61 @@ describe('BandsService', () => {
 
       await service.getReceivedBandInvitations(
         INVITEE_USER_ID,
+        {
+          where__invitation_status: 'PENDING',
+          order__created_at: 'desc',
+          order__id: 'desc',
+          take: 20,
+        },
+        externalTx as never,
+      );
+
+      expect(capturedTransaction).toBe(externalTx);
+    });
+  });
+
+  describe('getSentBandInvitations', () => {
+    it('인증 사용자가 직접 보낸 초대 목록을 조회한다', async () => {
+      let capturedUserId: string | undefined;
+      let capturedQuery: GetSentBandInvitationsQuery | undefined;
+      const query: GetSentBandInvitationsQuery = {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      };
+      const repository = createBandsRepositoryStub({
+        onFindSentBandInvitations(userId, inputQuery) {
+          capturedUserId = userId;
+          capturedQuery = inputQuery;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.getSentBandInvitations(BAND_MASTER_USER_ID, query);
+
+      expect(capturedUserId).toBe(BAND_MASTER_USER_ID);
+      expect(capturedQuery).toBe(query);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].invitationStatus).toBe('PENDING');
+      expect(result.items[0].band.memberCount).toBe(5);
+      expect(result.meta.take).toBe(20);
+    });
+
+    it('외부 transaction client를 repository로 전달한다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      let capturedTransaction: unknown;
+      const repository = createBandsRepositoryStub({
+        onFindSentBandInvitations(_userId, _query, tx) {
+          capturedTransaction = tx;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.getSentBandInvitations(
+        BAND_MASTER_USER_ID,
         {
           where__invitation_status: 'PENDING',
           order__created_at: 'desc',

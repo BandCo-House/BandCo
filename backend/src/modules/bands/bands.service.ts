@@ -8,6 +8,7 @@ import type { CreateBandInvitationInput } from './dto/create-band-invitation.dto
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from './dto/get-received-band-invitations-query.dto';
+import type { GetSentBandInvitationsQuery } from './dto/get-sent-band-invitations-query.dto';
 import type { SearchBandsQuery } from './dto/search-bands-query.dto';
 import type { UpdateBandInput } from './dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
@@ -23,6 +24,7 @@ import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
+import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import type { UpdateBandResult } from './types/update-band-result.type';
 
@@ -172,6 +174,22 @@ export class BandsService {
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult> {
     return this.bandsRepository.findReceivedBandInvitations(userId, query, tx);
+  }
+
+  /**
+   * 인증 사용자가 직접 보낸 초대를 상태 필터와 커서 기준으로 조회한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {GetSentBandInvitationsQuery} query - 상태 필터와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetSentBandInvitationsResult>} 보낸 초대 목록
+   */
+  async getSentBandInvitations(
+    userId: string,
+    query: GetSentBandInvitationsQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSentBandInvitationsResult> {
+    return this.bandsRepository.findSentBandInvitations(userId, query, tx);
   }
 
   /**
