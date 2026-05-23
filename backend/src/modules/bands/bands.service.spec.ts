@@ -46,13 +46,21 @@ function createBandsRepositoryStub(options?: {
     role: BandMemberRole;
   } | null;
   existingInvitation?: { id: string; status: 'PENDING' } | null;
+  invitationForAccept?: {
+    id: string;
+    bandId: string;
+    inviteeUserId: string;
+    status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  } | null;
   bandBlacklist?: { id: string } | null;
+  onAcceptBandInvitation?: (invitationId: string, bandId: string, userId: string, respondedAt: Date, tx: unknown) => void;
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
   onCreateBandInvitation?: (input: { bandId: string; inviterBandMemberId: string; inviteeUserId: string; message?: string }, tx: unknown) => void;
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
   onFindBandBlacklistByBandIdAndUserId?: (tx: unknown) => void;
   onFindActiveBandById?: (tx: unknown) => void;
   onFindBandForLeave?: (tx: unknown) => void;
+  onFindBandInvitationForAccept?: (tx: unknown) => void;
   onFindBandInvitationByBandIdAndInviteeUserId?: (tx: unknown) => void;
   onFindBandMemberByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
@@ -65,6 +73,17 @@ function createBandsRepositoryStub(options?: {
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
 }): BandsRepository {
   return {
+    async acceptBandInvitation(invitationId, bandId, userId, respondedAt, tx) {
+      options?.onAcceptBandInvitation?.(invitationId, bandId, userId, respondedAt, tx);
+
+      return {
+        invitationId,
+        bandId,
+        userId,
+        invitationStatus: 'ACCEPTED',
+        joinedAt: '2026-04-30T10:00:00.000Z',
+      };
+    },
     async createBand(input, tx) {
       options?.onCreateBand?.(input, tx);
 
@@ -278,6 +297,20 @@ function createBandsRepositoryStub(options?: {
       options?.onFindBandInvitationByBandIdAndInviteeUserId?.(tx);
 
       return options?.existingInvitation ?? null;
+    },
+    async findBandInvitationForAccept(_invitationId, tx) {
+      options?.onFindBandInvitationForAccept?.(tx);
+
+      if (options?.invitationForAccept !== undefined) {
+        return options.invitationForAccept;
+      }
+
+      return {
+        id: 'invitation-001',
+        bandId: 'band-001',
+        inviteeUserId: INVITEE_USER_ID,
+        status: 'PENDING',
+      };
     },
     async findBandBlacklistByBandIdAndUserId(_bandId, _userId, tx) {
       options?.onFindBandBlacklistByBandIdAndUserId?.(tx);
@@ -705,6 +738,110 @@ describe('BandsService', () => {
         },
         externalTx as never,
       );
+
+      expect(capturedTransactions).toEqual([externalTx]);
+    });
+  });
+
+  describe('acceptBandInvitation', () => {
+    it('초대받은 사용자가 대기 중인 초대를 수락한다', async () => {
+      let capturedRespondedAt: Date | undefined;
+      const repository = createBandsRepositoryStub({
+        onAcceptBandInvitation(_invitationId, _bandId, _userId, respondedAt) {
+          capturedRespondedAt = respondedAt;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-001');
+
+      expect(capturedRespondedAt).toBeInstanceOf(Date);
+      expect(result).toEqual({
+        invitationId: 'invitation-001',
+        bandId: 'band-001',
+        userId: INVITEE_USER_ID,
+        invitationStatus: 'ACCEPTED',
+        joinedAt: '2026-04-30T10:00:00.000Z',
+      });
+    });
+
+    it('초대가 없거나 밴드가 삭제되었으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        invitationForAccept: null,
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('초대받은 사용자가 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.acceptBandInvitation(BAND_MASTER_USER_ID, 'invitation-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('대기 중인 초대가 아니면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        invitationForAccept: {
+          id: 'invitation-001',
+          bandId: 'band-001',
+          inviteeUserId: INVITEE_USER_ID,
+          status: 'DECLINED',
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-001')).rejects.toThrow(ConflictException);
+    });
+
+    it('이미 밴드 멤버이면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        inviteeBandMember: {
+          id: 'invitee-member-001',
+          userId: INVITEE_USER_ID,
+          role: BandMemberRole.MEMBER,
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-001')).rejects.toThrow(ConflictException);
+    });
+
+    it('검증과 수락 처리를 같은 transaction client로 실행한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindBandInvitationForAccept(tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandMemberByBandIdAndUserId(tx) {
+          capturedTransactions.push(tx);
+        },
+        onAcceptBandInvitation(_invitationId, _bandId, _userId, _respondedAt, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-001');
+
+      expect(capturedTransactions).toHaveLength(3);
+      expect(new Set(capturedTransactions).size).toBe(1);
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onAcceptBandInvitation(_invitationId, _bandId, _userId, _respondedAt, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-001', externalTx as never);
 
       expect(capturedTransactions).toEqual([externalTx]);
     });

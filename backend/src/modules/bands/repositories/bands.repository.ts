@@ -6,6 +6,7 @@ import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
+import type { AcceptBandInvitationResult } from '../types/accept-band-invitation-result.type';
 import type { GetBandMembersResult } from '../types/band-member-list.type';
 import type { SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
@@ -39,6 +40,13 @@ export interface CreateBandInvitationRepositoryInput extends CreateBandInvitatio
 }
 
 export interface BandsRepository {
+  acceptBandInvitation(
+    invitationId: string,
+    bandId: string,
+    userId: string,
+    respondedAt: Date,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AcceptBandInvitationResult>;
   createBand(input: CreateBandRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandRepositoryResult>;
   createBandInvitation(input: CreateBandInvitationRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandInvitationResult>;
   deleteBand(bandId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteBandResult>;
@@ -80,6 +88,15 @@ export interface BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<{
     id: string;
+    status: BandInvitationStatus;
+  } | null>;
+  findBandInvitationForAccept(
+    invitationId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandId: string;
+    inviteeUserId: string;
     status: BandInvitationStatus;
   } | null>;
   findBandBlacklistByBandIdAndUserId(

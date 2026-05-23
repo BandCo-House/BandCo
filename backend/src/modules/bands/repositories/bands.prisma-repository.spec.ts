@@ -9,17 +9,93 @@ function createPrismaMock() {
     bandInvitation: {
       create: jest.fn(),
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
     bandBlacklist: {
       findFirst: jest.fn(),
     },
     bandMember: {
+      create: jest.fn(),
       findFirst: jest.fn(),
     },
   };
 }
 
 describe('BandsPrismaRepository', () => {
+  describe('acceptBandInvitation', () => {
+    it('초대 상태를 수락으로 변경하고 밴드 멤버를 생성한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.update.mockResolvedValue({
+        id: 'invitation-001',
+        bandId: 'band-001',
+        inviteeUserId: 'user-002',
+        status: 'ACCEPTED',
+      });
+      prisma.bandMember.create.mockResolvedValue({
+        joinedAt: new Date('2026-04-30T10:00:00.000Z'),
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+      const respondedAt = new Date('2026-04-30T09:59:00.000Z');
+
+      const result = await repository.acceptBandInvitation('invitation-001', 'band-001', 'user-002', respondedAt);
+
+      expect(prisma.bandInvitation.update).toHaveBeenCalledWith({
+        where: {
+          id: 'invitation-001',
+        },
+        data: {
+          status: 'ACCEPTED',
+          respondedAt,
+        },
+        select: {
+          id: true,
+          bandId: true,
+          inviteeUserId: true,
+          status: true,
+        },
+      });
+      expect(prisma.bandMember.create).toHaveBeenCalledWith({
+        data: {
+          bandId: 'band-001',
+          userId: 'user-002',
+          role: 'MEMBER',
+        },
+        select: {
+          joinedAt: true,
+        },
+      });
+      expect(result).toEqual({
+        invitationId: 'invitation-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        invitationStatus: 'ACCEPTED',
+        joinedAt: '2026-04-30T10:00:00.000Z',
+      });
+    });
+
+    it('tx가 있으면 tx client로 수락 처리한다', async () => {
+      const prisma = createPrismaMock();
+      const tx = createPrismaMock();
+      tx.bandInvitation.update.mockResolvedValue({
+        id: 'invitation-001',
+        bandId: 'band-001',
+        inviteeUserId: 'user-002',
+        status: 'ACCEPTED',
+      });
+      tx.bandMember.create.mockResolvedValue({
+        joinedAt: new Date('2026-04-30T10:00:00.000Z'),
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.acceptBandInvitation('invitation-001', 'band-001', 'user-002', new Date('2026-04-30T09:59:00.000Z'), tx as never);
+
+      expect(tx.bandInvitation.update).toHaveBeenCalled();
+      expect(tx.bandMember.create).toHaveBeenCalled();
+      expect(prisma.bandInvitation.update).not.toHaveBeenCalled();
+      expect(prisma.bandMember.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('createBandInvitation', () => {
     it('밴드 초대를 생성하고 응답 필드로 매핑한다', async () => {
       const prisma = createPrismaMock();
@@ -124,6 +200,42 @@ describe('BandsPrismaRepository', () => {
       });
       expect(result).toEqual({
         id: 'invitation-001',
+        status: 'PENDING',
+      });
+    });
+  });
+
+  describe('findBandInvitationForAccept', () => {
+    it('삭제되지 않은 밴드의 초대만 조회한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findFirst.mockResolvedValue({
+        id: 'invitation-001',
+        bandId: 'band-001',
+        inviteeUserId: 'user-002',
+        status: 'PENDING',
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandInvitationForAccept('invitation-001');
+
+      expect(prisma.bandInvitation.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'invitation-001',
+          band: {
+            deletedAt: null,
+          },
+        },
+        select: {
+          id: true,
+          bandId: true,
+          inviteeUserId: true,
+          status: true,
+        },
+      });
+      expect(result).toEqual({
+        id: 'invitation-001',
+        bandId: 'band-001',
+        inviteeUserId: 'user-002',
         status: 'PENDING',
       });
     });

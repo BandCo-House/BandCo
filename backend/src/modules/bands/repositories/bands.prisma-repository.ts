@@ -7,6 +7,7 @@ import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
+import type { AcceptBandInvitationResult } from '../types/accept-band-invitation-result.type';
 import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
@@ -22,6 +23,61 @@ import type { BandsRepository, CreateBandInvitationRepositoryInput, CreateBandRe
 @Injectable()
 export class BandsPrismaRepository implements BandsRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * 초대 상태를 수락으로 바꾸고 기본 멤버로 가입시킨다.
+   *
+   * @param {string} invitationId - 수락할 초대 ID
+   * @param {string} bandId - 가입할 밴드 ID
+   * @param {string} userId - 가입할 사용자 ID
+   * @param {Date} respondedAt - 초대 응답 시각
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<AcceptBandInvitationResult>} 수락 처리 결과
+   */
+  async acceptBandInvitation(
+    invitationId: string,
+    bandId: string,
+    userId: string,
+    respondedAt: Date,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AcceptBandInvitationResult> {
+    const client = tx ?? this.prisma;
+
+    const invitation = await client.bandInvitation.update({
+      where: {
+        id: invitationId,
+      },
+      data: {
+        status: 'ACCEPTED',
+        respondedAt,
+      },
+      select: {
+        id: true,
+        bandId: true,
+        inviteeUserId: true,
+        status: true,
+      },
+    });
+
+    const member = await client.bandMember.create({
+      data: {
+        bandId,
+        userId,
+        role: 'MEMBER',
+      },
+      select: {
+        joinedAt: true,
+      },
+    });
+
+    return {
+      invitationId: invitation.id,
+      bandId: invitation.bandId,
+      userId: invitation.inviteeUserId,
+      invitationStatus: invitation.status,
+      joinedAt: member.joinedAt.toISOString(),
+    };
+  }
 
   /**
    * 상위 Service가 넘긴 트랜잭션이 있으면 같은 작업 단위 안에서 밴드를 생성한다.
@@ -549,6 +605,40 @@ export class BandsPrismaRepository implements BandsRepository {
       },
       select: {
         id: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
+   * 수락 가능 여부 판단에 필요한 초대와 삭제되지 않은 밴드 정보를 조회한다.
+   *
+   * @param {string} invitationId - 수락할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; bandId: string; inviteeUserId: string; status: BandInvitationStatus } | null>} 초대 정보
+   */
+  async findBandInvitationForAccept(
+    invitationId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandId: string;
+    inviteeUserId: string;
+    status: BandInvitationStatus;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandInvitation.findFirst({
+      where: {
+        id: invitationId,
+        band: {
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        bandId: true,
+        inviteeUserId: true,
         status: true,
       },
     });

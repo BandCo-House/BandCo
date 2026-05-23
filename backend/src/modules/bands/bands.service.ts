@@ -11,6 +11,7 @@ import type { SearchBandsQuery } from './dto/search-bands-query.dto';
 import type { UpdateBandInput } from './dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
+import type { AcceptBandInvitationResult } from './types/accept-band-invitation-result.type';
 import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
@@ -144,6 +145,46 @@ export class BandsService {
         },
         client,
       );
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 초대받은 사용자만 대기 중인 초대를 수락하고 일반 멤버로 가입할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} invitationId - 수락할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<AcceptBandInvitationResult>} 초대 수락 결과
+   */
+  async acceptBandInvitation(userId: string, invitationId: string, tx?: Prisma.TransactionClient): Promise<AcceptBandInvitationResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<AcceptBandInvitationResult> => {
+      const invitation = await this.bandsRepository.findBandInvitationForAccept(invitationId, client);
+
+      if (invitation === null) {
+        throw new NotFoundException('요청한 밴드 초대를 찾을 수 없습니다.');
+      }
+
+      if (invitation.inviteeUserId !== userId) {
+        throw new ForbiddenException('밴드 초대 수락 권한이 없습니다.');
+      }
+
+      if (invitation.status !== 'PENDING') {
+        throw new ConflictException('대기 중인 밴드 초대만 수락할 수 있습니다.');
+      }
+
+      const existingMember = await this.bandsRepository.findBandMemberByBandIdAndUserId(invitation.bandId, userId, client);
+
+      if (existingMember !== null) {
+        throw new ConflictException('이미 밴드 멤버인 사용자입니다.');
+      }
+
+      return this.bandsRepository.acceptBandInvitation(invitation.id, invitation.bandId, userId, new Date(), client);
     };
 
     if (tx !== undefined) {

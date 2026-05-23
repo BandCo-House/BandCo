@@ -6,12 +6,13 @@ import { UsersModule } from '../users/users.module';
 
 import { BandsPrismaRepository } from './repositories/bands.prisma-repository';
 import { BANDS_REPOSITORY } from './repositories/bands.repository';
+import { BandInvitationsController } from './band-invitations.controller';
 import { BandsController } from './bands.controller';
 import { BandsService } from './bands.service';
 
 @Module({
   imports: [AuthModule, UsersModule],
-  controllers: [BandsController],
+  controllers: [BandsController, BandInvitationsController],
   providers: [
     AccessTokenGuard,
     BandsService,
