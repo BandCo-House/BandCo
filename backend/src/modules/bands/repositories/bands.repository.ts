@@ -11,6 +11,7 @@ import type { GetBandMembersResult } from '../types/band-member-list.type';
 import type { SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
 import type { CreateBandInvitationSuccessItem, CreateBandResult } from '../types/create-band-result.type';
+import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult } from '../types/my-band-list.type';
@@ -90,7 +91,8 @@ export interface BandsRepository {
     id: string;
     status: BandInvitationStatus;
   } | null>;
-  findBandInvitationForAccept(
+  declineBandInvitation(invitationId: string, respondedAt: Date, tx?: Prisma.TransactionClient): Promise<DeclineBandInvitationResult>;
+  findBandInvitationForResponse(
     invitationId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{

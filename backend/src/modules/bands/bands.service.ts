@@ -16,6 +16,7 @@ import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
 import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/create-band-result.type';
+import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
@@ -164,7 +165,7 @@ export class BandsService {
    */
   async acceptBandInvitation(userId: string, invitationId: string, tx?: Prisma.TransactionClient): Promise<AcceptBandInvitationResult> {
     const run = async (client: Prisma.TransactionClient): Promise<AcceptBandInvitationResult> => {
-      const invitation = await this.bandsRepository.findBandInvitationForAccept(invitationId, client);
+      const invitation = await this.bandsRepository.findBandInvitationForResponse(invitationId, client);
 
       if (invitation === null) {
         throw new NotFoundException('요청한 밴드 초대를 찾을 수 없습니다.');
@@ -185,6 +186,40 @@ export class BandsService {
       }
 
       return this.bandsRepository.acceptBandInvitation(invitation.id, invitation.bandId, userId, new Date(), client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 초대받은 사용자만 대기 중인 초대를 거절할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} invitationId - 거절할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeclineBandInvitationResult>} 초대 거절 결과
+   */
+  async declineBandInvitation(userId: string, invitationId: string, tx?: Prisma.TransactionClient): Promise<DeclineBandInvitationResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<DeclineBandInvitationResult> => {
+      const invitation = await this.bandsRepository.findBandInvitationForResponse(invitationId, client);
+
+      if (invitation === null) {
+        throw new NotFoundException('요청한 밴드 초대를 찾을 수 없습니다.');
+      }
+
+      if (invitation.inviteeUserId !== userId) {
+        throw new ForbiddenException('밴드 초대 거절 권한이 없습니다.');
+      }
+
+      if (invitation.status !== 'PENDING') {
+        throw new ConflictException('대기 중인 밴드 초대만 거절할 수 있습니다.');
+      }
+
+      return this.bandsRepository.declineBandInvitation(invitation.id, new Date(), client);
     };
 
     if (tx !== undefined) {

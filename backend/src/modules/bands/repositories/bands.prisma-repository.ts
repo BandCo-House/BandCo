@@ -12,6 +12,7 @@ import type { BandMemberListItem, GetBandMembersResult } from '../types/band-mem
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
+import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
@@ -76,6 +77,43 @@ export class BandsPrismaRepository implements BandsRepository {
       userId: invitation.inviteeUserId,
       invitationStatus: invitation.status,
       joinedAt: member.joinedAt.toISOString(),
+    };
+  }
+
+  /**
+   * 초대 상태를 거절로 바꾸고 응답 시각을 기록한다.
+   *
+   * @param {string} invitationId - 거절할 초대 ID
+   * @param {Date} respondedAt - 초대 응답 시각
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeclineBandInvitationResult>} 거절 처리 결과
+   */
+  async declineBandInvitation(invitationId: string, respondedAt: Date, tx?: Prisma.TransactionClient): Promise<DeclineBandInvitationResult> {
+    const client = tx ?? this.prisma;
+
+    const invitation = await client.bandInvitation.update({
+      where: {
+        id: invitationId,
+      },
+      data: {
+        status: 'DECLINED',
+        respondedAt,
+      },
+      select: {
+        id: true,
+        bandId: true,
+        inviteeUserId: true,
+        status: true,
+        respondedAt: true,
+      },
+    });
+
+    return {
+      invitationId: invitation.id,
+      bandId: invitation.bandId,
+      userId: invitation.inviteeUserId,
+      invitationStatus: invitation.status,
+      respondedAt: (invitation.respondedAt ?? respondedAt).toISOString(),
     };
   }
 
@@ -611,13 +649,13 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 수락 가능 여부 판단에 필요한 초대와 삭제되지 않은 밴드 정보를 조회한다.
+   * 초대 응답 가능 여부 판단에 필요한 초대와 삭제되지 않은 밴드 정보를 조회한다.
    *
    * @param {string} invitationId - 수락할 초대 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<{ id: string; bandId: string; inviteeUserId: string; status: BandInvitationStatus } | null>} 초대 정보
    */
-  async findBandInvitationForAccept(
+  async findBandInvitationForResponse(
     invitationId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{
