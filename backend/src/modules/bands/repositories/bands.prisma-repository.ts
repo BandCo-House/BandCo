@@ -4,6 +4,7 @@ import { PrismaService } from '../../../database/prisma';
 import type { BandInvitationStatus, BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
+import type { GetReceivedBandInvitationsQuery } from '../dto/get-received-band-invitations-query.dto';
 import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-bands-query.dto';
 import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
@@ -17,6 +18,7 @@ import type { DeleteBandInvitationResult } from '../types/delete-band-invitation
 import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
+import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from '../types/received-band-invitation-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
 
@@ -609,6 +611,79 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 인증 사용자가 받은 초대를 상태와 커서 기준으로 조회한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {GetReceivedBandInvitationsQuery} query - 상태 필터와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetReceivedBandInvitationsResult>} 받은 초대 목록
+   */
+  async findReceivedBandInvitations(
+    userId: string,
+    query: GetReceivedBandInvitationsQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetReceivedBandInvitationsResult> {
+    const client = tx ?? this.prisma;
+
+    const invitations = await client.bandInvitation.findMany({
+      where: {
+        inviteeUserId: userId,
+        status: query.where__invitation_status,
+        band: {
+          deletedAt: null,
+        },
+        inviterBandMember: {
+          user: {
+            deletedAt: null,
+          },
+        },
+      },
+      include: {
+        band: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+        inviterBandMember: {
+          include: {
+            user: {
+              include: {
+                profile: {
+                  select: {
+                    nickname: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      take: query.take + 1,
+      ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
+    });
+
+    const hasNext = invitations.length > query.take;
+    const rows = hasNext ? invitations.slice(0, query.take) : invitations;
+    const items = rows.map(invitation => this.mapReceivedBandInvitationListItem(invitation));
+    const count = items.length;
+    const cursor = count > 0 ? { id: items[0].invitationId } : null;
+    const next = hasNext && count > 0 ? { id: items[count - 1].invitationId } : null;
+
+    return {
+      items,
+      meta: {
+        count,
+        take: query.take,
+        cursor,
+        next,
+      },
+    };
+  }
+
+  /**
    * 밴드와 사용자 기준으로 밴드 멤버를 조회한다.
    *
    * @param {string} bandId - 대상 밴드 ID
@@ -1107,6 +1182,49 @@ export class BandsPrismaRepository implements BandsRepository {
         memberCount: band._count.members,
       },
     ];
+  }
+
+  private mapReceivedBandInvitationListItem(
+    invitation: Prisma.BandInvitationGetPayload<{
+      include: {
+        band: {
+          select: {
+            id: true;
+            name: true;
+            description: true;
+          };
+        };
+        inviterBandMember: {
+          include: {
+            user: {
+              include: {
+                profile: {
+                  select: {
+                    nickname: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    }>,
+  ): ReceivedBandInvitationListItem {
+    return {
+      invitationId: invitation.id,
+      band: {
+        bandId: invitation.band.id,
+        name: invitation.band.name ?? '',
+        description: invitation.band.description,
+      },
+      inviter: {
+        userId: invitation.inviterBandMember.userId,
+        nickname: invitation.inviterBandMember.user.profile?.nickname ?? '',
+      },
+      message: invitation.message,
+      invitationStatus: invitation.status,
+      createdAt: invitation.createdAt.toISOString(),
+    };
   }
 
   private mapGenres(

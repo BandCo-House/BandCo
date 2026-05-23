@@ -1,12 +1,14 @@
-import { Controller, Delete, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 import type { User } from '../../generated/prisma';
 
+import { GetReceivedBandInvitationsQueryDto } from './dto/get-received-band-invitations-query.dto';
 import type { AcceptBandInvitationResult } from './types/accept-band-invitation-result.type';
 import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from './types/delete-band-invitation-result.type';
+import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
@@ -16,6 +18,17 @@ interface AuthenticatedRequest {
 @Controller('invitations')
 export class BandInvitationsController {
   constructor(private readonly bandsService: BandsService) {}
+
+  @Get('received')
+  @UseGuards(AccessTokenGuard)
+  async getReceivedBandInvitations(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: GetReceivedBandInvitationsQueryDto,
+  ): Promise<ApiSuccessResponse<GetReceivedBandInvitationsResult>> {
+    const invitations = await this.bandsService.getReceivedBandInvitations(request.user.id, query);
+
+    return createSuccessResponse('받은 초대 목록 조회 성공', invitations);
+  }
 
   @Post(':invitationId/accept')
   @UseGuards(AccessTokenGuard)
