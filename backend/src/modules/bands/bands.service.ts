@@ -6,6 +6,7 @@ import { BandMemberRole, type Prisma } from '../../generated/prisma';
 import type { CreateBandInput } from './dto/create-band.dto';
 import type { CreateBandInvitationInput } from './dto/create-band-invitation.dto';
 import type { CreateBandJoinRequestInput } from './dto/create-band-join-request.dto';
+import type { GetBandJoinRequestsQuery } from './dto/get-band-join-requests-query.dto';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from './dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from './dto/get-received-band-invitations-query.dto';
@@ -16,6 +17,8 @@ import type { UpdateBandInput } from './dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from './dto/update-band-member-role.dto';
 import { BANDS_REPOSITORY, type BandsRepository } from './repositories/bands.repository';
 import type { AcceptBandInvitationResult } from './types/accept-band-invitation-result.type';
+import type { ApproveBandJoinRequestResult } from './types/approve-band-join-request-result.type';
+import type { GetBandJoinRequestsResult } from './types/band-join-request-list.type';
 import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
@@ -27,6 +30,7 @@ import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
+import type { RejectBandJoinRequestResult } from './types/reject-band-join-request-result.type';
 import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
 import type { GetSentBandJoinRequestsResult } from './types/sent-band-join-request-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
@@ -277,6 +281,116 @@ export class BandsService {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandJoinRequestsResult> {
     return this.bandsRepository.findSentBandJoinRequests(userId, query, tx);
+  }
+
+  /**
+   * 밴드 운영 권한이 있는 멤버만 밴드로 들어온 가입 요청을 조회할 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 가입 요청을 조회할 밴드 ID
+   * @param {GetBandJoinRequestsQuery} query - 상태 필터와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandJoinRequestsResult>} 밴드 가입 요청 목록
+   */
+  async getBandJoinRequests(
+    requesterUserId: string,
+    bandId: string,
+    query: GetBandJoinRequestsQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetBandJoinRequestsResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<GetBandJoinRequestsResult> => {
+      const band = await this.bandsRepository.findActiveBandById(bandId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      await this.validateBandJoinRequestManager(bandId, requesterUserId, client);
+
+      return this.bandsRepository.findBandJoinRequests(bandId, query, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 운영 권한이 있는 멤버만 대기 중인 가입 요청을 승인하고 일반 멤버로 가입시킬 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} joinRequestId - 승인할 가입 요청 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<ApproveBandJoinRequestResult>} 가입 요청 승인 결과
+   */
+  async approveBandJoinRequest(requesterUserId: string, joinRequestId: string, tx?: Prisma.TransactionClient): Promise<ApproveBandJoinRequestResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<ApproveBandJoinRequestResult> => {
+      const joinRequest = await this.bandsRepository.findBandJoinRequestForResponse(joinRequestId, client);
+
+      if (joinRequest === null) {
+        throw new NotFoundException('요청한 밴드 가입 요청을 찾을 수 없습니다.');
+      }
+
+      await this.validateBandJoinRequestManager(joinRequest.bandId, requesterUserId, client);
+
+      if (joinRequest.status !== 'PENDING') {
+        throw new ConflictException('대기 중인 밴드 가입 요청만 승인할 수 있습니다.');
+      }
+
+      const existingMember = await this.bandsRepository.findBandMemberByBandIdAndUserId(joinRequest.bandId, joinRequest.userId, client);
+
+      if (existingMember !== null) {
+        throw new ConflictException('이미 밴드 멤버인 사용자입니다.');
+      }
+
+      const blacklist = await this.bandsRepository.findBandBlacklistByBandIdAndUserId(joinRequest.bandId, joinRequest.userId, client);
+
+      if (blacklist !== null) {
+        throw new ForbiddenException('밴드에서 차단된 사용자는 가입 요청을 승인할 수 없습니다.');
+      }
+
+      return this.bandsRepository.approveBandJoinRequest(joinRequest.id, joinRequest.bandId, joinRequest.userId, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 운영 권한이 있는 멤버만 대기 중인 가입 요청을 거절할 수 있다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} joinRequestId - 거절할 가입 요청 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<RejectBandJoinRequestResult>} 가입 요청 거절 결과
+   */
+  async rejectBandJoinRequest(requesterUserId: string, joinRequestId: string, tx?: Prisma.TransactionClient): Promise<RejectBandJoinRequestResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<RejectBandJoinRequestResult> => {
+      const joinRequest = await this.bandsRepository.findBandJoinRequestForResponse(joinRequestId, client);
+
+      if (joinRequest === null) {
+        throw new NotFoundException('요청한 밴드 가입 요청을 찾을 수 없습니다.');
+      }
+
+      await this.validateBandJoinRequestManager(joinRequest.bandId, requesterUserId, client);
+
+      if (joinRequest.status !== 'PENDING') {
+        throw new ConflictException('대기 중인 밴드 가입 요청만 거절할 수 있습니다.');
+      }
+
+      return this.bandsRepository.rejectBandJoinRequest(joinRequest.id, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
   }
 
   /**
@@ -581,6 +695,20 @@ export class BandsService {
     }
 
     return this.prisma.$transaction(run);
+  }
+
+  private async validateBandJoinRequestManager(bandId: string, userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const member = await this.bandsRepository.findBandMemberByBandIdAndUserId(bandId, userId, tx);
+
+    if (member === null) {
+      throw new ForbiddenException('밴드 가입 요청 관리 권한이 없습니다.');
+    }
+
+    const canManageJoinRequest = member.role === BandMemberRole.BM || member.role === BandMemberRole.ADMIN;
+
+    if (!canManageJoinRequest) {
+      throw new ForbiddenException('밴드 가입 요청 관리 권한이 없습니다.');
+    }
   }
 
   private async validateGenres(genreIds: string[], tx: Prisma.TransactionClient): Promise<void> {

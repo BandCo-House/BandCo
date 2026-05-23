@@ -17,6 +17,7 @@ function createPrismaMock() {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
     band: {
       findFirst: jest.fn(),
@@ -312,6 +313,134 @@ describe('BandsPrismaRepository', () => {
     });
   });
 
+  describe('findBandJoinRequests', () => {
+    it('밴드로 들어온 가입 요청 목록을 상태와 커서 기준으로 조회하고 매핑한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findMany.mockResolvedValue([
+        {
+          id: 'join-request-001',
+          userId: 'user-002',
+          message: '보컬로 참여하고 싶습니다.',
+          status: 'PENDING',
+          createdAt: mockCreatedAt,
+          user: {
+            profile: {
+              nickname: 'Choi',
+              avatarUrl: 'https://cdn.example.com/avatar.png',
+            },
+          },
+        },
+      ]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandJoinRequests('band-001', {
+        where__join_request_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(prisma.bandJoinRequest.findMany).toHaveBeenCalledWith({
+        where: {
+          bandId: 'band-001',
+          status: 'PENDING',
+          band: {
+            deletedAt: null,
+          },
+          user: {
+            deletedAt: null,
+          },
+        },
+        include: {
+          user: {
+            include: {
+              profile: {
+                select: {
+                  nickname: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 21,
+      });
+      expect(result.items).toEqual([
+        {
+          joinRequestId: 'join-request-001',
+          requester: {
+            userId: 'user-002',
+            nickname: 'Choi',
+            avatarUrl: 'https://cdn.example.com/avatar.png',
+          },
+          joinRequestStatus: 'PENDING',
+          message: '보컬로 참여하고 싶습니다.',
+          createdAt: '2026-04-10T12:00:00.000Z',
+        },
+      ]);
+      expect(result.meta).toEqual({
+        count: 1,
+        take: 20,
+        cursor: {
+          id: 'join-request-001',
+        },
+        next: null,
+      });
+    });
+
+    it('cursor__id가 있으면 Prisma cursor와 skip을 사용한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findMany.mockResolvedValue([]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.findBandJoinRequests('band-001', {
+        where__join_request_status: 'APPROVED',
+        order__created_at: 'asc',
+        order__id: 'asc',
+        take: 10,
+        cursor__id: 'join-request-001',
+      });
+
+      expect(prisma.bandJoinRequest.findMany).toHaveBeenCalledWith(expect.objectContaining({ cursor: { id: 'join-request-001' }, skip: 1 }));
+    });
+
+    it('take보다 많이 조회되면 next cursor를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findMany.mockResolvedValue([
+        {
+          id: 'join-request-001',
+          userId: 'user-002',
+          message: null,
+          status: 'PENDING',
+          createdAt: mockCreatedAt,
+          user: { profile: null },
+        },
+        {
+          id: 'join-request-002',
+          userId: 'user-003',
+          message: null,
+          status: 'PENDING',
+          createdAt: new Date('2026-04-09T12:00:00.000Z'),
+          user: { profile: null },
+        },
+      ]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandJoinRequests('band-001', {
+        where__join_request_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 1,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.meta.next).toEqual({
+        id: 'join-request-001',
+      });
+    });
+  });
+
   describe('findReceivedBandInvitations', () => {
     it('받은 초대 목록을 상태와 커서 기준으로 조회하고 매핑한다', async () => {
       const prisma = createPrismaMock();
@@ -536,6 +665,78 @@ describe('BandsPrismaRepository', () => {
     });
   });
 
+  describe('approveBandJoinRequest', () => {
+    it('가입 요청 상태를 승인으로 변경하고 밴드 멤버를 생성한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.update.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'APPROVED',
+      });
+      prisma.bandMember.create.mockResolvedValue({
+        joinedAt: new Date('2026-04-30T10:00:00.000Z'),
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.approveBandJoinRequest('join-request-001', 'band-001', 'user-002');
+
+      expect(prisma.bandJoinRequest.update).toHaveBeenCalledWith({
+        where: {
+          id: 'join-request-001',
+        },
+        data: {
+          status: 'APPROVED',
+        },
+        select: {
+          id: true,
+          bandId: true,
+          userId: true,
+          status: true,
+        },
+      });
+      expect(prisma.bandMember.create).toHaveBeenCalledWith({
+        data: {
+          bandId: 'band-001',
+          userId: 'user-002',
+          role: 'MEMBER',
+        },
+        select: {
+          joinedAt: true,
+        },
+      });
+      expect(result).toEqual({
+        joinRequestId: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        joinRequestStatus: 'APPROVED',
+        joinedAt: '2026-04-30T10:00:00.000Z',
+      });
+    });
+
+    it('tx가 있으면 tx client로 승인 처리한다', async () => {
+      const prisma = createPrismaMock();
+      const tx = createPrismaMock();
+      tx.bandJoinRequest.update.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'APPROVED',
+      });
+      tx.bandMember.create.mockResolvedValue({
+        joinedAt: new Date('2026-04-30T10:00:00.000Z'),
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.approveBandJoinRequest('join-request-001', 'band-001', 'user-002', tx as never);
+
+      expect(tx.bandJoinRequest.update).toHaveBeenCalled();
+      expect(tx.bandMember.create).toHaveBeenCalled();
+      expect(prisma.bandJoinRequest.update).not.toHaveBeenCalled();
+      expect(prisma.bandMember.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('declineBandInvitation', () => {
     it('초대 상태를 거절로 변경하고 응답 시각을 반환한다', async () => {
       const prisma = createPrismaMock();
@@ -593,6 +794,59 @@ describe('BandsPrismaRepository', () => {
 
       expect(tx.bandInvitation.update).toHaveBeenCalled();
       expect(prisma.bandInvitation.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('rejectBandJoinRequest', () => {
+    it('가입 요청 상태를 거절로 변경하고 결과를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.update.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'REJECTED',
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.rejectBandJoinRequest('join-request-001');
+
+      expect(prisma.bandJoinRequest.update).toHaveBeenCalledWith({
+        where: {
+          id: 'join-request-001',
+        },
+        data: {
+          status: 'REJECTED',
+        },
+        select: {
+          id: true,
+          bandId: true,
+          userId: true,
+          status: true,
+        },
+      });
+      expect(result).toEqual({
+        joinRequestId: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        joinRequestStatus: 'REJECTED',
+      });
+    });
+
+    it('tx가 있으면 tx client로 거절 처리한다', async () => {
+      const prisma = createPrismaMock();
+      const tx = createPrismaMock();
+      tx.bandJoinRequest.update.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'REJECTED',
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.rejectBandJoinRequest('join-request-001', tx as never);
+
+      expect(tx.bandJoinRequest.update).toHaveBeenCalled();
+      expect(prisma.bandJoinRequest.update).not.toHaveBeenCalled();
     });
   });
 
@@ -825,6 +1079,45 @@ describe('BandsPrismaRepository', () => {
       });
       expect(result).toEqual({
         id: 'join-request-001',
+        status: 'PENDING',
+      });
+    });
+  });
+
+  describe('findBandJoinRequestForResponse', () => {
+    it('삭제되지 않은 밴드와 활성 사용자에 연결된 가입 요청만 조회한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findFirst.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'PENDING',
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandJoinRequestForResponse('join-request-001');
+
+      expect(prisma.bandJoinRequest.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'join-request-001',
+          band: {
+            deletedAt: null,
+          },
+          user: {
+            deletedAt: null,
+          },
+        },
+        select: {
+          id: true,
+          bandId: true,
+          userId: true,
+          status: true,
+        },
+      });
+      expect(result).toEqual({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
         status: 'PENDING',
       });
     });

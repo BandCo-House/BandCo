@@ -7,11 +7,13 @@ import type { User } from '../../generated/prisma';
 import { CreateBandBodyDto } from './dto/create-band.dto';
 import { CreateBandInvitationBodyDto } from './dto/create-band-invitation.dto';
 import { CreateBandJoinRequestBodyDto } from './dto/create-band-join-request.dto';
+import { GetBandJoinRequestsQueryDto } from './dto/get-band-join-requests-query.dto';
 import { GetBandMembersQueryDto } from './dto/get-band-members-query.dto';
 import { GetMyBandsQueryDto } from './dto/get-my-bands-query.dto';
 import { SearchBandsQueryDto } from './dto/search-bands-query.dto';
 import { UpdateBandBodyDto } from './dto/update-band.dto';
 import { UpdateBandMemberRoleBodyDto } from './dto/update-band-member-role.dto';
+import type { GetBandJoinRequestsResult } from './types/band-join-request-list.type';
 import type { GetBandMembersResult } from './types/band-member-list.type';
 import type { SearchBandsResult } from './types/band-search-result.type';
 import type { CreateBandInvitationResult } from './types/create-band-invitation-result.type';
@@ -62,6 +64,18 @@ export class BandsController {
     const createdJoinRequest = await this.bandsService.createBandJoinRequest(request.user.id, bandId, input);
 
     return createSuccessResponse('밴드 가입 요청 완료', createdJoinRequest);
+  }
+
+  @Get(':bandId/join-requests')
+  @UseGuards(AccessTokenGuard)
+  async getBandJoinRequests(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Query() query: GetBandJoinRequestsQueryDto,
+  ): Promise<ApiSuccessResponse<GetBandJoinRequestsResult>> {
+    const joinRequests = await this.bandsService.getBandJoinRequests(request.user.id, bandId, query);
+
+    return createSuccessResponse('밴드 가입 요청 목록 조회 성공', joinRequests);
   }
 
   @Delete(':bandId/me')

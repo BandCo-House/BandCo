@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
 import type { BandInvitationStatus, BandMemberRole, JoinRequestStatus, Prisma } from '../../../generated/prisma';
+import type { GetBandJoinRequestsQuery } from '../dto/get-band-join-requests-query.dto';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from '../dto/get-received-band-invitations-query.dto';
@@ -11,6 +12,8 @@ import type { BandSearchOrderDirection, SearchBandsQuery } from '../dto/search-b
 import type { UpdateBandInput } from '../dto/update-band.dto';
 import type { UpdateBandMemberRoleInput } from '../dto/update-band-member-role.dto';
 import type { AcceptBandInvitationResult } from '../types/accept-band-invitation-result.type';
+import type { ApproveBandJoinRequestResult } from '../types/approve-band-join-request-result.type';
+import type { BandJoinRequestListItem, GetBandJoinRequestsResult } from '../types/band-join-request-list.type';
 import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
@@ -22,6 +25,7 @@ import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from '../types/received-band-invitation-list.type';
+import type { RejectBandJoinRequestResult } from '../types/reject-band-join-request-result.type';
 import type { GetSentBandInvitationsResult, SentBandInvitationListItem } from '../types/sent-band-invitation-list.type';
 import type { GetSentBandJoinRequestsResult, SentBandJoinRequestListItem } from '../types/sent-band-join-request-list.type';
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
@@ -95,6 +99,58 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 가입 요청 상태를 승인으로 바꾸고 기본 멤버로 가입시킨다.
+   *
+   * @param {string} joinRequestId - 승인할 가입 요청 ID
+   * @param {string} bandId - 가입할 밴드 ID
+   * @param {string} userId - 가입할 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<ApproveBandJoinRequestResult>} 승인 처리 결과
+   */
+  async approveBandJoinRequest(
+    joinRequestId: string,
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<ApproveBandJoinRequestResult> {
+    const client = tx ?? this.prisma;
+
+    const joinRequest = await client.bandJoinRequest.update({
+      where: {
+        id: joinRequestId,
+      },
+      data: {
+        status: 'APPROVED',
+      },
+      select: {
+        id: true,
+        bandId: true,
+        userId: true,
+        status: true,
+      },
+    });
+
+    const member = await client.bandMember.create({
+      data: {
+        bandId,
+        userId,
+        role: 'MEMBER',
+      },
+      select: {
+        joinedAt: true,
+      },
+    });
+
+    return {
+      joinRequestId: joinRequest.id,
+      bandId: joinRequest.bandId,
+      userId: joinRequest.userId,
+      joinRequestStatus: joinRequest.status,
+      joinedAt: member.joinedAt.toISOString(),
+    };
+  }
+
+  /**
    * 초대 상태를 거절로 바꾸고 응답 시각을 기록한다.
    *
    * @param {string} invitationId - 거절할 초대 ID
@@ -128,6 +184,39 @@ export class BandsPrismaRepository implements BandsRepository {
       userId: invitation.inviteeUserId,
       invitationStatus: invitation.status,
       respondedAt: (invitation.respondedAt ?? respondedAt).toISOString(),
+    };
+  }
+
+  /**
+   * 가입 요청 상태를 거절로 바꾼다.
+   *
+   * @param {string} joinRequestId - 거절할 가입 요청 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<RejectBandJoinRequestResult>} 거절 처리 결과
+   */
+  async rejectBandJoinRequest(joinRequestId: string, tx?: Prisma.TransactionClient): Promise<RejectBandJoinRequestResult> {
+    const client = tx ?? this.prisma;
+
+    const joinRequest = await client.bandJoinRequest.update({
+      where: {
+        id: joinRequestId,
+      },
+      data: {
+        status: 'REJECTED',
+      },
+      select: {
+        id: true,
+        bandId: true,
+        userId: true,
+        status: true,
+      },
+    });
+
+    return {
+      joinRequestId: joinRequest.id,
+      bandId: joinRequest.bandId,
+      userId: joinRequest.userId,
+      joinRequestStatus: joinRequest.status,
     };
   }
 
@@ -885,6 +974,63 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 특정 밴드로 들어온 가입 요청을 상태와 커서 기준으로 조회한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {GetBandJoinRequestsQuery} query - 상태 필터와 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandJoinRequestsResult>} 밴드 가입 요청 목록
+   */
+  async findBandJoinRequests(bandId: string, query: GetBandJoinRequestsQuery, tx?: Prisma.TransactionClient): Promise<GetBandJoinRequestsResult> {
+    const client = tx ?? this.prisma;
+
+    const joinRequests = await client.bandJoinRequest.findMany({
+      where: {
+        bandId,
+        status: query.where__join_request_status,
+        band: {
+          deletedAt: null,
+        },
+        user: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                nickname: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      take: query.take + 1,
+      ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
+    });
+
+    const hasNext = joinRequests.length > query.take;
+    const rows = hasNext ? joinRequests.slice(0, query.take) : joinRequests;
+    const items = rows.map(joinRequest => this.mapBandJoinRequestListItem(joinRequest));
+    const count = items.length;
+    const cursor = count > 0 ? { id: items[0].joinRequestId } : null;
+    const next = hasNext && count > 0 ? { id: items[count - 1].joinRequestId } : null;
+
+    return {
+      items,
+      meta: {
+        count,
+        take: query.take,
+        cursor,
+        next,
+      },
+    };
+  }
+
+  /**
    * 밴드와 사용자 기준으로 밴드 멤버를 조회한다.
    *
    * @param {string} bandId - 대상 밴드 ID
@@ -971,6 +1117,43 @@ export class BandsPrismaRepository implements BandsRepository {
       },
       select: {
         id: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
+   * 가입 요청 응답 가능 여부 판단에 필요한 가입 요청과 삭제되지 않은 밴드 정보를 조회한다.
+   *
+   * @param {string} joinRequestId - 응답할 가입 요청 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; bandId: string; userId: string; status: JoinRequestStatus } | null>} 가입 요청 정보
+   */
+  async findBandJoinRequestForResponse(
+    joinRequestId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    bandId: string;
+    userId: string;
+    status: JoinRequestStatus;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandJoinRequest.findFirst({
+      where: {
+        id: joinRequestId,
+        band: {
+          deletedAt: null,
+        },
+        user: {
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        bandId: true,
+        userId: true,
         status: true,
       },
     });
@@ -1524,6 +1707,35 @@ export class BandsPrismaRepository implements BandsRepository {
         name: joinRequest.band.name ?? '',
         description: joinRequest.band.description,
         visibility: joinRequest.band.visibility ?? true,
+      },
+      message: joinRequest.message,
+      joinRequestStatus: joinRequest.status,
+      createdAt: joinRequest.createdAt.toISOString(),
+    };
+  }
+
+  private mapBandJoinRequestListItem(
+    joinRequest: Prisma.BandJoinRequestGetPayload<{
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                nickname: true;
+                avatarUrl: true;
+              };
+            };
+          };
+        };
+      };
+    }>,
+  ): BandJoinRequestListItem {
+    return {
+      joinRequestId: joinRequest.id,
+      requester: {
+        userId: joinRequest.userId,
+        nickname: joinRequest.user.profile?.nickname ?? '',
+        avatarUrl: joinRequest.user.profile?.avatarUrl ?? null,
       },
       message: joinRequest.message,
       joinRequestStatus: joinRequest.status,
