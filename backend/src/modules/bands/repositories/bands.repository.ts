@@ -1,6 +1,7 @@
-import type { BandInvitationStatus, BandMemberRole, Prisma } from '../../../generated/prisma';
+import type { BandInvitationStatus, BandMemberRole, JoinRequestStatus, Prisma } from '../../../generated/prisma';
 import type { CreateBandInput } from '../dto/create-band.dto';
 import type { CreateBandInvitationInput } from '../dto/create-band-invitation.dto';
+import type { CreateBandJoinRequestInput } from '../dto/create-band-join-request.dto';
 import type { GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from '../dto/get-received-band-invitations-query.dto';
@@ -12,6 +13,7 @@ import type { AcceptBandInvitationResult } from '../types/accept-band-invitation
 import type { GetBandMembersResult } from '../types/band-member-list.type';
 import type { SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
+import type { CreateBandJoinRequestResult } from '../types/create-band-join-request-result.type';
 import type { CreateBandInvitationSuccessItem, CreateBandResult } from '../types/create-band-result.type';
 import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from '../types/delete-band-invitation-result.type';
@@ -45,6 +47,11 @@ export interface CreateBandInvitationRepositoryInput extends CreateBandInvitatio
   inviterBandMemberId: string;
 }
 
+export interface CreateBandJoinRequestRepositoryInput extends CreateBandJoinRequestInput {
+  bandId: string;
+  userId: string;
+}
+
 export interface BandsRepository {
   acceptBandInvitation(
     invitationId: string,
@@ -55,6 +62,7 @@ export interface BandsRepository {
   ): Promise<AcceptBandInvitationResult>;
   createBand(input: CreateBandRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandRepositoryResult>;
   createBandInvitation(input: CreateBandInvitationRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandInvitationResult>;
+  createBandJoinRequest(input: CreateBandJoinRequestRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandJoinRequestResult>;
   deleteBand(bandId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<DeleteBandResult>;
   deleteBandInvitation(invitationId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandInvitationResult>;
   findBandForLeave(
@@ -84,6 +92,21 @@ export interface BandsRepository {
   ): Promise<{
     id: string;
     bandMasterUserId: string;
+  } | null>;
+  findBandForJoinRequest(
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    visibility: boolean;
+  } | null>;
+  findBandJoinRequestByBandIdAndUserId(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    status: JoinRequestStatus;
   } | null>;
   updateBand(bandId: string, input: UpdateBandInput, tx?: Prisma.TransactionClient): Promise<UpdateBandResult>;
   findBandMemberByBandIdAndUserId(

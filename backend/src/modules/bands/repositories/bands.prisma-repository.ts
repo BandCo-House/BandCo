@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
-import type { BandInvitationStatus, BandMemberRole, Prisma } from '../../../generated/prisma';
+import type { BandInvitationStatus, BandMemberRole, JoinRequestStatus, Prisma } from '../../../generated/prisma';
 import type { BandMemberOrderDirection, GetBandMembersQuery } from '../dto/get-band-members-query.dto';
 import type { GetMyBandsQuery } from '../dto/get-my-bands-query.dto';
 import type { GetReceivedBandInvitationsQuery } from '../dto/get-received-band-invitations-query.dto';
@@ -13,6 +13,7 @@ import type { AcceptBandInvitationResult } from '../types/accept-band-invitation
 import type { BandMemberListItem, GetBandMembersResult } from '../types/band-member-list.type';
 import type { BandSearchListItem, SearchBandsResult } from '../types/band-search-result.type';
 import type { CreateBandInvitationResult } from '../types/create-band-invitation-result.type';
+import type { CreateBandJoinRequestResult } from '../types/create-band-join-request-result.type';
 import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/create-band-result.type';
 import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from '../types/delete-band-invitation-result.type';
@@ -24,7 +25,13 @@ import type { GetSentBandInvitationsResult, SentBandInvitationListItem } from '.
 import type { UpdateBandMemberRoleResult } from '../types/update-band-member-role-result.type';
 import type { UpdateBandResult } from '../types/update-band-result.type';
 
-import type { BandsRepository, CreateBandInvitationRepositoryInput, CreateBandRepositoryInput, CreateBandRepositoryResult } from './bands.repository';
+import type {
+  BandsRepository,
+  CreateBandInvitationRepositoryInput,
+  CreateBandJoinRequestRepositoryInput,
+  CreateBandRepositoryInput,
+  CreateBandRepositoryResult,
+} from './bands.repository';
 
 @Injectable()
 export class BandsPrismaRepository implements BandsRepository {
@@ -264,6 +271,40 @@ export class BandsPrismaRepository implements BandsRepository {
       inviteeUserId: invitation.inviteeUserId,
       invitationStatus: invitation.status,
       createdAt: invitation.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * 인증 사용자의 밴드 가입 요청을 생성한다.
+   *
+   * @param {CreateBandJoinRequestRepositoryInput} input - Service 정책 검증이 끝난 가입 요청 입력값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<CreateBandJoinRequestResult>} 생성된 가입 요청 정보
+   */
+  async createBandJoinRequest(input: CreateBandJoinRequestRepositoryInput, tx?: Prisma.TransactionClient): Promise<CreateBandJoinRequestResult> {
+    const client = tx ?? this.prisma;
+
+    const joinRequest = await client.bandJoinRequest.create({
+      data: {
+        bandId: input.bandId,
+        userId: input.userId,
+        message: input.message,
+      },
+      select: {
+        id: true,
+        bandId: true,
+        userId: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      joinRequestId: joinRequest.id,
+      bandId: joinRequest.bandId,
+      userId: joinRequest.userId,
+      joinRequestStatus: joinRequest.status,
+      createdAt: joinRequest.createdAt.toISOString(),
     };
   }
 
@@ -514,6 +555,34 @@ export class BandsPrismaRepository implements BandsRepository {
       select: {
         id: true,
         bandMasterUserId: true,
+      },
+    });
+  }
+
+  /**
+   * 가입 요청 가능 여부 판단에 필요한 삭제되지 않은 밴드 공개 상태를 조회한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; visibility: boolean } | null>} 삭제되지 않은 밴드 정보
+   */
+  async findBandForJoinRequest(
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    visibility: boolean;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.band.findFirst({
+      where: {
+        id: bandId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        visibility: true,
       },
     });
   }
@@ -811,6 +880,36 @@ export class BandsPrismaRepository implements BandsRepository {
       where: {
         bandId,
         inviteeUserId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
+   * 같은 밴드와 사용자 기준으로 기존 가입 요청이 있는지 확인한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {string} userId - 가입 요청 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<{ id: string; status: JoinRequestStatus } | null>} 기존 가입 요청 정보
+   */
+  async findBandJoinRequestByBandIdAndUserId(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    id: string;
+    status: JoinRequestStatus;
+  } | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandJoinRequest.findFirst({
+      where: {
+        bandId,
+        userId,
       },
       select: {
         id: true,

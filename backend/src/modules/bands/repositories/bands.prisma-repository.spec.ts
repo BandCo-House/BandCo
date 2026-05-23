@@ -13,6 +13,13 @@ function createPrismaMock() {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    bandJoinRequest: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    band: {
+      findFirst: jest.fn(),
+    },
     bandBlacklist: {
       findFirst: jest.fn(),
     },
@@ -576,6 +583,128 @@ describe('BandsPrismaRepository', () => {
 
       expect(tx.bandInvitation.create).toHaveBeenCalled();
       expect(prisma.bandInvitation.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createBandJoinRequest', () => {
+    it('밴드 가입 요청을 생성하고 응답 필드로 매핑한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.create.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'PENDING',
+        createdAt: mockCreatedAt,
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.createBandJoinRequest({
+        bandId: 'band-001',
+        userId: 'user-002',
+        message: '기타로 합류하고 싶습니다!',
+      });
+
+      expect(prisma.bandJoinRequest.create).toHaveBeenCalledWith({
+        data: {
+          bandId: 'band-001',
+          userId: 'user-002',
+          message: '기타로 합류하고 싶습니다!',
+        },
+        select: {
+          id: true,
+          bandId: true,
+          userId: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+      expect(result).toEqual({
+        joinRequestId: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        joinRequestStatus: 'PENDING',
+        createdAt: '2026-04-10T12:00:00.000Z',
+      });
+    });
+
+    it('tx가 있으면 tx client로 가입 요청을 생성한다', async () => {
+      const prisma = createPrismaMock();
+      const tx = createPrismaMock();
+      tx.bandJoinRequest.create.mockResolvedValue({
+        id: 'join-request-001',
+        bandId: 'band-001',
+        userId: 'user-002',
+        status: 'PENDING',
+        createdAt: mockCreatedAt,
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.createBandJoinRequest(
+        {
+          bandId: 'band-001',
+          userId: 'user-002',
+        },
+        tx as never,
+      );
+
+      expect(tx.bandJoinRequest.create).toHaveBeenCalled();
+      expect(prisma.bandJoinRequest.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findBandForJoinRequest', () => {
+    it('삭제되지 않은 밴드의 공개 상태를 조회한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findFirst.mockResolvedValue({
+        id: 'band-001',
+        visibility: true,
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandForJoinRequest('band-001');
+
+      expect(prisma.band.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'band-001',
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          visibility: true,
+        },
+      });
+      expect(result).toEqual({
+        id: 'band-001',
+        visibility: true,
+      });
+    });
+  });
+
+  describe('findBandJoinRequestByBandIdAndUserId', () => {
+    it('밴드와 사용자 기준으로 기존 가입 요청을 조회한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandJoinRequest.findFirst.mockResolvedValue({
+        id: 'join-request-001',
+        status: 'PENDING',
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandJoinRequestByBandIdAndUserId('band-001', 'user-002');
+
+      expect(prisma.bandJoinRequest.findFirst).toHaveBeenCalledWith({
+        where: {
+          bandId: 'band-001',
+          userId: 'user-002',
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+      expect(result).toEqual({
+        id: 'join-request-001',
+        status: 'PENDING',
+      });
     });
   });
 

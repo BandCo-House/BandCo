@@ -25,6 +25,10 @@ function createBandsRepositoryStub(options?: {
     id: string;
     bandMasterUserId: string;
   } | null;
+  bandForJoinRequest?: {
+    id: string;
+    visibility: boolean;
+  } | null;
   bandForLeave?: {
     id: string;
     member: {
@@ -48,6 +52,7 @@ function createBandsRepositoryStub(options?: {
     role: BandMemberRole;
   } | null;
   existingInvitation?: { id: string; status: 'PENDING' } | null;
+  existingJoinRequest?: { id: string; status: 'PENDING' | 'APPROVED' | 'REJECTED' } | null;
   invitationForResponse?: {
     id: string;
     bandId: string;
@@ -63,15 +68,18 @@ function createBandsRepositoryStub(options?: {
   onAcceptBandInvitation?: (invitationId: string, bandId: string, userId: string, respondedAt: Date, tx: unknown) => void;
   onCreateBand?: (input: CreateBandRepositoryInput, tx: unknown) => void;
   onCreateBandInvitation?: (input: { bandId: string; inviterBandMemberId: string; inviteeUserId: string; message?: string }, tx: unknown) => void;
+  onCreateBandJoinRequest?: (input: { bandId: string; userId: string; message?: string }, tx: unknown) => void;
   onDeleteBand?: (bandId: string, deletedAt: Date, tx: unknown) => void;
   onDeleteBandInvitation?: (invitationId: string, tx: unknown) => void;
   onDeclineBandInvitation?: (invitationId: string, respondedAt: Date, tx: unknown) => void;
   onFindBandBlacklistByBandIdAndUserId?: (tx: unknown) => void;
   onFindActiveBandById?: (tx: unknown) => void;
   onFindBandForLeave?: (tx: unknown) => void;
+  onFindBandForJoinRequest?: (tx: unknown) => void;
   onFindBandInvitationForDelete?: (tx: unknown) => void;
   onFindBandInvitationForResponse?: (tx: unknown) => void;
   onFindBandInvitationByBandIdAndInviteeUserId?: (tx: unknown) => void;
+  onFindBandJoinRequestByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandMemberByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
   onFindExistingGenreIds?: (tx: unknown) => void;
@@ -145,6 +153,17 @@ function createBandsRepositoryStub(options?: {
         createdAt: '2026-04-10T12:00:00.000Z',
       };
     },
+    async createBandJoinRequest(input, tx) {
+      options?.onCreateBandJoinRequest?.(input, tx);
+
+      return {
+        joinRequestId: 'join-request-001',
+        bandId: input.bandId,
+        userId: input.userId,
+        joinRequestStatus: 'PENDING',
+        createdAt: '2026-04-30T10:00:00.000Z',
+      };
+    },
     async deleteBand(bandId, deletedAt, tx) {
       options?.onDeleteBand?.(bandId, deletedAt, tx);
 
@@ -185,6 +204,18 @@ function createBandsRepositoryStub(options?: {
           id: 'band-member-001',
           role: BandMemberRole.MEMBER,
         },
+      };
+    },
+    async findBandForJoinRequest(_bandId, tx) {
+      options?.onFindBandForJoinRequest?.(tx);
+
+      if (options?.bandForJoinRequest !== undefined) {
+        return options.bandForJoinRequest;
+      }
+
+      return {
+        id: 'band-001',
+        visibility: true,
       };
     },
     async leaveBand(bandMemberId, tx) {
@@ -392,6 +423,11 @@ function createBandsRepositoryStub(options?: {
       options?.onFindBandInvitationByBandIdAndInviteeUserId?.(tx);
 
       return options?.existingInvitation ?? null;
+    },
+    async findBandJoinRequestByBandIdAndUserId(_bandId, _userId, tx) {
+      options?.onFindBandJoinRequestByBandIdAndUserId?.(tx);
+
+      return options?.existingJoinRequest ?? null;
     },
     async findBandInvitationForResponse(_invitationId, tx) {
       options?.onFindBandInvitationForResponse?.(tx);
@@ -846,6 +882,151 @@ describe('BandsService', () => {
         },
         externalTx as never,
       );
+
+      expect(capturedTransactions).toEqual([externalTx]);
+    });
+  });
+
+  describe('createBandJoinRequest', () => {
+    it('인증 사용자가 공개 밴드에 가입 요청을 보낸다', async () => {
+      let capturedInput: { bandId: string; userId: string; message?: string } | undefined;
+      const repository = createBandsRepositoryStub({
+        onCreateBandJoinRequest(input) {
+          capturedInput = input;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {
+        message: '기타로 합류하고 싶습니다!',
+      });
+
+      expect(capturedInput).toEqual({
+        bandId: 'band-001',
+        userId: INVITEE_USER_ID,
+        message: '기타로 합류하고 싶습니다!',
+      });
+      expect(result).toEqual({
+        joinRequestId: 'join-request-001',
+        bandId: 'band-001',
+        userId: INVITEE_USER_ID,
+        joinRequestStatus: 'PENDING',
+        createdAt: '2026-04-30T10:00:00.000Z',
+      });
+    });
+
+    it('밴드가 없거나 삭제되었으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForJoinRequest: null,
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.createBandJoinRequest(INVITEE_USER_ID, 'band-missing', {})).rejects.toThrow(NotFoundException);
+    });
+
+    it('비공개 밴드에는 가입 요청을 보낼 수 없다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandForJoinRequest: {
+          id: 'band-001',
+          visibility: false,
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {})).rejects.toThrow(ForbiddenException);
+    });
+
+    it('이미 밴드 멤버이면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        inviteeBandMember: {
+          id: 'band-member-002',
+          userId: INVITEE_USER_ID,
+          role: BandMemberRole.MEMBER,
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {})).rejects.toThrow(ConflictException);
+    });
+
+    it('차단된 사용자는 가입 요청을 보낼 수 없다', async () => {
+      const repository = createBandsRepositoryStub({
+        bandBlacklist: {
+          id: 'blacklist-001',
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {})).rejects.toThrow(ForbiddenException);
+    });
+
+    it('기존 초대가 있으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        existingInvitation: {
+          id: 'invitation-001',
+          status: 'PENDING',
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {})).rejects.toThrow(ConflictException);
+    });
+
+    it('기존 가입 요청이 있으면 예외를 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        existingJoinRequest: {
+          id: 'join-request-001',
+          status: 'PENDING',
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {})).rejects.toThrow(ConflictException);
+    });
+
+    it('검증과 가입 요청 생성을 같은 transaction client로 실행한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindBandForJoinRequest(tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandMemberByBandIdAndUserId(tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandBlacklistByBandIdAndUserId(tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandInvitationByBandIdAndInviteeUserId(tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandJoinRequestByBandIdAndUserId(tx) {
+          capturedTransactions.push(tx);
+        },
+        onCreateBandJoinRequest(_input, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {});
+
+      expect(capturedTransactions).toHaveLength(6);
+      expect(new Set(capturedTransactions).size).toBe(1);
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+      const externalTx = {
+        transactionClient: true,
+      };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onCreateBandJoinRequest(_input, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {}, externalTx as never);
 
       expect(capturedTransactions).toEqual([externalTx]);
     });
