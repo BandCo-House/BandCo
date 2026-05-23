@@ -10,7 +10,10 @@ export type HeaderTab = {
   getTo?: (params: Record<string, string>) => string;
   getParams?: (params: Record<string, string>) => Record<string, string>;
   activePathPrefixes?: string[];
-  isActive?: (context: { pathname: string; params: Record<string, string> }) => boolean;
+  isActive?: (context: {
+    pathname: string;
+    params: Record<string, string>;
+  }) => boolean;
 };
 
 /**
@@ -38,6 +41,7 @@ export type HeaderResolveResult = {
  */
 export type HeaderStaticConfig = {
   title?: string;
+  className?: string;
   subtitle?: string;
   brandLabel?: string;
   showBack?: boolean;
@@ -52,7 +56,9 @@ export type HeaderStaticConfig = {
   tabs?: HeaderTab[];
   rightActionLabel?: string;
   rightActionTo?: string;
-  getRightActionParams?: (params: Record<string, string>) => Record<string, string>;
+  getRightActionParams?: (
+    params: Record<string, string>,
+  ) => Record<string, string>;
   resolve?: (ctx: HeaderResolveContext) => HeaderResolveResult;
 };
 

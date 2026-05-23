@@ -34,13 +34,13 @@ describe('authService', () => {
   });
 
   describe('checkEmailDuplicate', () => {
-    it('이미 사용 중인 이메일이면 duplicated true를 반환해야 한다', async () => {
+    it('백엔드 이메일 확인 응답 메시지가 중복이면 duplicated true를 반환해야 한다', async () => {
       const response = await checkEmailDuplicate('duplicate@test.com');
 
       expect(response.duplicated).toBe(true);
     });
 
-    it('사용 가능한 이메일이면 duplicated false를 반환해야 한다', async () => {
+    it('백엔드 이메일 확인 응답 메시지가 사용 가능이면 duplicated false를 반환해야 한다', async () => {
       const response = await checkEmailDuplicate('new@test.com');
 
       expect(response.duplicated).toBe(false);

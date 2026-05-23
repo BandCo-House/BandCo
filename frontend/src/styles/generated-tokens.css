@@ -1,0 +1,76 @@
+/* This file is generated from tokens/tokens.json. Do not edit manually. */
+:root {
+  --Round-full: 999px;
+  --background: var(--gradient-top);
+  --foreground: var(--greyScale-500);
+  --surface-card: var(--greyScale-50);
+  --surface-popover: var(--greyScale-50);
+  --gradient-top: #e6e9f0;
+  --gradient-bottom: #f9f8f0;
+  --overlay-40: rgb(255 255 255 / 0.4);
+  --overlay-24: rgb(255 255 255 / 0.24);
+  --greyScale-50: #ffffff;
+  --greyScale-100: #dfdfe1;
+  --greyScale-200: #cbcbcd;
+  --greyScale-300: #9d9d9f;
+  --greyScale-400: #646468;
+  --greyScale-500: #28272a;
+  --greyScale-600: #000000;
+  --greyScale-999: #000000;
+  --primary-surface: #e5e5f0;
+  --primary-light: #7473b5;
+  --primary-main: #1b1b32;
+  --primary-dark: var(--greyScale-999);
+  --secondary-surface: var(--primary-surface);
+  --secondary: #e1fc73;
+  --main-surface: #e5e5f0;
+  --main-light: #7473b5;
+  --main-main: #1b1b32;
+  --key: var(--primary-main);
+  --key-foreground: var(--greyScale-50);
+  --key-surface: var(--primary-surface);
+  --key-muted: var(--primary-light);
+  --success-surface: #ebfef5;
+  --semantic-success-surface: #ebfef5;
+  --success: #15d676;
+  --destructive-surface: #fee6e1;
+  --destructive: #fa2e05;
+}
+
+.dark {
+  --Round-full: 999px;
+  --background: var(--primary-main);
+  --foreground: var(--greyScale-200);
+  --surface-card: var(--overlay-24);
+  --surface-popover: var(--primary-dark);
+  --gradient-top: #020119;
+  --gradient-bottom: #1b1b32;
+  --overlay-40: rgb(255 255 255 / 0.4);
+  --overlay-24: rgb(255 255 255 / 0.24);
+  --greyScale-50: #ffffff;
+  --greyScale-100: #dfdfe1;
+  --greyScale-200: #c6c6c8;
+  --greyScale-300: #9d9d9f;
+  --greyScale-400: #646468;
+  --greyScale-500: #28272a;
+  --greyScale-600: #000000;
+  --greyScale-999: #000000;
+  --primary-surface: #e5e5f0;
+  --primary-light: #7473b5;
+  --primary-main: #1b1b32;
+  --primary-dark: var(--greyScale-999);
+  --secondary-surface: #ecfcab;
+  --secondary: #1a1971;
+  --main-surface: #272b22;
+  --main-light: #9ca578;
+  --main-main: #ecfcab;
+  --key: var(--secondary);
+  --key-foreground: var(--primary-dark);
+  --key-surface: var(--secondary-surface);
+  --key-muted: var(--secondary);
+  --success-surface: #ebfef5;
+  --semantic-success-surface: #ebfef5;
+  --success: #05e173;
+  --destructive-surface: #fee6e1;
+  --destructive: #d6705c;
+}

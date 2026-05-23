@@ -123,6 +123,7 @@ export const RootLayout = () => {
         title: header.title ?? '',
         showBack: header.showBack,
         rightContent,
+        className: header.className,
       }
     : null;
 

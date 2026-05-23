@@ -7,6 +7,10 @@ export const buttonVariants = cva(
       variant: {
         default: 'bg-key text-key-foreground',
         key: 'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
+        shining:
+          'relative rounded-[var(--Round-full)] border-t-[0.5px] border-r-[0.5px] border-b-[0.5px] border-l border-t-white border-r-white border-b-white border-l-white bg-main-main text-primary-dark shadow-[inset_-1px_-1px_1px_0_rgba(39,51,31,0.56),inset_0_-1px_1px_0_var(--semantic-success-surface),0_1px_12px_6px_rgba(236,252,171,0.42)] disabled:cursor-not-allowed disabled:border-white disabled:bg-grey-300 disabled:text-grey-500 disabled:shadow-none disabled:opacity-100',
+        neutral:
+          'border border-white bg-grey-200 text-primary-dark disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
         secondary:
           'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
         outline: 'border border-key-muted bg-transparent text-foreground',

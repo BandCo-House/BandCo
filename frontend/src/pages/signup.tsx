@@ -15,6 +15,7 @@ export const Route = createFileRoute('/signup')({
     header: {
       title: '회원가입',
       backBehavior: 'browser',
+      className: 'bg-transparent shadow-none backdrop-blur-none',
     },
   },
 });

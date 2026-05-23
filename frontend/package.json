@@ -4,8 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "tokens:build": "node ./scripts/generate-css-tokens.mjs",
+    "predev": "pnpm run tokens:build",
     "dev": "vite",
+    "prebuild": "pnpm run tokens:build",
     "build": "tsc -b && vite build",
+    "pretest": "pnpm run tokens:build",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "prettier --write . && eslint . --fix",
     "format": "prettier --write .",

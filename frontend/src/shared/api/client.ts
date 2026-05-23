@@ -2,22 +2,27 @@ import axios, {
   type AxiosError,
   type AxiosRequestConfig,
   type InternalAxiosRequestConfig,
-} from "axios";
+} from 'axios';
 
-import { API_BASE_URL, API_TIMEOUT, REFRESH_ENDPOINT } from "./config";
-import { type ApiResponse, type TokenResponse } from "./types";
+import {
+  ACCESS_TOKEN_REFRESH_ENDPOINT,
+  API_BASE_URL,
+  API_TIMEOUT,
+  REFRESH_TOKEN_REFRESH_ENDPOINT,
+} from './config';
+import { type ApiResponse } from './types';
 import {
   getAccessToken,
   getRefreshToken,
-  setTokens,
+  setAccessToken,
   clearTokens,
-} from "../lib/auth-storage";
+} from '../lib/auth-storage';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
@@ -25,7 +30,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
-    if (token) {
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -52,6 +57,44 @@ function processQueue(error: unknown, token: string | null = null): void {
   failedQueue = [];
 }
 
+/**
+ * 백엔드 access token 재발급 계약에 맞춰 refresh token을 Bearer 헤더로 전송한다.
+ */
+export const refreshAccessToken = async (
+  refreshToken: string,
+): Promise<string> => {
+  const { data } = await apiClient.post<{ accessToken: string }>(
+    ACCESS_TOKEN_REFRESH_ENDPOINT,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    },
+  );
+
+  return data.accessToken;
+};
+
+/**
+ * 백엔드 refresh token 재발급 계약에 맞춰 refresh token을 Bearer 헤더로 전송한다.
+ */
+export const refreshRefreshToken = async (
+  refreshToken: string,
+): Promise<string> => {
+  const { data } = await apiClient.post<{ refreshToken: string }>(
+    REFRESH_TOKEN_REFRESH_ENDPOINT,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    },
+  );
+
+  return data.refreshToken;
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -62,10 +105,13 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // refresh 요청에서 401이 오면 리프레시 토큰 만료 => 로그아웃 (관련 상태 다 날리는게 좋을 것 같아서 window.location.href 사용)
-    if (originalRequest.url?.includes(REFRESH_ENDPOINT)) {
+    // 토큰 재발급 요청에서 401이 오면 보유 토큰이 유효하지 않으므로 로그아웃한다.
+    if (
+      originalRequest.url?.includes(ACCESS_TOKEN_REFRESH_ENDPOINT) ||
+      originalRequest.url?.includes(REFRESH_TOKEN_REFRESH_ENDPOINT)
+    ) {
       clearTokens();
-      window.location.href = "/login";
+      window.location.href = '/login';
       return Promise.reject(error);
     }
 
@@ -86,19 +132,13 @@ apiClient.interceptors.response.use(
 
       if (!refreshToken) {
         clearTokens();
-        window.location.href = "/login";
+        window.location.href = '/login';
         return Promise.reject(error);
       }
 
-      // 토큰 갱신 요청
-      const data = await apiPost<TokenResponse>(REFRESH_ENDPOINT, {
-        refreshToken,
-      });
+      const newAccessToken = await refreshAccessToken(refreshToken);
 
-      const newAccessToken = data.accessToken;
-      const newRefreshToken = data.refreshToken;
-
-      setTokens(newAccessToken, newRefreshToken);
+      setAccessToken(newAccessToken);
       processQueue(null, newAccessToken);
 
       // 원래 요청 재시도
@@ -119,25 +159,25 @@ async function api<T>(config: AxiosRequestConfig): Promise<T> {
 }
 
 export const apiGet = <T>(url: string, config?: AxiosRequestConfig) =>
-  api<T>({ ...config, method: "GET", url });
+  api<T>({ ...config, method: 'GET', url });
 
 export const apiPost = <T>(
   url: string,
   body?: unknown,
   config?: AxiosRequestConfig,
-) => api<T>({ ...config, method: "POST", url, data: body });
+) => api<T>({ ...config, method: 'POST', url, data: body });
 
 export const apiPut = <T>(
   url: string,
   body?: unknown,
   config?: AxiosRequestConfig,
-) => api<T>({ ...config, method: "PUT", url, data: body });
+) => api<T>({ ...config, method: 'PUT', url, data: body });
 
 export const apiPatch = <T>(
   url: string,
   body?: unknown,
   config?: AxiosRequestConfig,
-) => api<T>({ ...config, method: "PATCH", url, data: body });
+) => api<T>({ ...config, method: 'PATCH', url, data: body });
 
 export const apiDelete = <T>(url: string, config?: AxiosRequestConfig) =>
-  api<T>({ ...config, method: "DELETE", url });
+  api<T>({ ...config, method: 'DELETE', url });

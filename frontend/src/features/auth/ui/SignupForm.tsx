@@ -86,7 +86,7 @@ const SignupInput = ({
         />
         {action}
       </div>
-      {helperText ? (
+      {helperText && !errorMessage ? (
         <p className="typo-xs-m text-grey-200">{helperText}</p>
       ) : null}
       {errorMessage ? (
@@ -158,8 +158,8 @@ const EmailDuplicateResult = ({ status }: EmailDuplicateResultProps) => {
           'flex h-14 items-center justify-center overflow-hidden rounded-full transition-transform duration-300 ease-out',
           isVisible ? 'scale-100' : 'pointer-events-none scale-90',
           isDuplicated
-            ? 'border border-key-muted px-6 typo-base-m text-grey-200'
-            : 'w-14 bg-key-muted text-key-foreground',
+            ? 'border border-main-main px-6 typo-base-m text-grey-200'
+            : 'w-14 border border-main-main bg-transparent text-main-main',
         )}
       >
         {isDuplicated ? (
@@ -180,7 +180,7 @@ const PasswordConfirmAction = ({
 }: PasswordConfirmActionProps) => {
   if (!isPasswordConfirmed) {
     return (
-      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-key-muted px-6 typo-base-m text-grey-200">
+      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-main-main px-6 typo-base-m text-grey-200">
         불일치
       </div>
     );
@@ -189,7 +189,7 @@ const PasswordConfirmAction = ({
   return (
     <div
       aria-label="비밀번호 일치"
-      className="mb-1 flex size-14 shrink-0 items-center justify-center rounded-full bg-key-muted text-key-foreground"
+      className="mb-1 flex size-14 shrink-0 items-center justify-center rounded-full border border-main-main bg-transparent text-main-main"
     >
       <CheckIcon aria-hidden="true" className="size-5" />
     </div>
@@ -222,11 +222,12 @@ export const SignupForm = ({
   const isPasswordConfirmed =
     hasPasswordConfirmInput && formData.password === passwordConfirm;
   const isRequiredTermsChecked = terms.service && terms.privacy;
-  const isFormValid =
-    signupSchema.safeParse(formData).success &&
-    isPasswordConfirmed &&
-    isRequiredTermsChecked &&
-    emailDuplicateStatus !== 'duplicated';
+  const isRequiredFieldsFilled =
+    formData.name.length > 0 &&
+    formData.email.length > 0 &&
+    formData.password.length > 0 &&
+    passwordConfirm.length > 0;
+  const canAttemptSubmit = isRequiredFieldsFilled && isRequiredTermsChecked;
 
   /**
    * 입력 필드의 id를 기준으로 회원가입 폼 상태를 갱신한다.
@@ -315,13 +316,17 @@ export const SignupForm = ({
     if (!result.success) {
       result.error.issues.forEach((issue) => {
         const path = issue.path[0] as keyof SignupReq;
-        nextErrors[path] = issue.message;
+        nextErrors[path] = nextErrors[path] ?? issue.message;
       });
     }
 
     if (!isPasswordConfirmed) {
       nextErrors.password =
         nextErrors.password ?? '비밀번호가 일치하지 않습니다.';
+    }
+
+    if (emailDuplicateStatus !== 'available') {
+      nextErrors.email = nextErrors.email ?? '이메일 중복 확인을 완료해주세요.';
     }
 
     if (emailDuplicateStatus === 'duplicated') {
@@ -367,7 +372,7 @@ export const SignupForm = ({
                 size="sm"
                 disabled={emailDuplicateStatus === 'checking'}
                 onClick={handleEmailDuplicateCheck}
-                className="mb-1 h-14 shrink-0 rounded-full border-key-muted px-6 typo-base-m text-grey-200"
+                className="mb-1 h-14 shrink-0 rounded-full border-main-main px-6 typo-base-m text-grey-200"
               >
                 {emailDuplicateStatus === 'checking' ? '확인 중' : '중복 확인'}
               </Button>
@@ -441,9 +446,9 @@ export const SignupForm = ({
 
         <Button
           type="submit"
-          variant="key"
+          variant="shining"
           size="lg"
-          disabled={isLoading || !isFormValid}
+          disabled={isLoading || !canAttemptSubmit}
           className="mt-4 w-full"
         >
           {isLoading ? '처리 중...' : '가입하기'}

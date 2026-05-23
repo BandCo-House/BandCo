@@ -61,6 +61,9 @@ describe('authSchema', () => {
         password: '123456',
       });
       expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.message).toBe(
+        '비밀번호에는 영문과 숫자를 모두 포함해주세요.',
+      );
     });
 
     it('비밀번호에 한글이 포함되면 실패해야 한다', () => {
@@ -69,6 +72,9 @@ describe('authSchema', () => {
         password: 'pass12한글',
       });
       expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.message).toBe(
+        '비밀번호에는 영문, 숫자, 특수문자(!@#$%^&*())만 사용할 수 있습니다.',
+      );
     });
 
     it('비밀번호에 허용되지 않은 특수문자가 포함되면 실패해야 한다', () => {

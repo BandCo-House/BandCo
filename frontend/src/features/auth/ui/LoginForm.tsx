@@ -74,16 +74,16 @@ const AuthRoundedInput = ({
 
 const SplitLinkRow = ({ left, right, className }: SplitLinkRowProps) => {
   return (
-    <div className={cn(className, 'flex')}>
-      <div className="flex-1">{left}</div>
+    <div className={cn(className, 'flex items-center')}>
+      <div className="flex min-w-0 flex-1 justify-center">{left}</div>
       <span className="h-7 w-px shrink-0 bg-overlay-40"></span>
-      <div className="flex-1">{right}</div>
+      <div className="flex min-w-0 flex-1 justify-center">{right}</div>
     </div>
   );
 };
 
 const authRowLinkClassName =
-  'block px-2 py-1 text-center text-grey-200 transition-colors hover:text-grey-50 hover:underline';
+  'inline-flex w-full justify-center whitespace-nowrap px-2 py-1 text-center text-grey-200 transition-colors hover:text-grey-50 hover:underline';
 
 const AuthRowLink = ({ children, to, onClick }: AuthRowLinkProps) => {
   if (to) {
@@ -165,7 +165,7 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
 
         <Button
           type="submit"
-          variant="key"
+          variant="shining"
           size="lg"
           disabled={isLoading || !isFormValid}
           className="mt-4 w-full"

@@ -154,7 +154,7 @@ export const OnboardingFlow = ({
           <div className="flex flex-col gap-8">
             <Button
               type="button"
-              variant="key"
+              variant="shining"
               size="lg"
               disabled={!canProceed}
               className="w-full typo-xl-sb"
@@ -179,7 +179,7 @@ export const OnboardingFlow = ({
           <div className="grid grid-cols-2 gap-4">
             <Button
               type="button"
-              variant="key"
+              variant="neutral"
               size="lg"
               onClick={() => setStep('genre')}
             >
@@ -187,7 +187,7 @@ export const OnboardingFlow = ({
             </Button>
             <Button
               type="button"
-              variant="key"
+              variant="shining"
               size="lg"
               disabled={!canProceed}
               onClick={handlePrimaryAction}

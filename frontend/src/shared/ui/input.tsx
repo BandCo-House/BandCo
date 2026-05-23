@@ -4,9 +4,9 @@ import { Search } from 'lucide-react';
 
 const inputVariantClassNames = {
   roundedFull:
-    'rounded-full border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-key focus-visible:outline-2 focus-visible:outline-key',
+    'rounded-full border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-main-main focus-visible:outline-2 focus-visible:outline-main-main',
   underline:
-    'rounded-none border-0 border-b bg-transparent px-0 py-3 outline-none hover:border-key focus-visible:border-key focus-visible:ring-0',
+    'rounded-none border-0 border-b bg-transparent px-0 py-3 outline-none hover:border-main-main focus-visible:border-main-main focus-visible:ring-0',
 } as const;
 
 type InputProps = React.ComponentProps<'input'> & {
