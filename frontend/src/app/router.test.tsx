@@ -258,7 +258,7 @@ describe('앱 라우터', () => {
     ).toHaveAttribute('data-variant', 'outline');
   });
 
-  it('루트에서 검색바가 노출된다', async () => {
+  it('루트 경로에서는 단순 헤더 제목을 렌더링해야 한다', async () => {
     const rootRouter = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -266,24 +266,11 @@ describe('앱 라우터', () => {
 
     const { unmount } = renderWithRouter(rootRouter);
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('밴드/사용자를 찾아보세요'),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'BandCo' })).toBeInTheDocument();
     unmount();
-
-    const songsRouter = createRouterForTest('/band/1/songs?spaceId=1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(songsRouter);
-    expect(await screen.findByText('SongsPage')).toBeInTheDocument();
-    expect(
-      screen.queryByPlaceholderText('밴드/사용자를 찾아보세요'),
-    ).not.toBeInTheDocument();
   });
 
-  it('루트 경로의 본문 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
+  it('루트 경로의 본문 콘텐츠 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
     const router = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -292,7 +279,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveClass(
+    expect(screen.getByTestId('my-bands-page').parentElement).toHaveClass(
       'mx-auto',
       'w-full',
       'max-w-7xl',

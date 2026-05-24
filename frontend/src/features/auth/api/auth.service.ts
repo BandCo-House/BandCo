@@ -1,6 +1,15 @@
-import { apiPost } from '@/shared/api/client';
+import { apiClient } from '@/shared/api/client';
 import { type TokenResponse } from '@/shared/api/types';
 import { type SignupReq } from '../model/auth.schema';
+
+type BackendEmailCheckResponse = {
+  status: 'success';
+  error: null;
+  message: string;
+  data: {
+    email: string;
+  };
+};
 
 export type EmailDuplicateCheckResponse = {
   duplicated: boolean;
@@ -14,7 +23,12 @@ export type EmailDuplicateCheckResponse = {
 export const registerEmail = async (
   data: SignupReq,
 ): Promise<TokenResponse> => {
-  return apiPost<TokenResponse>('/auth/register/email', data);
+  const response = await apiClient.post<TokenResponse>(
+    '/auth/register/email',
+    data,
+  );
+
+  return response.data;
 };
 
 /**
@@ -23,9 +37,14 @@ export const registerEmail = async (
 export const checkEmailDuplicate = async (
   email: string,
 ): Promise<EmailDuplicateCheckResponse> => {
-  return apiPost<EmailDuplicateCheckResponse>('/auth/email/duplicate-check', {
-    email,
-  });
+  const response = await apiClient.post<BackendEmailCheckResponse>(
+    '/auth/email',
+    { email },
+  );
+
+  return {
+    duplicated: response.data.message.includes('중복'),
+  };
 };
 
 /**
@@ -41,13 +60,15 @@ export const loginEmail = async (
   // email:password 형태를 base64로 인코딩
   const credentials = btoa(`${email}:${password}`);
 
-  return apiPost<TokenResponse>(
+  const response = await apiClient.post<TokenResponse>(
     '/auth/login/email',
-    {}, // body는 비우고 헤더로 전송
+    {},
     {
       headers: {
         Authorization: `Basic ${credentials}`,
       },
     },
   );
+
+  return response.data;
 };

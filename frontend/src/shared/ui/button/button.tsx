@@ -53,9 +53,11 @@ function Button({
       )}
       {...props}
     >
-      {isLoading
-        ? (loadingContent ?? <Loader2 className="h-4 w-4 animate-spin" />)
-        : children}
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
+        {isLoading
+          ? (loadingContent ?? <Loader2 className="h-4 w-4 animate-spin" />)
+          : children}
+      </span>
     </Comp>
   );
 }

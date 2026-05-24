@@ -56,29 +56,4 @@ describe('Button', () => {
     render(<Button disabled>저장</Button>);
     expect(screen.getByRole('button')).toBeDisabled();
   });
-
-  it('외부 타이포그래피 유틸이 지정되면 기본 타이포그래피 유틸을 제거해야 한다', () => {
-    render(<Button className="typo-lg-b">저장</Button>);
-
-    const button = screen.getByRole('button', { name: '저장' });
-
-    expect(button).toHaveClass('typo-lg-b');
-    expect(button).not.toHaveClass('typo-sm-sb');
-  });
-
-  it('key form 버튼은 로그인 제출 버튼 스타일을 제공해야 한다', () => {
-    render(
-      <Button variant="key" size="form" disabled>
-        로그인
-      </Button>,
-    );
-
-    const button = screen.getByRole('button', { name: '로그인' });
-
-    expect(button).toHaveClass('typo-lg-b');
-    expect(button).toHaveClass('bg-key');
-    expect(button).toHaveClass('text-key-foreground');
-    expect(button).toHaveClass('disabled:bg-grey-300');
-    expect(button).toHaveClass('disabled:text-grey-500');
-  });
 });

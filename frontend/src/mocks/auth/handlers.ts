@@ -1,8 +1,52 @@
 import { http, HttpResponse } from 'msw';
 
-import { type ApiResponse, type TokenResponse } from '@/shared/api/types';
-import type { EmailDuplicateCheckResponse } from '@/features/auth/api/auth.service';
+import { type TokenResponse } from '@/shared/api/types';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
+
+const mockTokenResponse: TokenResponse = {
+  accessToken: 'mock-access-token',
+  refreshToken: 'mock-refresh-token',
+};
+
+/**
+ * 백엔드 auth 컨트롤러의 이메일 확인 성공 응답을 생성한다.
+ */
+const createEmailCheckResponse = (email: string, duplicated: boolean) => {
+  return {
+    status: 'success',
+    error: null,
+    message: duplicated
+      ? '중복 된 이메일입니다.'
+      : '사용할 수 있는 이메일입니다.',
+    data: {
+      email,
+    },
+  };
+};
+
+/**
+ * 백엔드 UnauthorizedException 응답과 같은 형태의 실패 응답을 생성한다.
+ */
+const createUnauthorizedResponse = (message: string) => {
+  return HttpResponse.json(
+    {
+      message,
+      error: 'Unauthorized',
+      statusCode: 401,
+    },
+    { status: 401 },
+  );
+};
+
+const extractBearerToken = (request: Request) => {
+  const authHeader = request.headers.get('Authorization');
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  return authHeader.slice('Bearer '.length);
+};
 
 export const authHandlers = [
   // 이메일 회원가입
@@ -11,34 +55,50 @@ export const authHandlers = [
 
     // 특정 이메일로 실패 케이스 테스트 가능
     if (body.email === 'error@test.com') {
-      return new HttpResponse(
-        JSON.stringify({
-          success: false,
+      return HttpResponse.json(
+        {
           message: '이미 존재하는 이메일입니다.',
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } },
+          error: 'Bad Request',
+          statusCode: 400,
+        },
+        { status: 400 },
       );
     }
 
-    return HttpResponse.json<ApiResponse<TokenResponse>>({
-      success: true,
-      data: {
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-      },
-    });
+    return HttpResponse.json<TokenResponse>(mockTokenResponse);
   }),
 
-  http.post('*/auth/email/duplicate-check', async ({ request }) => {
+  http.post('*/auth/email', async ({ request }) => {
     const body = (await request.json()) as { email?: string };
     const duplicated = body.email === 'duplicate@test.com';
 
-    return HttpResponse.json<ApiResponse<EmailDuplicateCheckResponse>>({
-      success: true,
-      data: {
-        duplicated,
-      },
-    });
+    return HttpResponse.json(
+      createEmailCheckResponse(body.email ?? '', duplicated),
+    );
+  }),
+
+  http.post('*/auth/token/access', ({ request }) => {
+    const token = extractBearerToken(request);
+
+    if (!token) {
+      return createUnauthorizedResponse(
+        '길이 또는 prefix가 잘못된 토큰 형식입니다.',
+      );
+    }
+
+    return HttpResponse.json({ accessToken: 'mock-rotated-access-token' });
+  }),
+
+  http.post('*/auth/token/refresh', ({ request }) => {
+    const token = extractBearerToken(request);
+
+    if (!token) {
+      return createUnauthorizedResponse(
+        '길이 또는 prefix가 잘못된 토큰 형식입니다.',
+      );
+    }
+
+    return HttpResponse.json({ refreshToken: 'mock-rotated-refresh-token' });
   }),
 
   // 이메일 로그인 (Basic Auth)
@@ -46,21 +106,11 @@ export const authHandlers = [
     const authHeader = request.headers.get('Authorization');
 
     if (authHeader?.startsWith('Basic ')) {
-      return HttpResponse.json<ApiResponse<TokenResponse>>({
-        success: true,
-        data: {
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-        },
-      });
+      return HttpResponse.json<TokenResponse>(mockTokenResponse);
     }
 
-    return new HttpResponse(
-      JSON.stringify({
-        success: false,
-        message: '인증 정보가 올바르지 않습니다.',
-      }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    return createUnauthorizedResponse(
+      '길이 또는 prefix가 잘못된 토큰 형식입니다.',
     );
   }),
 ];

@@ -10,7 +10,10 @@ export type HeaderTab = {
   getTo?: (params: Record<string, string>) => string;
   getParams?: (params: Record<string, string>) => Record<string, string>;
   activePathPrefixes?: string[];
-  isActive?: (context: { pathname: string; params: Record<string, string> }) => boolean;
+  isActive?: (context: {
+    pathname: string;
+    params: Record<string, string>;
+  }) => boolean;
 };
 
 /**
@@ -44,15 +47,13 @@ export type HeaderStaticConfig = {
   backBehavior?: 'route' | 'browser';
   backTo?: string;
   getBackParams?: (params: Record<string, string>) => Record<string, string>;
-  showUtilities?: boolean;
-  showSearchBar?: boolean;
-  showProfileAvatar?: boolean;
-  showNotificationTrigger?: boolean;
   meta?: string[];
   tabs?: HeaderTab[];
   rightActionLabel?: string;
   rightActionTo?: string;
-  getRightActionParams?: (params: Record<string, string>) => Record<string, string>;
+  getRightActionParams?: (
+    params: Record<string, string>,
+  ) => Record<string, string>;
   resolve?: (ctx: HeaderResolveContext) => HeaderResolveResult;
 };
 
