@@ -9,6 +9,8 @@ const defaultOutputPath = resolve(
   frontendRoot,
   'src/styles/generated-tokens.css',
 );
+// Token Studio export에 radius token set이 포함되어 있지 않아 앱 기본 pill radius를 명명 상수로 고정한다.
+export const DEFAULT_ROUND_FULL = '999px';
 
 const getValue = (source, path) => {
   const token = path.reduce((target, key) => target?.[key], source);
@@ -35,7 +37,7 @@ const buildThemeVariables = ({
   const isDarkMode = mode === 'dark';
 
   return [
-    ['--Round-full', '999px'],
+    ['--Round-full', DEFAULT_ROUND_FULL],
     [
       '--background',
       isDarkMode ? 'var(--primary-main)' : 'var(--gradient-top)',

@@ -131,6 +131,7 @@ apiClient.interceptors.response.use(
       const refreshToken = getRefreshToken();
 
       if (!refreshToken) {
+        processQueue(error, null);
         clearTokens();
         window.location.href = '/login';
         return Promise.reject(error);

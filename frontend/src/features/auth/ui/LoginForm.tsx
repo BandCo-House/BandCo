@@ -83,7 +83,7 @@ const SplitLinkRow = ({ left, right, className }: SplitLinkRowProps) => {
 };
 
 const authRowLinkClassName =
-  'inline-flex w-full justify-center whitespace-nowrap px-2 py-1 text-center text-grey-200 transition-colors hover:text-grey-50 hover:underline';
+  'inline-flex w-full justify-center whitespace-nowrap px-2 py-1 text-center text-grey-200 transition-colors hover:text-grey-50 hover:underline focus-visible:text-grey-50 focus-visible:underline';
 
 const AuthRowLink = ({ children, to, onClick }: AuthRowLinkProps) => {
   if (to) {

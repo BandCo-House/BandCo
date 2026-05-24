@@ -72,7 +72,7 @@ export function ForgotPasswordPage() {
         <div className="mt-8">
           <Link
             to="/login"
-            className="block w-full px-2 py-1 text-center typo-base-m text-grey-200 transition-colors hover:text-grey-50 hover:underline"
+            className="block w-full px-2 py-1 text-center typo-base-m text-grey-200 transition-colors hover:text-grey-50 hover:underline focus-visible:text-grey-50 focus-visible:underline"
           >
             로그인으로 돌아가기
           </Link>
