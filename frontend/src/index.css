@@ -6,6 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --shadow-drop: 0px 0px 20px 2px rgba(255, 255, 255, 0.4);
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -23,6 +24,14 @@
   --color-overlay-40: var(--overlay-40);
   --color-overlay-24: var(--overlay-24);
   --color-primary: var(--primary-main);
+  /* 피그마 디자인 시스템에 라이트랑 다크가 섞여있음 일단 라이트 부분은 임시로 고정값 */
+  --color-primary-temporary: #1b1b32;
+  --color-secondary-temporary: #e1fc73;
+  /*  */
+  /* 헤더 높이가 두가지가 존재하는데 해당 높이의 커스텀 spacing 추가 */
+  --spacing-header-36: 2.25rem;
+  --spacing-header-64: 4rem;
+  /*  */
   --color-primary-foreground: var(--greyScale-50);
   --color-primary-surface: var(--primary-surface);
   --color-primary-light: var(--primary-light);

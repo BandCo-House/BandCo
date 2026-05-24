@@ -33,11 +33,8 @@ export const BandList = () => {
 
   return (
     <>
-      <section
-        data-testid="band-list"
-        className="relative space-y-7 bg-primary"
-      >
-        <ul className="relative z-30 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+      <section data-testid="band-list" className="relative space-y-7">
+        <ul className="relative z-10 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
           {bands.map((band) => (
             <li key={band.id}>
               <BandCard band={band} />
@@ -58,8 +55,13 @@ export const BandList = () => {
           open={isInviteCodeDialogOpen}
           onOpenChange={setIsInviteCodeDialogOpen}
         />
-        <div className="fixed top-20 left-1/2 z-10 h-full w-full max-w-[648px] -translate-x-1/2 bg-linear-to-b from-black/50 via-black/20 to-white/10" />
       </section>
+      <div className="fixed top-header-64 z-30 -mx-5 flex h-full w-full max-w-[648px] flex-col items-start justify-start gap-6 overflow-hidden bg-linear-to-b">
+        <div
+          className="h-px w-full"
+          style={{ boxShadow: '0px 8px 40px 10px rgba(221, 254, 85, 0.12)' }}
+        />
+      </div>
     </>
   );
 };

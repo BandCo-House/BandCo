@@ -55,14 +55,14 @@ export const BandListFAB = ({
           <button
             type="button"
             onClick={handleCreate}
-            className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2.5 typo-sm-m text-secondary-foreground shadow-drop transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-full bg-secondary-temporary px-4 py-2.5 typo-sm-m text-secondary-foreground shadow-drop transition hover:brightness-110"
           >
             새 밴드
           </button>
           <button
             type="button"
             onClick={handleInvite}
-            className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2.5 typo-sm-m text-secondary-foreground shadow-drop transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-full bg-secondary-temporary px-4 py-2.5 typo-sm-m text-secondary-foreground shadow-drop transition hover:brightness-110"
           >
             초대코드 입력
           </button>
@@ -74,11 +74,11 @@ export const BandListFAB = ({
           aria-label="밴드 메뉴 열기"
           onClick={() => setIsOpen((o) => !o)}
           className={cn(
-            'flex h-14 w-14 items-center justify-center rounded-full bg-secondary-surface shadow-drop transition-transform duration-200',
+            'flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-drop transition-transform duration-200',
             isOpen && 'rotate-45',
           )}
         >
-          <SVGIcon icon="Add" size="md" className="text-primary" />
+          <SVGIcon icon="Add" size="md" className="text-primary-temporary" />
         </button>
       </div>
     </div>

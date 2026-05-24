@@ -18,7 +18,7 @@ export const BandCard = ({ band }: BandCardProps) => {
         navigate({ to: '/band/$bandId', params: { bandId: band.id } })
       }
     >
-      <div aria-hidden="true" className="w-full">
+      <div aria-hidden="true" className="w-full rounded-none">
         <img src={'default-band.png'} alt={band.name} className="w-full" />
       </div>
 
