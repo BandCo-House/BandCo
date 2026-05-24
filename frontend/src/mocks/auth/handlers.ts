@@ -68,7 +68,7 @@ export const authHandlers = [
     return HttpResponse.json<TokenResponse>(mockTokenResponse);
   }),
 
-  http.post('*/auth/email', async ({ request }) => {
+  http.post('*/auth/login/email', async ({ request }) => {
     const body = (await request.json()) as { email?: string };
     const duplicated = body.email === 'duplicate@test.com';
 
