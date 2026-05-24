@@ -265,6 +265,9 @@ export const bandHandlers = [
       name: string;
       description: string | null;
       visibility: boolean;
+      genreIds?: string[];
+      coverImgUrl?: string | null;
+      inviteeUserIds?: string[];
     };
 
     // 단순 딜레이 시뮬레이션
@@ -280,10 +283,20 @@ export const bandHandlers = [
           name: body.name,
           description: body.description,
           visibility: body.visibility,
-          inviteCode: 'NEW123',
-          bmId: 'bm-new',
-          createdAt: '2026-03-03T18:20:10.123+09:00',
-          updatedAt: '2026-03-03T18:20:10.123+09:00',
+          coverImgUrl: body.coverImgUrl ?? 'https://cdn.example.com/bands/cover.png',
+          genres: (body.genreIds ?? ['0f0a4e3a-8a0c-4f6e-9d2d-9c1a8c6b7b1a']).map((id) => ({
+            id,
+            name: 'rock',
+          })),
+          bandMasterUserId: '11111111-1111-1111-1111-111111111111',
+          createdAt: '2026-03-03T18:20:10.123Z',
+          invitations: {
+            success: (body.inviteeUserIds ?? []).map((userId) => ({
+              userId,
+              invitationId: `invite-${userId}`,
+            })),
+            failed: [],
+          },
         },
       },
     });

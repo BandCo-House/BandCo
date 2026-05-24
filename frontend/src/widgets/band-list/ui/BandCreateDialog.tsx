@@ -38,12 +38,17 @@ export const BandCreateDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="border border-white/20 bg-inherit/10 shadow-[0_0_20px_2px_rgba(255,255,255,0.4)] backdrop-blur-sm">
+      <DialogContent
+        className="border border-white/20 bg-white/24"
+        style={{ boxShadow: '0px 3px 6px 2px rgba(255,255,255,0.16)' }}
+      >
         <DialogHeader className="text-left">
-          <DialogTitle className="text-2xl text-white">밴드 만들기</DialogTitle>
+          <DialogTitle className="text-2xl text-grey-100">
+            밴드 만들기
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-9 text-white">
+        <div className="flex flex-col gap-9 text-grey-100">
           {/* 공개/비공개 토글 */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-1">
@@ -61,9 +66,9 @@ export const BandCreateDialog = ({
                       type="button"
                       onClick={() => setVisibility(value)}
                       className={cn(
-                        'w-[78px] rounded-xl border px-4 py-2 text-center typo-sm-sb transition',
+                        'w-20 rounded-l-full rounded-r-full px-5 py-4 text-center typo-sm-sb transition',
                         isActive
-                          ? 'text-secondary-surface'
+                          ? 'bg-primary text-secondary-surface'
                           : 'border-border bg-transparent text-grey-100',
                       )}
                     >
@@ -112,9 +117,9 @@ export const BandCreateDialog = ({
                 />
               ) : (
                 <>
-                  <UploadIcon className="mr-1 h-6 w-6 text-grey-500" />
+                  <UploadIcon className="mr-1 h-6 w-6 text-grey-300" />
                   <span className="typo-base-r text-grey-100">
-                    파일을 선택하거나 드래그 하세요.
+                    파일을 선택하세요.
                   </span>
                 </>
               )}
@@ -132,7 +137,7 @@ export const BandCreateDialog = ({
           <div className="flex flex-col gap-3">
             <span className="typo-lg-sb">멤버 초대</span>
             <div className="flex items-center rounded-l-full rounded-r-full border border-border bg-input px-5 text-grey-100">
-              <Search className="text-grey-500" />
+              <Search className="text-grey-300" />
               <Input
                 disabled
                 placeholder="이름 또는 ID를 검색하세요"

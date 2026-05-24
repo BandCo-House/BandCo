@@ -7,8 +7,9 @@ export const bandSummarySchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   visibility: z.boolean(),
-  inviteCode: z.string(),
-  bmId: z.string(),
+  inviteCode: z.string().optional(),
+  bmId: z.string().optional(),
+  bandMasterUserId: z.string().optional(),
   createdAt: z.string(),
 });
 
