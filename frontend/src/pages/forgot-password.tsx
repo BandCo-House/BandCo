@@ -55,7 +55,7 @@ export function ForgotPasswordPage() {
 
           <Button
             type="submit"
-            variant="key"
+            variant="shining"
             size="lg"
             disabled={email.trim() === ''}
             className="mt-5 w-full"
@@ -63,7 +63,7 @@ export function ForgotPasswordPage() {
             재설정 메일 보내기
           </Button>
           {message ? (
-            <p aria-live="polite" className="px-4 typo-sm-m text-key">
+            <p aria-live="polite" className="px-4 typo-sm-m text-foreground">
               {message}
             </p>
           ) : null}
@@ -72,7 +72,7 @@ export function ForgotPasswordPage() {
         <div className="mt-8">
           <Link
             to="/login"
-            className="block w-full px-2 py-1 text-center typo-base-m text-grey-200 transition-colors hover:text-grey-50"
+            className="block w-full px-2 py-1 text-center typo-base-m text-grey-200 transition-colors hover:text-grey-50 hover:underline focus-visible:text-grey-50 focus-visible:underline"
           >
             로그인으로 돌아가기
           </Link>

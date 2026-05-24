@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import './styles/generated-tokens.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,7 +13,7 @@
   --radius-2xl: 1.5rem;
   --radius-3xl: 1.75rem;
   --radius-4xl: 2rem;
-  --shadow-drop: 0px 0px 20px 2px rgba(255, 255, 255, 0.4);
+  --radius-full: var(--Round-full);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--surface-card);
@@ -36,7 +37,7 @@
   --color-accent-surface: var(--secondary-surface);
   --color-accent-light: var(--primary-light);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--greyScale-0);
+  --color-destructive-foreground: var(--greyScale-50);
   --color-destructive-surface: var(--destructive-surface);
   --color-success: var(--success);
   --color-success-foreground: var(--primary-dark);
@@ -55,70 +56,6 @@
   --color-grey-400: var(--greyScale-400);
   --color-grey-500: var(--greyScale-500);
   --color-grey-600: var(--greyScale-600);
-}
-
-:root {
-  --background: #fcfcfc;
-  --foreground: var(--greyScale-500);
-  --surface-card: #ffffff;
-  --surface-popover: #ffffff;
-  --gradient-top: #faf9f0;
-  --gradient-bottom: #e6e9f0;
-  --overlay-40: rgb(255 255 255 / 0.4);
-  --overlay-24: rgb(255 255 255 / 0.24);
-  --greyScale-50: #ffffff;
-  --greyScale-100: #e5e6e5;
-  --greyScale-200: #cccccc;
-  --greyScale-300: #949694;
-  --greyScale-400: #4f524f;
-  --greyScale-500: #383c38;
-  --greyScale-600: #0f120f;
-  --primary-surface: #e5e5f0;
-  --primary-light: #7473b5;
-  --primary-main: #1b1b32;
-  --primary-dark: #020119;
-  --secondary-surface: #ecfcab;
-  --secondary: #ddfe55;
-  --key: var(--primary-main);
-  --key-foreground: var(--greyScale-50);
-  --key-surface: var(--primary-surface);
-  --key-muted: var(--primary-light);
-  --success-surface: #ebfef5;
-  --success: #05e173;
-  --destructive-surface: #fee6e1;
-  --destructive: #fa2e05;
-}
-
-.dark {
-  --background: var(--primary-main);
-  --foreground: var(--greyScale-200);
-  --surface-card: var(--overlay-24);
-  --surface-popover: var(--primary-dark);
-  --gradient-top: #1b1b32;
-  --gradient-bottom: #020119;
-  --overlay-40: rgb(255 255 255 / 0.4);
-  --overlay-24: rgb(255 255 255 / 0.24);
-  --greyScale-50: #ffffff;
-  --greyScale-100: #e5e6e5;
-  --greyScale-200: #cccccc;
-  --greyScale-300: #797a79;
-  --greyScale-400: #4f524f;
-  --greyScale-500: #383c38;
-  --greyScale-600: #0f120f;
-  --primary-surface: #f2f2fc;
-  --primary-light: #58578a;
-  --primary-main: #1b1b32;
-  --primary-dark: #020114;
-  --secondary-surface: #ecfcab;
-  --secondary: #ddfe55;
-  --key: var(--secondary);
-  --key-foreground: var(--primary-dark);
-  --key-surface: var(--secondary-surface);
-  --key-muted: var(--secondary);
-  --success-surface: #ebfef5;
-  --success: #05e173;
-  --destructive-surface: #fee6e1;
-  --destructive: #fa2e05;
 }
 
 @layer base {

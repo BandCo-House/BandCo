@@ -1,16 +1,11 @@
 import type { ReactNode } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { cn } from '@/shared/lib/utils';
 
 export type PageHeaderProps = {
   title: string;
-  subtitle?: string;
-  brandLabel?: string;
   showBack?: boolean;
   onBack?: () => void;
-  meta?: string[];
   rightContent?: ReactNode;
-  className?: string;
 };
 
 /**
@@ -21,16 +16,10 @@ export const PageHeader = ({
   showBack = false,
   onBack,
   rightContent,
-  className,
 }: PageHeaderProps) => {
   return (
-    <header
-      className={cn(
-        'fixed inset-x-0 top-0 z-40 mx-auto max-w-[648px] bg-primary-dark shadow-xl/5 backdrop-blur-xl',
-        className,
-      )}
-    >
-      <div className="mx-auto grid min-h-20 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 sm:min-h-24">
+    <header className="shrink-0 bg-transparent pt-4">
+      <div className="mx-auto grid min-h-16 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6">
         <div className="flex min-w-0 items-center gap-3">
           {showBack ? (
             <button
@@ -53,7 +42,7 @@ export const PageHeader = ({
         </div>
 
         {rightContent ? (
-          <div className="flex min-w-0 items-center justify-end">
+          <div className="flex min-w-0 items-center justify-end gap-2">
             {rightContent}
           </div>
         ) : null}
