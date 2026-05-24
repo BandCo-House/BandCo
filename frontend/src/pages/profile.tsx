@@ -10,7 +10,6 @@ export const Route = createFileRoute('/profile')({
       subtitle: '내 프로필 정보를 관리하세요',
       rightActionLabel: '수정',
       backBehavior: 'browser',
-      showProfileAvatar: false,
     },
   },
 });

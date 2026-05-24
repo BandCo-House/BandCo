@@ -2,7 +2,6 @@ import { Link, Outlet, useMatches, useRouter } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import {
-  HomeHeaderUtilities,
   PageHeader,
   type RouteStaticData,
   resolveHeader,
@@ -44,16 +43,6 @@ export const RootLayout = () => {
 
   const rightContent = (() => {
     if (!header) return undefined;
-
-    if (header.showUtilities) {
-      return (
-        <HomeHeaderUtilities
-          showSearchBar={header.showSearchBar}
-          showProfileAvatar={header.showProfileAvatar}
-          showNotificationTrigger={header.showNotificationTrigger}
-        />
-      );
-    }
 
     const tabs = header.tabs?.map((tab) => {
       const tabTo = tab.getTo?.(currentParams) ?? tab.to;
@@ -123,22 +112,23 @@ export const RootLayout = () => {
         title: header.title ?? '',
         showBack: header.showBack,
         rightContent,
-        className: header.className,
       }
     : null;
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
       {pageHeaderProps ? (
         <PageHeader {...pageHeaderProps} onBack={onBack} />
       ) : null}
       <main
         className={cn(
-          'mx-auto w-full max-w-7xl px-6 py-8',
-          pageHeaderProps ? 'pt-24 md:pt-40' : undefined,
+          'min-h-0 w-full flex-1 overflow-y-auto',
+          pageHeaderProps ? undefined : 'min-h-screen',
         )}
       >
-        <Outlet />
+        <div className="mx-auto w-full max-w-7xl px-6 py-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

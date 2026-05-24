@@ -37,7 +37,7 @@
   --color-accent-surface: var(--secondary-surface);
   --color-accent-light: var(--primary-light);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--greyScale-0);
+  --color-destructive-foreground: var(--greyScale-50);
   --color-destructive-surface: var(--destructive-surface);
   --color-success: var(--success);
   --color-success-foreground: var(--primary-dark);
@@ -49,7 +49,6 @@
   --color-key-foreground: var(--key-foreground);
   --color-key-surface: var(--key-surface);
   --color-key-muted: var(--key-muted);
-  --color-main-main: var(--main-main);
   --color-grey-50: var(--greyScale-50);
   --color-grey-100: var(--greyScale-100);
   --color-grey-200: var(--greyScale-200);

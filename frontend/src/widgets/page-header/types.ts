@@ -41,17 +41,12 @@ export type HeaderResolveResult = {
  */
 export type HeaderStaticConfig = {
   title?: string;
-  className?: string;
   subtitle?: string;
   brandLabel?: string;
   showBack?: boolean;
   backBehavior?: 'route' | 'browser';
   backTo?: string;
   getBackParams?: (params: Record<string, string>) => Record<string, string>;
-  showUtilities?: boolean;
-  showSearchBar?: boolean;
-  showProfileAvatar?: boolean;
-  showNotificationTrigger?: boolean;
   meta?: string[];
   tabs?: HeaderTab[];
   rightActionLabel?: string;

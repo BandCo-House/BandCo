@@ -115,7 +115,8 @@ describe('buildGeneratedTokenCss', () => {
     });
 
     expect(css).toContain('.dark {');
-    expect(css).toContain('--main-light: #bcbcbc;');
+    expect(css).toContain('--primary-light: #bcbcbc;');
+    expect(css).not.toContain('--main-light:');
     expect(css).toContain('--secondary: #dedede;');
     expect(css).toContain('--gradient-top: #404040;');
   });

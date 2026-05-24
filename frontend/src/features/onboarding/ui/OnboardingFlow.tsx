@@ -93,7 +93,7 @@ export const OnboardingFlow = ({
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl flex-col text-grey-50">
       <div className="mb-14 h-1.5 w-full overflow-hidden rounded-full bg-overlay-24">
         <div
-          className="h-full rounded-full bg-key transition-[width] duration-300"
+          className="h-full rounded-full bg-primary transition-[width] duration-300"
           style={{ width: progressPercent }}
         />
       </div>
@@ -125,15 +125,15 @@ export const OnboardingFlow = ({
               type="button"
               aria-pressed={isSelected}
               className={cn(
-                'relative min-h-12 rounded-full border-2 px-5 typo-base-m transition-colors focus-visible:outline-2 focus-visible:outline-key',
+                'relative min-h-12 rounded-full border-2 px-5 typo-base-m transition-colors focus-visible:outline-2 focus-visible:outline-primary',
                 isSelected
-                  ? 'bg-key text-key-foreground'
-                  : 'border-grey-300 bg-transparent text-grey-200 hover:border-key hover:text-grey-50',
+                  ? 'bg-primary text-primary-dark'
+                  : 'border-grey-300 bg-transparent text-grey-200 hover:border-primary hover:text-grey-50',
               )}
               onClick={() => handleOptionToggle(option.id)}
             >
               {isSelected ? (
-                <span className="absolute -top-2 -left-1 flex size-6 items-center justify-center rounded-full border-2 border-key bg-grey-50 typo-base-b text-primary-dark">
+                <span className="absolute -top-2 -left-1 flex size-6 items-center justify-center rounded-full border-2 border-primary bg-primary-dark typo-base-b text-primary">
                   {order}
                 </span>
               ) : null}
@@ -164,7 +164,7 @@ export const OnboardingFlow = ({
             </Button>
             <button
               type="button"
-              className="mx-auto typo-base-m text-grey-200 underline underline-offset-4 transition-colors hover:text-grey-50 focus-visible:outline-2 focus-visible:outline-key"
+              className="mx-auto typo-base-m text-grey-200 underline underline-offset-4 transition-colors hover:text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
               onClick={() =>
                 onComplete({
                   favoriteGenreIds: [],

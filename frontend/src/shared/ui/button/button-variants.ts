@@ -8,12 +8,13 @@ export const buttonVariants = cva(
         default: 'bg-key text-key-foreground',
         key: 'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
         shining:
-          'relative rounded-[var(--Round-full)] border-t-[0.5px] border-r-[0.5px] border-b-[0.5px] border-l border-t-white border-r-white border-b-white border-l-white bg-main-main text-primary-dark shadow-[inset_-1px_-1px_1px_0_rgba(39,51,31,0.56),inset_0_-1px_1px_0_var(--semantic-success-surface),0_1px_12px_6px_rgba(236,252,171,0.42)] disabled:cursor-not-allowed disabled:border-white disabled:bg-grey-300 disabled:text-grey-500 disabled:shadow-none disabled:opacity-100',
+          'relative rounded-[var(--Round-full)] bg-primary text-primary-dark drop-shadow-[0_1px_9px_rgba(236,252,171,0.72)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(149deg,rgb(255,255,255)_6.91%,rgba(255,255,255,0)_19.64%)] before:content-[""] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_-2px_-3px_3px_0px_rgba(39,51,31,0.56),inset_0px_-1px_1px_0px_var(--semantic-success-surface)] after:content-[""] disabled:cursor-not-allowed disabled:border-white disabled:bg-grey-300 disabled:text-grey-500 disabled:drop-shadow-none disabled:opacity-100 disabled:before:opacity-0 disabled:after:opacity-0',
         neutral:
-          'border border-white bg-grey-200 text-primary-dark disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
+          'border-[1.5px] border-white bg-grey-200 text-primary-dark disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
         secondary:
           'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
-        outline: 'border border-key-muted bg-transparent text-foreground',
+        outline:
+          'border-[1.5px] border-key-muted bg-transparent text-foreground',
         ghost: 'bg-transparent text-foreground',
       },
       size: {

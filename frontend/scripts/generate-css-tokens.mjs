@@ -73,24 +73,9 @@ const buildThemeVariables = ({
     ['--primary-dark', 'var(--greyScale-999)'],
     [
       '--secondary-surface',
-      getValue(colorSet, ['main', 'main']) ?? 'var(--primary-surface)',
+      getValue(colorSet, ['secondary', 'surface']) ?? 'var(--primary-surface)',
     ],
     ['--secondary', requireValue(colorSet, secondaryPath)],
-    [
-      '--main-surface',
-      getValue(colorSet, ['main', 'surface']) ??
-        requireValue(primarySet, ['surface']),
-    ],
-    [
-      '--main-light',
-      getValue(colorSet, ['main', 'light']) ??
-        requireValue(primarySet, ['light']),
-    ],
-    [
-      '--main-main',
-      getValue(colorSet, ['main', 'main']) ??
-        requireValue(primarySet, ['main']),
-    ],
     ['--key', isDarkMode ? 'var(--secondary)' : 'var(--primary-main)'],
     [
       '--key-foreground',
@@ -153,7 +138,7 @@ export const buildGeneratedTokenCss = (tokens) => {
   const darkVariables = darkColorSet
     ? buildThemeVariables({
         colorSet: darkColorSet,
-        primarySet: darkColorSet.primary ?? lightColorSet.primary,
+        primarySet: darkColorSet.primary ?? darkColorSet.main,
         secondaryPath: ['secondary', 'main'],
         mode: 'dark',
       })
