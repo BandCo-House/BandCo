@@ -273,6 +273,43 @@ export const bandHandlers = [
     // 단순 딜레이 시뮬레이션
     await new Promise((resolve) => setTimeout(resolve, 300));
 
+    // 1. "네트워크 에러" 시뮬레이션
+    if (body.name === '네트워크 에러') {
+      return HttpResponse.error();
+    }
+
+    // 2. "서버 에러" 시뮬레이션
+    if (body.name === '서버 에러') {
+      return HttpResponse.json(
+        {
+          status: 'error',
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: '서버 내부 오류가 발생했습니다.',
+          },
+          message: '서버 에러 발생',
+          data: null,
+        },
+        { status: 500 },
+      );
+    }
+
+    // 3. "중복 에러" 시뮬레이션
+    if (body.name === '중복 에러') {
+      return HttpResponse.json(
+        {
+          status: 'error',
+          error: {
+            code: 'DUPLICATE_BAND_NAME',
+            message: '이미 존재하는 밴드 이름입니다.',
+          },
+          message: '중복된 밴드명 에러 발생',
+          data: null,
+        },
+        { status: 409 },
+      );
+    }
+
     const newBandId = `band-${Date.now()}`;
     const nowStr = new Date().toISOString();
 

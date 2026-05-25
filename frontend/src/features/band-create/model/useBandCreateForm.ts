@@ -9,18 +9,17 @@ const initialForm = {
   coverImage: null as File | null,
 };
 
-export const useBandCreateForm = (
-  onOpenChange: (open: boolean) => void,
-) => {
+export const useBandCreateForm = (open: boolean, onOpenChange: (open: boolean) => void) => {
   const [form, setForm] = useState(initialForm);
   const [preview, setPreview] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
-  const { submit, isLoading, error } = useBandCreate();
+  const { submit, isLoading, error, reset: resetMutation } = useBandCreate();
 
   const resetForm = () => {
     setForm(initialForm);
     setPreview(null);
     setFieldError(null);
+    resetMutation();
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -50,8 +49,10 @@ export const useBandCreateForm = (
       return;
     }
     setFieldError(null);
-    await submit(parsed.data);
-    handleOpenChange(false);
+    const result = await submit(parsed.data);
+    if (result.success) {
+      handleOpenChange(false);
+    }
   };
 
   const setName = (name: string) => setForm((f) => ({ ...f, name }));

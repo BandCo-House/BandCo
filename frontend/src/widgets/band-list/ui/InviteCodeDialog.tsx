@@ -19,10 +19,9 @@ export const InviteCodeDialog = ({
   open,
   onOpenChange,
 }: InviteCodeDialogProps) => {
-  const { code, setCode, submit, isLoading, isDisabled, error } =
-    useInviteAccept({
-      onSuccess: () => onOpenChange(false),
-    });
+  const { code, setCode, submit, isLoading, isDisabled } = useInviteAccept({
+    onSuccess: () => onOpenChange(false),
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

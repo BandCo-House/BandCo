@@ -34,7 +34,7 @@ export const BandCreateDialog = ({
     handleSubmit,
     setName,
     setVisibility,
-  } = useBandCreateForm(onOpenChange);
+  } = useBandCreateForm(open, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
