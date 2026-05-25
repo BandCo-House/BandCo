@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run test*)",
+      "Bash(pnpm run lint)",
+      "Bash(pnpm run lint:fix)",
+      "Bash(pnpm run format:check)",
+      "Bash(pnpm run build)",
+      "Bash(pnpm run prisma:generate)",
+      "Bash(pnpm run prisma:validate)",
+      "Bash(pnpm run prisma:format)",
+      "Bash(pnpm run prisma:migrate:dev)",
+      "Bash(pnpm run prisma:seed)",
+      "Bash(pnpm run prisma:studio)",
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git add *)",
+      "Bash(git commit -m*)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run lint && pnpm run format:check && pnpm run build && pnpm run test"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const i = process.env.CLAUDE_TOOL_INPUT || ''; const danger = /rm\\s+-rf|git\\s+push\\s+--force|git\\s+reset\\s+--hard|DROP\\s+TABLE/i; if (danger.test(i)) { process.stderr.write('BLOCKED: 위험한 명령어가 감지되었습니다.\\n'); process.exit(2); }\""
+          }
+        ]
+      }
+    ]
+  }
+}

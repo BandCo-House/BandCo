@@ -34,13 +34,3 @@ node_modules
 .env.local
 .env.*.local
 
-# ==============================
-# AI / Automation Tools
-# ==============================
-.codex/
-.agents/
-.agent/
-.worktrees/
-AGENTS.md
-CLAUDE.md
-.claude/
