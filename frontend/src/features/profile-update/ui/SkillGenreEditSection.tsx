@@ -1,8 +1,11 @@
-import { useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect } from 'react';
 import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
 import { Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSkillTypes, type SkillType } from '@/entities/skill';
+import { useGenres, type Genre } from '@/entities/genre';
 
 export interface SkillGenreEditSectionProps {
   isEditing: boolean;
@@ -14,8 +17,8 @@ export interface SkillGenreEditSectionProps {
   onSetEditGenres: (genres: Profile['favoriteGenres']) => void;
 }
 
-// Predefined available options for editing
-const AVAILABLE_SKILLS = [
+// Predefined available fallback options
+const DEFAULT_SKILLS: SkillType[] = [
   { id: 'guitar-1', name: '일렉기타' },
   { id: 'acoustic-1', name: '통기타' },
   { id: 'bass-1', name: '베이스' },
@@ -24,7 +27,7 @@ const AVAILABLE_SKILLS = [
   { id: 'vocal-1', name: '보컬' },
 ];
 
-const AVAILABLE_GENRES = [
+const DEFAULT_GENRES: Genre[] = [
   { id: 'genre-rock', name: 'Rock' },
   { id: 'genre-metal', name: 'Metal' },
   { id: 'genre-jazz', name: 'Jazz' },
@@ -43,12 +46,34 @@ export function SkillGenreEditSection({
   onSetEditSkills,
   onSetEditGenres,
 }: SkillGenreEditSectionProps) {
+  // Fetch available metadata on-demand (only when isEditing is true)
+  const skillsQuery = useSkillTypes(isEditing);
+  const genresQuery = useGenres(isEditing);
+
+  const availableSkills = skillsQuery.data || DEFAULT_SKILLS;
+  const availableGenres = genresQuery.data || DEFAULT_GENRES;
+
   // Skill editing form state
   const [newSkillId, setNewSkillId] = useState<string>('guitar-1');
-  const [newSkillLevel, setNewSkillLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
+  const [newSkillLevel, setNewSkillLevel] = useState<
+    'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+  >('BEGINNER');
 
   // Genre editing form state
   const [newGenreId, setNewGenreId] = useState<string>('genre-rock');
+
+  // Sync default selection values when data loads
+  useEffect(() => {
+    if (skillsQuery.data && skillsQuery.data.length > 0) {
+      setNewSkillId(skillsQuery.data[0].id);
+    }
+  }, [skillsQuery.data]);
+
+  useEffect(() => {
+    if (genresQuery.data && genresQuery.data.length > 0) {
+      setNewGenreId(genresQuery.data[0].id);
+    }
+  }, [genresQuery.data]);
 
   // Add/Remove Skill & Genre helper functions
   const addSkill = () => {
@@ -58,7 +83,7 @@ export function SkillGenreEditSection({
       return;
     }
 
-    const skillObj = AVAILABLE_SKILLS.find((s) => s.id === newSkillId);
+    const skillObj = availableSkills.find((s) => s.id === newSkillId);
     if (!skillObj) return;
 
     const newSkillItem = {
@@ -74,7 +99,10 @@ export function SkillGenreEditSection({
   const removeSkill = (skillTypeId: string) => {
     const updated = editSkills.filter((s) => s.skillTypeId !== skillTypeId);
     // If we removed the primary skill and have skills left, set first as primary
-    if (editSkills.find((s) => s.skillTypeId === skillTypeId)?.isPrimary && updated.length > 0) {
+    if (
+      editSkills.find((s) => s.skillTypeId === skillTypeId)?.isPrimary &&
+      updated.length > 0
+    ) {
       updated[0].isPrimary = true;
     }
     onSetEditSkills(updated);
@@ -87,10 +115,13 @@ export function SkillGenreEditSection({
       return;
     }
 
-    const genreObj = AVAILABLE_GENRES.find((g) => g.id === newGenreId);
+    const genreObj = availableGenres.find((g) => g.id === newGenreId);
     if (!genreObj) return;
 
-    onSetEditGenres([...editGenres, { genreId: newGenreId, name: genreObj.name }]);
+    onSetEditGenres([
+      ...editGenres,
+      { genreId: newGenreId, name: genreObj.name },
+    ]);
   };
 
   const removeGenre = (genreId: string) => {
@@ -113,7 +144,9 @@ export function SkillGenreEditSection({
                   className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 typo-sm-m text-violet-300"
                 >
                   {skill.skillName} • {skill.level}
-                  {skill.isPrimary && <span className="typo-xs-b text-violet-400">[주]</span>}
+                  {skill.isPrimary && (
+                    <span className="typo-xs-b text-violet-400">[주]</span>
+                  )}
                   <button
                     onClick={() => removeSkill(skill.skillTypeId)}
                     className="rounded-full p-0.5 hover:bg-violet-500/20"
@@ -123,29 +156,37 @@ export function SkillGenreEditSection({
                 </span>
               ))}
               {editSkills.length === 0 && (
-                <span className="typo-sm-r text-slate-500">아직 선택한 악기 파트가 없습니다.</span>
+                <span className="typo-sm-r text-slate-500">
+                  아직 선택한 악기 파트가 없습니다.
+                </span>
               )}
             </div>
 
             {/* Add new skill selectors */}
-            <div className="flex flex-col gap-2 rounded-xl bg-slate-950/60 p-3 border border-slate-800">
+            <div className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
               <div className="flex gap-2">
-                <select
-                  value={newSkillId}
-                  onChange={(e) => setNewSkillId(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-800 bg-slate-905 p-2 typo-sm-r text-slate-200"
-                >
-                  {AVAILABLE_SKILLS.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                {skillsQuery.isLoading ? (
+                  <div className="flex-1 py-2 text-center text-xs text-slate-400">
+                    악기 파트 목록을 불러오는 중...
+                  </div>
+                ) : (
+                  <select
+                    value={newSkillId}
+                    onChange={(e) => setNewSkillId(e.target.value)}
+                    className="bg-slate-905 flex-1 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
+                  >
+                    {availableSkills.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
 
                 <select
                   value={newSkillLevel}
                   onChange={(e) => setNewSkillLevel(e.target.value as any)}
-                  className="rounded-lg border border-slate-800 bg-slate-905 p-2 typo-sm-r text-slate-200"
+                  className="bg-slate-905 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
                 >
                   <option value="BEGINNER">초보자</option>
                   <option value="INTERMEDIATE">중급자</option>
@@ -155,9 +196,10 @@ export function SkillGenreEditSection({
               <Button
                 size="sm"
                 onClick={addSkill}
-                className="mt-1 w-full bg-violet-600 hover:bg-violet-500 text-white"
+                className="mt-1 w-full bg-violet-600 text-white hover:bg-violet-500"
+                disabled={skillsQuery.isLoading}
               >
-                <Plus className="size-4 mr-1" /> 파트 추가
+                <Plus className="mr-1 size-4" /> 파트 추가
               </Button>
             </div>
           </div>
@@ -166,10 +208,10 @@ export function SkillGenreEditSection({
             {skills.map((skill) => (
               <span
                 key={skill.skillTypeId}
-                className={`rounded-full px-3 py-1 typo-sm-m border ${
+                className={`rounded-full border px-3 py-1 typo-sm-m ${
                   skill.isPrimary
-                    ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                    : 'bg-slate-800/40 border-slate-700/50 text-slate-300'
+                    ? 'border-violet-500/50 bg-violet-500/20 text-violet-300'
+                    : 'border-slate-700/50 bg-slate-800/40 text-slate-300'
                 }`}
               >
                 {skill.skillName} •{' '}
@@ -177,14 +219,20 @@ export function SkillGenreEditSection({
                   {skill.level === 'BEGINNER'
                     ? '초급'
                     : skill.level === 'INTERMEDIATE'
-                    ? '중급'
-                    : '고급'}
+                      ? '중급'
+                      : '고급'}
                 </span>
-                {skill.isPrimary && <span className="ml-1 text-xs font-bold text-violet-400">[주]</span>}
+                {skill.isPrimary && (
+                  <span className="ml-1 text-xs font-bold text-violet-400">
+                    [주]
+                  </span>
+                )}
               </span>
             ))}
             {skills.length === 0 && (
-              <span className="typo-sm-r text-slate-500">등록된 플레이 파트가 없습니다.</span>
+              <span className="typo-sm-r text-slate-500">
+                등록된 플레이 파트가 없습니다.
+              </span>
             )}
           </div>
         )}
@@ -213,31 +261,40 @@ export function SkillGenreEditSection({
                 </span>
               ))}
               {editGenres.length === 0 && (
-                <span className="typo-sm-r text-slate-500">아직 선택한 선호 장르가 없습니다.</span>
+                <span className="typo-sm-r text-slate-500">
+                  아직 선택한 선호 장르가 없습니다.
+                </span>
               )}
             </div>
 
             {/* Add new genre selectors */}
-            <div className="flex flex-col gap-2 rounded-xl bg-slate-950/60 p-3 border border-slate-800">
+            <div className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
               <div className="flex gap-2">
-                <select
-                  value={newGenreId}
-                  onChange={(e) => setNewGenreId(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-800 bg-slate-905 p-2 typo-sm-r text-slate-200"
-                >
-                  {AVAILABLE_GENRES.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                {genresQuery.isLoading ? (
+                  <div className="flex-1 py-2 text-center text-xs text-slate-400">
+                    장르 목록을 불러오는 중...
+                  </div>
+                ) : (
+                  <select
+                    value={newGenreId}
+                    onChange={(e) => setNewGenreId(e.target.value)}
+                    className="bg-slate-905 flex-1 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
+                  >
+                    {availableGenres.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <Button
                 size="sm"
                 onClick={addGenre}
-                className="mt-1 w-full bg-teal-650 hover:bg-teal-600 text-white"
+                className="bg-teal-650 mt-1 w-full text-white hover:bg-teal-600"
+                disabled={genresQuery.isLoading}
               >
-                <Plus className="size-4 mr-1" /> 장르 추가
+                <Plus className="mr-1 size-4" /> 장르 추가
               </Button>
             </div>
           </div>
@@ -246,13 +303,15 @@ export function SkillGenreEditSection({
             {favoriteGenres.map((genre) => (
               <span
                 key={genre.genreId}
-                className="rounded-full bg-teal-500/10 border border-teal-500/30 px-3 py-1 typo-sm-m text-teal-300"
+                className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 typo-sm-m text-teal-300"
               >
                 {genre.name}
               </span>
             ))}
             {favoriteGenres.length === 0 && (
-              <span className="typo-sm-r text-slate-500">등록된 선호 장르가 없습니다.</span>
+              <span className="typo-sm-r text-slate-500">
+                등록된 선호 장르가 없습니다.
+              </span>
             )}
           </div>
         )}
