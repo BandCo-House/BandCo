@@ -3,10 +3,26 @@ import { useState } from 'react';
 import { useAuth } from '@/app/providers/auth-context';
 import { registerEmail } from '@/features/auth/api/auth.service';
 import { SignupForm } from '@/features/auth/ui/SignupForm';
-import { updateMyProfile } from '@/features/profile-update/api/profile-api';
+import { updateUserProfile } from '@/features/profile-update/api/profile-api';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
 import axios from 'axios';
+
+const getUserIdFromToken = (token: string): string => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload).id || 'user-001';
+  } catch {
+    return 'user-001';
+  }
+};
 
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
@@ -33,9 +49,13 @@ export function SignupPage() {
       // 회원가입 성공 시 자동 로그인
       login(res.accessToken, res.refreshToken);
       try {
-        await updateMyProfile({
+        const userId = getUserIdFromToken(res.accessToken);
+        await updateUserProfile(userId, {
           profile: {
             nickname: data.name,
+            selfDescription: null,
+            profileMusicUrl: null,
+            avatarUrl: null,
           },
           personalInfo: {
             email: data.email,

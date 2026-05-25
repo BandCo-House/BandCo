@@ -2,20 +2,45 @@ import { useState, type ReactNode, useCallback, useMemo } from "react";
 import { AuthContext, type UserAccess, type AuthContextValue } from "@/app/providers/auth-context";
 import { getAccessToken, setTokens, clearTokens } from "@/shared/lib/auth-storage";
 
+const getUserIdFromToken = (token: string | null): string | null => {
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload).id || null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserAccess>(() => ({
-    isLoggedIn: !!getAccessToken(),
-    isAdmin: false, // 추후 토큰 디코딩 등으로 판단 가능
-  }));
+  const [user, setUser] = useState<UserAccess>(() => {
+    const token = getAccessToken();
+    return {
+      isLoggedIn: !!token,
+      isAdmin: false,
+      id: getUserIdFromToken(token),
+    };
+  });
 
   const login = useCallback((accessToken: string, refreshToken: string) => {
     setTokens(accessToken, refreshToken);
-    setUser({ isLoggedIn: true, isAdmin: false });
+    setUser({
+      isLoggedIn: true,
+      isAdmin: false,
+      id: getUserIdFromToken(accessToken),
+    });
   }, []);
 
   const logout = useCallback(() => {
     clearTokens();
-    setUser({ isLoggedIn: false, isAdmin: false });
+    setUser({ isLoggedIn: false, isAdmin: false, id: null });
   }, []);
 
   const value = useMemo<AuthContextValue>(

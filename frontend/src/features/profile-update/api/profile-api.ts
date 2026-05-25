@@ -1,11 +1,12 @@
 import { apiPatch } from '@/shared/api';
+import type { Profile } from '@/entities/profile/model/types';
 
 export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 
 export type UpdateProfileRequest = {
   profile?: {
     nickname?: string;
-    selfDescription?: string;
+    selfDescription?: string | null;
     profileMusicUrl?: string | null;
     avatarUrl?: string | null;
   };
@@ -20,26 +21,11 @@ export type UpdateProfileRequest = {
   favoriteGenres?: string[];
 };
 
-export type UpdateProfileResponse = {
-  updated: {
-    profile?: boolean;
-    personalInfo?: boolean;
-    skills?: boolean;
-    favoriteGenres?: boolean;
-  };
-};
-
-export interface LegacyUpdateProfileRequest {
-  bio?: string;
-  preferredGenres?: string[];
-  profileMusicUrl?: string | null;
-  skills?: string[];
-}
-
 /**
  * 로그인한 사용자의 프로필, 개인정보, 스킬, 선호 장르를 한 번에 수정한다.
  */
-export const updateMyProfile = (
+export const updateUserProfile = (
+  userId: string,
   data: UpdateProfileRequest,
-): Promise<UpdateProfileResponse> =>
-  apiPatch<UpdateProfileResponse>('/me/profile', data);
+): Promise<Profile> =>
+  apiPatch<Profile>(`/users/${userId}/profiles`, data);
