@@ -37,6 +37,6 @@ export type BandCreateResponse = z.infer<typeof bandCreateResponseSchema>;
 export const createBand = (
   data: BandCreateFormValues,
 ): Promise<BandCreateResponse> =>
-  apiPost<{ band: BandCreateResponse }>('/bands', data).then(
-    (response) => bandCreateResponseSchema.parse(response.band),
+  apiPost<{ items: BandCreateResponse }>('/bands', data).then((response) =>
+    bandCreateResponseSchema.parse(response.items),
   );

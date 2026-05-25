@@ -210,7 +210,7 @@ export const BandCreateDialog = ({
           <Button
             type="button"
             variant={'shining'}
-            disabled={isSubmitDisabled}
+            disabled={isSubmitDisabled || isLoading}
             isLoading={isLoading}
             onClick={() => void handleSubmit()}
             loadingContent="생성 중..."

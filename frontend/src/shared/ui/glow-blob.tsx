@@ -1,6 +1,12 @@
+import { useId } from 'react';
 import { cn } from '../lib/utils';
 
 export function GlowBlob({ className }: { className?: string }) {
+  const rawId = useId();
+  const safeId = rawId.replace(/:/g, '');
+  const filterId = `filter_${safeId}`;
+  const gradientId = `paint_linear_${safeId}`;
+
   return (
     <svg
       width="100%"
@@ -11,15 +17,15 @@ export function GlowBlob({ className }: { className?: string }) {
       className={cn('pointer-events-none absolute inset-0 z-0', className)}
       preserveAspectRatio="none"
     >
-      <g filter="url(#filter0_f_1584_19953)">
+      <g filter={`url(#${filterId})`}>
         <path
           d="M354.222 684.439C141.51 721.444 -54.6672 585.939 -147.429 541.939C-240.19 497.939 -433.917 1162.65 -127.171 1226.5C179.575 1290.35 904.543 908.945 926.82 537.628C989.673 -510.001 214.544 94.999 345.197 392.771C393.139 502.038 445.738 668.518 354.222 684.439Z"
-          fill="url(#paint0_linear_1584_19953)"
+          fill={`url(#${gradientId})`}
         />
       </g>
       <defs>
         <filter
-          id="filter0_f_1584_19953"
+          id={filterId}
           x="-438.551"
           y="-198.039"
           width={1514}
@@ -36,11 +42,11 @@ export function GlowBlob({ className }: { className?: string }) {
           />
           <feGaussianBlur
             stdDeviation="72.5"
-            result="effect1_foregroundBlur_1584_19953"
+            result={`effect1_foregroundBlur_${safeId}`}
           />
         </filter>
         <linearGradient
-          id="paint0_linear_1584_19953"
+          id={gradientId}
           x1="3.40972"
           y1={742}
           x2="663.109"

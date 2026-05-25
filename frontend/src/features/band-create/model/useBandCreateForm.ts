@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { bandCreateSchema } from './schema';
 import { useBandCreate } from './useBandCreate';
 
@@ -9,13 +9,21 @@ const initialForm = {
   coverImage: null as File | null,
 };
 
-export const useBandCreateForm = (open: boolean, onOpenChange: (open: boolean) => void) => {
+export const useBandCreateForm = (
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+) => {
   const [form, setForm] = useState(initialForm);
   const [preview, setPreview] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const { submit, isLoading, error, reset: resetMutation } = useBandCreate();
 
   const resetForm = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setForm(initialForm);
     setPreview(null);
     setFieldError(null);
@@ -30,13 +38,26 @@ export const useBandCreateForm = (open: boolean, onOpenChange: (open: boolean) =
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     setForm((f) => ({ ...f, coverImage: file }));
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     if (file) {
       const url = URL.createObjectURL(file);
+      previewUrlRef.current = url;
       setPreview(url);
     } else {
       setPreview(null);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async () => {
     const parsed = bandCreateSchema.safeParse({

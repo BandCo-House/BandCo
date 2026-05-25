@@ -283,7 +283,7 @@ describe('앱 라우터', () => {
       'mx-auto',
       'w-full',
       'max-w-7xl',
-      'px-6',
+      'px-5',
     );
   });
 

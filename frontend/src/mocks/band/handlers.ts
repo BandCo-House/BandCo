@@ -1,6 +1,7 @@
 import type { Band } from '@/entities/band/model/types';
 import { http, HttpResponse } from 'msw';
 import { API_URL } from '../config';
+import type { CreateBandResponse } from '@/entities/band/model/schema';
 
 let mockBands: Band[] = [
   {
@@ -9,7 +10,6 @@ let mockBands: Band[] = [
     description: '주 1회 합주',
     visibility: true,
     inviteCode: '7KQ2M9',
-    bandMasterUserId: 'b6d0f0b1-7c7d-4e23-9c7b-0c0d9f6a2a21',
     myRole: 'BM',
     joinedAt: '2026-03-01T12:10:00.000+09:00',
     createdAt: '2026-03-01T12:00:00.000+09:00',
@@ -21,7 +21,6 @@ let mockBands: Band[] = [
     description: null,
     visibility: true,
     inviteCode: 'P1Z8Q0',
-    bandMasterUserId: '9aa1bb22-0000-0000-0000-000000000000',
     myRole: 'MEMBER',
     joinedAt: '2026-02-20T18:30:00.000+09:00',
     createdAt: '2026-02-10T09:00:00.000+09:00',
@@ -33,7 +32,6 @@ let mockBands: Band[] = [
     description: '매주 수요일 저녁 재즈 연습',
     visibility: true,
     inviteCode: 'J4Z7N2',
-    bandMasterUserId: 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a',
     myRole: 'MEMBER',
     joinedAt: '2026-01-15T19:00:00.000+09:00',
     createdAt: '2026-01-10T10:00:00.000+09:00',
@@ -45,7 +43,6 @@ let mockBands: Band[] = [
     description: '인디 음악 좋아하는 사람들의 모임',
     visibility: false,
     inviteCode: 'I9N3D1',
-    bandMasterUserId: 'e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b',
     myRole: 'BM',
     joinedAt: '2026-02-01T14:00:00.000+09:00',
     createdAt: '2026-01-28T11:00:00.000+09:00',
@@ -57,7 +54,6 @@ let mockBands: Band[] = [
     description: null,
     visibility: true,
     inviteCode: 'D5R8M0',
-    bandMasterUserId: 'f9a0b1c2-d3e4-4f5a-6b7c-8d9e0f1a2b3c',
     myRole: 'MEMBER',
     joinedAt: '2026-03-10T10:30:00.000+09:00',
     createdAt: '2026-03-05T09:00:00.000+09:00',
@@ -69,7 +65,6 @@ let mockBands: Band[] = [
     description: '어쿠스틱 기타와 보컬 중심 모임',
     visibility: true,
     inviteCode: 'A2K5S7',
-    bandMasterUserId: '1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e',
     myRole: 'MEMBER',
     joinedAt: '2026-01-20T16:00:00.000+09:00',
     createdAt: '2026-01-05T13:00:00.000+09:00',
@@ -81,7 +76,6 @@ let mockBands: Band[] = [
     description: '일렉기타 연습 및 합주 그룹',
     visibility: false,
     inviteCode: 'E3L6C9',
-    bandMasterUserId: '7a8b9c0d-1e2f-4a3b-4c5d-6e7f8a9b0c1d',
     myRole: 'BM',
     joinedAt: '2026-02-14T18:00:00.000+09:00',
     createdAt: '2026-02-01T08:00:00.000+09:00',
@@ -93,7 +87,6 @@ let mockBands: Band[] = [
     description: '피아노, 베이스, 드럼 트리오 편성',
     visibility: true,
     inviteCode: 'P8T1R4',
-    bandMasterUserId: '4c5d6e7f-8a9b-4c0d-1e2f-3a4b5c6d7e8f',
     myRole: 'MEMBER',
     joinedAt: '2026-03-18T15:00:00.000+09:00',
     createdAt: '2026-03-15T12:00:00.000+09:00',
@@ -105,7 +98,6 @@ let mockBands: Band[] = [
     description: null,
     visibility: true,
     inviteCode: 'H6D9C2',
-    bandMasterUserId: '0d1e2f3a-4b5c-4d6e-7f8a-9b0c1d2e3f4a',
     myRole: 'MEMBER',
     joinedAt: '2026-01-30T20:00:00.000+09:00',
     createdAt: '2026-01-20T17:00:00.000+09:00',
@@ -117,7 +109,6 @@ let mockBands: Band[] = [
     description: '베이시스트들의 모임, 리듬이 생명',
     visibility: false,
     inviteCode: 'B3S5L8',
-    bandMasterUserId: '5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8a9b',
     myRole: 'BM',
     joinedAt: '2026-02-05T11:00:00.000+09:00',
     createdAt: '2026-01-25T09:30:00.000+09:00',
@@ -129,7 +120,6 @@ let mockBands: Band[] = [
     description: '클래식과 현대 음악의 경계를 넘다',
     visibility: true,
     inviteCode: 'C7R0X5',
-    bandMasterUserId: '1f2a3b4c-5d6e-4f7a-8b9c-0d1e2f3a4b5c',
     myRole: 'MEMBER',
     joinedAt: '2026-03-05T14:30:00.000+09:00',
     createdAt: '2026-02-20T10:00:00.000+09:00',
@@ -141,7 +131,6 @@ let mockBands: Band[] = [
     description: null,
     visibility: true,
     inviteCode: 'F4N8K1',
-    bandMasterUserId: '7b8c9d0e-1f2a-4b3c-4d5e-6f7a8b9c0d1e',
     myRole: 'MEMBER',
     joinedAt: '2026-01-10T21:00:00.000+09:00',
     createdAt: '2025-12-25T15:00:00.000+09:00',
@@ -153,7 +142,6 @@ let mockBands: Band[] = [
     description: '매주 토요일 신촌에서 버스킹',
     visibility: true,
     inviteCode: 'S2B6K3',
-    bandMasterUserId: '3e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b',
     myRole: 'BM',
     joinedAt: '2026-02-28T13:00:00.000+09:00',
     createdAt: '2026-02-15T11:00:00.000+09:00',
@@ -165,7 +153,6 @@ let mockBands: Band[] = [
     description: '헤비메탈과 데스메탈을 사랑하는 자들',
     visibility: false,
     inviteCode: 'M9T2L6',
-    bandMasterUserId: '9f0a1b2c-3d4e-4f5a-6b7c-8d9e0f1a2b3c',
     myRole: 'MEMBER',
     joinedAt: '2026-03-22T19:00:00.000+09:00',
     createdAt: '2026-03-20T16:00:00.000+09:00',
@@ -177,7 +164,6 @@ let mockBands: Band[] = [
     description: 'R&B, 소울, 네오소울 커버 및 오리지널',
     visibility: true,
     inviteCode: 'R7B0S4',
-    bandMasterUserId: '5a6b7c8d-9e0f-4a1b-2c3d-4e5f6a7b8c9d',
     myRole: 'BM',
     joinedAt: '2026-01-25T17:30:00.000+09:00',
     createdAt: '2026-01-15T14:00:00.000+09:00',
@@ -189,7 +175,6 @@ let mockBands: Band[] = [
     description: null,
     visibility: false,
     inviteCode: 'W5R3T9',
-    bandMasterUserId: '1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e',
     myRole: 'MEMBER',
     joinedAt: '2026-02-10T10:00:00.000+09:00',
     createdAt: '2026-02-01T09:00:00.000+09:00',
@@ -201,7 +186,6 @@ let mockBands: Band[] = [
     description: '4파트 하모니를 맞추는 아카펠라 팀',
     visibility: true,
     inviteCode: 'V1H4M7',
-    bandMasterUserId: '7c8d9e0f-1a2b-4c3d-4e5f-6a7b8c9d0e1f',
     myRole: 'MEMBER',
     joinedAt: '2026-03-12T16:00:00.000+09:00',
     createdAt: '2026-03-01T10:00:00.000+09:00',
@@ -213,7 +197,6 @@ let mockBands: Band[] = [
     description: 'EDM, 신스팝, 일렉트로니카 제작 모임',
     visibility: true,
     inviteCode: 'E0C8V3',
-    bandMasterUserId: '3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a',
     myRole: 'BM',
     joinedAt: '2026-01-05T20:00:00.000+09:00',
     createdAt: '2025-12-15T12:00:00.000+09:00',
@@ -225,7 +208,6 @@ let mockBands: Band[] = [
     description: '트로트 커버 및 공연 준비 그룹',
     visibility: true,
     inviteCode: 'T6R1T5',
-    bandMasterUserId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
     myRole: 'MEMBER',
     joinedAt: '2026-02-18T15:00:00.000+09:00',
     createdAt: '2026-02-05T11:00:00.000+09:00',
@@ -237,7 +219,6 @@ let mockBands: Band[] = [
     description: null,
     visibility: false,
     inviteCode: 'J2I5V8',
-    bandMasterUserId: '6b7c8d9e-0f1a-4b2c-3d4e-5f6a7b8c9d0e',
     myRole: 'BM',
     joinedAt: '2026-03-25T18:00:00.000+09:00',
     createdAt: '2026-03-20T14:00:00.000+09:00',
@@ -254,7 +235,7 @@ export const bandHandlers = [
       message: '내 밴드 목록 조회 성공',
       data: {
         totalCount: mockBands.length,
-        bands: mockBands,
+        items: mockBands,
       },
     });
   }),
@@ -314,17 +295,17 @@ export const bandHandlers = [
     const nowStr = new Date().toISOString();
 
     // 1. GET 목록조회 스키마(Band)에 맞추어 mockBands에 추가할 객체 생성
-    const newBand: Band = {
+    const newBand: CreateBandResponse & Band = {
       id: newBandId,
       name: body.name,
       description: body.description,
       visibility: body.visibility,
       inviteCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
       bandMasterUserId: '11111111-1111-1111-1111-111111111111',
-      myRole: 'BM',
-      joinedAt: nowStr,
       createdAt: nowStr,
-      memberCount: 1 + (body.inviteeUserIds ?? []).length,
+      joinedAt: nowStr,
+      myRole: 'BM',
+      memberCount: 1,
     };
 
     // 2. 인메모리 리스트 맨 앞에 추가
@@ -336,13 +317,16 @@ export const bandHandlers = [
       error: null,
       message: '밴드 생성 성공',
       data: {
-        band: {
+        items: {
           id: newBandId,
           name: body.name,
           description: body.description,
           visibility: body.visibility,
-          coverImgUrl: body.coverImgUrl ?? 'https://cdn.example.com/bands/cover.png',
-          genres: (body.genreIds ?? ['0f0a4e3a-8a0c-4f6e-9d2d-9c1a8c6b7b1a']).map((id) => ({
+          coverImgUrl:
+            body.coverImgUrl ?? 'https://cdn.example.com/bands/cover.png',
+          genres: (
+            body.genreIds ?? ['0f0a4e3a-8a0c-4f6e-9d2d-9c1a8c6b7b1a']
+          ).map((id) => ({
             id,
             name: 'rock',
           })),
