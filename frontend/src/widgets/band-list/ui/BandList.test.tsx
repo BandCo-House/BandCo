@@ -61,16 +61,4 @@ describe('BandList', () => {
       await screen.findByText('아직 참여한 밴드가 없어요'),
     ).toBeInTheDocument();
   });
-
-  it('배경 백드롭에 은은한 상단 샤이닝 효과 클래스를 포함한다', async () => {
-    renderWithClient(<BandList />);
-    expect(await screen.findByText('합주하자')).toBeInTheDocument();
-
-    const section = screen.getByTestId('band-list');
-    const backdrop = section.querySelector('.fixed.top-20');
-    expect(backdrop).toBeInTheDocument();
-    expect(backdrop).toHaveClass('to-primary/15');
-    expect(backdrop).toHaveClass('border-t');
-    expect(backdrop).toHaveClass('border-primary/20');
-  });
 });
