@@ -24,9 +24,9 @@ describe('BandList', () => {
 
     expect(await screen.findByText('합주하자')).toBeInTheDocument();
     expect(screen.getByText('락스타')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '밴드 만들기' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '초대 코드 입력' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '목록 편집' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '밴드 메뉴 열기' }),
+    ).toBeInTheDocument();
   });
 
   it('로딩 중일 때 로딩 상태를 표시한다', async () => {

@@ -18,14 +18,13 @@ describe('getBands 어댑터', () => {
       message: '내 밴드 목록 조회 성공',
       data: {
         totalCount: 1,
-        bands: [
+        items: [
           {
             id: 'band-1',
             name: '합주하자',
             description: '주 1회 합주',
             visibility: true,
             inviteCode: 'INV123',
-            bmId: 'bm-1',
             myRole: 'BM',
             joinedAt: '2026-03-01T12:10:00.000+09:00',
             createdAt: '2026-03-01T12:00:00.000+09:00',
@@ -42,7 +41,6 @@ describe('getBands 어댑터', () => {
         description: '주 1회 합주',
         visibility: true,
         inviteCode: 'INV123',
-        bmId: 'bm-1',
         myRole: 'BM',
         joinedAt: '2026-03-01T12:10:00.000+09:00',
         createdAt: '2026-03-01T12:00:00.000+09:00',
@@ -58,14 +56,13 @@ describe('getBands 어댑터', () => {
       message: '내 밴드 목록 조회 성공',
       data: {
         totalCount: 1,
-        bands: [
+        items: [
           {
             id: 'band-1',
             name: '합주하자',
             description: '주 1회 합주',
             visibility: true,
             inviteCode: 'INV123',
-            bmId: 'bm-1',
             myRole: 'BM',
             createdAt: '2026-03-01T12:00:00.000+09:00',
           },

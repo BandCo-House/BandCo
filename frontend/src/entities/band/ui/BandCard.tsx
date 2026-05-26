@@ -13,28 +13,25 @@ export const BandCard = ({ band }: BandCardProps) => {
     <button
       type="button"
       aria-label={`${band.name} 상세 보기`}
-      className="motion-lift flex w-full flex-col rounded-3xl border border-muted/30 bg-card p-3 shadow-xl/5"
+      className="relative w-full bg-inherit"
       onClick={() =>
         navigate({ to: '/band/$bandId', params: { bandId: band.id } })
       }
     >
-      <div aria-hidden="true" className="aspect-square rounded-xl bg-muted-foreground" />
+      <div aria-hidden="true" className="w-full rounded-none">
+        <img src={'default-band.png'} alt={band.name} className="w-full" />
+      </div>
 
-      <div className="flex min-h-24 flex-col justify-between px-2 pb-1 pt-4">
-        <div className="space-y-1 text-center">
-          <p className="typo-lg-sb truncate">
-            {band.name}
-          </p>
-          {band.description ? (
-            <p className="typo-sm-r line-clamp-1 text-muted">
-              {band.description}
-            </p>
-          ) : null}
+      <div className="flex items-center justify-end gap-1.5 typo-sm-m text-muted">
+        <div className="flex gap-1 rounded-l-full rounded-r-full border border-grey-200 px-3 py-1">
+          <SVGIcon icon="Member" size="sm" className="text-grey-200" />
+          <span className="text-grey-200">{band.memberCount ?? 0}명</span>
         </div>
+      </div>
 
-        <div className="typo-sm-m flex items-center justify-end gap-1.5 text-muted">
-          <SVGIcon icon="Member" size="sm" />
-          <span>{band.memberCount ?? 0}명</span>
+      <div className="flex min-h-24 flex-col justify-between px-2 pt-4 pb-1">
+        <div className="space-y-1 text-center">
+          <p className="truncate typo-lg-sb text-grey-200">{band.name}</p>
         </div>
       </div>
     </button>

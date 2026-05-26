@@ -7,8 +7,7 @@ export const bandSummarySchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   visibility: z.boolean(),
-  inviteCode: z.string(),
-  bmId: z.string(),
+  inviteCode: z.string().optional(),
   createdAt: z.string(),
 });
 
@@ -24,6 +23,12 @@ export const bandListResponseSchema = z.object({
   message: z.string(),
   data: z.object({
     totalCount: z.number().int().nonnegative(),
-    bands: z.array(bandSchema),
+    items: z.array(bandSchema),
   }),
 });
+
+export const createBandResponseSchema = bandSummarySchema.extend({
+  bandMasterUserId: z.string(),
+});
+
+export type CreateBandResponse = z.infer<typeof createBandResponseSchema>;

@@ -6,6 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --shadow-drop: 0px 0px 20px 2px rgba(255, 255, 255, 0.4);
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -23,6 +24,14 @@
   --color-overlay-40: var(--overlay-40);
   --color-overlay-24: var(--overlay-24);
   --color-primary: var(--primary-main);
+
+  --color-gradient-top: var(--gradient-top);
+  --color-gradient-bottom: var(--gradient-bottom);
+
+  /* 헤더 높이가 두가지가 존재하는데 해당 높이의 커스텀 spacing 추가 */
+  --spacing-header-36: 2.25rem;
+  --spacing-header-64: 4rem;
+  /*  */
   --color-primary-foreground: var(--greyScale-50);
   --color-primary-surface: var(--primary-surface);
   --color-primary-light: var(--primary-light);

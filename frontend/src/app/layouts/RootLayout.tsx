@@ -116,17 +116,17 @@ export const RootLayout = () => {
     : null;
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
+    <div className="mx-auto flex h-dvh min-h-0 max-w-[648px] flex-col">
       {pageHeaderProps ? (
         <PageHeader {...pageHeaderProps} onBack={onBack} />
       ) : null}
       <main
         className={cn(
-          'min-h-0 w-full flex-1 overflow-y-auto',
+          'mx-auto min-h-0 w-full flex-1',
           pageHeaderProps ? undefined : 'min-h-screen',
         )}
       >
-        <div className="mx-auto w-full max-w-7xl px-6 py-8">
+        <div className="mx-auto w-full max-w-7xl px-5 py-8">
           <Outlet />
         </div>
       </main>

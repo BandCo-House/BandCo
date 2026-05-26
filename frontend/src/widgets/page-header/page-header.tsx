@@ -18,7 +18,14 @@ export const PageHeader = ({
   rightContent,
 }: PageHeaderProps) => {
   return (
-    <header className="shrink-0 bg-transparent pt-4">
+    <header
+      className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 backdrop-blur-sm"
+      style={{
+        background:
+          'linear-gradient(135deg, var(--gradient-top) 0%, var(--gradient-bottom) 100%)',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <div className="mx-auto grid min-h-16 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6">
         <div className="flex min-w-0 items-center gap-3">
           {showBack ? (

@@ -28,7 +28,7 @@ describe('useBandCreate', () => {
     vi.clearAllMocks();
   });
 
-  it('성공 시 뮤테이션 후 리다이렉트한다', async () => {
+  it('성공 시 뮤테이션이 성공적으로 동작한다', async () => {
     const { result } = renderHook(() => useBandCreate(), {
       wrapper: createTestWrapper(),
     });
@@ -51,7 +51,6 @@ describe('useBandCreate', () => {
     );
 
     expect(result.current.error).toBeNull();
-    expect(navigateMock).toHaveBeenCalledWith({ to: '/' });
   });
 
   it('실패 시 에러 상태를 업데이트한다', async () => {
