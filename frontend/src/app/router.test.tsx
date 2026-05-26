@@ -30,7 +30,7 @@ const createRouterForTest = (initialPath: string, user: UserAccess) => {
     history: createMemoryHistory({
       initialEntries: [initialPath],
     }),
-    context: { user },
+    context: { user, logout: vi.fn() },
   });
 
   return router;
@@ -43,7 +43,7 @@ const createRouterForHistoryTest = (entries: string[], user: UserAccess) => {
       initialEntries: entries,
       initialIndex: entries.length - 1,
     }),
-    context: { user },
+    context: { user, logout: vi.fn() },
   });
 
   return router;
@@ -161,6 +161,7 @@ describe('앱 라우터', () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
 
     renderWithRouter(router);
@@ -291,6 +292,7 @@ describe('앱 라우터', () => {
     const profileRouter = createRouterForTest('/profile', {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
     const { unmount } = renderWithRouter(profileRouter);
 
@@ -317,6 +319,7 @@ describe('앱 라우터', () => {
     const router = createRouterForHistoryTest(['/', '/profile'], {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
 
     renderWithRouter(router);

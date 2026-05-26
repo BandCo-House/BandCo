@@ -3,6 +3,7 @@ import type { UserAccess } from '@/app/providers/auth-context';
 
 export type RouterContext = {
   user: UserAccess;
+  logout: () => void;
 };
 
 type UserGuardPredicate = (user: UserAccess) => boolean;

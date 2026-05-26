@@ -1,5 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { requireLogin } from '@/app/router-guards';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/providers/auth-context';
 import { getUserProfile } from '@/features/profile-get/api/profile-api';
@@ -23,13 +22,37 @@ import { toast } from 'sonner';
 import { Share2, UserPlus, Edit2 } from 'lucide-react';
 import { z } from 'zod';
 
+type ProfileSearch = {
+  userId?: string;
+};
+
 const profileSearchSchema = z.object({
   userId: z.string().optional(),
 });
 
+const validateProfileSearch = (
+  search: Record<string, unknown>,
+): ProfileSearch => profileSearchSchema.parse(search);
+
 export const Route = createFileRoute('/profile')({
-  beforeLoad: requireLogin,
-  validateSearch: (search) => profileSearchSchema.parse(search),
+  validateSearch: validateProfileSearch,
+
+  beforeLoad: ({ context, search }) => {
+    const { userId } = search;
+    // userId 있으면 방문자모드 (비로그인도 허용)
+    if (userId) return;
+
+    // 로그인된 상태인데 유저 ID 파싱에 실패한 모순 상태 (비정상 토큰)
+    if (context.user.isLoggedIn && !context.user.id) {
+      context.logout(); // 전역 로그아웃을 트리거하여 스토리지 비우기 + 리액트 상태 변경 동시 완료
+      throw redirect({ to: '/login' }); // 안전하게 SPA 리다이렉트
+    }
+
+    // 일반 비로그인 상태
+    if (!context.user.isLoggedIn) {
+      throw redirect({ to: '/login' });
+    }
+  },
   component: ProfileRoutePage,
   staticData: {
     header: {
@@ -45,9 +68,10 @@ function ProfileRoutePage() {
   const search = Route.useSearch();
   const auth = useAuth();
 
-  const loggedInUserId = auth.user.id || 'user-001';
-  const targetUserId = search.userId || loggedInUserId;
-  const isMe = targetUserId === loggedInUserId;
+  const loggedInUserId = auth.user.isLoggedIn ? auth.user.id : null;
+  const targetUserId = search.userId || loggedInUserId || '';
+  const isMe = !!loggedInUserId && targetUserId === loggedInUserId;
+  console.log(loggedInUserId, targetUserId, isMe, auth);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [myBands, setMyBands] = useState<Band[]>([]);
@@ -98,6 +122,7 @@ function ProfileRoutePage() {
   };
 
   useEffect(() => {
+    if (!targetUserId) return;
     fetchData();
   }, [targetUserId]);
 
@@ -149,11 +174,12 @@ function ProfileRoutePage() {
     }
   };
 
-  // 4. Clipboard URL Copy
+  // 4. Clipboard URL Copy — 항상 ?userId 포함 URL 복사
   const handleShare = () => {
-    const shareUrl = window.location.href;
+    const url = new URL(window.location.href);
+    url.searchParams.set('userId', targetUserId);
     navigator.clipboard
-      .writeText(shareUrl)
+      .writeText(url.toString())
       .then(() => {
         toast.success('프로필 주소가 클립보드에 성공적으로 복사되었습니다!');
       })
@@ -167,7 +193,9 @@ function ProfileRoutePage() {
       <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
         <div className="flex flex-col items-center gap-4">
           <div className="size-12 animate-spin rounded-full border-4 border-violet-500 border-t-transparent"></div>
-          <span className="typo-md-m text-violet-400">음악 정보를 조율하고 있습니다...</span>
+          <span className="typo-md-m text-violet-400">
+            음악 정보를 조율하고 있습니다...
+          </span>
         </div>
       </div>
     );
@@ -176,7 +204,9 @@ function ProfileRoutePage() {
   if (!profile) {
     return (
       <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
-        <span className="typo-lg-b text-rose-500">존재하지 않는 유저 프로필입니다.</span>
+        <span className="typo-lg-b text-rose-500">
+          존재하지 않는 유저 프로필입니다.
+        </span>
       </div>
     );
   }
@@ -208,7 +238,7 @@ function ProfileRoutePage() {
               variant="outline"
               size="sm"
               onClick={handleShare}
-              className="gap-2 border-slate-800 bg-slate-900/60 hover:bg-slate-880"
+              className="hover:bg-slate-880 gap-2 border-slate-800 bg-slate-900/60"
             >
               <Share2 className="size-4" />
               공유
@@ -254,7 +284,7 @@ function ProfileRoutePage() {
                     setEditSkills(profile.skills);
                     setEditGenres(profile.favoriteGenres);
                   }}
-                  className="border-slate-800 bg-slate-900/40 hover:bg-slate-850"
+                  className="hover:bg-slate-850 border-slate-800 bg-slate-900/40"
                 >
                   취소
                 </Button>
@@ -276,7 +306,9 @@ function ProfileRoutePage() {
           profile={profile}
           isEditing={isEditing}
           editForm={editForm}
-          onChangeEditForm={(fields) => setEditForm((prev) => ({ ...prev, ...fields }))}
+          onChangeEditForm={(fields) =>
+            setEditForm((prev) => ({ ...prev, ...fields }))
+          }
         />
 
         {/* 2. Play Parts & Favorite Genres Section (features/profile-update) */}
