@@ -16,12 +16,28 @@ const mockProfiles: Record<string, Profile> = {
       nickname: '김민준',
       selfDescription: '음악으로 세상과 소통하는 기타리스트',
       profileMusicUrl: 'https://example.com/day6-timeofourlife.mp3',
-      avatarUrl: null,
+      avatarUrl:
+        'https://previews.123rf.com/images/paylessimages/paylessimages1502/paylessimages150204116/46228198-band-instruments-such.jpg',
     },
     skills: [
-      { skillTypeId: 'guitar-1', skillName: '일렉기타', level: 'ADVANCED', isPrimary: true },
-      { skillTypeId: 'acoustic-1', skillName: '통기타', level: 'INTERMEDIATE', isPrimary: false },
-      { skillTypeId: 'vocal-1', skillName: '보컬', level: 'BEGINNER', isPrimary: false },
+      {
+        skillTypeId: 'guitar-1',
+        skillName: '일렉기타',
+        level: 'ADVANCED',
+        isPrimary: true,
+      },
+      {
+        skillTypeId: 'acoustic-1',
+        skillName: '통기타',
+        level: 'INTERMEDIATE',
+        isPrimary: false,
+      },
+      {
+        skillTypeId: 'vocal-1',
+        skillName: '보컬',
+        level: 'BEGINNER',
+        isPrimary: false,
+      },
     ],
     favoriteGenres: [
       { genreId: 'genre-rock', name: 'Rock' },
@@ -43,7 +59,12 @@ const mockProfiles: Record<string, Profile> = {
       avatarUrl: null,
     },
     skills: [
-      { skillTypeId: 'bass-1', skillName: '베이스', level: 'INTERMEDIATE', isPrimary: true },
+      {
+        skillTypeId: 'bass-1',
+        skillName: '베이스',
+        level: 'INTERMEDIATE',
+        isPrimary: true,
+      },
     ],
     favoriteGenres: [
       { genreId: 'genre-blues', name: 'Blues' },
@@ -78,63 +99,82 @@ export const profileHandlers = [
     });
   }),
 
-  http.patch(`${API_URL}/users/:userId/profiles`, async ({ params, request }) => {
-    const { userId } = params as { userId: string };
-    const body = (await request.json()) as UpdateProfileRequest;
+  http.patch(
+    `${API_URL}/users/:userId/profiles`,
+    async ({ params, request }) => {
+      const { userId } = params as { userId: string };
+      const body = (await request.json()) as UpdateProfileRequest;
 
-    if (!mockProfiles[userId]) {
-      mockProfiles[userId] = {
-        user: {
-          id: userId,
-          email: `${userId}@example.com`,
-          status: 'ACTIVE',
-          createdAt: new Date().toISOString(),
-        },
-        profile: {
-          nickname: `유저_${userId}`,
-          selfDescription: null,
-          profileMusicUrl: null,
-          avatarUrl: null,
-        },
-        skills: [],
-        favoriteGenres: [],
-      };
-    }
+      if (!mockProfiles[userId]) {
+        mockProfiles[userId] = {
+          user: {
+            id: userId,
+            email: `${userId}@example.com`,
+            status: 'ACTIVE',
+            createdAt: new Date().toISOString(),
+          },
+          profile: {
+            nickname: `유저_${userId}`,
+            selfDescription: null,
+            profileMusicUrl: null,
+            avatarUrl: null,
+          },
+          skills: [],
+          favoriteGenres: [],
+        };
+      }
 
-    const current = mockProfiles[userId];
+      const current = mockProfiles[userId];
 
-    if (body.profile) {
-      current.profile = {
-        nickname: body.profile.nickname ?? current.profile?.nickname ?? '',
-        selfDescription: body.profile.selfDescription !== undefined ? body.profile.selfDescription : (current.profile?.selfDescription ?? null),
-        profileMusicUrl: body.profile.profileMusicUrl !== undefined ? body.profile.profileMusicUrl : (current.profile?.profileMusicUrl ?? null),
-        avatarUrl: body.profile.avatarUrl !== undefined ? body.profile.avatarUrl : (current.profile?.avatarUrl ?? null),
-      };
-    }
+      if (body.profile) {
+        current.profile = {
+          nickname: body.profile.nickname ?? current.profile?.nickname ?? '',
+          selfDescription:
+            body.profile.selfDescription !== undefined
+              ? body.profile.selfDescription
+              : (current.profile?.selfDescription ?? null),
+          profileMusicUrl:
+            body.profile.profileMusicUrl !== undefined
+              ? body.profile.profileMusicUrl
+              : (current.profile?.profileMusicUrl ?? null),
+          avatarUrl:
+            body.profile.avatarUrl !== undefined
+              ? body.profile.avatarUrl
+              : (current.profile?.avatarUrl ?? null),
+        };
+      }
 
-    if (body.personalInfo?.email) {
-      current.user.email = body.personalInfo.email;
-    }
+      if (body.personalInfo?.email) {
+        current.user.email = body.personalInfo.email;
+      }
 
-    if (body.skills) {
-      current.skills = body.skills.map((s) => ({
-        skillTypeId: s.skillTypeId,
-        skillName: s.skillTypeId === 'guitar-1' ? '일렉기타' : s.skillTypeId === 'acoustic-1' ? '통기타' : s.skillTypeId === 'vocal-1' ? '보컬' : '악기',
-        level: s.level,
-        isPrimary: s.isPrimary,
-      }));
-    }
+      if (body.skills) {
+        current.skills = body.skills.map((s) => ({
+          skillTypeId: s.skillTypeId,
+          skillName:
+            s.skillTypeId === 'guitar-1'
+              ? '일렉기타'
+              : s.skillTypeId === 'acoustic-1'
+                ? '통기타'
+                : s.skillTypeId === 'vocal-1'
+                  ? '보컬'
+                  : '악기',
+          level: s.level,
+          isPrimary: s.isPrimary,
+        }));
+      }
 
-    if (body.favoriteGenres) {
-      current.favoriteGenres = body.favoriteGenres.map((genreId) => ({
-        genreId,
-        name: genreId.replace('genre-', ''),
-      }));
-    }
+      if (body.favoriteGenres) {
+        current.favoriteGenres = body.favoriteGenres.map((genreId) => ({
+          genreId,
+          name: genreId.replace('genre-', ''),
+        }));
+      }
 
-    return HttpResponse.json<ApiResponse<Profile>>({
-      success: true,
-      data: current,
-    });
-  }),
+      return HttpResponse.json<ApiResponse<Profile>>({
+        success: true,
+        data: current,
+      });
+    },
+  ),
 ];

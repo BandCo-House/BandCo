@@ -4,8 +4,8 @@ import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
 import { Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSkillTypes, type SkillType } from '@/entities/skill';
-import { useGenres, type Genre } from '@/entities/genre';
+import { useSkillTypes } from '@/entities/skill';
+import { useGenres } from '@/entities/genre';
 import type { SkillLevel } from '../api/profile-api';
 
 export interface SkillGenreEditSectionProps {
@@ -17,26 +17,6 @@ export interface SkillGenreEditSectionProps {
   onSetEditSkills: (skills: Profile['skills']) => void;
   onSetEditGenres: (genres: Profile['favoriteGenres']) => void;
 }
-
-// Predefined available fallback options
-const DEFAULT_SKILLS: SkillType[] = [
-  { id: 'guitar-1', name: '일렉기타' },
-  { id: 'acoustic-1', name: '통기타' },
-  { id: 'bass-1', name: '베이스' },
-  { id: 'drum-1', name: '드럼' },
-  { id: 'keyboard-1', name: '키보드' },
-  { id: 'vocal-1', name: '보컬' },
-];
-
-const DEFAULT_GENRES: Genre[] = [
-  { id: 'genre-rock', name: 'Rock' },
-  { id: 'genre-metal', name: 'Metal' },
-  { id: 'genre-jazz', name: 'Jazz' },
-  { id: 'genre-blues', name: 'Blues' },
-  { id: 'genre-pop', name: 'Pop' },
-  { id: 'genre-jpop', name: 'J-Pop' },
-  { id: 'genre-hiphop', name: 'HipHop' },
-];
 
 export function SkillGenreEditSection({
   isEditing,
@@ -51,8 +31,8 @@ export function SkillGenreEditSection({
   const skillsQuery = useSkillTypes(isEditing);
   const genresQuery = useGenres(isEditing);
 
-  const availableSkills = skillsQuery.data || DEFAULT_SKILLS;
-  const availableGenres = genresQuery.data || DEFAULT_GENRES;
+  const availableSkills = skillsQuery.data || [];
+  const availableGenres = genresQuery.data || [];
 
   // Skill editing form state
   const [newSkillId, setNewSkillId] = useState<string>('guitar-1');
@@ -128,29 +108,27 @@ export function SkillGenreEditSection({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 text-grey-50 md:grid-cols-2">
       {/* Play Parts (Skills) Card */}
-      <div className="flex flex-col rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl">
-        <h3 className="mb-4 typo-lg-b text-white">플레이 파트</h3>
+      <div className="flex flex-col rounded-3xl bg-[#65637A] p-4 backdrop-blur-xl transition-all duration-300">
+        <h3 className="mb-2.5 typo-base-b">플레이 파트</h3>
 
         {isEditing ? (
           <div className="space-y-4">
             {/* Current skills with remove button */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {editSkills.map((skill) => (
                 <span
                   key={skill.skillTypeId}
-                  className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 typo-sm-m text-violet-300"
+                  className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 typo-sm-m text-violet-300 shadow-sm"
                 >
-                  {skill.skillName} • {skill.level}
-                  {skill.isPrimary && (
-                    <span className="typo-xs-b text-violet-400">[주]</span>
-                  )}
+                  {skill.skillName}
+
                   <button
                     onClick={() => removeSkill(skill.skillTypeId)}
-                    className="rounded-full p-0.5 hover:bg-violet-500/20"
+                    className="rounded-full p-0.5 text-violet-400 transition-colors hover:bg-violet-500/20"
                   >
-                    <X className="size-3" />
+                    <X className="size-3.5" />
                   </button>
                 </span>
               ))}
@@ -162,7 +140,7 @@ export function SkillGenreEditSection({
             </div>
 
             {/* Add new skill selectors */}
-            <div className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+            <div className="flex flex-col gap-2 rounded-2xl border border-slate-800/80 bg-slate-950/60 p-3">
               <div className="flex gap-2">
                 {skillsQuery.isLoading ? (
                   <div className="flex-1 py-2 text-center text-xs text-slate-400">
@@ -172,7 +150,7 @@ export function SkillGenreEditSection({
                   <select
                     value={newSkillId}
                     onChange={(e) => setNewSkillId(e.target.value)}
-                    className="bg-slate-905 flex-1 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
+                    className="flex-1 rounded-lg border border-slate-800 bg-slate-900 p-2 typo-sm-r text-slate-200"
                   >
                     {availableSkills.map((item) => (
                       <option key={item.id} value={item.id}>
@@ -187,7 +165,7 @@ export function SkillGenreEditSection({
                   onChange={(e) =>
                     setNewSkillLevel(e.target.value as SkillLevel)
                   }
-                  className="bg-slate-905 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
+                  className="rounded-lg border border-slate-800 bg-slate-900 p-2 typo-sm-r text-slate-200"
                 >
                   <option value="BEGINNER">초보자</option>
                   <option value="INTERMEDIATE">중급자</option>
@@ -197,7 +175,7 @@ export function SkillGenreEditSection({
               <Button
                 size="sm"
                 onClick={addSkill}
-                className="mt-1 w-full bg-violet-600 text-white hover:bg-violet-500"
+                className="mt-1 w-full rounded-xl bg-violet-600 text-white hover:bg-violet-500"
                 disabled={skillsQuery.isLoading}
               >
                 <Plus className="mr-1 size-4" /> 파트 추가
@@ -205,29 +183,17 @@ export function SkillGenreEditSection({
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             {skills.map((skill) => (
               <span
                 key={skill.skillTypeId}
-                className={`rounded-full border px-3 py-1 typo-sm-m ${
+                className={`rounded-full border px-4 py-2 typo-sm-m transition-all duration-300 hover:scale-105 ${
                   skill.isPrimary
-                    ? 'border-violet-500/50 bg-violet-500/20 text-violet-300'
-                    : 'border-slate-700/50 bg-slate-800/40 text-slate-300'
+                    ? 'border-violet-500/40 bg-violet-500/10 text-violet-300 shadow-md shadow-violet-500/5'
+                    : 'border-slate-800 bg-slate-900/40 text-slate-300'
                 }`}
               >
-                {skill.skillName} •{' '}
-                <span className="font-semibold text-violet-400">
-                  {skill.level === 'BEGINNER'
-                    ? '초급'
-                    : skill.level === 'INTERMEDIATE'
-                      ? '중급'
-                      : '고급'}
-                </span>
-                {skill.isPrimary && (
-                  <span className="ml-1 text-xs font-bold text-violet-400">
-                    [주]
-                  </span>
-                )}
+                {skill.skillName}
               </span>
             ))}
             {skills.length === 0 && (
@@ -235,29 +201,36 @@ export function SkillGenreEditSection({
                 등록된 플레이 파트가 없습니다.
               </span>
             )}
+
+            {/* Elegant Plus button symbol in visual match with the mockup */}
+            <span className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/40 text-slate-400 transition-all hover:border-violet-500/50 hover:bg-slate-700/60 hover:text-white">
+              <Plus className="size-4" />
+            </span>
           </div>
         )}
       </div>
 
       {/* Favorite Genres Card */}
-      <div className="flex flex-col rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl">
-        <h3 className="mb-4 typo-lg-b text-white">선호 장르</h3>
+      <div className="flex flex-col rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/10">
+        <h3 className="mb-4 typo-sm-b tracking-wider text-slate-400">
+          선호 장르
+        </h3>
 
         {isEditing ? (
           <div className="space-y-4">
             {/* Current genres with remove button */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {editGenres.map((genre) => (
                 <span
                   key={genre.genreId}
-                  className="flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 typo-sm-m text-teal-300"
+                  className="flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 px-4 py-2 typo-sm-m text-violet-300 shadow-sm"
                 >
                   {genre.name}
                   <button
                     onClick={() => removeGenre(genre.genreId)}
-                    className="rounded-full p-0.5 hover:bg-teal-500/20"
+                    className="rounded-full p-0.5 text-violet-400 transition-colors hover:bg-violet-500/20"
                   >
-                    <X className="size-3" />
+                    <X className="size-3.5" />
                   </button>
                 </span>
               ))}
@@ -269,7 +242,7 @@ export function SkillGenreEditSection({
             </div>
 
             {/* Add new genre selectors */}
-            <div className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+            <div className="flex flex-col gap-2 rounded-2xl border border-slate-800/80 bg-slate-950/60 p-3">
               <div className="flex gap-2">
                 {genresQuery.isLoading ? (
                   <div className="flex-1 py-2 text-center text-xs text-slate-400">
@@ -279,7 +252,7 @@ export function SkillGenreEditSection({
                   <select
                     value={newGenreId}
                     onChange={(e) => setNewGenreId(e.target.value)}
-                    className="bg-slate-905 flex-1 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
+                    className="flex-1 rounded-lg border border-slate-800 bg-slate-900 p-2 typo-sm-r text-slate-200"
                   >
                     {availableGenres.map((item) => (
                       <option key={item.id} value={item.id}>
@@ -292,7 +265,7 @@ export function SkillGenreEditSection({
               <Button
                 size="sm"
                 onClick={addGenre}
-                className="bg-teal-650 mt-1 w-full text-white hover:bg-teal-600"
+                className="mt-1 w-full rounded-xl bg-violet-600 text-white hover:bg-violet-500"
                 disabled={genresQuery.isLoading}
               >
                 <Plus className="mr-1 size-4" /> 장르 추가
@@ -300,11 +273,11 @@ export function SkillGenreEditSection({
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             {favoriteGenres.map((genre) => (
               <span
                 key={genre.genreId}
-                className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 typo-sm-m text-teal-300"
+                className="rounded-full border border-slate-800 bg-slate-900/40 px-4 py-2 typo-sm-m text-slate-300 transition-all duration-300 hover:scale-105"
               >
                 {genre.name}
               </span>
@@ -314,6 +287,11 @@ export function SkillGenreEditSection({
                 등록된 선호 장르가 없습니다.
               </span>
             )}
+
+            {/* Elegant Plus button symbol in visual match with the mockup */}
+            <span className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/40 text-slate-400 transition-all hover:border-violet-500/50 hover:bg-slate-700/60 hover:text-white">
+              <Plus className="size-4" />
+            </span>
           </div>
         )}
       </div>

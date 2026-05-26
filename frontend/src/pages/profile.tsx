@@ -15,12 +15,11 @@ import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
 
 // UI Imports
-import { Button } from '@/shared/ui/button';
-import { GlowBlob } from '@/shared/ui/glow-blob';
+
 import { toast } from 'sonner';
 
 // Icons
-import { Share2, UserPlus, Edit2 } from 'lucide-react';
+
 import { z } from 'zod';
 
 type ProfileSearch = {
@@ -167,7 +166,7 @@ function ProfileRoutePage() {
         <div className="flex flex-col items-center gap-4">
           <div className="size-12 animate-spin rounded-full border-4 border-violet-500 border-t-transparent"></div>
           <span className="typo-md-m text-violet-400">
-            음악 정보를 조율하고 있습니다...
+            프로필 정보를 불러오는 중입니다.
           </span>
         </div>
       </div>
@@ -187,104 +186,10 @@ function ProfileRoutePage() {
   const profileName = profile.profile?.nickname || '익명의 아티스트';
 
   return (
-    <div className="relative min-h-[90vh] overflow-hidden bg-slate-950 px-4 py-8 text-slate-100 sm:px-6">
+    <div className="relative -mx-5 -my-8 min-h-screen">
       {/* Background Neon Blob Decoration */}
-      <div className="absolute inset-0 z-0 h-full opacity-60">
-        <GlowBlob className="text-violet-500" />
-      </div>
 
-      <div className="relative z-10 mx-auto max-w-4xl space-y-8">
-        {/* Page Title & Main Header */}
-        <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-800 pb-6 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="typo-3xl-b tracking-tight text-white">
-              {isMe ? '마이페이지' : `${profileName}님의 프로필`}
-            </h1>
-            <p className="typo-sm-r text-slate-400">
-              {isMe
-                ? '내 잼 연주 정보와 프로필을 편리하게 편집하세요.'
-                : '아티스트의 악기 파트, 선호 장르 및 소속 밴드를 확인하세요.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShare}
-              className="hover:bg-slate-880 gap-2 border-slate-800 bg-slate-900/60"
-            >
-              <Share2 className="size-4" />
-              공유
-            </Button>
-
-            {!isMe && auth.user.isLoggedIn && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsInviting(true)}
-                className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg hover:from-violet-500 hover:to-indigo-500"
-              >
-                <UserPlus className="size-4" />
-                초대하기
-              </Button>
-            )}
-
-            {isMe && !isEditing && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (profile) {
-                    setEditForm({
-                      nickname: profile.profile?.nickname || '',
-                      selfDescription: profile.profile?.selfDescription || '',
-                      profileMusicUrl: profile.profile?.profileMusicUrl || '',
-                    });
-                    setEditSkills(profile.skills || []);
-                    setEditGenres(profile.favoriteGenres || []);
-                  }
-                  setIsEditing(true);
-                }}
-                className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg hover:from-violet-500 hover:to-indigo-500"
-              >
-                <Edit2 className="size-4" />
-                수정하기
-              </Button>
-            )}
-
-            {isMe && isEditing && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsEditing(false);
-                    // Reset to original values
-                    setEditForm({
-                      nickname: profile.profile?.nickname || '',
-                      selfDescription: profile.profile?.selfDescription || '',
-                      profileMusicUrl: profile.profile?.profileMusicUrl || '',
-                    });
-                    setEditSkills(profile.skills);
-                    setEditGenres(profile.favoriteGenres);
-                  }}
-                  className="hover:bg-slate-850 border-slate-800 bg-slate-900/40"
-                >
-                  취소
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSave}
-                  className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500"
-                >
-                  저장
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
+      <div className="relative z-10">
         {/* 1. Main Profile Card Section (entities/profile) */}
         <ProfileCard
           profile={profile}
@@ -293,21 +198,48 @@ function ProfileRoutePage() {
           onChangeEditForm={(fields) =>
             setEditForm((prev) => ({ ...prev, ...fields }))
           }
+          isMe={isMe}
+          onShare={handleShare}
+          onInvite={() => setIsInviting(true)}
+          onToggleEdit={() => {
+            if (isEditing) {
+              setIsEditing(false);
+              setEditForm({
+                nickname: profile.profile?.nickname || '',
+                selfDescription: profile.profile?.selfDescription || '',
+                profileMusicUrl: profile.profile?.profileMusicUrl || '',
+              });
+              setEditSkills(profile.skills);
+              setEditGenres(profile.favoriteGenres);
+            } else {
+              setEditForm({
+                nickname: profile.profile?.nickname || '',
+                selfDescription: profile.profile?.selfDescription || '',
+                profileMusicUrl: profile.profile?.profileMusicUrl || '',
+              });
+              setEditSkills(profile.skills || []);
+              setEditGenres(profile.favoriteGenres || []);
+              setIsEditing(true);
+            }
+          }}
+          onSave={handleSave}
         />
 
-        {/* 2. Play Parts & Favorite Genres Section (features/profile-update) */}
-        <SkillGenreEditSection
-          isEditing={isEditing}
-          skills={profile.skills}
-          favoriteGenres={profile.favoriteGenres}
-          editSkills={editSkills}
-          editGenres={editGenres}
-          onSetEditSkills={setEditSkills}
-          onSetEditGenres={setEditGenres}
-        />
+        <div className="bg-gradient-top px-5">
+          {/* 2. Play Parts & Favorite Genres Section (features/profile-update) */}
+          <SkillGenreEditSection
+            isEditing={isEditing}
+            skills={profile.skills}
+            favoriteGenres={profile.favoriteGenres}
+            editSkills={editSkills}
+            editGenres={editGenres}
+            onSetEditSkills={setEditSkills}
+            onSetEditGenres={setEditGenres}
+          />
 
-        {/* 3. My Bands List Section (widgets/band-list) */}
-        <UserBandsCarousel bands={myBands} />
+          {/* 3. My Bands List Section (widgets/band-list) */}
+          <UserBandsCarousel bands={myBands} />
+        </div>
       </div>
 
       {/* 4. Band Invitation Dialog (features/band-invite) */}
