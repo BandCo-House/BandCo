@@ -6,6 +6,7 @@ import { Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSkillTypes, type SkillType } from '@/entities/skill';
 import { useGenres, type Genre } from '@/entities/genre';
+import type { SkillLevel } from '../api/profile-api';
 
 export interface SkillGenreEditSectionProps {
   isEditing: boolean;
@@ -55,9 +56,7 @@ export function SkillGenreEditSection({
 
   // Skill editing form state
   const [newSkillId, setNewSkillId] = useState<string>('guitar-1');
-  const [newSkillLevel, setNewSkillLevel] = useState<
-    'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-  >('BEGINNER');
+  const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('BEGINNER');
 
   // Genre editing form state
   const [newGenreId, setNewGenreId] = useState<string>('genre-rock');
@@ -185,7 +184,9 @@ export function SkillGenreEditSection({
 
                 <select
                   value={newSkillLevel}
-                  onChange={(e) => setNewSkillLevel(e.target.value as any)}
+                  onChange={(e) =>
+                    setNewSkillLevel(e.target.value as SkillLevel)
+                  }
                   className="bg-slate-905 rounded-lg border border-slate-800 p-2 typo-sm-r text-slate-200"
                 >
                   <option value="BEGINNER">초보자</option>
