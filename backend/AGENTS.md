@@ -104,6 +104,15 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 - 테스트 패턴이 헷갈릴 때: [docs/backend/testing.md](docs/backend/testing.md)
 - 코딩 컨벤션이 헷갈릴 때: [docs/backend/conventions.md](docs/backend/conventions.md)
 
+상황별 참고 문서:
+
+- 특정 도메인 모듈을 구현·수정·리뷰할 때: 위 표의 [docs/backend/modules/](docs/backend/modules/) 문서 중 해당 모듈 문서
+- API 엔드포인트, 요청/응답 DTO, 응답 예시, 명세를 작성·수정할 때: [docs/backend/api-docs/](docs/backend/api-docs/)
+- 테스트를 작성·수정하거나 테스트 실패를 분석할 때: [docs/backend/testing.md](docs/backend/testing.md)
+- 레이어 책임, 네이밍, 응답 형식 등 구현 컨벤션을 확인할 때: [docs/backend/conventions.md](docs/backend/conventions.md)
+- Git, 커밋, PR 흐름을 확인할 때: [docs/git.md](docs/git.md)
+- 하네스 규칙에 빠진 내용이나 개선점을 발견했을 때: [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)
+
 ---
 
 ## Backend 필수 규칙

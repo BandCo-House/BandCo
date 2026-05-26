@@ -46,4 +46,5 @@
 
 | 반영일 | 반영된 파일 | 내용 요약 |
 |--------|------------|---------|
-| — | — | — |
+| 2026-05-26 | AGENTS.md, CLAUDE.md | 상황별 docs 참고 문서 가이드 추가 |
+| 2026-05-26 | AGENTS.md, CLAUDE.md, docs/backend/api-docs/README.md | 모듈 문서와 API 명세서 위치 참고 규칙 추가 |
