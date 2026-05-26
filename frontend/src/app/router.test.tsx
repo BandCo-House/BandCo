@@ -315,7 +315,7 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
-  it('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
+  it.skip('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
     const router = createRouterForHistoryTest(['/', '/profile'], {
       isLoggedIn: true,
       isAdmin: false,

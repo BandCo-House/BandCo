@@ -1,11 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/app/providers/auth-context';
-import { getUserProfile } from '@/features/profile-get/api/profile-api';
+import { useUserProfile } from '@/features/profile-get/model/useUserProfile';
+import { useMyBands } from '@/entities/band/api/useMyBands';
 import { updateUserProfile } from '@/features/profile-update/api/profile-api';
 import type { Profile } from '@/entities/profile/model/types';
-import { getBands } from '@/entities/band/api/band-api';
-import type { Band } from '@/entities/band/model/types';
 
 // FSD Slices Imports
 import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
@@ -54,14 +54,6 @@ export const Route = createFileRoute('/profile')({
     }
   },
   component: ProfileRoutePage,
-  staticData: {
-    header: {
-      title: '프로필',
-      subtitle: '유저 프로필 정보를 확인하고 관리하세요',
-      rightActionLabel: '수정',
-      backBehavior: 'browser',
-    },
-  },
 });
 
 function ProfileRoutePage() {
@@ -71,11 +63,16 @@ function ProfileRoutePage() {
   const loggedInUserId = auth.user.isLoggedIn ? auth.user.id : null;
   const targetUserId = search.userId || loggedInUserId || '';
   const isMe = !!loggedInUserId && targetUserId === loggedInUserId;
-  console.log(loggedInUserId, targetUserId, isMe, auth);
 
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [myBands, setMyBands] = useState<Band[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const queryClient = useQueryClient();
+
+  const { data: profileData, isLoading: isProfileLoading } =
+    useUserProfile(targetUserId);
+  const { data: bandsData, isLoading: isBandsLoading } = useMyBands();
+
+  const loading = isProfileLoading || isBandsLoading;
+  const profile = profileData || null;
+  const myBands = bandsData ? bandsData.slice(0, 4) : [];
 
   // Editing state
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -94,37 +91,6 @@ function ProfileRoutePage() {
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
-
-  // 1. Fetch Profile and Band data
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const data = await getUserProfile(targetUserId);
-      setProfile(data);
-
-      const bandsData = await getBands();
-      // Filter list of bands (for demonstration we just show some bands)
-      setMyBands(bandsData.slice(0, 4));
-
-      // Prep edit form
-      setEditForm({
-        nickname: data.profile?.nickname || '',
-        selfDescription: data.profile?.selfDescription || '',
-        profileMusicUrl: data.profile?.profileMusicUrl || '',
-      });
-      setEditSkills(data.skills);
-      setEditGenres(data.favoriteGenres);
-    } catch (e) {
-      toast.error('프로필 데이터를 가져오지 못했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!targetUserId) return;
-    fetchData();
-  }, [targetUserId]);
 
   // 2. BeforeUnload Listener for unsaved edits
   useEffect(() => {
@@ -149,8 +115,7 @@ function ProfileRoutePage() {
     }
 
     try {
-      setLoading(true);
-      const updated = await updateUserProfile(targetUserId, {
+      await updateUserProfile(targetUserId, {
         profile: {
           nickname: editForm.nickname,
           selfDescription: editForm.selfDescription || null,
@@ -164,13 +129,13 @@ function ProfileRoutePage() {
         favoriteGenres: editGenres.map((g) => g.genreId),
       });
 
-      setProfile(updated);
+      queryClient.invalidateQueries({
+        queryKey: ['user-profiles', 'detail', targetUserId],
+      });
       setIsEditing(false);
       toast.success('프로필 정보가 저장되었습니다.');
-    } catch (e) {
+    } catch {
       toast.error('정보 수정 도중 에러가 발생했습니다.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -260,7 +225,18 @@ function ProfileRoutePage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  if (profile) {
+                    setEditForm({
+                      nickname: profile.profile?.nickname || '',
+                      selfDescription: profile.profile?.selfDescription || '',
+                      profileMusicUrl: profile.profile?.profileMusicUrl || '',
+                    });
+                    setEditSkills(profile.skills || []);
+                    setEditGenres(profile.favoriteGenres || []);
+                  }
+                  setIsEditing(true);
+                }}
                 className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg hover:from-violet-500 hover:to-indigo-500"
               >
                 <Edit2 className="size-4" />
