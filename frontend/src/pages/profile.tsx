@@ -9,7 +9,8 @@ import type { Profile } from '@/entities/profile/model/types';
 
 // FSD Slices Imports
 import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
-import { SkillGenreEditSection } from '@/features/profile-update/ui/SkillGenreEditSection';
+import { SkillEditSection } from '@/features/profile-update/ui/SkillEditSection';
+import { GenreEditSection } from '@/features/profile-update/ui/GenreEditSection';
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
@@ -86,8 +87,7 @@ function ProfileRoutePage() {
     profileMusicUrl: '',
   });
 
-  const [editSkills, setEditSkills] = useState<Profile['skills']>([]);
-  const [editGenres, setEditGenres] = useState<Profile['favoriteGenres']>([]);
+
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -128,12 +128,6 @@ function ProfileRoutePage() {
           selfDescription: validatedData.selfDescription || null,
           profileMusicUrl: validatedData.profileMusicUrl || null,
         },
-        skills: editSkills.map((s) => ({
-          skillTypeId: s.skillTypeId,
-          level: s.level,
-          isPrimary: s.isPrimary,
-        })),
-        favoriteGenres: editGenres.map((g) => g.genreId),
       });
 
       queryClient.invalidateQueries({
@@ -209,16 +203,12 @@ function ProfileRoutePage() {
                 selfDescription: profile.profile?.selfDescription || '',
                 profileMusicUrl: profile.profile?.profileMusicUrl || '',
               });
-              setEditSkills(profile.skills);
-              setEditGenres(profile.favoriteGenres);
             } else {
               setEditForm({
                 nickname: profile.profile?.nickname || '',
                 selfDescription: profile.profile?.selfDescription || '',
                 profileMusicUrl: profile.profile?.profileMusicUrl || '',
               });
-              setEditSkills(profile.skills || []);
-              setEditGenres(profile.favoriteGenres || []);
               setIsEditing(true);
             }
           }}
@@ -227,15 +217,18 @@ function ProfileRoutePage() {
 
         <div className="bg-gradient-top px-5">
           {/* 2. Play Parts & Favorite Genres Section (features/profile-update) */}
-          <SkillGenreEditSection
-            isEditing={isEditing}
-            skills={profile.skills}
-            favoriteGenres={profile.favoriteGenres}
-            editSkills={editSkills}
-            editGenres={editGenres}
-            onSetEditSkills={setEditSkills}
-            onSetEditGenres={setEditGenres}
-          />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <SkillEditSection
+              isMe={isMe}
+              userId={targetUserId}
+              skills={profile.skills || []}
+            />
+            <GenreEditSection
+              isMe={isMe}
+              userId={targetUserId}
+              favoriteGenres={profile.favoriteGenres || []}
+            />
+          </div>
 
           {/* 3. My Bands List Section (widgets/band-list) */}
           <UserBandsCarousel bands={myBands} />
