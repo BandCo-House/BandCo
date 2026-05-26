@@ -6,6 +6,7 @@
       "Bash(pnpm run lint:fix)",
       "Bash(pnpm run format:check)",
       "Bash(pnpm run build)",
+      "Bash(sh ./scripts/verify.sh)",
       "Bash(pnpm run prisma:generate)",
       "Bash(pnpm run prisma:validate)",
       "Bash(pnpm run prisma:format)",
@@ -28,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm run lint && pnpm run format:check && pnpm run build && pnpm run test"
+            "command": "sh ./scripts/verify.sh"
           }
         ]
       }
