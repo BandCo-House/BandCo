@@ -12,6 +12,7 @@ import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
 import { SkillGenreEditSection } from '@/features/profile-update/ui/SkillGenreEditSection';
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
+import { profileEditSchema } from '@/features/profile-update/model/schema';
 
 // UI Imports
 import { Button } from '@/shared/ui/button';
@@ -109,17 +110,24 @@ function ProfileRoutePage() {
 
   // 3. Save profile changes
   const handleSave = async () => {
-    if (!editForm.nickname.trim()) {
-      toast.warning('닉네임은 필수 입력 항목입니다.');
+    const result = profileEditSchema.safeParse(editForm);
+
+    if (!result.success) {
+      const errorMessages = result.error.issues
+        .map((issue) => issue.message)
+        .join('\n');
+      toast.warning(errorMessages || '입력값이 올바르지 않습니다.');
       return;
     }
+
+    const validatedData = result.data;
 
     try {
       await updateUserProfile(targetUserId, {
         profile: {
-          nickname: editForm.nickname,
-          selfDescription: editForm.selfDescription || null,
-          profileMusicUrl: editForm.profileMusicUrl || null,
+          nickname: validatedData.nickname,
+          selfDescription: validatedData.selfDescription || null,
+          profileMusicUrl: validatedData.profileMusicUrl || null,
         },
         skills: editSkills.map((s) => ({
           skillTypeId: s.skillTypeId,
