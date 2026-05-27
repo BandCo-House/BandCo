@@ -5,7 +5,6 @@ import { useAuth } from '@/app/providers/auth-context';
 import { useUserProfile } from '@/features/profile-get/model/useUserProfile';
 import { useMyBands } from '@/entities/band/api/useMyBands';
 import { updateUserProfile } from '@/features/profile-update/api/profile-api';
-import type { Profile } from '@/entities/profile/model/types';
 
 // FSD Slices Imports
 import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
@@ -86,8 +85,6 @@ function ProfileRoutePage() {
     selfDescription: '',
     profileMusicUrl: '',
   });
-
-
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -214,10 +211,10 @@ function ProfileRoutePage() {
           }}
           onSave={handleSave}
         />
+        <div className="bg-gradient-top pb-6">
+          <div className="flex flex-col gap-2 px-5">
+            {/* 2. Play Parts & Favorite Genres Section (features/profile-update) */}
 
-        <div className="bg-gradient-top px-5">
-          {/* 2. Play Parts & Favorite Genres Section (features/profile-update) */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <SkillEditSection
               isMe={isMe}
               userId={targetUserId}
@@ -228,20 +225,21 @@ function ProfileRoutePage() {
               userId={targetUserId}
               favoriteGenres={profile.favoriteGenres || []}
             />
+
+            {/* 3. My Bands List Section (widgets/band-list) */}
+            <UserBandsCarousel bands={myBands} />
           </div>
-
-          {/* 3. My Bands List Section (widgets/band-list) */}
-          <UserBandsCarousel bands={myBands} />
         </div>
-      </div>
 
-      {/* 4. Band Invitation Dialog (features/band-invite) */}
-      <BandInviteModal
-        open={isInviting}
-        onOpenChange={setIsInviting}
-        inviteeName={profileName}
-        inviteeEmail={profile.user.email}
-      />
+        {/* 4. Band Invitation Dialog (features/band-invite) */}
+
+        <BandInviteModal
+          open={isInviting}
+          onOpenChange={setIsInviting}
+          inviteeName={profileName}
+          inviteeEmail={profile.user.email}
+        />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
 import { Plus, X, Loader2 } from 'lucide-react';
@@ -13,7 +13,11 @@ export interface SkillEditSectionProps {
   skills: Profile['skills'];
 }
 
-export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps) {
+export function SkillEditSection({
+  isMe,
+  userId,
+  skills,
+}: SkillEditSectionProps) {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [newSkillId, setNewSkillId] = useState<string | null>(null);
@@ -36,13 +40,19 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
     if (!skillObj) return;
 
     const updatedSkills = [
-      ...skills.map(s => ({ skillTypeId: s.skillTypeId, level: s.level, isPrimary: s.isPrimary })),
-      { skillTypeId: selectedSkillId, level: newSkillLevel, isPrimary: false }
+      ...skills.map((s) => ({
+        skillTypeId: s.skillTypeId,
+        level: s.level,
+        isPrimary: s.isPrimary,
+      })),
+      { skillTypeId: selectedSkillId, level: newSkillLevel, isPrimary: false },
     ];
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      queryClient.invalidateQueries({ queryKey: ['user-profiles', 'detail', userId] });
+      queryClient.invalidateQueries({
+        queryKey: ['user-profiles', 'detail', userId],
+      });
       toast.success('플레이 파트가 추가되었습니다.');
       setNewSkillId(null);
       setIsAdding(false);
@@ -54,11 +64,17 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
   const removeSkill = async (skillTypeId: string) => {
     const updatedSkills = skills
       .filter((s) => s.skillTypeId !== skillTypeId)
-      .map(s => ({ skillTypeId: s.skillTypeId, level: s.level, isPrimary: s.isPrimary }));
+      .map((s) => ({
+        skillTypeId: s.skillTypeId,
+        level: s.level,
+        isPrimary: s.isPrimary,
+      }));
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      queryClient.invalidateQueries({ queryKey: ['user-profiles', 'detail', userId] });
+      queryClient.invalidateQueries({
+        queryKey: ['user-profiles', 'detail', userId],
+      });
       toast.success('플레이 파트가 삭제되었습니다.');
     } catch {
       toast.error('파트 삭제 도중 에러가 발생했습니다.');
@@ -66,9 +82,28 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
   };
 
   return (
-    <div className="flex flex-col rounded-3xl bg-[#65637A] p-4 text-grey-50 backdrop-blur-xl transition-all duration-300">
+    <div className="flex flex-col rounded-3xl border border-grey-500 bg-[#65637A]/48 p-4 text-grey-50 backdrop-blur-xl transition-all duration-300">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="typo-base-b">플레이 파트</h3>
+      </div>
+
+      <div className="flex flex-wrap gap-2.5">
+        {skills.map((skill) => (
+          <span
+            key={skill.skillTypeId}
+            className="flex items-center rounded-full border border-[#61759E]/56 px-4 py-1.5 typo-base-sb"
+          >
+            {skill.skillName}
+            {isMe && (
+              <button
+                onClick={() => removeSkill(skill.skillTypeId)}
+                className="ml-2 rounded-full text-[#65637A] transition-colors hover:text-white"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </span>
+        ))}
         {isMe && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
@@ -77,25 +112,6 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
             <Plus className="size-4" />
           </button>
         )}
-      </div>
-
-      <div className="flex flex-wrap gap-2.5 mb-4">
-        {skills.map((skill) => (
-          <span
-            key={skill.skillTypeId}
-            className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 typo-sm-m text-violet-300 shadow-sm"
-          >
-            {skill.skillName}
-            {isMe && (
-              <button
-                onClick={() => removeSkill(skill.skillTypeId)}
-                className="rounded-full p-0.5 text-violet-400 transition-colors hover:bg-violet-500/20"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </span>
-        ))}
         {skills.length === 0 && (
           <span className="typo-sm-r text-slate-400">
             등록된 플레이 파트가 없습니다.
@@ -127,7 +143,9 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
 
                 <select
                   value={newSkillLevel}
-                  onChange={(e) => setNewSkillLevel(e.target.value as SkillLevel)}
+                  onChange={(e) =>
+                    setNewSkillLevel(e.target.value as SkillLevel)
+                  }
                   className="rounded-lg border border-slate-800 bg-slate-900 p-2 typo-sm-r text-slate-200"
                 >
                   <option value="BEGINNER">초보자</option>
@@ -135,7 +153,7 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
                   <option value="ADVANCED">전문가</option>
                 </select>
               </div>
-              <div className="flex gap-2 mt-1">
+              <div className="mt-1 flex gap-2">
                 <Button
                   size="sm"
                   onClick={addSkill}
@@ -162,4 +180,3 @@ export function SkillEditSection({ isMe, userId, skills }: SkillEditSectionProps
     </div>
   );
 }
-

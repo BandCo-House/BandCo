@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Profile } from '../model/types';
 import { Input } from '@/shared/ui/input';
-import { Play, Pause, Check, Edit } from 'lucide-react';
+import { Play, Pause, Check, Edit, CheckIcon } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 
 export interface ProfileCardProps {
@@ -69,7 +69,7 @@ export function ProfileCard({
           <img
             src={avatarUrl}
             alt="profile-cover"
-            className="absolute top-0 left-0 h-[73vh] w-full object-fill object-center blur-[2px] brightness-[0.4] filter"
+            className="absolute top-0 left-0 h-[75vh] w-full object-fill object-center blur-[2px] brightness-[0.4] filter"
           />
         )}
 
@@ -82,8 +82,17 @@ export function ProfileCard({
               onClick={onToggleEdit}
               className="flex cursor-pointer items-center gap-1.5 typo-sm-m text-slate-300 transition-colors hover:text-white"
             >
-              <span>수정</span>
-              <Edit className="size-4" />
+              {isEditing ? (
+                <>
+                  <span className="typo-sm-m text-primary">저장</span>
+                  <CheckIcon className="size-4 text-primary" />
+                </>
+              ) : (
+                <>
+                  <span className="typo-sm-m text-grey-300">수정</span>
+                  <Edit className="size-4 text-grey-300" />
+                </>
+              )}
             </button>
           )}
         </div>
@@ -199,7 +208,7 @@ export function ProfileCard({
             </div>
           </div>
         </div>
-        <div className="absolute right-6 -bottom-6 left-6 flex h-14 items-center gap-2 overflow-hidden rounded-full bg-[#61759E] px-4 py-2.5 shadow-2xl transition-all duration-300">
+        <div className="absolute right-6 -bottom-6 left-6 flex h-14 items-center gap-2 overflow-hidden rounded-full bg-[#61759E]/56 px-4 py-2.5 shadow-2xl transition-all duration-300">
           {isEditing ? (
             <>
               <PillButton onClick={onSave} className="flex-2">

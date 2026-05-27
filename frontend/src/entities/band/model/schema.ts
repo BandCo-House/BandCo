@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const bandRoleSchema = z.enum(['BM', 'MEMBER']);
+export const bandRoleSchema = z.enum(['BM', 'MEMBER', 'ADMIN']);
 
 export const bandSummarySchema = z.object({
   id: z.string(),

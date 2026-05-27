@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
 import { Plus, X, Loader2 } from 'lucide-react';
@@ -13,7 +13,11 @@ export interface GenreEditSectionProps {
   favoriteGenres: Profile['favoriteGenres'];
 }
 
-export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSectionProps) {
+export function GenreEditSection({
+  isMe,
+  userId,
+  favoriteGenres,
+}: GenreEditSectionProps) {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [newGenreId, setNewGenreId] = useState<string | null>(null);
@@ -41,7 +45,9 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
 
     try {
       await updateUserProfile(userId, { favoriteGenres: updatedGenres });
-      queryClient.invalidateQueries({ queryKey: ['user-profiles', 'detail', userId] });
+      queryClient.invalidateQueries({
+        queryKey: ['user-profiles', 'detail', userId],
+      });
       toast.success('선호 장르가 추가되었습니다.');
       setNewGenreId(null);
       setIsAdding(false);
@@ -57,7 +63,9 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
 
     try {
       await updateUserProfile(userId, { favoriteGenres: updatedGenres });
-      queryClient.invalidateQueries({ queryKey: ['user-profiles', 'detail', userId] });
+      queryClient.invalidateQueries({
+        queryKey: ['user-profiles', 'detail', userId],
+      });
       toast.success('선호 장르가 삭제되었습니다.');
     } catch {
       toast.error('장르 삭제 도중 에러가 발생했습니다.');
@@ -65,9 +73,28 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
   };
 
   return (
-    <div className="flex flex-col rounded-3xl bg-[#65637A] p-4 text-grey-50 backdrop-blur-xl transition-all duration-300">
+    <div className="flex flex-col rounded-3xl border border-grey-500 bg-[#65637A]/48 p-4 text-grey-50 backdrop-blur-xl transition-all duration-300">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="typo-base-b">선호 장르</h3>
+      </div>
+
+      <div className="flex flex-wrap gap-2.5">
+        {favoriteGenres.map((genre) => (
+          <span
+            key={genre.genreId}
+            className="flex items-center rounded-full border border-[#61759E]/56 px-4 py-1.5 typo-base-sb"
+          >
+            {genre.name}
+            {isMe && (
+              <button
+                onClick={() => removeGenre(genre.genreId)}
+                className="ml-2 rounded-full text-[#65637A] transition-colors hover:text-white"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </span>
+        ))}
         {isMe && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
@@ -76,25 +103,6 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
             <Plus className="size-4" />
           </button>
         )}
-      </div>
-
-      <div className="flex flex-wrap gap-2.5 mb-4">
-        {favoriteGenres.map((genre) => (
-          <span
-            key={genre.genreId}
-            className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 typo-sm-m text-violet-300 shadow-sm"
-          >
-            {genre.name}
-            {isMe && (
-              <button
-                onClick={() => removeGenre(genre.genreId)}
-                className="rounded-full p-0.5 text-violet-400 transition-colors hover:bg-violet-500/20"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </span>
-        ))}
         {favoriteGenres.length === 0 && (
           <span className="typo-sm-r text-slate-400">
             등록된 선호 장르가 없습니다.
@@ -114,7 +122,7 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
               <select
                 value={selectedGenreId}
                 onChange={(e) => setNewGenreId(e.target.value)}
-                className="flex-1 rounded-lg border border-slate-800 bg-slate-900 p-2 typo-sm-r text-slate-200 animate-fadeIn"
+                className="animate-fadeIn flex-1 rounded-lg border border-slate-800 bg-slate-900 p-2 typo-sm-r text-slate-200"
               >
                 {availableGenres.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -122,7 +130,7 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
                   </option>
                 ))}
               </select>
-              <div className="flex gap-2 mt-1">
+              <div className="mt-1 flex gap-2">
                 <Button
                   size="sm"
                   onClick={addGenre}
@@ -149,4 +157,3 @@ export function GenreEditSection({ isMe, userId, favoriteGenres }: GenreEditSect
     </div>
   );
 }
-

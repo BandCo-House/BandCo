@@ -56,7 +56,7 @@ export const BandList = () => {
           onOpenChange={setIsInviteCodeDialogOpen}
         />
       </section>
-      <div className="fixed top-header-64 z-30 -mx-5 flex h-full w-full max-w-[648px] flex-col items-start justify-start gap-6 overflow-hidden bg-linear-to-b">
+      <div className="fixed top-header-64 z-30 -mx-5 flex h-full w-full max-w-[648px] flex-col items-start justify-start gap-6 overflow-hidden bg-linear-to-b pointer-events-none">
         <div
           className="h-px w-full"
           style={{ boxShadow: '0px 8px 40px 10px rgba(221, 254, 85, 0.12)' }}
