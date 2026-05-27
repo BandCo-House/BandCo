@@ -7,29 +7,7 @@ import { updateUserProfile } from '@/features/profile-update/api/profile-api';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
 import axios from 'axios';
-
-const getUserIdFromToken = (token: string): string => {
-  const base64Url = token.split('.')[1];
-  if (!base64Url) {
-    throw new Error('Invalid token structure');
-  }
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(
-    base64.length + ((4 - (base64.length % 4)) % 4),
-    '=',
-  );
-  const jsonPayload = decodeURIComponent(
-    window.atob(padded)
-      .split('')
-      .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-      .join(''),
-  );
-  const payload = JSON.parse(jsonPayload) as { id?: unknown };
-  if (typeof payload.id !== 'string') {
-    throw new Error('User ID not found in token');
-  }
-  return payload.id;
-};
+import { getUserIdFromToken } from '@/shared/lib/jwt';
 
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
@@ -57,6 +35,9 @@ export function SignupPage() {
       login(res.accessToken, res.refreshToken);
       try {
         const userId = getUserIdFromToken(res.accessToken);
+        if (!userId) {
+          throw new Error('User ID not found in token');
+        }
         await updateUserProfile(userId, {
           profile: {
             nickname: data.name,

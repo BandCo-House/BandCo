@@ -9,30 +9,7 @@ import {
   setTokens,
   clearTokens,
 } from '@/shared/lib/auth-storage';
-
-const getUserIdFromToken = (token: string | null): string | null => {
-  if (!token) return null;
-  try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(
-      base64.length + ((4 - (base64.length % 4)) % 4),
-      '=',
-    );
-    const jsonPayload = decodeURIComponent(
-      window
-        .atob(padded)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(''),
-    );
-    const payload = JSON.parse(jsonPayload) as { id?: unknown };
-    return typeof payload.id === 'string' ? payload.id : null;
-  } catch {
-    return null;
-  }
-};
+import { getUserIdFromToken } from '@/shared/lib/jwt';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserAccess>(() => {
