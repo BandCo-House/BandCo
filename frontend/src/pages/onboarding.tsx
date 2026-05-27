@@ -49,7 +49,10 @@ function OnboardingPage() {
 
     try {
       if (hasOnboardingResult) {
-        const userId = auth.user.id || 'user-001';
+        const userId = auth.user.id;
+        if (!userId) {
+          throw new Error('User ID not found');
+        }
         await updateUserProfile(userId, {
           favoriteGenres: result.favoriteGenreIds,
           skills: result.skillTypeIds.map((skillTypeId, index) => ({

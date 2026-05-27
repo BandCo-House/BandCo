@@ -38,15 +38,15 @@ export const Route = createFileRoute('/profile')({
   validateSearch: validateProfileSearch,
 
   beforeLoad: ({ context, search }) => {
-    const { userId } = search;
-    // userId 있으면 방문자모드 (비로그인도 허용)
-    if (userId) return;
-
-    // 로그인된 상태인데 유저 ID 파싱에 실패한 모순 상태 (비정상 토큰)
+    // 로그인된 상태인데 유저 ID 파싱에 실패한 모순 상태 (비정상 토큰) 정리 먼저 수행
     if (context.user.isLoggedIn && !context.user.id) {
       context.logout(); // 전역 로그아웃을 트리거하여 스토리지 비우기 + 리액트 상태 변경 동시 완료
       throw redirect({ to: '/login' }); // 안전하게 SPA 리다이렉트
     }
+
+    const { userId } = search;
+    // userId 있으면 방문자모드 (비로그인도 허용)
+    if (userId) return;
 
     // 일반 비로그인 상태
     if (!context.user.isLoggedIn) {
@@ -68,7 +68,7 @@ function ProfileRoutePage() {
 
   const { data: profileData, isLoading: isProfileLoading } =
     useUserProfile(targetUserId);
-  const { data: bandsData, isLoading: isBandsLoading } = useMyBands();
+  const { data: bandsData, isLoading: isBandsLoading } = useMyBands(isMe);
 
   const loading = isProfileLoading || isBandsLoading;
   const profile = profileData || null;
@@ -228,7 +228,7 @@ function ProfileRoutePage() {
             />
 
             {/* 3. My Bands List Section (widgets/band-list) */}
-            <UserBandsCarousel bands={myBands} />
+            {isMe && <UserBandsCarousel bands={myBands} />}
           </div>
         </div>
 

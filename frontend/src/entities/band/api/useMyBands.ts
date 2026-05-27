@@ -6,9 +6,10 @@ export const bandKeys = {
   my: () => [...bandKeys.all, 'me'] as const,
 };
 
-export const useMyBands = () => {
+export const useMyBands = (enabled: boolean = true) => {
   return useQuery({
     queryKey: bandKeys.my(),
     queryFn: getMyBands,
+    enabled,
   });
 };

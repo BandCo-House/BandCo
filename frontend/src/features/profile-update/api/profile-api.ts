@@ -27,5 +27,10 @@ export type UpdateProfileRequest = {
 export const updateUserProfile = (
   userId: string,
   data: UpdateProfileRequest,
-): Promise<Profile> =>
-  apiPatch<Profile>(`/users/${userId}/profiles`, data);
+): Promise<Profile> => {
+  const normalizedUserId = userId.trim();
+  if (!normalizedUserId) {
+    return Promise.reject(new Error('userId is required'));
+  }
+  return apiPatch<Profile>(`/users/${encodeURIComponent(normalizedUserId)}/profiles`, data);
+};

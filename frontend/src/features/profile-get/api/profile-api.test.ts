@@ -45,4 +45,27 @@ describe('profile get 어댑터', () => {
     expect(result.profile?.nickname).toBe('김민준');
     expect(result.user.id).toBe('user-001');
   });
+
+  it('userId에 특수문자가 포함된 경우 안전하게 인코딩하여 요청한다', async () => {
+    const mockData = {
+      user: { id: 'user/001' },
+      profile: { nickname: '특수문자' },
+    };
+
+    // 'user/001' -> 'user%2F001'
+    mock.onGet('/users/user%2F001/profiles').reply(200, {
+      status: 'success',
+      error: null,
+      message: '조회 성공',
+      data: mockData,
+    });
+
+    const result = await getUserProfile('user/001');
+    expect(result.user.id).toBe('user/001');
+  });
+
+  it('userId가 빈 문자열이거나 공백만 있는 경우 에러를 던진다', async () => {
+    await expect(getUserProfile('')).rejects.toThrow('userId is required');
+    await expect(getUserProfile('   ')).rejects.toThrow('userId is required');
+  });
 });

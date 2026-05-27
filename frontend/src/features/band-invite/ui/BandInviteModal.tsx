@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-import { getBands } from '@/entities/band/api/band-api';
-import type { Band } from '@/entities/band/model/types';
+import { useEffect, useState, useMemo } from 'react';
 import { createInvite } from '@/features/invite-create/api/invite-api';
 import { Button } from '@/shared/ui/button';
 import { toast } from 'sonner';
@@ -13,6 +11,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { UserPlus } from 'lucide-react';
+import { useMyBands } from '@/entities/band/api/useMyBands';
 
 export interface BandInviteModalProps {
   open: boolean;
@@ -27,32 +26,24 @@ export function BandInviteModal({
   inviteeName,
   inviteeEmail,
 }: BandInviteModalProps) {
-  const [bands, setBands] = useState<Band[]>([]);
+  const { data: bands = [], isLoading } = useMyBands();
   const [selectedBandId, setSelectedBandId] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load bands when modal opens
+  const availableBands = useMemo(() => {
+    const myBms = bands.filter((b) => b.myRole === 'BM');
+    return myBms.length > 0 ? myBms : bands;
+  }, [bands]);
+
   useEffect(() => {
-    if (open) {
-      const loadBands = async () => {
-        try {
-          setLoading(true);
-          const data = await getBands();
-          // Filter my role as BM or MEMBER
-          const myBms = data.filter((b) => b.myRole === 'BM');
-          const availableBands = myBms.length > 0 ? myBms : data;
-          setBands(availableBands);
+    if (open && availableBands.length > 0) {
+      setSelectedBandId((prev) => prev || availableBands[0].id);
+    }
+  }, [open, availableBands]);
 
-          if (availableBands.length > 0) {
-            setSelectedBandId(availableBands[0].id);
-          }
-        } catch {
-          toast.error('밴드 목록을 불러오는 데 실패했습니다.');
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadBands();
+  useEffect(() => {
+    if (!open) {
+      setSelectedBandId('');
     }
   }, [open]);
 
@@ -70,14 +61,14 @@ export function BandInviteModal({
     }
 
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       await createInvite(selectedBandId, { inviteeEmail });
       toast.success(`${inviteeName}님을 성공적으로 초대했습니다!`);
       onOpenChange(false);
     } catch {
       toast.error('초대 전송 도중 에러가 발생했습니다.');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -94,7 +85,7 @@ export function BandInviteModal({
           </DialogDescription>
         </DialogHeader>
 
-        {bands.length > 0 ? (
+        {availableBands.length > 0 ? (
           <div className="space-y-4 py-4">
             <div className="space-y-1">
               <label className="typo-sm-m text-slate-300">
@@ -105,7 +96,7 @@ export function BandInviteModal({
                 onChange={(e) => setSelectedBandId(e.target.value)}
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 typo-sm-r text-slate-200 focus:border-violet-500 focus:outline-none"
               >
-                {bands.map((b) => (
+                {availableBands.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name} ({b.myRole === 'BM' ? '마스터' : '멤버'})
                   </option>
@@ -115,7 +106,7 @@ export function BandInviteModal({
           </div>
         ) : (
           <div className="py-4 text-center typo-sm-r text-slate-500">
-            {loading
+            {isLoading
               ? '밴드 목록을 불러오고 있습니다...'
               : '초대할 수 있는 소속 밴드가 없습니다. 밴드를 먼저 생성해보세요!'}
           </div>
@@ -134,7 +125,7 @@ export function BandInviteModal({
             variant="default"
             size="sm"
             onClick={handleInvite}
-            disabled={bands.length === 0 || loading}
+            disabled={availableBands.length === 0 || isSubmitting}
             className="bg-violet-600 text-white hover:bg-violet-500"
           >
             초대 전송

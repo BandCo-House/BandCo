@@ -31,7 +31,11 @@ export const isPublicGuestPath = (location: ParsedLocation): boolean => {
   const { pathname, search } = location;
   
   // 프로필 페이지이면서 검색 파라미터에 userId가 존재하는 경우 (방문자 모드) 예외 허용
-  if (pathname === '/profile' && (search as Record<string, unknown>).userId) {
+  const searchObj = (search ?? {}) as Record<string, unknown>;
+  if (
+    pathname === '/profile' &&
+    Object.prototype.hasOwnProperty.call(searchObj, 'userId')
+  ) {
     return true;
   }
   

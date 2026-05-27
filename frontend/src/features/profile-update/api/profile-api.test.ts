@@ -63,4 +63,29 @@ describe('profile update 어댑터', () => {
     expect(result.profile?.nickname).toBe('devjun');
     expect(result.user.email).toBe('newmail@gmail.com');
   });
+
+  it('userId에 특수문자가 포함된 경우 안전하게 인코딩하여 PATCH 요청을 보낸다', async () => {
+    const requestBody = { profile: { nickname: '특수문자수정' } };
+    const mockData = {
+      user: { id: 'user/001', email: 'test@example.com' },
+      profile: { nickname: '특수문자수정' },
+    };
+
+    // 'user/001' -> 'user%2F001'
+    mock.onPatch('/users/user%2F001/profiles', requestBody).reply(200, {
+      status: 'success',
+      error: null,
+      message: '수정 성공',
+      data: mockData,
+    });
+
+    const result = await updateUserProfile('user/001', requestBody);
+    expect(result.profile?.nickname).toBe('특수문자수정');
+  });
+
+  it('userId가 빈 문자열이거나 공백만 있는 경우 rejected promise를 반환한다', async () => {
+    const requestBody = { profile: { nickname: '에러' } };
+    await expect(updateUserProfile('', requestBody)).rejects.toThrow('userId is required');
+    await expect(updateUserProfile('   ', requestBody)).rejects.toThrow('userId is required');
+  });
 });
