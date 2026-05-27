@@ -190,6 +190,7 @@ function ProfileRoutePage() {
             setEditForm((prev) => ({ ...prev, ...fields }))
           }
           isMe={isMe}
+          isLoggedIn={auth.user.isLoggedIn}
           onShare={handleShare}
           onInvite={() => setIsInviting(true)}
           onToggleEdit={() => {

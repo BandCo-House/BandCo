@@ -14,35 +14,40 @@ export interface ProfileCardProps {
   };
   onChangeEditForm: (fields: Partial<ProfileCardProps['editForm']>) => void;
   isMe: boolean;
+  isLoggedIn?: boolean;
   onShare: () => void;
   onInvite: () => void;
   onToggleEdit: () => void;
   onSave: () => void;
 }
-
+ 
 const PillButton = ({
   onClick,
   children,
   className = '',
+  disabled = false,
 }: {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }) => (
   <Button
     onClick={onClick}
-    className={`relative z-30 flex h-full cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white/50 typo-base-b text-gradient-bottom transition-all duration-300 hover:bg-white/60 ${className}`}
+    disabled={disabled}
+    className={`relative z-30 flex h-full cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white/50 typo-base-b text-gradient-bottom transition-all duration-300 hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/50 ${className}`}
   >
     {children}
   </Button>
 );
-
+ 
 export function ProfileCard({
   profile,
   isEditing,
   editForm,
   onChangeEditForm,
   isMe,
+  isLoggedIn = false,
   onShare,
   onInvite,
   onToggleEdit,
@@ -222,6 +227,7 @@ export function ProfileCard({
             <>
               <PillButton
                 onClick={isMe ? onToggleEdit : onInvite}
+                disabled={!isMe && !isLoggedIn}
                 className="flex-2"
               >
                 {isMe ? '프로필 편집' : '초대하기'}

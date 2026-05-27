@@ -1,4 +1,4 @@
-import { redirect } from '@tanstack/react-router';
+import { redirect, type ParsedLocation } from '@tanstack/react-router';
 import type { UserAccess } from '@/app/providers/auth-context';
 
 export type RouterContext = {
@@ -8,7 +8,11 @@ export type RouterContext = {
 
 type UserGuardPredicate = (user: UserAccess) => boolean;
 
-const PUBLIC_ONLY_PATHS = new Set(['/login', '/signup', '/forgot-password']);
+const PUBLIC_ONLY_PATHS = new Set([
+  '/login',
+  '/signup',
+  '/forgot-password',
+]);
 
 /**
  * 라우터 진입 전 사용자 상태 동기화 지점
@@ -23,7 +27,14 @@ export const syncAuthenticatedUser = async (
 /**
  * 로그인 없이 접근 가능한 공개 경로인지 확인한다.
  */
-export const isPublicGuestPath = (pathname: string): boolean => {
+export const isPublicGuestPath = (location: ParsedLocation): boolean => {
+  const { pathname, search } = location;
+  
+  // 프로필 페이지이면서 검색 파라미터에 userId가 존재하는 경우 (방문자 모드) 예외 허용
+  if (pathname === '/profile' && (search as Record<string, unknown>).userId) {
+    return true;
+  }
+  
   return PUBLIC_ONLY_PATHS.has(pathname);
 };
 
@@ -32,12 +43,12 @@ export const isPublicGuestPath = (pathname: string): boolean => {
  */
 export const enforceProtectedRoute = ({
   context,
-  pathname,
+  location,
 }: {
   context: RouterContext;
-  pathname: string;
+  location: ParsedLocation;
 }) => {
-  if (!context.user.isLoggedIn && !isPublicGuestPath(pathname)) {
+  if (!context.user.isLoggedIn && !isPublicGuestPath(location)) {
     throw redirect({ to: '/login' });
   }
 };
