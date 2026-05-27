@@ -81,7 +81,12 @@ export function ProfileCard({
         <div className="relative z-50 flex h-[60px] items-center justify-between px-5">
           <h1 className="flex items-center gap-2 typo-lg-b font-semibold text-grey-50">
             {isMe && isEditing && (
-              <button type="button" aria-label="편집 취소" onClick={onToggleEdit} className="cursor-pointer">
+              <button
+                type="button"
+                aria-label="편집 취소"
+                onClick={onToggleEdit}
+                className="cursor-pointer"
+              >
                 <ChevronLeft />
               </button>
             )}
@@ -110,7 +115,7 @@ export function ProfileCard({
 
       {/* 카드 시작 지점(35vh)부터 이미지 끝(75vh)까지 blur 오버레이 */}
       {/* z-index 없이 DOM 순서상 이미지(z-auto) 위, 카드(z-10) 아래에 위치 */}
-      <div className="absolute top-[45vh] left-0 h-[30vh] w-full backdrop-blur-md" />
+      <div className="absolute top-[45vh] left-0 h-[30vh] w-full backdrop-blur-3xl" />
 
       {/* 2. Glassmorphism Main Content Card Area */}
       <div className="relative z-10 mt-[35vh] rounded-[20px] backdrop-blur-lg">
