@@ -83,17 +83,20 @@ export function ProfileCard({
             {isMe ? '마이페이지' : `${profileName}님의 프로필`}
           </h1>
           {isMe && (
-            <button className="flex cursor-pointer items-center gap-1.5 typo-sm-m text-slate-300 transition-colors hover:text-white">
+            <button
+              onClick={isEditing ? onSave : onToggleEdit}
+              className="flex cursor-pointer items-center gap-1.5 typo-sm-m transition-colors hover:text-white"
+            >
               {isEditing ? (
-                <div className="flex gap-1" onClick={onSave}>
-                  <span className="typo-sm-m text-primary">저장</span>
+                <>
+                  <span className="text-primary">저장</span>
                   <CheckIcon className="size-4 text-primary" />
-                </div>
+                </>
               ) : (
-                <div className="flex gap-1" onClick={onToggleEdit}>
-                  <span className="typo-sm-m text-grey-300">수정</span>
+                <>
+                  <span className="text-grey-300">수정</span>
                   <Edit className="size-4 text-grey-300" />
-                </div>
+                </>
               )}
             </button>
           )}
