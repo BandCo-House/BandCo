@@ -76,22 +76,18 @@ const mockProfiles: Record<string, Profile> = {
 export const profileHandlers = [
   http.get(`${API_URL}/users/:userId/profiles`, ({ params }) => {
     const { userId } = params as { userId: string };
-    const userProfile = mockProfiles[userId] || {
-      user: {
-        id: userId,
-        email: `${userId}@example.com`,
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString(),
-      },
-      profile: {
-        nickname: `유저_${userId}`,
-        selfDescription: null,
-        profileMusicUrl: null,
-        avatarUrl: null,
-      },
-      skills: [],
-      favoriteGenres: [],
-    };
+    const userProfile = mockProfiles[userId];
+
+    if (!userProfile) {
+      return HttpResponse.json(
+        {
+          message: '존재하지 않는 유저입니다.',
+          error: 'Not Found',
+          statusCode: 404,
+        },
+        { status: 404 },
+      );
+    }
 
     return HttpResponse.json<ApiResponse<Profile>>({
       success: true,
