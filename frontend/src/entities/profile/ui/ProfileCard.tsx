@@ -81,7 +81,9 @@ export function ProfileCard({
         <div className="relative z-50 flex h-[60px] items-center justify-between px-5">
           <h1 className="flex items-center gap-2 typo-lg-b font-semibold text-grey-50">
             {isMe && isEditing && (
-              <ChevronLeft className="cursor-pointer" onClick={onToggleEdit} />
+              <button type="button" aria-label="편집 취소" onClick={onToggleEdit} className="cursor-pointer">
+                <ChevronLeft />
+              </button>
             )}
             {isMe ? '마이페이지' : `${profileName}님의 프로필`}
           </h1>
