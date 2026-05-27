@@ -18,6 +18,7 @@ export interface BandInviteModalProps {
   onOpenChange: (open: boolean) => void;
   inviteeName: string;
   inviteeEmail: string | null;
+  isLoggedIn: boolean;
 }
 
 export function BandInviteModal({
@@ -25,8 +26,9 @@ export function BandInviteModal({
   onOpenChange,
   inviteeName,
   inviteeEmail,
+  isLoggedIn,
 }: BandInviteModalProps) {
-  const { data: bands = [], isLoading } = useMyBands();
+  const { data: bands = [], isLoading } = useMyBands(open && isLoggedIn);
   const [selectedBandId, setSelectedBandId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

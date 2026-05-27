@@ -234,12 +234,15 @@ function ProfileRoutePage() {
 
         {/* 4. Band Invitation Dialog (features/band-invite) */}
 
-        <BandInviteModal
-          open={isInviting}
-          onOpenChange={setIsInviting}
-          inviteeName={profileName}
-          inviteeEmail={profile.user.email}
-        />
+        {!isMe && auth.user.isLoggedIn && (
+          <BandInviteModal
+            open={isInviting}
+            onOpenChange={setIsInviting}
+            inviteeName={profileName}
+            inviteeEmail={profile.user.email}
+            isLoggedIn={auth.user.isLoggedIn}
+          />
+        )}
       </div>
     </div>
   );
