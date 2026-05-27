@@ -45,8 +45,8 @@ export const Route = createFileRoute('/profile')({
     }
 
     const { userId } = search;
-    // userId 있으면 방문자모드 (비로그인도 허용)
-    if (userId) return;
+    // userId 키가 존재하면 방문자모드로 허용 (빈 문자열이여도 서버 유효성 검사로 위임)
+    if (userId !== undefined) return;
 
     // 일반 비로그인 상태
     if (!context.user.isLoggedIn) {
@@ -61,7 +61,8 @@ function ProfileRoutePage() {
   const auth = useAuth();
 
   const loggedInUserId = auth.user.isLoggedIn ? auth.user.id : null;
-  const targetUserId = search.userId || loggedInUserId || '';
+  const targetUserId =
+    search.userId !== undefined ? search.userId : (loggedInUserId || '');
   const isMe = !!loggedInUserId && targetUserId === loggedInUserId;
 
   const queryClient = useQueryClient();

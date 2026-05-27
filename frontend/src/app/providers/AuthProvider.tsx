@@ -37,19 +37,21 @@ const getUserIdFromToken = (token: string | null): string | null => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserAccess>(() => {
     const token = getAccessToken();
+    const userId = getUserIdFromToken(token);
     return {
-      isLoggedIn: !!token,
+      isLoggedIn: !!userId,
       isAdmin: false,
-      id: getUserIdFromToken(token),
+      id: userId,
     };
   });
 
   const login = useCallback((accessToken: string, refreshToken: string) => {
     setTokens(accessToken, refreshToken);
+    const userId = getUserIdFromToken(accessToken);
     setUser({
-      isLoggedIn: true,
+      isLoggedIn: !!userId,
       isAdmin: false,
-      id: getUserIdFromToken(accessToken),
+      id: userId,
     });
   }, []);
 

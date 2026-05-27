@@ -61,7 +61,7 @@ describe('AuthProvider JWT Decoding', () => {
     expect(screen.getByTestId('user-id').textContent).toBe('ab');
   });
 
-  it('ID가 문자열이 아닌 경우 (숫자 등) null을 반환한다', () => {
+  it('ID가 문자열이 아닌 경우 (숫자 등) null을 반환하고 로그인 상태를 false로 처리한다', () => {
     // {"id":123} -> base64 "eyJpZCI6MTIzfQ==" -> base64url "eyJpZCI6MTIzfQ"
     const tokenNonStringId = 'header.eyJpZCI6MTIzfQ.signature';
     vi.mocked(getAccessToken).mockReturnValue(tokenNonStringId);
@@ -70,11 +70,11 @@ describe('AuthProvider JWT Decoding', () => {
         <TestComponent />
       </AuthProvider>
     );
-    expect(screen.getByTestId('logged-in').textContent).toBe('YES');
+    expect(screen.getByTestId('logged-in').textContent).toBe('NO');
     expect(screen.getByTestId('user-id').textContent).toBe('NULL');
   });
 
-  it('토큰 페이로드에 ID가 없는 경우 null을 반환한다', () => {
+  it('토큰 페이로드에 ID가 없는 경우 null을 반환하고 로그인 상태를 false로 처리한다', () => {
     // {"email":"test@test.com"} -> base64url "eyJlbWFpbCI6InRlc3RAdGVzdC5jb20ifQ"
     const tokenNoId = 'header.eyJlbWFpbCI6InRlc3RAdGVzdC5jb20ifQ.signature';
     vi.mocked(getAccessToken).mockReturnValue(tokenNoId);
@@ -83,7 +83,7 @@ describe('AuthProvider JWT Decoding', () => {
         <TestComponent />
       </AuthProvider>
     );
-    expect(screen.getByTestId('logged-in').textContent).toBe('YES');
+    expect(screen.getByTestId('logged-in').textContent).toBe('NO');
     expect(screen.getByTestId('user-id').textContent).toBe('NULL');
   });
 });
