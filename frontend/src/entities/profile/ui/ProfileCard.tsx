@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Profile } from '../model/types';
 import { Input } from '@/shared/ui/input';
-import { Play, Pause, Check, Edit, CheckIcon } from 'lucide-react';
+import { Play, Pause, Check, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 
 export interface ProfileCardProps {
@@ -35,7 +35,7 @@ const PillButton = ({
   <Button
     onClick={onClick}
     disabled={disabled}
-    className={`relative z-30 flex h-full cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white/50 typo-base-b text-gradient-bottom transition-all duration-300 hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/50 ${className}`}
+    className={`relative z-30 flex h-full cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white/50 px-5 py-4 typo-base-b text-gradient-bottom transition-all duration-300 hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/50 ${className}`}
   >
     {children}
   </Button>
@@ -79,7 +79,10 @@ export function ProfileCard({
         )}
 
         <div className="relative z-50 flex h-[60px] items-center justify-between px-5">
-          <h1 className="typo-lg-b font-semibold text-white">
+          <h1 className="flex items-center gap-2 typo-lg-b font-semibold text-grey-50">
+            {isMe && isEditing && (
+              <ChevronLeft className="cursor-pointer" onClick={onToggleEdit} />
+            )}
             {isMe ? '마이페이지' : `${profileName}님의 프로필`}
           </h1>
           {isMe && (
@@ -103,6 +106,10 @@ export function ProfileCard({
         </div>
       </div>
 
+      {/* 카드 시작 지점(35vh)부터 이미지 끝(75vh)까지 blur 오버레이 */}
+      {/* z-index 없이 DOM 순서상 이미지(z-auto) 위, 카드(z-10) 아래에 위치 */}
+      <div className="absolute top-[45vh] left-0 h-[30vh] w-full backdrop-blur-md" />
+
       {/* 2. Glassmorphism Main Content Card Area */}
       <div className="relative z-10 mt-[35vh] rounded-[20px] backdrop-blur-lg">
         <div className="absolute h-full w-full rounded-[20px] bg-white/40" />
@@ -114,7 +121,7 @@ export function ProfileCard({
               <div className="mt-5.5 flex w-full flex-col items-center justify-center gap-1.5 typo-sm-m text-grey-100">
                 <div className="flex items-center gap-2">
                   <span>건널목</span>
-                  <span>|</span>
+                  <span>·</span>
                   <span>{musicUrl ? 'Whiteusedsocks' : 'No Music'}</span>
                 </div>
               </div>
@@ -205,15 +212,10 @@ export function ProfileCard({
                   )}
                 </div>
               </button>
-              {musicUrl && (
-                <span className="mt-1 animate-pulse typo-xs-r text-violet-400">
-                  {isPlaying ? 'ON' : 'OFF'}
-                </span>
-              )}
             </div>
           </div>
         </div>
-        <div className="absolute right-6 -bottom-6 left-6 flex h-14 items-center gap-2 overflow-hidden rounded-full bg-[#61759E]/56 px-4 py-2.5 shadow-2xl transition-all duration-300">
+        <div className="absolute right-6 -bottom-6 left-6 z-20 flex items-center gap-2 overflow-hidden rounded-full bg-[#61759E]/56 px-4 py-2.5 shadow-2xl backdrop-blur-lg transition-all duration-300">
           {isEditing ? (
             <>
               <PillButton onClick={onSave} className="flex-2">

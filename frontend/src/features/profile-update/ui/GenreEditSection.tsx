@@ -98,9 +98,9 @@ export function GenreEditSection({
         {isMe && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/40 text-slate-400 transition-all hover:border-violet-500/50 hover:bg-slate-700/60 hover:text-white"
+            className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-[#DCE2F9]/40"
           >
-            <Plus className="size-4" />
+            <Plus className="size-4 text-primary" />
           </button>
         )}
         {favoriteGenres.length === 0 && (
