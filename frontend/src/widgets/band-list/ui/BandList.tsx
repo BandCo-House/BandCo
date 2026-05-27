@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { BandCard } from '@/entities/band/ui/BandCard';
-import { useBands } from '@/entities/band/api/useBands';
 import { BandCreateDialog } from './BandCreateDialog';
 import { InviteCodeDialog } from './InviteCodeDialog';
 import { BandListFAB } from './BandListFAB';
+import { useMyBands } from '@/entities/band/api/useMyBands';
 
 export const BandList = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isInviteCodeDialogOpen, setIsInviteCodeDialogOpen] = useState(false);
-  const { data: bands = [], isLoading } = useBands();
+  const { data: bands = [], isLoading } = useMyBands();
 
   if (isLoading) return <div data-testid="band-list">로딩 중...</div>;
 
@@ -56,7 +56,7 @@ export const BandList = () => {
           onOpenChange={setIsInviteCodeDialogOpen}
         />
       </section>
-      <div className="fixed top-header-64 z-30 -mx-5 flex h-full w-full max-w-[648px] flex-col items-start justify-start gap-6 overflow-hidden bg-linear-to-b pointer-events-none">
+      <div className="pointer-events-none fixed top-header-64 z-30 -mx-5 flex h-full w-full max-w-[648px] flex-col items-start justify-start gap-6 overflow-hidden bg-linear-to-b">
         <div
           className="h-px w-full"
           style={{ boxShadow: '0px 8px 40px 10px rgba(221, 254, 85, 0.12)' }}
