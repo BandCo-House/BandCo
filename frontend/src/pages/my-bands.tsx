@@ -1,4 +1,4 @@
-import { Search, Bell, Plus, Settings } from 'lucide-react';
+import { Search, Bell, Settings } from 'lucide-react';
 import { BandList } from '@/widgets/band-list/ui/BandList';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
