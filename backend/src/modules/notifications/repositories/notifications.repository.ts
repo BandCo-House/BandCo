@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma';
+import type { NotificationType, Prisma } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
@@ -9,7 +9,18 @@ import type { GetNotificationsResult } from '../types/notification-list-item.typ
 
 export const NOTIFICATIONS_REPOSITORY = Symbol('NOTIFICATIONS_REPOSITORY');
 
+export interface CreateNotificationRepositoryInput {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  description?: string | null;
+  targetPath?: string | null;
+  remindsAt?: Date | null;
+}
+
 export interface NotificationsRepository {
+  createNotification(input: CreateNotificationRepositoryInput, tx?: Prisma.TransactionClient): Promise<void>;
+  createManyNotifications(inputs: CreateNotificationRepositoryInput[], tx?: Prisma.TransactionClient): Promise<void>;
   findNotifications(userId: string, query: GetNotificationsQuery, tx?: Prisma.TransactionClient): Promise<GetNotificationsResult>;
   markAllNotificationsAsRead(userId: string, tx?: Prisma.TransactionClient): Promise<MarkAllReadResult>;
   markManyNotificationsAsRead(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient): Promise<MarkManyReadResult>;

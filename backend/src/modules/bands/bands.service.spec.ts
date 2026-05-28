@@ -64,6 +64,7 @@ function createBandsRepositoryStub(options?: {
   invitationForResponse?: {
     id: string;
     bandId: string;
+    inviterUserId: string;
     inviteeUserId: string;
     status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
   } | null;
@@ -91,6 +92,7 @@ function createBandsRepositoryStub(options?: {
   onFindBandInvitationByBandIdAndInviteeUserId?: (tx: unknown) => void;
   onFindBandJoinRequestByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandJoinRequestForResponse?: (tx: unknown) => void;
+  onFindBandManagerUserIdsByBandId?: (bandId: string, tx: unknown) => void;
   onFindBandJoinRequests?: (bandId: string, query: GetBandJoinRequestsQuery, tx: unknown) => void;
   onFindBandMemberByBandIdAndUserId?: (tx: unknown) => void;
   onFindBandMembers?: (bandId: string, query: GetBandMembersQuery, tx: unknown) => void;
@@ -532,6 +534,11 @@ function createBandsRepositoryStub(options?: {
         status: 'PENDING',
       };
     },
+    async findBandManagerUserIdsByBandId(bandId, tx) {
+      options?.onFindBandManagerUserIdsByBandId?.(bandId, tx);
+
+      return [BAND_MASTER_USER_ID, ADMIN_USER_ID];
+    },
     async findBandInvitationForResponse(_invitationId, tx) {
       options?.onFindBandInvitationForResponse?.(tx);
 
@@ -542,6 +549,7 @@ function createBandsRepositoryStub(options?: {
       return {
         id: 'invitation-001',
         bandId: 'band-001',
+        inviterUserId: BAND_MASTER_USER_ID,
         inviteeUserId: INVITEE_USER_ID,
         status: 'PENDING',
       };
@@ -1198,6 +1206,7 @@ describe('BandsService', () => {
         invitationForResponse: {
           id: 'invitation-001',
           bandId: 'band-001',
+          inviterUserId: BAND_MASTER_USER_ID,
           inviteeUserId: INVITEE_USER_ID,
           status: 'DECLINED',
         },
@@ -1526,6 +1535,7 @@ describe('BandsService', () => {
         invitationForResponse: {
           id: 'invitation-001',
           bandId: 'band-001',
+          inviterUserId: BAND_MASTER_USER_ID,
           inviteeUserId: INVITEE_USER_ID,
           status: 'ACCEPTED',
         },

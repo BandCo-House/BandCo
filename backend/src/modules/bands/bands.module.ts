@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../../auth/auth.module';
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 
 import { BandsPrismaRepository } from './repositories/bands.prisma-repository';
@@ -12,7 +13,7 @@ import { BandsController } from './bands.controller';
 import { BandsService } from './bands.service';
 
 @Module({
-  imports: [AuthModule, UsersModule],
+  imports: [AuthModule, UsersModule, NotificationsModule],
   controllers: [BandsController, BandInvitationsController, BandJoinRequestsController],
   providers: [
     AccessTokenGuard,

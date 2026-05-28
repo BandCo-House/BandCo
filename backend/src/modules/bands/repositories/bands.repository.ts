@@ -131,6 +131,7 @@ export interface BandsRepository {
     userId: string;
     status: JoinRequestStatus;
   } | null>;
+  findBandManagerUserIdsByBandId(bandId: string, tx?: Prisma.TransactionClient): Promise<string[]>;
   updateBand(bandId: string, input: UpdateBandInput, tx?: Prisma.TransactionClient): Promise<UpdateBandResult>;
   findBandMemberByBandIdAndUserId(
     bandId: string,
@@ -164,6 +165,7 @@ export interface BandsRepository {
   ): Promise<{
     id: string;
     bandId: string;
+    inviterUserId: string;
     inviteeUserId: string;
     status: BandInvitationStatus;
   } | null>;

@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import { BandMemberRole, type Prisma } from '../../generated/prisma';
+import { BandMemberRole, NotificationType, type Prisma } from '../../generated/prisma';
+import { NotificationsService } from '../notifications/notifications.service';
 
 import type { CreateBandInput } from './dto/create-band.dto';
 import type { CreateBandInvitationInput } from './dto/create-band-invitation.dto';
@@ -41,6 +42,7 @@ export class BandsService {
   constructor(
     @Inject(BANDS_REPOSITORY) private readonly bandsRepository: BandsRepository,
     private readonly prisma: PrismaService,
+    @Optional() private readonly notificationsService?: NotificationsService,
   ) {}
 
   /**
@@ -157,7 +159,7 @@ export class BandsService {
         throw new ConflictException('이미 밴드 가입 요청이 존재합니다.');
       }
 
-      return this.bandsRepository.createBandInvitation(
+      const result = await this.bandsRepository.createBandInvitation(
         {
           ...input,
           bandId,
@@ -165,6 +167,18 @@ export class BandsService {
         },
         client,
       );
+
+      await this.createBandNotification(
+        {
+          userId: input.inviteeUserId,
+          title: '밴드 초대가 도착했습니다.',
+          description: '새 밴드 초대가 도착했습니다.',
+          targetPath: '/invitations/received',
+        },
+        client,
+      );
+
+      return result;
     };
 
     if (tx !== undefined) {
@@ -224,7 +238,7 @@ export class BandsService {
         throw new ConflictException('이미 밴드 가입 요청이 존재합니다.');
       }
 
-      return this.bandsRepository.createBandJoinRequest(
+      const result = await this.bandsRepository.createBandJoinRequest(
         {
           ...input,
           bandId,
@@ -232,6 +246,21 @@ export class BandsService {
         },
         client,
       );
+
+      const managerUserIds = await this.bandsRepository.findBandManagerUserIdsByBandId(bandId, client);
+      const targetUserIds = managerUserIds.filter(managerUserId => managerUserId !== userId);
+
+      await this.createBandNotifications(
+        targetUserIds.map(managerUserId => ({
+          userId: managerUserId,
+          title: '밴드 가입 요청이 도착했습니다.',
+          description: '새 밴드 가입 요청이 도착했습니다.',
+          targetPath: `/bands/${bandId}/join-requests`,
+        })),
+        client,
+      );
+
+      return result;
     };
 
     if (tx !== undefined) {
@@ -357,7 +386,19 @@ export class BandsService {
         throw new ForbiddenException('밴드에서 차단된 사용자는 가입 요청을 승인할 수 없습니다.');
       }
 
-      return this.bandsRepository.approveBandJoinRequest(joinRequest.id, joinRequest.bandId, joinRequest.userId, client);
+      const result = await this.bandsRepository.approveBandJoinRequest(joinRequest.id, joinRequest.bandId, joinRequest.userId, client);
+
+      await this.createBandNotification(
+        {
+          userId: joinRequest.userId,
+          title: '밴드 가입 요청이 승인되었습니다.',
+          description: '보낸 밴드 가입 요청이 승인되었습니다.',
+          targetPath: `/bands/${joinRequest.bandId}`,
+        },
+        client,
+      );
+
+      return result;
     };
 
     if (tx !== undefined) {
@@ -389,7 +430,19 @@ export class BandsService {
         throw new ConflictException('대기 중인 밴드 가입 요청만 거절할 수 있습니다.');
       }
 
-      return this.bandsRepository.rejectBandJoinRequest(joinRequest.id, client);
+      const result = await this.bandsRepository.rejectBandJoinRequest(joinRequest.id, client);
+
+      await this.createBandNotification(
+        {
+          userId: joinRequest.userId,
+          title: '밴드 가입 요청이 거절되었습니다.',
+          description: '보낸 밴드 가입 요청이 거절되었습니다.',
+          targetPath: '/join-requests/sent',
+        },
+        client,
+      );
+
+      return result;
     };
 
     if (tx !== undefined) {
@@ -429,7 +482,19 @@ export class BandsService {
         throw new ConflictException('이미 밴드 멤버인 사용자입니다.');
       }
 
-      return this.bandsRepository.acceptBandInvitation(invitation.id, invitation.bandId, userId, new Date(), client);
+      const result = await this.bandsRepository.acceptBandInvitation(invitation.id, invitation.bandId, userId, new Date(), client);
+
+      await this.createBandNotification(
+        {
+          userId: invitation.inviterUserId,
+          title: '밴드 초대를 수락했습니다.',
+          description: '보낸 밴드 초대가 수락되었습니다.',
+          targetPath: `/bands/${invitation.bandId}/members`,
+        },
+        client,
+      );
+
+      return result;
     };
 
     if (tx !== undefined) {
@@ -463,7 +528,19 @@ export class BandsService {
         throw new ConflictException('대기 중인 밴드 초대만 거절할 수 있습니다.');
       }
 
-      return this.bandsRepository.declineBandInvitation(invitation.id, new Date(), client);
+      const result = await this.bandsRepository.declineBandInvitation(invitation.id, new Date(), client);
+
+      await this.createBandNotification(
+        {
+          userId: invitation.inviterUserId,
+          title: '밴드 초대를 거절했습니다.',
+          description: '보낸 밴드 초대가 거절되었습니다.',
+          targetPath: '/invitations/sent',
+        },
+        client,
+      );
+
+      return result;
     };
 
     if (tx !== undefined) {
@@ -715,6 +792,56 @@ export class BandsService {
     if (!canManageJoinRequest) {
       throw new ForbiddenException('밴드 가입 요청 관리 권한이 없습니다.');
     }
+  }
+
+  private async createBandNotification(
+    input: {
+      userId: string;
+      title: string;
+      description: string;
+      targetPath: string;
+    },
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (this.notificationsService === undefined) {
+      return;
+    }
+
+    await this.notificationsService.createNotification(
+      {
+        userId: input.userId,
+        type: NotificationType.INVITE,
+        title: input.title,
+        description: input.description,
+        targetPath: input.targetPath,
+      },
+      tx,
+    );
+  }
+
+  private async createBandNotifications(
+    inputs: Array<{
+      userId: string;
+      title: string;
+      description: string;
+      targetPath: string;
+    }>,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (this.notificationsService === undefined || inputs.length === 0) {
+      return;
+    }
+
+    await this.notificationsService.createManyNotifications(
+      inputs.map(input => ({
+        userId: input.userId,
+        type: NotificationType.INVITE,
+        title: input.title,
+        description: input.description,
+        targetPath: input.targetPath,
+      })),
+      tx,
+    );
   }
 
   private async validateGenres(genreIds: string[], tx: Prisma.TransactionClient): Promise<void> {
