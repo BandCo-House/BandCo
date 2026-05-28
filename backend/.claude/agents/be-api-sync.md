@@ -1,7 +1,7 @@
 ---
 name: be-api-sync
 description: Notion에서 백엔드 모듈의 API 명세를 MCP로 가져와 docs/backend/api-docs/{module}.md에 저장하는 에이전트. Notion API 명세를 로컬 api-docs 파일로 동기화한다.
-model: opus
+model: sonnet
 ---
 
 # Be-API-Sync — Notion API 명세 동기화 에이전트

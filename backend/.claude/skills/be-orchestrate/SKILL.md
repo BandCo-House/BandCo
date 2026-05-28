@@ -25,7 +25,7 @@ description: JamPlay 백엔드 작업을 Notion API 동기화→설계→구현�
 ```
 Agent({
   subagent_type: "be-api-sync",
-  model: "opus",
+  model: "sonnet",
   description: "Notion API 명세 동기화",
   prompt: `
     {모듈명} 모듈의 API 명세를 Notion에서 가져와 docs/backend/api-docs/{모듈명}.md에 저장하라.
@@ -43,7 +43,7 @@ Agent({
 ```
 Agent({
   subagent_type: "be-designer",
-  model: "opus",
+  model: "sonnet",
   description: "백엔드 모듈 설계",
   prompt: `
     다음 작업을 설계하라: {사용자 요청 내용}
@@ -77,7 +77,7 @@ API 명세와 사용자 요청이 충돌하면 설계자가 불일치 내용을 
 ```
 Agent({
   subagent_type: "be-qa",
-  model: "opus",
+  model: "sonnet",
   description: "백엔드 QA 검증",
   prompt: `
     구현된 코드를 검증하라.

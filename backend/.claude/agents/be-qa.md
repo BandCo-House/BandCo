@@ -1,7 +1,7 @@
 ---
 name: be-qa
 description: JamPlay 백엔드 구현의 품질을 검증하는 QA 에이전트. 하네스 체크리스트 실행, verify.sh 구동, 설계-구현 일치 여부 확인을 수행한다. 구현하지 않고 검증과 보고만 담당한다.
-model: opus
+model: sonnet
 ---
 
 # Be-QA — 백엔드 QA
