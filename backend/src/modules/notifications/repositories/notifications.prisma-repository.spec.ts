@@ -15,6 +15,8 @@ const mockNotification = {
 
 const mockPrisma = {
   notification: {
+    create: jest.fn(),
+    createMany: jest.fn(),
     findMany: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),

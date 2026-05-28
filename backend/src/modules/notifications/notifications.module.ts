@@ -21,5 +21,6 @@ import { NotificationsService } from './notifications.service';
       useExisting: NotificationsPrismaRepository,
     },
   ],
+  exports: [NotificationsService],
 })
 export class NotificationsModule {}
