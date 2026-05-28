@@ -1,6 +1,12 @@
 {
   "permissions": {
     "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+
       "Bash(pnpm run test*)",
       "Bash(pnpm run lint)",
       "Bash(pnpm run lint:fix)",
