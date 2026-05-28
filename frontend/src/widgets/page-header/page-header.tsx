@@ -1,22 +1,58 @@
 import type { ReactNode } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
+import { cn } from '@/shared/lib/utils';
 
 export type PageHeaderProps = {
-  title: string;
+  title: string | (() => ReactNode);
+  titleSize?: 'md' | 'lg';
   showBack?: boolean;
   onBack?: () => void;
   rightContent?: ReactNode;
+  heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
+  renderRight?: () => ReactNode;
+};
+
+const HEIGHT_CLASSES = {
+  xs: 'min-h-9',
+  sm: 'min-h-14',
+  md: 'min-h-[60px]',
+  lg: 'min-h-16',
 };
 
 /**
- * 라우트 레벨에서 공통으로 사용하는 표준 페이지 헤더
+ * 라우트 레벨에서 공통으로 사용하는 표준 페이지 헤더 (높이 및 타이틀 커스텀 확장)
  */
 export const PageHeader = ({
   title,
+  titleSize = 'lg',
   showBack = false,
   onBack,
   rightContent,
+  heightVariant = 'lg',
+  renderRight,
 }: PageHeaderProps) => {
+  
+  const renderTitleArea = () => {
+    if (!title) return null;
+
+    // Case 1: 타이틀이 함수(컴포넌트 렌더러)인 경우 -> 기본 h1 스타일 무시하고 통째로 렌더링
+    if (typeof title === 'function') {
+      return <div className="flex-1 min-w-0">{title()}</div>;
+    }
+
+    // Case 2: 타이틀이 일반 텍스트(string)인 경우
+    const titleClass = cn(
+      "min-w-0 truncate text-foreground",
+      titleSize === 'md' ? 'typo-lg-sb' : 'typo-xl-sb sm:typo-2xl-b'
+    );
+
+    return (
+      <h1 className={titleClass}>
+        {title}
+      </h1>
+    );
+  };
+
   return (
     <header
       className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 backdrop-blur-sm"
@@ -26,7 +62,12 @@ export const PageHeader = ({
         backgroundAttachment: 'fixed',
       }}
     >
-      <div className="mx-auto grid min-h-16 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6">
+      <div 
+        className={cn(
+          "mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 transition-all duration-200",
+          HEIGHT_CLASSES[heightVariant]
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3">
           {showBack ? (
             <button
@@ -43,14 +84,12 @@ export const PageHeader = ({
             </button>
           ) : null}
 
-          <h1 className="min-w-0 truncate typo-xl-sb text-foreground sm:typo-2xl-b">
-            {title}
-          </h1>
+          {renderTitleArea()}
         </div>
 
-        {rightContent ? (
+        {(renderRight || rightContent) ? (
           <div className="flex min-w-0 items-center justify-end gap-2">
-            {rightContent}
+            {renderRight ? renderRight() : rightContent}
           </div>
         ) : null}
       </div>
