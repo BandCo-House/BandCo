@@ -88,12 +88,16 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 상황별 참고 문서:
 
 - API 명세 확인: [docs/backend/api-docs/](docs/backend/api-docs/)
+- 기능별 설계 문서 확인: [docs/backend/designs/](docs/backend/designs/)
 - 테스트를 작성·수정하거나 테스트 실패를 분석할 때: [docs/backend/testing.md](docs/backend/testing.md)
 - 레이어 책임, 네이밍, 응답 형식 등 구현 컨벤션을 확인할 때: [docs/backend/conventions.md](docs/backend/conventions.md)
 - Git, 커밋, PR 흐름을 확인할 때: [docs/git.md](docs/git.md)
 - 하네스 규칙에 빠진 내용이나 개선점을 발견했을 때: [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)
 
-새 모듈 설계 문서는 `_workspace/design.md`에 작성하며 최소한 다음을 포함한다:
+설계 문서는 `_workspace/design.md`에 작성한 뒤 QA 통과 후 `docs/backend/designs/{module}/{feature}.md`로 보관된다.
+`_workspace/`는 작업 중 임시 공간이며 git에서 추적하지 않는다.
+
+설계 문서는 최소한 다음을 포함한다:
 
 - 모듈 경로와 파일 목록
 - Repository 인터페이스
@@ -146,6 +150,7 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 **목표:** 백엔드 작업을 설계→구현→QA 3단계로 체계적으로 수행하여 하네스 규칙 준수를 보장한다.
 
 **트리거:**
+
 - 기능 구현·추가·수정 요청 → `be-orchestrate` 스킬 (API 동기화 + 설계 + QA 전체 워크플로우)
 - Notion API 명세 동기화만 필요 → `be-api-sync` 스킬
 - 설계만 필요 → `be-design` 스킬 (독립 실행 가능)
