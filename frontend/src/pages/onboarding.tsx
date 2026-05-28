@@ -8,7 +8,8 @@ import {
   OnboardingFlow,
   type OnboardingResult,
 } from '@/features/onboarding/ui/OnboardingFlow';
-import { updateMyProfile } from '@/features/profile-update/api/profile-api';
+import { updateUserProfile } from '@/features/profile-update/api/profile-api';
+import { useAuth } from '@/app/providers/auth-context';
 
 type OnboardingSearch = {
   name?: string;
@@ -33,6 +34,7 @@ export const Route = createFileRoute('/onboarding')({
  */
 function OnboardingPage() {
   const navigate = useNavigate();
+  const auth = useAuth();
   const { name, profileUpdateFailed } = Route.useSearch();
   const genreOptionsQuery = useGenreOptions();
   const partOptionsQuery = usePartOptions();
@@ -47,7 +49,11 @@ function OnboardingPage() {
 
     try {
       if (hasOnboardingResult) {
-        await updateMyProfile({
+        const userId = auth.user.id;
+        if (!userId) {
+          throw new Error('User ID not found');
+        }
+        await updateUserProfile(userId, {
           favoriteGenres: result.favoriteGenreIds,
           skills: result.skillTypeIds.map((skillTypeId, index) => ({
             skillTypeId,

@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { useAuth } from '@/app/providers/auth-context';
 import { registerEmail } from '@/features/auth/api/auth.service';
 import { SignupForm } from '@/features/auth/ui/SignupForm';
-import { updateMyProfile } from '@/features/profile-update/api/profile-api';
+import { updateUserProfile } from '@/features/profile-update/api/profile-api';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
 import axios from 'axios';
+import { getUserIdFromToken } from '@/shared/lib/jwt';
 
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
@@ -33,9 +34,16 @@ export function SignupPage() {
       // 회원가입 성공 시 자동 로그인
       login(res.accessToken, res.refreshToken);
       try {
-        await updateMyProfile({
+        const userId = getUserIdFromToken(res.accessToken);
+        if (!userId) {
+          throw new Error('User ID not found in token');
+        }
+        await updateUserProfile(userId, {
           profile: {
             nickname: data.name,
+            selfDescription: null,
+            profileMusicUrl: null,
+            avatarUrl: null,
           },
           personalInfo: {
             email: data.email,

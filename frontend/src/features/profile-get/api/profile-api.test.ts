@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 
 import { apiClient } from '@/shared/api/client';
-import { getMyProfile } from './profile-api';
+import { getUserProfile } from './profile-api';
 
 const mock = new MockAdapter(apiClient);
 
@@ -11,30 +11,61 @@ afterEach(() => {
 });
 
 describe('profile get 어댑터', () => {
-  it('내 프로필을 조회한다', async () => {
-    mock.onGet('/me/profile').reply(200, {
-      success: true,
-      data: {
-        id: 'profile-1',
-        nickname: '김민준',
-        displayName: '김민준',
-        bio: '음악으로 세상과 소통하는 기타리스트',
-        preferredGenres: ['Rock', 'J-Pop'],
-        profileMusic: {
-          title: 'Time of our life',
-          artistName: 'Day6',
-          url: null,
-        },
-        bandSummaries: [
-          { id: 'band-1', name: '신촌 락밴드' },
-          { id: 'band-2', name: '홍대 인디즈' },
-        ],
-        skills: ['일렉기타', '통기타'],
+  it('유저 프로필을 조회한다', async () => {
+    const mockData = {
+      user: {
+        id: 'user-001',
+        email: 'test@example.com',
+        status: 'ACTIVE',
+        createdAt: '2026-01-01T00:00:00.000Z',
       },
+      profile: {
+        nickname: '김민준',
+        selfDescription: '기타리스트입니다',
+        profileMusicUrl: 'https://example.com/song.mp3',
+        avatarUrl: null,
+      },
+      skills: [
+        { skillTypeId: 'skill-1', skillName: 'Guitar', level: 'ADVANCED', isPrimary: true },
+      ],
+      favoriteGenres: [
+        { genreId: 'genre-1', name: 'Rock' },
+      ],
+    };
+
+    mock.onGet('/users/user-001/profiles').reply(200, {
+      status: 'success',
+      error: null,
+      message: '조회 성공',
+      data: mockData,
     });
 
-    const result = await getMyProfile();
+    const result = await getUserProfile('user-001');
 
-    expect(result.displayName).toBe('김민준');
+    expect(result.profile?.nickname).toBe('김민준');
+    expect(result.user.id).toBe('user-001');
+  });
+
+  it('userId에 특수문자가 포함된 경우 안전하게 인코딩하여 요청한다', async () => {
+    const mockData = {
+      user: { id: 'user/001' },
+      profile: { nickname: '특수문자' },
+    };
+
+    // 'user/001' -> 'user%2F001'
+    mock.onGet('/users/user%2F001/profiles').reply(200, {
+      status: 'success',
+      error: null,
+      message: '조회 성공',
+      data: mockData,
+    });
+
+    const result = await getUserProfile('user/001');
+    expect(result.user.id).toBe('user/001');
+  });
+
+  it('userId가 빈 문자열이거나 공백만 있는 경우 에러를 던진다', async () => {
+    await expect(getUserProfile('')).rejects.toThrow('userId is required');
+    await expect(getUserProfile('   ')).rejects.toThrow('userId is required');
   });
 });

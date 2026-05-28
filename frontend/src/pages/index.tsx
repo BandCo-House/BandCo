@@ -7,10 +7,6 @@ export const Route = createFileRoute('/')({
     header: {
       title: 'BandCo',
       showBack: false,
-      showUtilities: true,
-      showSearchBar: true,
-      showProfileAvatar: true,
-      showNotificationTrigger: true,
     },
   },
 });
@@ -18,7 +14,7 @@ export const Route = createFileRoute('/')({
 // 홈(내 밴드 목록) 라우트 전용 화면
 function MyBandsRoutePage() {
   return (
-    <div data-testid="my-bands-page">
+    <div data-testid="my-bands-page" className="mt-header-64">
       <BandList />
     </div>
   );

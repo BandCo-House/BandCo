@@ -18,7 +18,6 @@ describe('BandCard', () => {
           description: '주 1회 합주',
           visibility: true,
           inviteCode: 'INV123',
-          bmId: 'bm-1',
           myRole: 'BM',
           joinedAt: '2026-03-01T12:10:00.000+09:00',
           createdAt: '2026-03-01T12:00:00.000+09:00',

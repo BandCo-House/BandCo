@@ -11,7 +11,7 @@ describe('authService', () => {
       };
       const response = await registerEmail(signupData);
 
-      expect(response.accessToken).toBe('mock-access-token');
+      expect(response.accessToken).toContain('eyJhbGciOiJIUzI1NiJ9');
     });
 
     it('회원가입 실패 시 에러를 던져야 한다', async () => {
@@ -29,18 +29,18 @@ describe('authService', () => {
       const loginData = { email: 'test@test.com', password: 'password123!' };
       const response = await loginEmail(loginData.email, loginData.password);
 
-      expect(response.accessToken).toBe('mock-access-token');
+      expect(response.accessToken).toContain('eyJhbGciOiJIUzI1NiJ9');
     });
   });
 
   describe('checkEmailDuplicate', () => {
-    it('이미 사용 중인 이메일이면 duplicated true를 반환해야 한다', async () => {
+    it('백엔드 이메일 확인 응답 메시지가 중복이면 duplicated true를 반환해야 한다', async () => {
       const response = await checkEmailDuplicate('duplicate@test.com');
 
       expect(response.duplicated).toBe(true);
     });
 
-    it('사용 가능한 이메일이면 duplicated false를 반환해야 한다', async () => {
+    it('백엔드 이메일 확인 응답 메시지가 사용 가능이면 duplicated false를 반환해야 한다', async () => {
       const response = await checkEmailDuplicate('new@test.com');
 
       expect(response.duplicated).toBe(false);

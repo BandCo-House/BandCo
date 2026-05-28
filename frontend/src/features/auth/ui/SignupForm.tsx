@@ -27,6 +27,12 @@ interface SignupInputProps {
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+interface RequiredFieldLabelProps {
+  id: string;
+  as?: 'label' | 'h2';
+  children: ReactNode;
+}
+
 type TermsState = {
   all: boolean;
   service: boolean;
@@ -55,6 +61,25 @@ interface EmailDuplicateResultProps {
 }
 
 /**
+ * 필수 입력/섹션 제목과 필수 표시를 같은 간격으로 렌더링한다.
+ */
+const RequiredFieldLabel = ({
+  id,
+  as: Component = 'label',
+  children,
+}: RequiredFieldLabelProps) => {
+  return (
+    <Component
+      {...(Component === 'label' ? { htmlFor: id } : { id })}
+      className="inline-flex items-center gap-1 typo-lg-b text-foreground"
+    >
+      {children}
+      <span className="text-destructive">*</span>
+    </Component>
+  );
+};
+
+/**
  * 회원가입 화면의 둥근 입력 필드를 렌더링한다.
  */
 const SignupInput = ({
@@ -70,9 +95,7 @@ const SignupInput = ({
 }: SignupInputProps) => {
   return (
     <div className="flex flex-col gap-4">
-      <label htmlFor={id} className="typo-lg-b text-foreground">
-        {label} <span className="text-destructive">*</span>
-      </label>
+      <RequiredFieldLabel id={id}>{label}</RequiredFieldLabel>
       <div className="flex items-end gap-3">
         <Input
           id={id}
@@ -86,7 +109,7 @@ const SignupInput = ({
         />
         {action}
       </div>
-      {helperText ? (
+      {helperText && !errorMessage ? (
         <p className="typo-xs-m text-grey-200">{helperText}</p>
       ) : null}
       {errorMessage ? (
@@ -158,8 +181,8 @@ const EmailDuplicateResult = ({ status }: EmailDuplicateResultProps) => {
           'flex h-14 items-center justify-center overflow-hidden rounded-full transition-transform duration-300 ease-out',
           isVisible ? 'scale-100' : 'pointer-events-none scale-90',
           isDuplicated
-            ? 'border border-key-muted px-6 typo-base-m text-grey-200'
-            : 'w-14 bg-key-muted text-key-foreground',
+            ? 'border border-primary px-6 typo-base-m text-foreground'
+            : 'w-14 border border-primary bg-transparent text-primary',
         )}
       >
         {isDuplicated ? (
@@ -180,7 +203,7 @@ const PasswordConfirmAction = ({
 }: PasswordConfirmActionProps) => {
   if (!isPasswordConfirmed) {
     return (
-      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-key-muted px-6 typo-base-m text-grey-200">
+      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-primary px-6 typo-base-m text-foreground">
         불일치
       </div>
     );
@@ -189,7 +212,7 @@ const PasswordConfirmAction = ({
   return (
     <div
       aria-label="비밀번호 일치"
-      className="mb-1 flex size-14 shrink-0 items-center justify-center rounded-full bg-key-muted text-key-foreground"
+      className="mb-1 flex size-14 shrink-0 items-center justify-center rounded-full border border-primary bg-transparent text-primary"
     >
       <CheckIcon aria-hidden="true" className="size-5" />
     </div>
@@ -222,11 +245,12 @@ export const SignupForm = ({
   const isPasswordConfirmed =
     hasPasswordConfirmInput && formData.password === passwordConfirm;
   const isRequiredTermsChecked = terms.service && terms.privacy;
-  const isFormValid =
-    signupSchema.safeParse(formData).success &&
-    isPasswordConfirmed &&
-    isRequiredTermsChecked &&
-    emailDuplicateStatus !== 'duplicated';
+  const isRequiredFieldsFilled =
+    formData.name.length > 0 &&
+    formData.email.length > 0 &&
+    formData.password.length > 0 &&
+    passwordConfirm.length > 0;
+  const canAttemptSubmit = isRequiredFieldsFilled && isRequiredTermsChecked;
 
   /**
    * 입력 필드의 id를 기준으로 회원가입 폼 상태를 갱신한다.
@@ -315,13 +339,17 @@ export const SignupForm = ({
     if (!result.success) {
       result.error.issues.forEach((issue) => {
         const path = issue.path[0] as keyof SignupReq;
-        nextErrors[path] = issue.message;
+        nextErrors[path] = nextErrors[path] ?? issue.message;
       });
     }
 
     if (!isPasswordConfirmed) {
       nextErrors.password =
         nextErrors.password ?? '비밀번호가 일치하지 않습니다.';
+    }
+
+    if (emailDuplicateStatus !== 'available') {
+      nextErrors.email = nextErrors.email ?? '이메일 중복 확인을 완료해주세요.';
     }
 
     if (emailDuplicateStatus === 'duplicated') {
@@ -367,7 +395,7 @@ export const SignupForm = ({
                 size="sm"
                 disabled={emailDuplicateStatus === 'checking'}
                 onClick={handleEmailDuplicateCheck}
-                className="mb-1 h-14 shrink-0 rounded-full border-key-muted px-6 typo-base-m text-grey-200"
+                className="mb-1 h-14 shrink-0 rounded-full border-primary px-6 typo-base-m text-foreground"
               >
                 {emailDuplicateStatus === 'checking' ? '확인 중' : '중복 확인'}
               </Button>
@@ -402,9 +430,9 @@ export const SignupForm = ({
         />
 
         <section className="flex flex-col gap-4" aria-labelledby="terms-title">
-          <h2 id="terms-title" className="typo-lg-b text-foreground">
-            약관 <span className="text-destructive">*</span>
-          </h2>
+          <RequiredFieldLabel id="terms-title" as="h2">
+            이용약관 동의
+          </RequiredFieldLabel>
           <div className="flex flex-col gap-3 pl-4">
             <TermsCheckboxRow
               id="all"
@@ -441,9 +469,9 @@ export const SignupForm = ({
 
         <Button
           type="submit"
-          variant="key"
+          variant="shining"
           size="lg"
-          disabled={isLoading || !isFormValid}
+          disabled={isLoading || !canAttemptSubmit}
           className="mt-4 w-full"
         >
           {isLoading ? '처리 중...' : '가입하기'}

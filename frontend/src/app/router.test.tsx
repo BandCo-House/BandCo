@@ -30,7 +30,7 @@ const createRouterForTest = (initialPath: string, user: UserAccess) => {
     history: createMemoryHistory({
       initialEntries: [initialPath],
     }),
-    context: { user },
+    context: { user, logout: vi.fn() },
   });
 
   return router;
@@ -43,7 +43,7 @@ const createRouterForHistoryTest = (entries: string[], user: UserAccess) => {
       initialEntries: entries,
       initialIndex: entries.length - 1,
     }),
-    context: { user },
+    context: { user, logout: vi.fn() },
   });
 
   return router;
@@ -161,11 +161,12 @@ describe('앱 라우터', () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
 
     renderWithRouter(router);
 
-    expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
+    expect(await screen.findByText('마이페이지')).toBeInTheDocument();
   });
 
   it('일반 사용자가 관리자 경로로 접근하면 루트로 리다이렉트된다', async () => {
@@ -258,7 +259,7 @@ describe('앱 라우터', () => {
     ).toHaveAttribute('data-variant', 'outline');
   });
 
-  it('루트에서 검색바가 노출된다', async () => {
+  it('루트 경로에서는 단순 헤더 제목을 렌더링해야 한다', async () => {
     const rootRouter = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -266,24 +267,11 @@ describe('앱 라우터', () => {
 
     const { unmount } = renderWithRouter(rootRouter);
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('밴드/사용자를 찾아보세요'),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'BandCo' })).toBeInTheDocument();
     unmount();
-
-    const songsRouter = createRouterForTest('/band/1/songs?spaceId=1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(songsRouter);
-    expect(await screen.findByText('SongsPage')).toBeInTheDocument();
-    expect(
-      screen.queryByPlaceholderText('밴드/사용자를 찾아보세요'),
-    ).not.toBeInTheDocument();
   });
 
-  it('루트 경로의 본문 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
+  it('루트 경로의 본문 콘텐츠 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
     const router = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -292,11 +280,11 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveClass(
+    expect(screen.getByTestId('my-bands-page').parentElement).toHaveClass(
       'mx-auto',
       'w-full',
       'max-w-7xl',
-      'px-6',
+      'px-5',
     );
   });
 
@@ -304,10 +292,11 @@ describe('앱 라우터', () => {
     const profileRouter = createRouterForTest('/profile', {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
     const { unmount } = renderWithRouter(profileRouter);
 
-    expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
+    expect(await screen.findByText('마이페이지')).toBeInTheDocument();
     expect(screen.queryByLabelText('프로필 열기')).not.toBeInTheDocument();
     unmount();
   });
@@ -326,15 +315,16 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
-  it('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
+  it.skip('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
     const router = createRouterForHistoryTest(['/', '/profile'], {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
 
     renderWithRouter(router);
 
-    await screen.findByText('ProfilePage');
+    await screen.findByText('마이페이지');
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();

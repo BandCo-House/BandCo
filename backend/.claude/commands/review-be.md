@@ -78,6 +78,7 @@ pnpm run test
 | 반환 타입 types/*.type.ts 위치 | ✅/❌ | |
 | soft-delete deletedAt:null 조건 | ✅/❌ | |
 | Prisma import 경로 | ✅/❌ | |
+| format:check | ✅/❌ | |
 | lint | ✅/❌ | |
 | build | ✅/❌ | |
 | test | ✅/❌ | |

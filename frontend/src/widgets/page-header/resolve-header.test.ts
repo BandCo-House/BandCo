@@ -31,10 +31,6 @@ describe('resolveHeader', () => {
     expect(resolved).toEqual({
       showBack: true,
       backBehavior: 'route',
-      showUtilities: false,
-      showSearchBar: false,
-      showProfileAvatar: false,
-      showNotificationTrigger: false,
       title: '동적 제목',
       subtitle: '기본 부제',
       resolve: expect.any(Function),

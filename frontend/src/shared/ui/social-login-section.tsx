@@ -67,8 +67,7 @@ export const SocialLoginSection = ({
               disabled={!onProviderLogin}
               className={cn(
                 'flex h-14 w-14 items-center justify-center rounded-full transition-transform duration-200 hover:-translate-y-0.5',
-                !onProviderLogin &&
-                  'cursor-not-allowed opacity-60 hover:translate-y-0',
+                !onProviderLogin && 'cursor-not-allowed hover:translate-y-0',
                 buttonClassName,
               )}
               onClick={() => onProviderLogin?.(provider)}
