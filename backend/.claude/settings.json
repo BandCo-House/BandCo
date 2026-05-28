@@ -29,7 +29,11 @@
       "Bash(git commit -m*)",
       "Bash(git push -u origin*)",
 
-      "Bash(gh pr*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr edit*)",
+      "Bash(gh pr ready*)",
 
       "mcp__claude_ai_Notion__notion-search",
       "mcp__claude_ai_Notion__notion-fetch"
