@@ -151,6 +151,12 @@ export class BandsService {
         throw new ConflictException('이미 밴드 초대가 존재합니다.');
       }
 
+      const existingJoinRequest = await this.bandsRepository.findBandJoinRequestByBandIdAndUserId(bandId, input.inviteeUserId, client);
+
+      if (existingJoinRequest !== null) {
+        throw new ConflictException('이미 밴드 가입 요청이 존재합니다.');
+      }
+
       return this.bandsRepository.createBandInvitation(
         {
           ...input,

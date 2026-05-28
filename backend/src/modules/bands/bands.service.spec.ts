@@ -931,6 +931,23 @@ describe('BandsService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
+    it('기존 가입 요청이 있으면 초대할 수 없다', async () => {
+      const repository = createBandsRepositoryStub({
+        existingUserIds: [INVITEE_USER_ID],
+        existingJoinRequest: {
+          id: 'join-request-001',
+          status: 'PENDING',
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(
+        service.createBandInvitation(BAND_MASTER_USER_ID, 'band-001', {
+          inviteeUserId: INVITEE_USER_ID,
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
     it('검증과 초대 생성을 같은 transaction client로 실행한다', async () => {
       const capturedTransactions: unknown[] = [];
       const repository = createBandsRepositoryStub({
@@ -950,6 +967,9 @@ describe('BandsService', () => {
         onFindBandInvitationByBandIdAndInviteeUserId(tx) {
           capturedTransactions.push(tx);
         },
+        onFindBandJoinRequestByBandIdAndUserId(tx) {
+          capturedTransactions.push(tx);
+        },
         onCreateBandInvitation(_input, tx) {
           capturedTransactions.push(tx);
         },
@@ -960,7 +980,7 @@ describe('BandsService', () => {
         inviteeUserId: INVITEE_USER_ID,
       });
 
-      expect(capturedTransactions).toHaveLength(7);
+      expect(capturedTransactions).toHaveLength(8);
       expect(new Set(capturedTransactions).size).toBe(1);
     });
 
