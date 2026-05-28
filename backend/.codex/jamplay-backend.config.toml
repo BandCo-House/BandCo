@@ -1,0 +1,15 @@
+# JamPlay backend Codex profile template.
+# Codex CLI loads profiles from $CODEX_HOME, not automatically from this project.
+# To use the same behavior manually:
+#   codex -C . --sandbox workspace-write --ask-for-approval on-request
+#
+# Or copy this file to:
+#   $CODEX_HOME/jamplay-backend.config.toml
+# and run:
+#   codex -C . --profile-v2 jamplay-backend
+
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[shell_environment_policy]
+inherit = "all"
