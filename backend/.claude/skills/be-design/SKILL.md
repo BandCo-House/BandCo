@@ -14,8 +14,9 @@ description: JamPlay 백엔드 모듈의 설계 문서를 작성하는 스킬. "
 1. **API 명세 읽기**: `docs/backend/api-docs/{module}.md`가 있으면 반드시 읽는다. **API 명세가 설계의 1차 소스다.**
 2. **스키마 확인**: `prisma/schema.prisma`에서 관련 모델과 필드를 확인한다 — API 명세 보완 시 기준이 된다
 3. **API 명세 보완**: 명세가 불완전하면 아래 "API 명세 검증 및 보완" 섹션에 따라 보완하고 api-docs 파일을 업데이트한다
-4. **모듈 doc 읽기**: `CLAUDE.md`의 모듈 문서 테이블에서 관련 모듈 doc 경로를 찾아 읽는다
-5. **기존 구현 참고**: 관련 모듈의 실제 구현 파일이 있으면 읽어 패턴을 파악한다
+4. **컨벤션 읽기**: `docs/backend/conventions.md`를 읽는다 — DTO·레이어 책임·soft delete·tx 패턴·네이밍 규칙의 단일 공급원이다
+5. **모듈 doc 읽기**: `CLAUDE.md`의 모듈 문서 테이블에서 관련 모듈 doc 경로를 찾아 읽는다
+6. **기존 구현 참고**: 관련 모듈의 실제 구현 파일이 있으면 읽어 패턴을 파악한다
 
 ## API 명세 검증 및 보완
 
@@ -106,34 +107,20 @@ updateNickname(userId, nickname, tx?):
 
 ### 4. DTO 및 타입 정의
 
-**규칙:**
-- 요청 DTO는 `dto/` 디렉토리, class-validator 데코레이터 필수
-- Service 내부 반환 타입은 `types/{name}.type.ts`에 별도 정의 (DTO에 넣지 않음)
-- 복잡한 로직 검증 (예: `from > to`)은 DTO가 아닌 Service에서 처리
+> **규칙 기준:** `docs/backend/conventions.md` Section 4 (DTO 규칙)
 
-```typescript
-// dto/update-nickname.dto.ts
-export class UpdateNicknameDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
-  nickname: string;
-}
-
-// types/update-nickname-result.type.ts
-export interface UpdateNicknameResult { ... }
-```
+설계 문서에 아래를 명시한다:
+- 요청 DTO 클래스명과 필드 목록 (class-validator 데코레이터 포함)
+- Service 내부 반환 타입이 필요하면 `types/{name}.type.ts` 파일명
 
 ---
 
 ### 5. Soft Delete 여부
 
-조회 메서드를 설계할 때 관련 모델에 `deletedAt`이 있는지 확인한다.
+> **규칙 기준:** `docs/backend/conventions.md` Section 8 (Soft Delete)
 
-**`deletedAt`이 있는 기존 모델:** `Band`, `User`, `BandSpace`
-→ 이 모델을 조회하는 Repository 메서드에는 `where: { deletedAt: null }` 조건이 필요하다. 설계 문서에 명시한다.
-
-신규 모델에는 특별한 이유 없이 `deletedAt`을 추가하지 않는다.
+조회 메서드를 설계할 때 관련 모델에 `deletedAt`이 있는지 `prisma/schema.prisma`에서 확인한다.
+`deletedAt`이 있으면 `where: { deletedAt: null }` 조건 필요 여부를 설계 문서에 명시한다.
 
 ### 6. 트랜잭션 경계
 

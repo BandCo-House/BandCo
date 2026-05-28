@@ -20,16 +20,24 @@ model: sonnet
 
 ## 검증 프로세스
 
-### Step 1: 변경 파일 확인
+### Step 1: 규칙 문서 읽기
+
+검증 기준이 되는 문서를 먼저 읽는다:
+- `docs/backend/conventions.md` — 레이어 책임·DTO·soft delete·tx·네이밍 규칙
+- `docs/backend/testing.md` — 테스트 패턴·필수 커버리지·Stub 작성 규칙
+
+### Step 2: 변경 파일 확인
 ```bash
 git diff --name-only HEAD
 ```
 변경된 파일 목록을 확인하고 각 파일을 읽는다.
 
-### Step 2: 설계-구현 일치 확인 (design.md가 있는 경우)
+### Step 3: 설계-구현 일치 확인 (design.md가 있는 경우)
 `_workspace/design.md`의 작업 범위, Repository 인터페이스, Service 비즈니스 규칙이 실제 구현과 일치하는지 확인한다.
 
-### Step 3: 하네스 체크리스트 검증
+### Step 4: 하네스 체크리스트 검증
+
+> Step 1에서 읽은 `conventions.md`와 `testing.md` 기준으로 검증한다. 아래는 Quick-reference 체크리스트다.
 
 #### 아키텍처 레이어
 - [ ] Service가 `@Inject(SYMBOL)`로 Repository 인터페이스에만 의존하는가?
@@ -57,7 +65,7 @@ git diff --name-only HEAD
 - [ ] 주석이 있다면 한국어로 작성했는가?
 - [ ] 중요 함수에 JSDoc 스타일 주석이 있는가?
 
-### Step 4: verify.sh 실행
+### Step 5: verify.sh 실행
 ```bash
 sh ./scripts/verify.sh
 ```
