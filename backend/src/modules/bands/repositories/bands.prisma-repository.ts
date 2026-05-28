@@ -44,12 +44,12 @@ export class BandsPrismaRepository implements BandsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * 초대 상태를 수락으로 바꾸고 기본 멤버로 가입시킨다.
+   * 초대는 가입 전 임시 관계이므로 수락 후 멤버를 생성하고 초대 row를 삭제한다.
    *
    * @param {string} invitationId - 수락할 초대 ID
    * @param {string} bandId - 가입할 밴드 ID
    * @param {string} userId - 가입할 사용자 ID
-   * @param {Date} respondedAt - 초대 응답 시각
+   * @param {Date} _respondedAt - 기존 인터페이스 호환을 위해 받지만 초대 삭제 정책에서는 저장하지 않는 응답 시각
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<AcceptBandInvitationResult>} 수락 처리 결과
    */
@@ -57,26 +57,10 @@ export class BandsPrismaRepository implements BandsRepository {
     invitationId: string,
     bandId: string,
     userId: string,
-    respondedAt: Date,
+    _respondedAt: Date,
     tx?: Prisma.TransactionClient,
   ): Promise<AcceptBandInvitationResult> {
     const client = tx ?? this.prisma;
-
-    const invitation = await client.bandInvitation.update({
-      where: {
-        id: invitationId,
-      },
-      data: {
-        status: 'ACCEPTED',
-        respondedAt,
-      },
-      select: {
-        id: true,
-        bandId: true,
-        inviteeUserId: true,
-        status: true,
-      },
-    });
 
     const member = await client.bandMember.create({
       data: {
@@ -89,11 +73,17 @@ export class BandsPrismaRepository implements BandsRepository {
       },
     });
 
+    await client.bandInvitation.delete({
+      where: {
+        id: invitationId,
+      },
+    });
+
     return {
-      invitationId: invitation.id,
-      bandId: invitation.bandId,
-      userId: invitation.inviteeUserId,
-      invitationStatus: invitation.status,
+      invitationId,
+      bandId,
+      userId,
+      invitationStatus: 'ACCEPTED',
       joinedAt: member.joinedAt.toISOString(),
     };
   }
@@ -1063,6 +1053,34 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 가입 요청 알림을 받을 수 있는 밴드 운영자 사용자 ID를 조회한다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<string[]>} 밴드장과 관리자 사용자 ID 목록
+   */
+  async findBandManagerUserIdsByBandId(bandId: string, tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+
+    const members = await client.bandMember.findMany({
+      where: {
+        bandId,
+        role: {
+          in: ['BM', 'ADMIN'],
+        },
+        user: {
+          deletedAt: null,
+        },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    return members.map(member => member.userId);
+  }
+
+  /**
    * 같은 밴드와 초대 대상 기준으로 기존 초대가 있는지 확인한다.
    *
    * @param {string} bandId - 대상 밴드 ID
@@ -1210,7 +1228,7 @@ export class BandsPrismaRepository implements BandsRepository {
    *
    * @param {string} invitationId - 수락할 초대 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; bandId: string; inviteeUserId: string; status: BandInvitationStatus } | null>} 초대 정보
+   * @returns {Promise<{ id: string; bandId: string; inviterUserId: string; inviteeUserId: string; status: BandInvitationStatus } | null>} 초대 정보
    */
   async findBandInvitationForResponse(
     invitationId: string,
@@ -1218,12 +1236,13 @@ export class BandsPrismaRepository implements BandsRepository {
   ): Promise<{
     id: string;
     bandId: string;
+    inviterUserId: string;
     inviteeUserId: string;
     status: BandInvitationStatus;
   } | null> {
     const client = tx ?? this.prisma;
 
-    return client.bandInvitation.findFirst({
+    const invitation = await client.bandInvitation.findFirst({
       where: {
         id: invitationId,
         band: {
@@ -1235,8 +1254,25 @@ export class BandsPrismaRepository implements BandsRepository {
         bandId: true,
         inviteeUserId: true,
         status: true,
+        inviterBandMember: {
+          select: {
+            userId: true,
+          },
+        },
       },
     });
+
+    if (invitation === null) {
+      return null;
+    }
+
+    return {
+      id: invitation.id,
+      bandId: invitation.bandId,
+      inviterUserId: invitation.inviterBandMember.userId,
+      inviteeUserId: invitation.inviteeUserId,
+      status: invitation.status,
+    };
   }
 
   /**

@@ -27,6 +27,7 @@ function createPrismaMock() {
     },
     bandMember: {
       create: jest.fn(),
+      findMany: jest.fn(),
       findFirst: jest.fn(),
     },
   };
@@ -592,37 +593,17 @@ describe('BandsPrismaRepository', () => {
   });
 
   describe('acceptBandInvitation', () => {
-    it('초대 상태를 수락으로 변경하고 밴드 멤버를 생성한다', async () => {
+    it('밴드 멤버를 생성하고 수락한 초대 row를 삭제한다', async () => {
       const prisma = createPrismaMock();
-      prisma.bandInvitation.update.mockResolvedValue({
-        id: 'invitation-001',
-        bandId: 'band-001',
-        inviteeUserId: 'user-002',
-        status: 'ACCEPTED',
-      });
       prisma.bandMember.create.mockResolvedValue({
         joinedAt: new Date('2026-04-30T10:00:00.000Z'),
       });
+      prisma.bandInvitation.delete.mockResolvedValue(undefined);
       const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
       const respondedAt = new Date('2026-04-30T09:59:00.000Z');
 
       const result = await repository.acceptBandInvitation('invitation-001', 'band-001', 'user-002', respondedAt);
 
-      expect(prisma.bandInvitation.update).toHaveBeenCalledWith({
-        where: {
-          id: 'invitation-001',
-        },
-        data: {
-          status: 'ACCEPTED',
-          respondedAt,
-        },
-        select: {
-          id: true,
-          bandId: true,
-          inviteeUserId: true,
-          status: true,
-        },
-      });
       expect(prisma.bandMember.create).toHaveBeenCalledWith({
         data: {
           bandId: 'band-001',
@@ -633,6 +614,12 @@ describe('BandsPrismaRepository', () => {
           joinedAt: true,
         },
       });
+      expect(prisma.bandInvitation.delete).toHaveBeenCalledWith({
+        where: {
+          id: 'invitation-001',
+        },
+      });
+      expect(prisma.bandInvitation.update).not.toHaveBeenCalled();
       expect(result).toEqual({
         invitationId: 'invitation-001',
         bandId: 'band-001',
@@ -645,23 +632,18 @@ describe('BandsPrismaRepository', () => {
     it('tx가 있으면 tx client로 수락 처리한다', async () => {
       const prisma = createPrismaMock();
       const tx = createPrismaMock();
-      tx.bandInvitation.update.mockResolvedValue({
-        id: 'invitation-001',
-        bandId: 'band-001',
-        inviteeUserId: 'user-002',
-        status: 'ACCEPTED',
-      });
       tx.bandMember.create.mockResolvedValue({
         joinedAt: new Date('2026-04-30T10:00:00.000Z'),
       });
+      tx.bandInvitation.delete.mockResolvedValue(undefined);
       const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
 
       await repository.acceptBandInvitation('invitation-001', 'band-001', 'user-002', new Date('2026-04-30T09:59:00.000Z'), tx as never);
 
-      expect(tx.bandInvitation.update).toHaveBeenCalled();
       expect(tx.bandMember.create).toHaveBeenCalled();
-      expect(prisma.bandInvitation.update).not.toHaveBeenCalled();
+      expect(tx.bandInvitation.delete).toHaveBeenCalled();
       expect(prisma.bandMember.create).not.toHaveBeenCalled();
+      expect(prisma.bandInvitation.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -1157,6 +1139,9 @@ describe('BandsPrismaRepository', () => {
       prisma.bandInvitation.findFirst.mockResolvedValue({
         id: 'invitation-001',
         bandId: 'band-001',
+        inviterBandMember: {
+          userId: 'user-001',
+        },
         inviteeUserId: 'user-002',
         status: 'PENDING',
       });
@@ -1176,11 +1161,17 @@ describe('BandsPrismaRepository', () => {
           bandId: true,
           inviteeUserId: true,
           status: true,
+          inviterBandMember: {
+            select: {
+              userId: true,
+            },
+          },
         },
       });
       expect(result).toEqual({
         id: 'invitation-001',
         bandId: 'band-001',
+        inviterUserId: 'user-001',
         inviteeUserId: 'user-002',
         status: 'PENDING',
       });
