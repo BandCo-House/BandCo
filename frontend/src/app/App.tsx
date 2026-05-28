@@ -13,8 +13,8 @@ function AppContent() {
 
   return (
     <>
-      <RouterProvider router={router} context={{ user: auth.user }} />
-      <Toaster position="top-center" closeButton />
+      <RouterProvider router={router} context={{ user: auth.user, logout: auth.logout }} />
+      <Toaster position="bottom-center" closeButton />
       {shouldShowRouterDevtools ? (
         <TanStackRouterDevtools router={router} />
       ) : null}

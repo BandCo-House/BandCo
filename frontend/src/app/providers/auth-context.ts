@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 export type UserAccess = {
   isLoggedIn: boolean;
   isAdmin: boolean;
+  id?: string | null;
   // 추후 필요한 유저 정보 추가 가능
 };
 

@@ -3,8 +3,15 @@ import { http, HttpResponse } from 'msw';
 import { type TokenResponse } from '@/shared/api/types';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
 
+// payload: {"id":"user-001","email":"member@example.com","type":"access"}
+// AuthProvider.getUserIdFromToken이 이 토큰에서 'user-001'을 파싱할 수 있어야 함
+const MOCK_ACCESS_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9' +
+  '.eyJpZCI6InVzZXItMDAxIiwiZW1haWwiOiJtZW1iZXJAZXhhbXBsZS5jb20iLCJ0eXBlIjoiYWNjZXNzIn0' +
+  '.mock-signature';
+
 const mockTokenResponse: TokenResponse = {
-  accessToken: 'mock-access-token',
+  accessToken: MOCK_ACCESS_TOKEN,
   refreshToken: 'mock-refresh-token',
 };
 

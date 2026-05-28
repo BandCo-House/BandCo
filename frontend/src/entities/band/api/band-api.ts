@@ -7,3 +7,9 @@ export const getBands = async (): Promise<Band[]> => {
   const parsed = bandListResponseSchema.parse(response.data);
   return parsed.data.items;
 };
+
+export const getMyBands = async (): Promise<Band[]> => {
+  const response = await apiClient.get('/bands/me');
+  const parsed = bandListResponseSchema.parse(response.data);
+  return parsed.data.items;
+};

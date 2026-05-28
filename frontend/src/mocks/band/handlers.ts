@@ -240,6 +240,19 @@ export const bandHandlers = [
     });
   }),
 
+  // 내 가입 밴드 목록 조회 Mock
+  http.get(`${API_URL}/bands/me`, () => {
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '내 가입 밴드 목록 조회 성공',
+      data: {
+        totalCount: mockBands.length,
+        items: mockBands,
+      },
+    });
+  }),
+
   // 밴드 생성 Mock
   http.post(`${API_URL}/bands`, async ({ request }) => {
     const body = (await request.json()) as {

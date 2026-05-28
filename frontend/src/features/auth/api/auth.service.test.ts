@@ -11,7 +11,7 @@ describe('authService', () => {
       };
       const response = await registerEmail(signupData);
 
-      expect(response.accessToken).toBe('mock-access-token');
+      expect(response.accessToken).toContain('eyJhbGciOiJIUzI1NiJ9');
     });
 
     it('회원가입 실패 시 에러를 던져야 한다', async () => {
@@ -29,7 +29,7 @@ describe('authService', () => {
       const loginData = { email: 'test@test.com', password: 'password123!' };
       const response = await loginEmail(loginData.email, loginData.password);
 
-      expect(response.accessToken).toBe('mock-access-token');
+      expect(response.accessToken).toContain('eyJhbGciOiJIUzI1NiJ9');
     });
   });
 

@@ -10,7 +10,7 @@ const initialForm = {
 };
 
 export const useBandCreateForm = (
-  open: boolean,
+  _open: boolean,
   onOpenChange: (open: boolean) => void,
 ) => {
   const [form, setForm] = useState(initialForm);
