@@ -1,4 +1,4 @@
-import { Search, Bell, Plus } from 'lucide-react';
+import { Search, Bell, Plus, Settings } from 'lucide-react';
 import { BandList } from '@/widgets/band-list/ui/BandList';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
@@ -25,7 +25,7 @@ function MyBandsHeaderActions() {
         className="rounded-full transition-colors"
         aria-label="마이 페이지"
       >
-        <Plus className="size-6" />
+        <Settings className="size-6" />
       </Link>
     </div>
   );
