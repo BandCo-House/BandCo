@@ -10,7 +10,7 @@ import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
 
-import type { NotificationsRepository } from './notifications.repository';
+import type { CreateNotificationRepositoryInput, NotificationsRepository } from './notifications.repository';
 
 type NotificationRow = {
   id: string;
@@ -25,6 +25,40 @@ type NotificationRow = {
 @Injectable()
 export class NotificationsPrismaRepository implements NotificationsRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createNotification(input: CreateNotificationRepositoryInput, tx?: Prisma.TransactionClient): Promise<void> {
+    const client = this.getClient(tx);
+
+    await client.notification.create({
+      data: {
+        userId: input.userId,
+        type: input.type,
+        title: input.title,
+        description: input.description,
+        targetPath: input.targetPath,
+        remindsAt: input.remindsAt,
+      },
+    });
+  }
+
+  async createManyNotifications(inputs: CreateNotificationRepositoryInput[], tx?: Prisma.TransactionClient): Promise<void> {
+    if (inputs.length === 0) {
+      return;
+    }
+
+    const client = this.getClient(tx);
+
+    await client.notification.createMany({
+      data: inputs.map(input => ({
+        userId: input.userId,
+        type: input.type,
+        title: input.title,
+        description: input.description,
+        targetPath: input.targetPath,
+        remindsAt: input.remindsAt,
+      })),
+    });
+  }
 
   async findNotifications(userId: string, query: GetNotificationsQuery, tx?: Prisma.TransactionClient): Promise<GetNotificationsResult> {
     const client = this.getClient(tx);

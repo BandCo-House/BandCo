@@ -43,6 +43,12 @@ const mockDeleteResult: DeleteNotificationResult = { notificationId: 'noti-001' 
 const mockDeleteManyResult: DeleteManyNotificationsResult = { deletedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
 
 const repositoryStub: NotificationsRepository = {
+  async createNotification() {
+    return undefined;
+  },
+  async createManyNotifications() {
+    return undefined;
+  },
   async findNotifications() {
     return mockListResult;
   },
