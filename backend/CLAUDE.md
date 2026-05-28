@@ -159,3 +159,22 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 
 작업 중 문서에 빠진 규칙·패턴을 발견하면:
 → [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)에 기록한다.
+
+---
+
+## 하네스: Backend
+
+**목표:** 백엔드 작업을 설계→구현→QA 3단계로 체계적으로 수행하여 하네스 규칙 준수를 보장한다.
+
+**트리거:**
+- 기능 구현·추가·수정 요청 → `be-orchestrate` 스킬 (API 동기화 + 설계 + QA 전체 워크플로우)
+- Notion API 명세 동기화만 필요 → `be-api-sync` 스킬
+- 설계만 필요 → `be-design` 스킬 (독립 실행 가능)
+- QA·검증만 필요 → `be-qa` 스킬 (독립 실행 가능)
+- 단순 질문·코드 설명 → 직접 응답
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-05-28 | v1.0 초기 구성: be-orchestrator, be-designer, be-qa + 스킬 3개 | 전체 | 백엔드 전용 에이전트 팀 하네스 구축 |
+| 2026-05-28 | v1.1 be-api-sync 추가, Notion MCP 통합, docs/backend 규칙 반영 | 전체 | Notion API 명세 기반 워크플로우 고도화 |

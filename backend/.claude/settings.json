@@ -7,20 +7,32 @@
       "Bash(pnpm run format:check)",
       "Bash(pnpm run build)",
       "Bash(sh ./scripts/verify.sh)",
+
       "Bash(pnpm run prisma:generate)",
       "Bash(pnpm run prisma:validate)",
       "Bash(pnpm run prisma:format)",
-      "Bash(pnpm run prisma:migrate:dev)",
+      "Bash(pnpm run prisma:migrate:dev*)",
       "Bash(pnpm run prisma:seed)",
       "Bash(pnpm run prisma:studio)",
+
       "Bash(git status)",
       "Bash(git log*)",
       "Bash(git diff*)",
       "Bash(git branch*)",
       "Bash(git add *)",
-      "Bash(git commit -m*)"
+      "Bash(git commit -m*)",
+      "Bash(git push -u origin*)",
+
+      "Bash(gh pr*)",
+
+      "mcp__claude_ai_Notion__notion-search",
+      "mcp__claude_ai_Notion__notion-fetch"
     ],
-    "deny": []
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)"
+    ]
   },
   "hooks": {
     "Stop": [
@@ -41,6 +53,44 @@
           {
             "type": "command",
             "command": "node -e \"const i = process.env.CLAUDE_TOOL_INPUT || ''; const danger = /rm\\s+-rf|git\\s+push\\s+--force|git\\s+reset\\s+--hard|DROP\\s+TABLE/i; if (danger.test(i)) { process.stderr.write('BLOCKED: 위험한 명령어가 감지되었습니다.\\n'); process.exit(2); }\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/pre-design-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/pre-design-guard.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/post-impl-reminder.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/post-impl-reminder.js"
           }
         ]
       }

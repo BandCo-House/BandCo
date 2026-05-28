@@ -41,6 +41,20 @@ git diff --name-only HEAD
 - [ ] 주석이 있다면 한국어로 작성했는가?
 - [ ] 중요 함수에 JSDoc 스타일 주석을 작성했는가?
 
+### DTO 및 타입
+- [ ] 요청 DTO에 class-validator 데코레이터가 있는가? (`@IsString()`, `@IsNotEmpty()` 등)
+- [ ] Service 내부 반환 타입이 `types/{name}.type.ts`에 정의되었는가? (DTO에 넣지 않음)
+- [ ] 복잡한 로직 검증 (`from > to` 같은 비교)은 DTO가 아닌 Service에서 처리하는가?
+
+### Soft Delete
+- [ ] `Band`, `User`, `BandSpace` 등 `deletedAt`이 있는 모델을 조회할 때 `where: { deletedAt: null }` 조건이 포함되었는가?
+- [ ] 신규 모델에 불필요하게 `deletedAt`이 추가되지 않았는가?
+
+### Prisma 및 파일 구조
+- [ ] Prisma import가 `src/generated/prisma`를 사용하는가?
+- [ ] Repository가 인터페이스(`*.repository.ts`)와 구현체(`*.prisma-repository.ts`)로 분리되었는가?
+- [ ] 타입 파일이 `<name>.type.ts` 형식인가?
+
 ### 빌드 & 린트
 ```bash
 pnpm run lint
@@ -60,6 +74,10 @@ pnpm run test
 | 테스트 존재 | ✅/❌ | |
 | 테스트 커버리지 (예외 + tx) | ✅/❌ | |
 | 주석 규칙 | ✅/❌ | |
+| DTO class-validator 데코레이터 | ✅/❌ | |
+| 반환 타입 types/*.type.ts 위치 | ✅/❌ | |
+| soft-delete deletedAt:null 조건 | ✅/❌ | |
+| Prisma import 경로 | ✅/❌ | |
 | lint | ✅/❌ | |
 | build | ✅/❌ | |
 | test | ✅/❌ | |
