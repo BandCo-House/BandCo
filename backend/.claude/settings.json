@@ -29,6 +29,8 @@
       "mcp__claude_ai_Notion__notion-fetch"
     ],
     "deny": [
+      "Bash(rm -rf*)",
+      "Bash(rm -fr*)",
       "Bash(git push --force*)",
       "Bash(git reset --hard*)",
       "Bash(git clean -f*)"
@@ -52,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"const i = process.env.CLAUDE_TOOL_INPUT || ''; const danger = /rm\\s+-rf|git\\s+push\\s+--force|git\\s+reset\\s+--hard|DROP\\s+TABLE/i; if (danger.test(i)) { process.stderr.write('BLOCKED: 위험한 명령어가 감지되었습니다.\\n'); process.exit(2); }\""
+            "command": "node -e \"const i = process.env.CLAUDE_TOOL_INPUT || ''; if (/DROP\\s+TABLE/i.test(i)) { process.stderr.write('BLOCKED: 위험한 명령어가 감지되었습니다.\\n'); process.exit(2); }\""
           }
         ]
       },
