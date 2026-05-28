@@ -13,7 +13,7 @@ export function BottomNavBar({ items = NAV_ITEMS }: BottomNavBarProps) {
     <nav
       aria-label="하단 네비게이션"
       className={cn(
-        'fixed bottom-0 z-50 w-full max-w-[648px] bg-gradient-top/60 drop-shadow-2xl',
+        'fixed bottom-0 z-40 w-full max-w-[648px] bg-gradient-top/60 drop-shadow-2xl',
         'backdrop-blur-sm',
       )}
       style={{
