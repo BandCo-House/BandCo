@@ -11,8 +11,6 @@
 
 **단일 진실 공급원:** `prisma/schema.prisma`
 
-모듈 doc의 스키마 발췌는 참고용이다. 실제 파일이 항상 우선한다.
-
 ---
 
 ## 행동 원칙
@@ -87,41 +85,22 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 
 ## Backend 모듈 작업 시 읽을 파일
 
-**작업 시작 전 해당 모듈 doc 하나만 읽는다. 그게 전부다.**
-
-| 모듈          | 문서                                                                           |
-| ------------- | ------------------------------------------------------------------------------ |
-| auth          | [docs/backend/modules/auth.md](docs/backend/modules/auth.md)                   |
-| users         | [docs/backend/modules/users.md](docs/backend/modules/users.md)                 |
-| bands         | [docs/backend/modules/bands.md](docs/backend/modules/bands.md)                 |
-| spaces        | [docs/backend/modules/spaces.md](docs/backend/modules/spaces.md)               |
-| songs         | [docs/backend/modules/songs.md](docs/backend/modules/songs.md)                 |
-| notifications | [docs/backend/modules/notifications.md](docs/backend/modules/notifications.md) |
-| skills        | [docs/backend/modules/skills.md](docs/backend/modules/skills.md)               |
-
-필요할 때만 추가로 읽는다:
-
-- 테스트 패턴이 헷갈릴 때: [docs/backend/testing.md](docs/backend/testing.md)
-- 코딩 컨벤션이 헷갈릴 때: [docs/backend/conventions.md](docs/backend/conventions.md)
-
 상황별 참고 문서:
 
-- 특정 도메인 모듈을 구현·수정·리뷰할 때: 위 표의 [docs/backend/modules/](docs/backend/modules/) 문서 중 해당 모듈 문서
-- 새 도메인 모듈을 추가할 때: [docs/backend/conventions.md](docs/backend/conventions.md), [docs/backend/testing.md](docs/backend/testing.md), `prisma/schema.prisma`, 가장 유사한 기존 모듈 문서를 먼저 읽고 [docs/backend/modules/](docs/backend/modules/)에 새 모듈 설계 문서를 작성한다.
-- API 엔드포인트, 요청/응답 DTO, 응답 예시, 명세를 작성·수정할 때: [docs/backend/api-docs/](docs/backend/api-docs/)
+- API 명세 확인: [docs/backend/api-docs/](docs/backend/api-docs/)
 - 테스트를 작성·수정하거나 테스트 실패를 분석할 때: [docs/backend/testing.md](docs/backend/testing.md)
 - 레이어 책임, 네이밍, 응답 형식 등 구현 컨벤션을 확인할 때: [docs/backend/conventions.md](docs/backend/conventions.md)
 - Git, 커밋, PR 흐름을 확인할 때: [docs/git.md](docs/git.md)
 - 하네스 규칙에 빠진 내용이나 개선점을 발견했을 때: [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)
 
-새 모듈 설계 문서는 기존 `docs/backend/modules/*.md` 형식을 참고해 최소한 다음을 포함한다:
+새 모듈 설계 문서는 `_workspace/design.md`에 작성하며 최소한 다음을 포함한다:
 
 - 모듈 경로와 파일 목록
 - Repository 인터페이스
 - Service 비즈니스 규칙
-- 관련 DB 모델 또는 `prisma/schema.prisma` 기준 링크
-- 테스트 Stub 또는 핵심 테스트 케이스
-- API가 있으면 [docs/backend/api-docs/](docs/backend/api-docs/)의 명세 위치
+- 관련 DB 모델 (`prisma/schema.prisma` 기준)
+- 테스트 계획
+- API 명세 위치 ([docs/backend/api-docs/](docs/backend/api-docs/))
 
 ---
 
