@@ -36,6 +36,11 @@ Agent({
 
 이미 `docs/backend/api-docs/{module}.md`가 존재하고 사용자가 갱신을 요청하지 않았으면 이 Phase를 건너뛴다.
 
+**Gap 리포트 처리:**
+be-api-sync가 보완 필요 항목을 보고하면 사용자에게 제시하고 진행 방식을 확인한다:
+- "사용자 확인 필요" 항목이 있으면 → 사용자가 Notion을 업데이트하거나 직접 내용을 제공할 때까지 대기
+- "자동 보완 가능" 항목만 있으면 → 설계 단계에서 자동 보완 진행을 알리고 Phase 2로 이동
+
 ## Phase 2: 설계 (be-designer 서브 에이전트)
 
 `be-designer` 서브 에이전트를 실행한다. 실행 전 `.claude/agents/be-designer.md`를 읽는다.

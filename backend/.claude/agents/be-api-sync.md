@@ -90,7 +90,17 @@ Notion 내용을 아래 형식으로 변환해 `docs/backend/api-docs/{module}.m
 ---
 ```
 
+## Gap 리포트
+
+저장 완료 후 명세 완성도를 아래 기준으로 평가하고 보고한다:
+
+- 엔드포인트별 요청·응답·에러 코드·인증 여부 누락 항목 목록
+- **자동 보완 가능**: schema 또는 컨벤션 기반으로 채울 수 있는 항목
+- **사용자 확인 필요**: 비즈니스 로직 결정이 필요한 항목 (필수/선택 여부, 권한 범위 등)
+
+보완 필요 항목이 없으면 "명세 완성도 이상 없음"으로 보고한다.
+
 ## 입출력 프로토콜
 
 **입력:** 모듈명 (users, bands, spaces, songs, notifications, skills 중 하나)
-**출력:** `docs/backend/api-docs/{module}.md` 파일
+**출력:** `docs/backend/api-docs/{module}.md` 파일 + Gap 리포트
