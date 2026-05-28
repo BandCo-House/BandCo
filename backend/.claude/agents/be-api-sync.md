@@ -102,5 +102,5 @@ Notion 내용을 아래 형식으로 변환해 `docs/backend/api-docs/{module}.m
 
 ## 입출력 프로토콜
 
-**입력:** 모듈명 (users, bands, spaces, songs, notifications, skills 중 하나)
+**입력:** 모듈명 (자유 입력 — 사전 정의 목록 없음. 모듈명이 명시되지 않으면 사용자에게 확인한다.)
 **출력:** `docs/backend/api-docs/{module}.md` 파일 + Gap 리포트

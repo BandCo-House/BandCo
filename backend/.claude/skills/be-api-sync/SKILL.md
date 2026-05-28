@@ -11,7 +11,7 @@ Notion의 API 명세를 `docs/backend/api-docs/{module}.md`로 가져온다. 분
 
 어떤 모듈의 API 명세를 가져올지 확인한다. 모듈명이 명시되지 않았으면 사용자에게 확인한다.
 
-모듈 목록: `auth`, `users`, `bands`, `spaces`, `songs`, `notifications`, `skills`
+모듈명은 자유 입력이다. 사전에 정의된 목록에 없어도 요청한 이름 그대로 사용한다.
 
 ## Step 2: Notion 페이지 검색
 
