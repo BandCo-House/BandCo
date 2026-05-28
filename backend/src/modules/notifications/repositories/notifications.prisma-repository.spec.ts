@@ -77,7 +77,6 @@ describe('NotificationsPrismaRepository', () => {
         order__id: 'desc',
         take: 20,
         cursor__id: 'noti-001',
-        cursor__created_at: '2026-01-01T00:00:00.000Z',
       });
 
       expect(mockPrisma.notification.findMany).toHaveBeenCalledWith(expect.objectContaining({ cursor: { id: 'noti-001' }, skip: 1 }));
