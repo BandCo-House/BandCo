@@ -3,21 +3,25 @@ import { Home, Search, Music2, User } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import type { ComponentType } from 'react';
 
-type NavItem = {
+export type NavItem = {
   key: string;
   label: string;
   to: string;
   icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 };
 
-const NAV_ITEMS: NavItem[] = [
+export const NAV_ITEMS: NavItem[] = [
   { key: 'home', label: '홈', to: '/', icon: Home },
   { key: 'search', label: '검색', to: '/search', icon: Search },
   { key: 'my-bands', label: '내 밴드', to: '/my-bands', icon: Music2 },
   { key: 'my', label: '마이', to: '/profile', icon: User },
 ];
 
-export function BottomNavBar() {
+type BottomNavBarProps = {
+  items?: NavItem[];
+};
+
+export function BottomNavBar({ items = NAV_ITEMS }: BottomNavBarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -35,7 +39,7 @@ export function BottomNavBar() {
       }}
     >
       <ul className="flex h-16 items-center justify-around px-2">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive = pathname === item.to;
           const Icon = item.icon;
 
