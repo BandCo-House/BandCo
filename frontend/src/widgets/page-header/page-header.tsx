@@ -31,26 +31,21 @@ export const PageHeader = ({
   heightVariant = 'lg',
   renderRight,
 }: PageHeaderProps) => {
-  
   const renderTitleArea = () => {
     if (!title) return null;
 
     // Case 1: 타이틀이 함수(컴포넌트 렌더러)인 경우 -> 기본 h1 스타일 무시하고 통째로 렌더링
     if (typeof title === 'function') {
-      return <div className="flex-1 min-w-0">{title()}</div>;
+      return <div className="min-w-0 flex-1">{title()}</div>;
     }
 
     // Case 2: 타이틀이 일반 텍스트(string)인 경우
     const titleClass = cn(
-      "min-w-0 truncate text-foreground",
-      titleSize === 'md' ? 'typo-lg-sb' : 'typo-xl-sb sm:typo-2xl-b'
+      'min-w-0 truncate text-grey-50',
+      titleSize === 'md' ? 'typo-lg-sb' : 'typo-xl-sb',
     );
 
-    return (
-      <h1 className={titleClass}>
-        {title}
-      </h1>
-    );
+    return <h1 className={titleClass}>{title}</h1>;
   };
 
   return (
@@ -62,10 +57,10 @@ export const PageHeader = ({
         backgroundAttachment: 'fixed',
       }}
     >
-      <div 
+      <div
         className={cn(
-          "mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 transition-all duration-200",
-          HEIGHT_CLASSES[heightVariant]
+          'mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 transition-all duration-200',
+          HEIGHT_CLASSES[heightVariant],
         )}
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -87,7 +82,7 @@ export const PageHeader = ({
           {renderTitleArea()}
         </div>
 
-        {(renderRight || rightContent) ? (
+        {renderRight || rightContent ? (
           <div className="flex min-w-0 items-center justify-end gap-2">
             {renderRight ? renderRight() : rightContent}
           </div>

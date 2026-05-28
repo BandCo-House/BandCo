@@ -39,8 +39,9 @@ describe('PageHeader', () => {
       'mx-auto',
       'w-full',
       'max-w-7xl',
-      'px-6',
+      'px-5',
     );
+
   });
 
   it('타이틀은 기본 상태에서도 모바일에서 보여야 한다', () => {

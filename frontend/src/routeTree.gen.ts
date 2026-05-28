@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './pages/signup'
 import { Route as SearchRouteImport } from './pages/search'
 import { Route as ProfileRouteImport } from './pages/profile'
 import { Route as OnboardingRouteImport } from './pages/onboarding'
+import { Route as NotificationsRouteImport } from './pages/notifications'
 import { Route as MyBandsRouteImport } from './pages/my-bands'
 import { Route as LoginRouteImport } from './pages/login'
 import { Route as ForgotPasswordRouteImport } from './pages/forgot-password'
@@ -46,6 +47,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyBandsRoute = MyBandsRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-bands': typeof MyBandsRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-bands': typeof MyBandsRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-bands': typeof MyBandsRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/my-bands'
+    | '/notifications'
     | '/onboarding'
     | '/profile'
     | '/search'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/my-bands'
+    | '/notifications'
     | '/onboarding'
     | '/profile'
     | '/search'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/my-bands'
+    | '/notifications'
     | '/onboarding'
     | '/profile'
     | '/search'
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   MyBandsRoute: typeof MyBandsRoute
+  NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
@@ -284,6 +297,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-bands': {
@@ -427,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MyBandsRoute: MyBandsRoute,
+  NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
