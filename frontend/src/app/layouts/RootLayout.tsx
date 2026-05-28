@@ -1,4 +1,10 @@
-import { Link, Outlet, useMatches, useRouter, useRouterState } from '@tanstack/react-router';
+import {
+  Link,
+  Outlet,
+  useMatches,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import {
@@ -122,7 +128,7 @@ export const RootLayout = () => {
     : null;
 
   return (
-    <div className="mx-auto flex h-dvh min-h-0 max-w-[648px] flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-[648px] flex-col">
       {pageHeaderProps ? (
         <PageHeader {...pageHeaderProps} onBack={onBack} />
       ) : null}
@@ -130,7 +136,7 @@ export const RootLayout = () => {
         className={cn(
           'mx-auto min-h-0 w-full flex-1',
           pageHeaderProps ? undefined : 'min-h-screen',
-          showBottomNav && 'pb-16',
+          showBottomNav && 'mb-16',
         )}
       >
         <div className="mx-auto w-full max-w-7xl px-5 py-8">

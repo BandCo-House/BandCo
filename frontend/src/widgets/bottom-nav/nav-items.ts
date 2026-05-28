@@ -1,4 +1,4 @@
-import { Home, Search, Music2, User } from 'lucide-react';
+import { Home, Search, TargetIcon, User } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 export type NavItem = {
@@ -11,6 +11,6 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { key: 'home', label: '홈', to: '/', icon: Home },
   { key: 'search', label: '검색', to: '/search', icon: Search },
-  { key: 'my-bands', label: '내 밴드', to: '/my-bands', icon: Music2 },
+  { key: 'my-bands', label: '내 밴드', to: '/my-bands', icon: TargetIcon },
   { key: 'my', label: '마이', to: '/profile', icon: User },
 ];
