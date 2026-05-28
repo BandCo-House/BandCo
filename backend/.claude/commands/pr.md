@@ -11,7 +11,16 @@ git log dev..HEAD --oneline
 - `main` 또는 `dev` 브랜치이면 중단
 - 미커밋 변경사항이 있으면 `/commit` 먼저 실행
 
-## 2. 정보 수집
+## 2. verify.sh 통과 확인
+
+```bash
+sh ./scripts/verify.sh
+```
+
+lint → format:check → build → test 전체를 통과해야 PR 생성을 진행한다.
+**실패 시 PR 생성을 중단하고 에러를 수정한 뒤 다시 시작한다.**
+
+## 3. 정보 수집
 
 **Jira ID** — 브랜치명에서 자동 추출 (`[A-Z]+-[0-9]+` 패턴)
 예: `feat/KAN-42-band-invite` → `KAN-42`
@@ -32,7 +41,7 @@ git log dev..HEAD --oneline
 
 Backend 작업이면 `BE`도 추가, Frontend 작업이면 `FE` 추가.
 
-## 3. PR 본문 작성
+## 4. PR 본문 작성
 
 `../.github/pull_request_template.md`를 읽어 각 섹션을 채운다.
 
@@ -50,7 +59,7 @@ cat ../.github/pull_request_template.md
 - **참고 문서**: 관련 외부 문서 링크 (없으면 생략)
 - **리뷰 요구사항**: 리뷰어가 집중해야 할 부분 (없으면 생략)
 
-## 4. 사용자 확인
+## 5. 사용자 확인
 
 push와 PR 생성 전에 아래 내용을 출력하고 **반드시 사용자 확인을 받는다**:
 
@@ -62,7 +71,7 @@ PR 제목: [{JIRA_ID}] {제목}
 {본문}
 ```
 
-## 5. Push & PR 생성
+## 6. Push & PR 생성
 
 사용자 승인 후 실행:
 
@@ -83,6 +92,6 @@ EOF
 )"
 ```
 
-## 6. 완료 출력
+## 7. 완료 출력
 
 PR URL과 제목을 출력한다.
