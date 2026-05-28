@@ -12,5 +12,5 @@ export const Route = createFileRoute('/')({
 
 // 홈 라우트 전용 화면
 function MyBandsRoutePage() {
-  return <div data-testid="my-bands-page">홈 화면 구현 예정</div>;
+  return <div data-testid="home-page">홈 화면 구현 예정</div>;
 }

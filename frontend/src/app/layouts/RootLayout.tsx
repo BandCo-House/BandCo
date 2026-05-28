@@ -22,7 +22,9 @@ export const RootLayout = () => {
   const matches = useMatches();
   const activeMatch = matches.at(-1);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showBottomNav = !HIDDEN_NAV_PATHS.some((p) => pathname.startsWith(p));
+  const showBottomNav = !HIDDEN_NAV_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
   const currentParams = (activeMatch?.params ?? {}) as Record<string, string>;
 
   const header = resolveHeader(
@@ -142,6 +144,7 @@ export const RootLayout = () => {
       {pageHeaderProps ? (
         <PageHeader {...pageHeaderProps} onBack={onBack} />
       ) : null}
+
       <main
         className={cn(
           'mx-auto min-h-0 w-full flex-1',

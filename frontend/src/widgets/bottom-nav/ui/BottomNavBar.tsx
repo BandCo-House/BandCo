@@ -23,7 +23,10 @@ export function BottomNavBar({ items = NAV_ITEMS }: BottomNavBarProps) {
     >
       <ul className="flex h-18 items-center justify-around px-2">
         {items.map((item) => {
-          const isActive = pathname === item.to;
+          const isActive =
+            item.to === '/'
+              ? pathname === '/'
+              : pathname === item.to || pathname.startsWith(`${item.to}/`);
           const Icon = item.icon;
 
           return (

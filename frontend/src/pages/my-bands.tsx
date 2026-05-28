@@ -23,7 +23,7 @@ function MyBandsHeaderActions() {
       <Link
         to="/profile"
         className="rounded-full transition-colors"
-        aria-label="설정"
+        aria-label="마이 페이지"
       >
         <Plus className="size-6" />
       </Link>
