@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { BottomNavBar, type NavItem } from './BottomNavBar';
+import { BottomNavBar } from './BottomNavBar';
+import type { NavItem } from '../nav-items';
 
 vi.mock('@tanstack/react-router', () => ({
   useRouterState: vi.fn(),
