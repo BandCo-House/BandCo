@@ -122,10 +122,20 @@ export const RootLayout = () => {
   const pageHeaderProps = header
     ? {
         title: header.title ?? '',
+        titleSize: header.titleSize,
         showBack: header.showBack,
         rightContent,
+        heightVariant: header.heightVariant,
+        renderRight: header.renderRight,
       }
     : null;
+
+  const HEIGHT_MARGIN_CLASSES = {
+    xs: 'mt-9',
+    sm: 'mt-14',
+    md: 'mt-[60px]',
+    lg: 'mt-16',
+  };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-[648px] flex-col">
@@ -137,6 +147,7 @@ export const RootLayout = () => {
           'mx-auto min-h-0 w-full flex-1',
           pageHeaderProps ? undefined : 'min-h-screen',
           showBottomNav && 'mb-16',
+          pageHeaderProps && HEIGHT_MARGIN_CLASSES[header?.heightVariant || 'lg'],
         )}
       >
         <div className="mx-auto w-full max-w-7xl px-5 py-8">
