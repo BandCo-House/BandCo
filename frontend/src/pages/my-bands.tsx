@@ -5,24 +5,24 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 // 내 밴드 전용 우측 다중 아이콘 액션 버튼 컴포넌트
 function MyBandsHeaderActions() {
   return (
-    <div className="flex items-center gap-3 text-grey-100">
+    <div className="flex items-center gap-4.5 text-grey-100">
       <Link
         to="/search"
-        className="rounded-full p-1.5 transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
+        className="rounded-full transition-colors"
         aria-label="검색"
       >
         <Search className="size-6" />
       </Link>
       <Link
         to="/notifications"
-        className="relative rounded-full p-1.5 transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
+        className="relative rounded-full transition-colors"
         aria-label="알림"
       >
         <Bell className="size-6" />
       </Link>
       <Link
         to="/profile"
-        className="rounded-full p-1.5 transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
+        className="rounded-full transition-colors"
         aria-label="설정"
       >
         <Plus className="size-6" />
