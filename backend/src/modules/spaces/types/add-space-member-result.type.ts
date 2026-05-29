@@ -3,6 +3,7 @@ import type { BandSpaceMemberRole, BandSpaceMemberStatus } from '../../../genera
 export interface AddSpaceMemberResult {
   memberId: string;
   spaceId: string;
+  userId: string;
   bandMemberId: string;
   role: BandSpaceMemberRole;
   status: BandSpaceMemberStatus;
