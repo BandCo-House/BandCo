@@ -1,14 +1,16 @@
 import { Button } from '@/shared/ui/button';
 import {
+  AppDialogBody,
+  AppDialogClose,
+  AppDialogContent,
+  AppDialogFooter,
+  AppDialogHeader,
   Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { useInviteAccept } from '@/features/invite-accept/model/useInviteAccept';
-import { GlowBlob } from '@/shared/ui/glow-blob';
+import { cn } from '@/shared/lib/utils';
 
 type InviteCodeDialogProps = {
   open: boolean;
@@ -25,33 +27,38 @@ export const InviteCodeDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="overflow-hidden border border-white/20 bg-white/24"
-        style={{ boxShadow: '0px 3px 6px 2px rgba(255,255,255,0.16)' }}
-      >
-        <DialogHeader>
-          <DialogTitle>초대코드 입력</DialogTitle>
-        </DialogHeader>
-        <GlowBlob />
-        <label htmlFor="invite-code" className="flex flex-col gap-3">
-          <div className="flex items-center gap-1">
-            <span className="typo-lg-sb">초대코드</span>
-            <div className="h-1 w-1 rounded-full bg-destructive"></div>
-          </div>
-          <Input
-            id="invite-code"
-            variant="underline"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="초대 코드를 입력하세요"
-            className={`${code.length > 0 ? 'border-key' : ''}`}
-          />
-        </label>
+      <AppDialogContent>
+        <AppDialogClose />
+        <AppDialogHeader>
+          <DialogTitle className="text-2xl text-grey-100">
+            초대코드 입력
+          </DialogTitle>
+        </AppDialogHeader>
+        <AppDialogBody>
+          <label htmlFor="invite-code" className="flex flex-col gap-3">
+            <div className="flex items-center gap-1">
+              <span className="typo-lg-sb">초대코드</span>
+              <div className="h-1 w-1 rounded-full bg-destructive"></div>
+            </div>
+            <Input
+              id="invite-code"
+              variant="underline"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="초대 코드를 입력하세요"
+              className="border-grey-200/80 placeholder:text-grey-200 hover:border-grey-100 focus-visible:border-grey-100"
+            />
+          </label>
+        </AppDialogBody>
 
-        <DialogFooter>
+        <AppDialogFooter>
           <Button
             type="button"
-            className={`${isDisabled ? 'border border-white' : ''}`}
+            size="lg"
+            className={cn(
+              'w-fit text-base',
+              isDisabled && 'border border-white bg-white/60',
+            )}
             variant={'shining'}
             disabled={isDisabled}
             isLoading={isLoading}
@@ -60,8 +67,8 @@ export const InviteCodeDialog = ({
           >
             확인
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </AppDialogFooter>
+      </AppDialogContent>
     </Dialog>
   );
 };
