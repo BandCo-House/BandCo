@@ -26,11 +26,21 @@ export type UpdateProfileRequest = {
  */
 export const updateUserProfile = (
   userId: string,
-  data: UpdateProfileRequest,
+  data: UpdateProfileRequest | FormData,
 ): Promise<Profile> => {
   const normalizedUserId = userId.trim();
   if (!normalizedUserId) {
     return Promise.reject(new Error('userId is required'));
   }
-  return apiPatch<Profile>(`/users/${encodeURIComponent(normalizedUserId)}/profiles`, data);
+  return apiPatch<Profile>(
+    `/users/${encodeURIComponent(normalizedUserId)}/profiles`,
+    data,
+    data instanceof FormData
+      ? {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      : undefined,
+  );
 };

@@ -99,7 +99,32 @@ export const profileHandlers = [
     `${API_URL}/users/:userId/profiles`,
     async ({ params, request }) => {
       const { userId } = params as { userId: string };
-      const body = (await request.json()) as UpdateProfileRequest;
+      let body: UpdateProfileRequest;
+      const contentType = request.headers.get('content-type') ?? '';
+
+      if (contentType.includes('multipart/form-data')) {
+        const formData = await request.formData();
+        const profileValue = formData.get('profile');
+        const parsedProfile =
+          typeof profileValue === 'string'
+            ? JSON.parse(profileValue)
+            : profileValue instanceof Blob
+              ? JSON.parse(await profileValue.text())
+              : {};
+        const avatar = formData.get('avatar');
+
+        body = {
+          profile: {
+            ...parsedProfile,
+            avatarUrl:
+              avatar instanceof File
+                ? URL.createObjectURL(avatar)
+                : parsedProfile.avatarUrl,
+          },
+        };
+      } else {
+        body = (await request.json()) as UpdateProfileRequest;
+      }
 
       if (!mockProfiles[userId]) {
         mockProfiles[userId] = {

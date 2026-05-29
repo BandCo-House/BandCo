@@ -13,6 +13,8 @@ import { GenreEditSection } from '@/features/profile-update/ui/GenreEditSection'
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
+import { compressProfileImage } from '@/features/profile-update/model/image-compression';
+import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
 
 // UI Imports
 
@@ -62,7 +64,7 @@ function ProfileRoutePage() {
 
   const loggedInUserId = auth.user.isLoggedIn ? auth.user.id : null;
   const targetUserId =
-    search.userId !== undefined ? search.userId : (loggedInUserId || '');
+    search.userId !== undefined ? search.userId : loggedInUserId || '';
   const isMe = !!loggedInUserId && targetUserId === loggedInUserId;
 
   const queryClient = useQueryClient();
@@ -81,11 +83,15 @@ function ProfileRoutePage() {
     nickname: string;
     selfDescription: string;
     profileMusicUrl: string;
+    avatarUrl: string;
   }>({
     nickname: '',
     selfDescription: '',
     profileMusicUrl: '',
+    avatarUrl: '',
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isMusicSearchOpen, setIsMusicSearchOpen] = useState(false);
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -120,20 +126,37 @@ function ProfileRoutePage() {
     const validatedData = result.data;
 
     try {
-      await updateUserProfile(targetUserId, {
-        profile: {
-          nickname: validatedData.nickname,
-          selfDescription: validatedData.selfDescription || null,
-          profileMusicUrl: validatedData.profileMusicUrl || null,
-        },
-      });
+      const profilePayload = {
+        nickname: validatedData.nickname,
+        selfDescription: validatedData.selfDescription || null,
+        profileMusicUrl: validatedData.profileMusicUrl || null,
+        avatarUrl: validatedData.avatarUrl || null,
+      };
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append(
+          'profile',
+          new Blob([JSON.stringify(profilePayload)], {
+            type: 'application/json',
+          }),
+        );
+        formData.append('avatar', avatarFile);
+        await updateUserProfile(targetUserId, formData);
+      } else {
+        await updateUserProfile(targetUserId, {
+          profile: profilePayload,
+        });
+      }
 
       queryClient.invalidateQueries({
         queryKey: ['user-profiles', 'detail', targetUserId],
       });
       setIsEditing(false);
+      setAvatarFile(null);
       toast.success('프로필 정보가 저장되었습니다.');
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error('정보 수정 도중 에러가 발생했습니다.');
     }
   };
@@ -201,17 +224,35 @@ function ProfileRoutePage() {
                 nickname: profile.profile?.nickname || '',
                 selfDescription: profile.profile?.selfDescription || '',
                 profileMusicUrl: profile.profile?.profileMusicUrl || '',
+                avatarUrl: profile.profile?.avatarUrl || '',
               });
+              setAvatarFile(null);
             } else {
               setEditForm({
                 nickname: profile.profile?.nickname || '',
                 selfDescription: profile.profile?.selfDescription || '',
                 profileMusicUrl: profile.profile?.profileMusicUrl || '',
+                avatarUrl: profile.profile?.avatarUrl || '',
               });
               setIsEditing(true);
             }
           }}
           onSave={handleSave}
+          onAvatarFileSelect={(file) => {
+            void compressProfileImage(file)
+              .then(({ file: compressedFile, previewUrl }) => {
+                setAvatarFile(compressedFile);
+                setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
+              })
+              .catch((error) => {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : '이미지 처리 도중 에러가 발생했습니다.',
+                );
+              });
+          }}
+          onOpenMusicSearch={() => setIsMusicSearchOpen(true)}
         />
         <div className="bg-gradient-top pb-6">
           <div className="flex flex-col gap-2 px-5">
@@ -244,6 +285,16 @@ function ProfileRoutePage() {
             isLoggedIn={auth.user.isLoggedIn}
           />
         )}
+        <ProfileMusicSearchDialog
+          open={isMusicSearchOpen}
+          onOpenChange={setIsMusicSearchOpen}
+          onSelect={(song) => {
+            setEditForm((prev) => ({
+              ...prev,
+              profileMusicUrl: song.previewUrl || song.sourceUrl,
+            }));
+          }}
+        />
       </div>
     </div>
   );

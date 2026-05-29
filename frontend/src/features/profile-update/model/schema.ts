@@ -8,4 +8,5 @@ export const profileEditSchema = z.object({
     .max(255, '닉네임은 최대 255자 이내여야 합니다.'),
   selfDescription: z.string().nullable().or(z.literal('')),
   profileMusicUrl: z.string().nullable().or(z.literal('')),
+  avatarUrl: z.string().nullable().or(z.literal('')),
 });
