@@ -58,6 +58,9 @@
   --color-key-foreground: var(--key-foreground);
   --color-key-surface: var(--key-surface);
   --color-key-muted: var(--key-muted);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-grey-50: var(--greyScale-50);
   --color-grey-100: var(--greyScale-100);
   --color-grey-200: var(--greyScale-200);
@@ -99,6 +102,21 @@
   .motion-lift:hover,
   .motion-lift:focus-visible {
     transform: translateY(-4px);
+  }
+}
+
+@keyframes button-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.03);
+  }
+  75% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
