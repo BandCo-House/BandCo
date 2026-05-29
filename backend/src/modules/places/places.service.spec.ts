@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
 import { BandMemberRole } from 'src/generated/prisma';
 
@@ -126,6 +126,47 @@ function createPlacesRepositoryStub(options?: {
 }
 
 describe('PlacesService', () => {
+  describe('getBandPlaces', () => {
+    const baseQuery: GetBandPlacesQuery = {
+      order__created_at: 'DESC',
+      order__id: 'DESC',
+      take: 20,
+    };
+
+    it('장소 목록을 성공적으로 조회한다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+      const result = await service.getBandPlaces(USER_ID, BAND_ID, baseQuery);
+
+      expect(result.bandId).toBe(BAND_ID);
+    });
+
+    it('밴드가 없으면 NotFoundException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ band: null }), createPrismaServiceStub());
+
+      await expect(service.getBandPlaces(USER_ID, BAND_ID, baseQuery)).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ member: null }), createPrismaServiceStub());
+
+      await expect(service.getBandPlaces(USER_ID, BAND_ID, baseQuery)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('cursor__created_at만 있고 cursor__id가 없으면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+      const query = { ...baseQuery, cursor__created_at: '2026-01-01T00:00:00.000Z' };
+
+      await expect(service.getBandPlaces(USER_ID, BAND_ID, query)).rejects.toThrow(BadRequestException);
+    });
+
+    it('order__created_at과 order__id 방향이 다르면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+      const query = { ...baseQuery, order__created_at: 'DESC' as const, order__id: 'ASC' as const };
+
+      await expect(service.getBandPlaces(USER_ID, BAND_ID, query)).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('createPlace', () => {
     it('장소를 성공적으로 생성한다', async () => {
       const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());

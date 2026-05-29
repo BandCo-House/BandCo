@@ -1,11 +1,13 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
 import { type Prisma } from '../../generated/prisma';
 
 import type { CreatePlaceInput } from './dto/create-place.dto';
+import type { GetBandPlacesQuery } from './dto/get-band-places-query.dto';
 import { PLACES_REPOSITORY, type PlacesRepository } from './repositories/places.repository';
 import type { CreatePlaceResult } from './types/create-place-result.type';
+import type { GetBandPlacesResult } from './types/place-list.type';
 
 @Injectable()
 export class PlacesService {
@@ -46,5 +48,48 @@ export class PlacesService {
     }
 
     return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 멤버만 해당 밴드의 장소 목록을 조회할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {GetBandPlacesQuery} query - 커서 기반 목록 조회 조건
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandPlacesResult>} 장소 목록
+   */
+  async getBandPlaces(userId: string, bandId: string, query: GetBandPlacesQuery, tx?: Prisma.TransactionClient): Promise<GetBandPlacesResult> {
+    const band = await this.placesRepository.findActiveBandById(bandId, tx);
+
+    if (band === null) {
+      throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+    }
+
+    const member = await this.placesRepository.findBandMemberByBandIdAndUserId(bandId, userId, tx);
+
+    if (member === null) {
+      throw new ForbiddenException('밴드 멤버만 장소 목록을 조회할 수 있습니다.');
+    }
+
+    this.validateCursorPair(query);
+    this.validateOrderDirections(query);
+
+    return this.placesRepository.findBandPlaces(bandId, query, tx);
+  }
+
+  private validateCursorPair(query: GetBandPlacesQuery): void {
+    const hasCursorCreatedAt = query.cursor__created_at !== undefined;
+    const hasCursorId = query.cursor__id !== undefined;
+
+    if (hasCursorCreatedAt !== hasCursorId) {
+      throw new BadRequestException('커서 조회에는 cursor__created_at과 cursor__id가 함께 필요합니다.');
+    }
+  }
+
+  private validateOrderDirections(query: GetBandPlacesQuery): void {
+    if (query.order__created_at !== query.order__id) {
+      throw new BadRequestException('order__created_at과 order__id는 같은 방향이어야 합니다.');
+    }
   }
 }
