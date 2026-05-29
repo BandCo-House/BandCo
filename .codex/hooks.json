@@ -1,0 +1,67 @@
+{
+  "description": "JamPlay git-root Codex hooks. Delegates backend policy to backend/scripts/hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-session-start.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading JamPlay harness context"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-user-prompt-submit.js\"",
+            "timeout": 5,
+            "statusMessage": "Checking JamPlay prompt policy"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-pre-tool-use.js\"",
+            "timeout": 5,
+            "statusMessage": "Checking JamPlay tool policy"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-post-tool-use.js\"",
+            "timeout": 5,
+            "statusMessage": "Checking JamPlay follow-up context"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-stop-verify.js\"",
+            "timeout": 900,
+            "statusMessage": "Running JamPlay backend verification"
+          }
+        ]
+      }
+    ]
+  }
+}

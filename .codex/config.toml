@@ -1,0 +1,9 @@
+# JamPlay git-root Codex layer.
+# Loaded when Codex starts inside the jamplay repository.
+
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[features]
+hooks = true

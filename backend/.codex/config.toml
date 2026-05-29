@@ -1,0 +1,9 @@
+# JamPlay backend Codex layer.
+# This is loaded when Codex starts inside jamplay/backend or below.
+
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[features]
+hooks = true

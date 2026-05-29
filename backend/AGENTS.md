@@ -2,7 +2,7 @@
 
 ## 현재 작업 범위
 
-- **Backend** (활성): 이 CLAUDE.md가 기본 적용
+- **Backend** (활성): Codex는 이 `AGENTS.md`, Claude는 `CLAUDE.md`를 기본 적용
 - **Frontend** (예정): 추가 시 `docs/frontend/` 생성 후 이 파일에 섹션 추가
 
 ---
@@ -10,10 +10,6 @@
 ## DB 스키마
 
 **단일 진실 공급원:** `prisma/schema.prisma`
-
-모듈 doc의 스키마 발췌는 참고용이다. 실제 파일이 항상 우선한다.
-
----
 
 ## 행동 원칙
 
@@ -66,6 +62,17 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 
 ---
 
+## Codex 실행 정책
+
+- Codex는 이 파일을 프로젝트 규칙의 단일 기준으로 사용한다.
+- 명령 실행은 `workspace-write`와 `on-request` 승인 정책을 기준으로 한다.
+- 위험하거나 파괴적인 명령은 사용자가 명시적으로 요청하지 않으면 실행하지 않는다.
+- `prisma:migrate:deploy`, `git reset --hard`, `git clean -f`, force push는 직접 실행하지 않는다.
+- Codex에서 자동 차단이 가능한 내용은 `.codex/rules/default.rules`와 `scripts/hooks/codex-*.js`로 보강한다.
+- Claude의 `.claude/agents`와 `.claude/skills`는 직접 실행되지 않으므로 워크플로우 참고 자료로만 사용한다.
+
+---
+
 ## 하네스 강제 정책
 
 - 작업은 항상 현재 하네스 규칙을 기준으로 수행한다.
@@ -87,41 +94,26 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 
 ## Backend 모듈 작업 시 읽을 파일
 
-**작업 시작 전 해당 모듈 doc 하나만 읽는다. 그게 전부다.**
-
-| 모듈          | 문서                                                                           |
-| ------------- | ------------------------------------------------------------------------------ |
-| auth          | [docs/backend/modules/auth.md](docs/backend/modules/auth.md)                   |
-| users         | [docs/backend/modules/users.md](docs/backend/modules/users.md)                 |
-| bands         | [docs/backend/modules/bands.md](docs/backend/modules/bands.md)                 |
-| spaces        | [docs/backend/modules/spaces.md](docs/backend/modules/spaces.md)               |
-| songs         | [docs/backend/modules/songs.md](docs/backend/modules/songs.md)                 |
-| notifications | [docs/backend/modules/notifications.md](docs/backend/modules/notifications.md) |
-| skills        | [docs/backend/modules/skills.md](docs/backend/modules/skills.md)               |
-
-필요할 때만 추가로 읽는다:
-
-- 테스트 패턴이 헷갈릴 때: [docs/backend/testing.md](docs/backend/testing.md)
-- 코딩 컨벤션이 헷갈릴 때: [docs/backend/conventions.md](docs/backend/conventions.md)
-
 상황별 참고 문서:
 
-- 특정 도메인 모듈을 구현·수정·리뷰할 때: 위 표의 [docs/backend/modules/](docs/backend/modules/) 문서 중 해당 모듈 문서
-- 새 도메인 모듈을 추가할 때: [docs/backend/conventions.md](docs/backend/conventions.md), [docs/backend/testing.md](docs/backend/testing.md), `prisma/schema.prisma`, 가장 유사한 기존 모듈 문서를 먼저 읽고 [docs/backend/modules/](docs/backend/modules/)에 새 모듈 설계 문서를 작성한다.
-- API 엔드포인트, 요청/응답 DTO, 응답 예시, 명세를 작성·수정할 때: [docs/backend/api-docs/](docs/backend/api-docs/)
+- API 명세 확인: [docs/backend/api-docs/](docs/backend/api-docs/)
+- 기능별 설계 문서 확인: [docs/backend/designs/](docs/backend/designs/)
 - 테스트를 작성·수정하거나 테스트 실패를 분석할 때: [docs/backend/testing.md](docs/backend/testing.md)
 - 레이어 책임, 네이밍, 응답 형식 등 구현 컨벤션을 확인할 때: [docs/backend/conventions.md](docs/backend/conventions.md)
 - Git, 커밋, PR 흐름을 확인할 때: [docs/git.md](docs/git.md)
 - 하네스 규칙에 빠진 내용이나 개선점을 발견했을 때: [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)
 
-새 모듈 설계 문서는 기존 `docs/backend/modules/*.md` 형식을 참고해 최소한 다음을 포함한다:
+설계 문서는 `_workspace/design.md`에 작성한 뒤 QA 통과 후 `docs/backend/designs/{module}/{feature}.md`로 보관된다.
+`_workspace/`는 작업 중 임시 공간이며 git에서 추적하지 않는다.
+
+설계 문서는 최소한 다음을 포함한다:
 
 - 모듈 경로와 파일 목록
 - Repository 인터페이스
 - Service 비즈니스 규칙
-- 관련 DB 모델 또는 `prisma/schema.prisma` 기준 링크
-- 테스트 Stub 또는 핵심 테스트 케이스
-- API가 있으면 [docs/backend/api-docs/](docs/backend/api-docs/)의 명세 위치
+- 관련 DB 모델 (`prisma/schema.prisma` 기준)
+- 테스트 계획
+- API 명세 위치 ([docs/backend/api-docs/](docs/backend/api-docs/))
 
 ---
 
@@ -159,3 +151,24 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 
 작업 중 문서에 빠진 규칙·패턴을 발견하면:
 → [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)에 기록한다.
+
+---
+
+## Codex 하네스 운영
+
+Codex에서 백엔드 기능 구현 요청을 받으면 Claude의 `be-orchestrate` 흐름을 수동으로 재현한다:
+
+1. API 문서 확인 또는 동기화 필요성 판단
+2. 비자명한 구현은 `_workspace/design.md` 작성 후 사용자 승인
+3. 설계 기준으로 최소 구현
+4. Service/Repository 테스트와 API 문서 동기화 확인
+5. `sh ./scripts/verify.sh` 통과 확인
+
+Codex 설정 위치:
+
+- 상위 작업 폴더 실행용 설정: `../../.codex/config.toml`, `../../.codex/hooks.json`, `../../.codex/rules/default.rules`
+- Git 루트 실행용 설정: `../.codex/config.toml`, `../.codex/hooks.json`, `../.codex/rules/default.rules`
+- 백엔드 직접 실행용 설정: `.codex/config.toml`, `.codex/hooks.json`, `.codex/rules/default.rules`
+- Hook 스크립트: `scripts/hooks/codex-*.js`
+
+Notion API 명세 동기화는 Claude 전용 MCP 이름을 그대로 사용하지 않는다. Codex에서 Notion connector가 활성화되어 있으면 해당 도구로 검색·가져오기를 수행하고, 없으면 사용자에게 Notion URL 또는 명세 내용을 요청한다.

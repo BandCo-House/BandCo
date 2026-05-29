@@ -38,13 +38,7 @@
       "mcp__claude_ai_Notion__notion-search",
       "mcp__claude_ai_Notion__notion-fetch"
     ],
-    "deny": [
-      "Bash(rm -rf*)",
-      "Bash(rm -fr*)",
-      "Bash(git push --force*)",
-      "Bash(git reset --hard*)",
-      "Bash(git clean -f*)"
-    ]
+    "deny": ["Bash(rm -rf*)", "Bash(rm -fr*)", "Bash(git push --force*)", "Bash(git reset --hard*)", "Bash(git clean -f*)"]
   },
   "hooks": {
     "Stop": [
