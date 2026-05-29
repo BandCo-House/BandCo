@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { Band } from '@/entities/band/model/types';
 import { Link } from '@tanstack/react-router';
@@ -8,11 +9,33 @@ export interface UserBandsCarouselProps {
 
 export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
   // Embla ref 및 쫀득한 앱 느낌의 dragFree 터치 설정 주입
-  const [emblaRef] = useEmblaCarousel({
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
     dragFree: true,
   });
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    if (!emblaApi) return;
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const frameId = window.requestAnimationFrame(updateScrollState);
+    emblaApi.on('select', updateScrollState);
+    emblaApi.on('reInit', updateScrollState);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      emblaApi.off('select', updateScrollState);
+      emblaApi.off('reInit', updateScrollState);
+    };
+  }, [emblaApi, updateScrollState, bands.length]);
 
   return (
     <section
@@ -60,8 +83,11 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
             </div>
           )}
         </div>
-        {bands.length > 1 && (
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-14 bg-linear-to-r from-transparent via-gradient-top/45 to-gradient-top/90" />
+        {canScrollPrev && (
+          <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-14 bg-linear-to-l from-transparent to-[#393951]" />
+        )}
+        {canScrollNext && (
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-14 bg-linear-to-r from-transparent to-[#393951]" />
         )}
       </div>
     </section>

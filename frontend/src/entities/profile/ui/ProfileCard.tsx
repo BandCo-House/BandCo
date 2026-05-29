@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { Profile } from '../model/types';
 import { Input } from '@/shared/ui/input';
-import { Play, Pause, Check, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
+import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import GalleryIcon from '@/assets/icons/gallery.svg?react';
 
@@ -43,6 +43,9 @@ export function ProfileCard({
   const avatarUrl = editForm.avatarUrl || profile.profile?.avatarUrl;
   const selfDescription = profile.profile?.selfDescription;
   const musicUrl = editForm.profileMusicUrl || profile.profile?.profileMusicUrl;
+  const hasProfileMusic = Boolean(musicUrl);
+  const profileMusicTitle = hasProfileMusic ? '프로필 음악' : '음악 없음';
+  const profileMusicArtist = '';
 
   const [isPlaying, setIsPlaying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,9 +60,9 @@ export function ProfileCard({
   };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-top pb-12">
+    <div className="relative isolate bg-gradient-top pb-12">
       {avatarUrl && (
-        <div className="absolute top-0 left-0 z-0 h-svh w-full overflow-hidden">
+        <div className="absolute top-0 left-0 z-0 h-full w-full overflow-hidden">
           <img
             src={avatarUrl}
             alt="profile-cover"
@@ -67,7 +70,7 @@ export function ProfileCard({
           />
         </div>
       )}
-      <div className="absolute top-0 left-0 z-10 h-svh w-full bg-linear-to-b from-[#020119] via-[#020119]/10 via-45% to-[#020119]" />
+      <div className="absolute top-0 left-0 z-10 h-full w-full bg-linear-to-b from-[#020119] via-[#020119]/10 via-45% to-[#020119]" />
 
       <div className="relative z-50 flex min-h-9 w-full items-center justify-between px-5 py-3">
         <h1 className="flex min-h-9 items-center gap-2 typo-lg-b font-semibold text-grey-50">
@@ -81,7 +84,11 @@ export function ProfileCard({
               <ChevronLeft />
             </button>
           )}
-          {isMe ? '마이페이지' : `${profileName}님의 프로필`}
+          {!isMe
+            ? `${profileName}님의 프로필`
+            : isEditing
+              ? '프로필 편집'
+              : '마이페이지'}
         </h1>
         {isMe && (
           <button
@@ -109,7 +116,7 @@ export function ProfileCard({
             type="button"
             aria-label="프로필 이미지 선택"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute top-64 left-5 z-30 flex size-9 items-center justify-center rounded-full bg-overlay-24 p-2.5 text-primary backdrop-blur-md"
+            className="absolute top-74 left-5 z-30 flex size-9 items-center justify-center rounded-full bg-overlay-24 p-2.5 text-primary backdrop-blur-md"
           >
             <GalleryIcon className="size-4" />
           </button>
@@ -127,7 +134,7 @@ export function ProfileCard({
         </>
       )}
 
-      <div className="relative z-20 mt-72 rounded-xl backdrop-blur-lg">
+      <div className="relative z-20 mt-72 mb-12 rounded-xl backdrop-blur-lg">
         <div className="absolute h-full w-full rounded-xl bg-white/40 backdrop-blur-lg" />
 
         <div className="relative z-20">
@@ -136,18 +143,22 @@ export function ProfileCard({
               <button
                 type="button"
                 onClick={isEditing ? onOpenMusicSearch : undefined}
-                className="mx-auto mt-5.5 flex max-w-sm items-center justify-center gap-2 typo-sm-m text-grey-100"
+                className="mt-5.5 mr-34 ml-auto flex max-w-52 items-center justify-end gap-1.5 typo-sm-m text-grey-100"
               >
-                <span className="shrink-0">건널목</span>
-                <span>·</span>
-                <span className="min-w-0 truncate">
-                  {musicUrl ? 'Whiteusedsocks' : 'No Music'}
-                </span>
+                <span className="truncate">{profileMusicTitle}</span>
+                {profileMusicArtist && (
+                  <>
+                    <span>·</span>
+                    <span className="truncate text-right">
+                      {profileMusicArtist}
+                    </span>
+                  </>
+                )}
               </button>
 
-              <div className="mt-10 mb-18 w-fit max-w-md pr-0 pl-10 text-grey-50">
+              <div className="mx-auto mt-10 mb-20 grid w-full max-w-65 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 text-grey-50">
                 {isEditing ? (
-                  <div className="mb-4 grid w-fit grid-cols-[auto_auto] items-baseline gap-x-6">
+                  <>
                     <label
                       htmlFor="nickname-input"
                       className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
@@ -161,18 +172,17 @@ export function ProfileCard({
                         onChangeEditForm({ nickname: e.target.value })
                       }
                       placeholder="닉네임 입력"
-                      className="h-auto w-[6ch] rounded-none border-0 bg-transparent p-0 typo-3xl-b text-white caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
+                      className="w-full rounded-none border-0 bg-transparent p-0 typo-3xl-b text-white caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
                     />
-                  </div>
+                  </>
                 ) : (
-                  <h2 className="mb-2 typo-3xl-b leading-tight tracking-tight text-white">
+                  <h2 className="col-span-2 typo-3xl-b leading-tight tracking-tight text-white">
                     {profileName}
                   </h2>
                 )}
 
-                {/* Self Description Section */}
                 {isEditing ? (
-                  <div className="grid w-fit grid-cols-[auto_auto] items-baseline gap-x-6">
+                  <>
                     <label
                       htmlFor="description-input"
                       className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
@@ -186,15 +196,13 @@ export function ProfileCard({
                         onChangeEditForm({ selfDescription: e.target.value })
                       }
                       placeholder="한 줄 소개 입력"
-                      className="h-auto w-[24ch] rounded-none border-0 bg-transparent p-0 typo-base-sb caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
+                      className="w-full rounded-none border-0 bg-transparent p-0 typo-base-sb caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
                     />
-                  </div>
+                  </>
                 ) : (
-                  selfDescription && (
-                    <p className="typo-base-sb leading-relaxed">
-                      {selfDescription}
-                    </p>
-                  )
+                  <p className="col-span-2 typo-base-sb leading-relaxed">
+                    {selfDescription}
+                  </p>
                 )}
               </div>
             </div>
@@ -223,15 +231,14 @@ export function ProfileCard({
                 ) : isPlaying ? (
                   <Pause className="relative z-10 size-10 fill-white text-white" />
                 ) : (
-                  <Play className="relative z-10 size-10 -translate-x-0.5 fill-white text-white" />
+                  <Play className="relative z-10 size-10 translate-x-0.4 fill-white text-white" />
                 )}
               </button>
             </div>
           </div>
         </div>
         <div className="absolute right-5 -bottom-7 left-5 z-20 mx-auto max-w-sm rounded-full p-0.5">
-          <div className="absolute inset-0 rounded-full bg-surface-2/80 shadow-2xl backdrop-blur-3xl" />
-          <div className="absolute inset-0 rounded-full bg-surface-2/35" />
+          <div className="absolute inset-0 rounded-full bg-surface-2 backdrop-blur-sm" />
           <div className="relative flex items-start gap-2 rounded-full px-4 py-2.5">
             {isEditing ? (
               <>
@@ -242,7 +249,7 @@ export function ProfileCard({
                   onClick={onSave}
                   className="active:animate-[button-pop_180ms_ease-out]"
                 >
-                  <Check className="size-4" /> 변경 저장
+                  변경 저장
                 </Button>
                 <Button
                   variant="neutral"
@@ -262,6 +269,7 @@ export function ProfileCard({
                   width="flex"
                   onClick={isMe ? onToggleEdit : onInvite}
                   disabled={!isMe && !isLoggedIn}
+                  className="active:animate-[button-pop_180ms_ease-out]"
                 >
                   {isMe ? '프로필 편집' : '초대하기'}
                 </Button>
@@ -270,6 +278,7 @@ export function ProfileCard({
                   size="pill"
                   width="fit"
                   onClick={onShare}
+                  className="active:animate-[button-pop_180ms_ease-out]"
                 >
                   공유하기
                 </Button>
