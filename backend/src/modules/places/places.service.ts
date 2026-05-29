@@ -1,13 +1,14 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import { type Prisma } from '../../generated/prisma';
+import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import type { CreatePlaceInput } from './dto/create-place.dto';
 import type { GetBandPlacesQuery } from './dto/get-band-places-query.dto';
 import type { UpdatePlaceInput } from './dto/update-place.dto';
 import { PLACES_REPOSITORY, type PlacesRepository } from './repositories/places.repository';
 import type { CreatePlaceResult } from './types/create-place-result.type';
+import type { DeletePlaceResult } from './types/delete-place-result.type';
 import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
 import type { UpdatePlaceResult } from './types/update-place-result.type';
@@ -137,6 +138,44 @@ export class PlacesService {
       }
 
       return this.placesRepository.updatePlace(placeId, input, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 리더(BM) 및 부리더(ADMIN)만 장소를 소프트 삭제할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} placeId - 삭제할 장소 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeletePlaceResult>} 소프트 삭제 결과
+   */
+  async deletePlace(userId: string, placeId: string, tx?: Prisma.TransactionClient): Promise<DeletePlaceResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<DeletePlaceResult> => {
+      const place = await this.placesRepository.findPlaceForMutation(placeId, client);
+
+      if (place === null) {
+        throw new NotFoundException('요청한 장소를 찾을 수 없습니다.');
+      }
+
+      const member = await this.placesRepository.findBandMemberByBandIdAndUserId(place.bandId, userId, client);
+
+      if (member === null) {
+        throw new ForbiddenException('밴드 멤버가 아닙니다.');
+      }
+
+      const canDelete = member.role === BandMemberRole.BM || member.role === BandMemberRole.ADMIN;
+
+      if (!canDelete) {
+        throw new ForbiddenException('밴드 리더 및 부리더만 장소를 삭제할 수 있습니다.');
+      }
+
+      return this.placesRepository.deletePlace(placeId, client);
     };
 
     if (tx !== undefined) {

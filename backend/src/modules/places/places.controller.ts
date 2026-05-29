@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -11,6 +11,7 @@ import { UpdatePlaceBodyDto } from './dto/update-place.dto';
 import type { CreatePlaceResult } from './types/create-place-result.type';
 import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
+import type { DeletePlaceResult } from './types/delete-place-result.type';
 import type { UpdatePlaceResult } from './types/update-place-result.type';
 import { PlacesService } from './places.service';
 
@@ -68,5 +69,13 @@ export class PlacesController {
     const result = await this.placesService.updatePlace(request.user.id, placeId, input);
 
     return createSuccessResponse('장소 수정 성공', result);
+  }
+
+  @Delete('places/:placeId')
+  @UseGuards(AccessTokenGuard)
+  async deletePlace(@Req() request: AuthenticatedRequest, @Param('placeId') placeId: string): Promise<ApiSuccessResponse<DeletePlaceResult>> {
+    const result = await this.placesService.deletePlace(request.user.id, placeId);
+
+    return createSuccessResponse('장소 삭제 성공', result);
   }
 }

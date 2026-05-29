@@ -249,6 +249,87 @@ describe('PlacesService', () => {
     });
   });
 
+  describe('deletePlace', () => {
+    it('BM 역할이면 장소를 소프트 삭제한다', async () => {
+      const service = new PlacesService(
+        createPlacesRepositoryStub({ member: { id: MEMBER_ID, role: BandMemberRole.BM } }),
+        createPrismaServiceStub(),
+      );
+      const result = await service.deletePlace(USER_ID, PLACE_ID);
+
+      expect(result.isActive).toBe(false);
+    });
+
+    it('ADMIN 역할이면 장소를 소프트 삭제한다', async () => {
+      const service = new PlacesService(
+        createPlacesRepositoryStub({ member: { id: MEMBER_ID, role: BandMemberRole.ADMIN } }),
+        createPrismaServiceStub(),
+      );
+      const result = await service.deletePlace(USER_ID, PLACE_ID);
+
+      expect(result.isActive).toBe(false);
+    });
+
+    it('장소가 없으면 NotFoundException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ placeForMutation: null }), createPrismaServiceStub());
+
+      await expect(service.deletePlace(USER_ID, PLACE_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ member: null }), createPrismaServiceStub());
+
+      await expect(service.deletePlace(USER_ID, PLACE_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('MEMBER 역할이면 ForbiddenException을 던진다', async () => {
+      const service = new PlacesService(
+        createPlacesRepositoryStub({ member: { id: MEMBER_ID, role: BandMemberRole.MEMBER } }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.deletePlace(USER_ID, PLACE_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createPlacesRepositoryStub({
+        member: { id: MEMBER_ID, role: BandMemberRole.BM },
+        onDeletePlace: (_placeId, tx) => {
+          capturedTransactions.push(tx);
+        },
+      });
+
+      repository.findPlaceForMutation = async (_placeId, tx) => {
+        capturedTransactions.push(tx);
+
+        return DEFAULT_PLACE_FOR_MUTATION;
+      };
+      repository.findBandMemberByBandIdAndUserId = async (_bandId, _userId, tx) => {
+        capturedTransactions.push(tx);
+
+        return { id: MEMBER_ID, role: BandMemberRole.BM };
+      };
+
+      const service = new PlacesService(repository, createPrismaServiceStub());
+      await service.deletePlace(USER_ID, PLACE_ID);
+
+      expect(capturedTransactions.length).toBeGreaterThan(0);
+      const firstTx = capturedTransactions[0];
+      capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
+    });
+
+    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+      const externalTx = { transactionClient: true };
+      const service = new PlacesService(
+        createPlacesRepositoryStub({ member: { id: MEMBER_ID, role: BandMemberRole.BM } }),
+        createPrismaServiceFailingTransactionStub(),
+      );
+
+      await expect(service.deletePlace(USER_ID, PLACE_ID, externalTx as never)).resolves.toBeDefined();
+    });
+  });
+
   describe('createPlace', () => {
     it('장소를 성공적으로 생성한다', async () => {
       const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
