@@ -167,6 +167,27 @@ describe('PlacesService', () => {
     });
   });
 
+  describe('getPlace', () => {
+    it('장소 상세를 성공적으로 조회한다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+      const result = await service.getPlace(USER_ID, PLACE_ID);
+
+      expect(result.placeId).toBe(PLACE_ID);
+    });
+
+    it('장소가 없으면 NotFoundException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ placeDetail: null }), createPrismaServiceStub());
+
+      await expect(service.getPlace(USER_ID, PLACE_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ member: null }), createPrismaServiceStub());
+
+      await expect(service.getPlace(USER_ID, PLACE_ID)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
   describe('createPlace', () => {
     it('장소를 성공적으로 생성한다', async () => {
       const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());

@@ -6,7 +6,9 @@ import type { User } from '../../generated/prisma';
 
 import { CreatePlaceBodyDto } from './dto/create-place.dto';
 import { GetBandPlacesQueryDto } from './dto/get-band-places-query.dto';
+import { GetPlaceDetailQueryDto } from './dto/get-place-detail-query.dto';
 import type { CreatePlaceResult } from './types/create-place-result.type';
+import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
 import { PlacesService } from './places.service';
 
@@ -40,5 +42,17 @@ export class PlacesController {
     const result = await this.placesService.getBandPlaces(request.user.id, bandId, query);
 
     return createSuccessResponse('장소 목록 조회 성공', result);
+  }
+
+  @Get('places/:placeId')
+  @UseGuards(AccessTokenGuard)
+  async getPlace(
+    @Req() request: AuthenticatedRequest,
+    @Param('placeId') placeId: string,
+    @Query() query: GetPlaceDetailQueryDto,
+  ): Promise<ApiSuccessResponse<PlaceDetail>> {
+    const result = await this.placesService.getPlace(request.user.id, placeId, query.where__is_active);
+
+    return createSuccessResponse('장소 상세 조회 성공', result);
   }
 }

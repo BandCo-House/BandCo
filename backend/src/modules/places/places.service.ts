@@ -7,6 +7,7 @@ import type { CreatePlaceInput } from './dto/create-place.dto';
 import type { GetBandPlacesQuery } from './dto/get-band-places-query.dto';
 import { PLACES_REPOSITORY, type PlacesRepository } from './repositories/places.repository';
 import type { CreatePlaceResult } from './types/create-place-result.type';
+import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
 
 @Injectable()
@@ -76,6 +77,31 @@ export class PlacesService {
     this.validateOrderDirections(query);
 
     return this.placesRepository.findBandPlaces(bandId, query, tx);
+  }
+
+  /**
+   * 밴드 멤버만 장소를 상세 조회할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} placeId - 조회할 장소 ID
+   * @param {boolean | undefined} isActive - 활성 여부 필터
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<PlaceDetail>} 장소 상세 정보
+   */
+  async getPlace(userId: string, placeId: string, isActive?: boolean, tx?: Prisma.TransactionClient): Promise<PlaceDetail> {
+    const place = await this.placesRepository.findPlaceById(placeId, isActive, tx);
+
+    if (place === null) {
+      throw new NotFoundException('요청한 장소를 찾을 수 없습니다.');
+    }
+
+    const member = await this.placesRepository.findBandMemberByBandIdAndUserId(place.bandId, userId, tx);
+
+    if (member === null) {
+      throw new ForbiddenException('밴드 멤버만 장소를 조회할 수 있습니다.');
+    }
+
+    return place;
   }
 
   private validateCursorPair(query: GetBandPlacesQuery): void {
