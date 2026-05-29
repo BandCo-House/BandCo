@@ -12,7 +12,7 @@
       "Bash(pnpm run lint:fix)",
       "Bash(pnpm run format:check)",
       "Bash(pnpm run build)",
-      "Bash(sh ./scripts/verify.sh)",
+      "Bash(bash ./scripts/verify.sh)",
 
       "Bash(pnpm run prisma:generate)",
       "Bash(pnpm run prisma:validate)",
@@ -47,7 +47,11 @@
         "hooks": [
           {
             "type": "command",
+<<<<<<< HEAD
             "command": "node scripts/hooks/codex-stop-verify.js"
+=======
+            "command": "bash ./scripts/verify.sh"
+>>>>>>> 46b75dd (🐛 fix: sh에서 bash로 스크립트 실행 변경)
           }
         ]
       }
