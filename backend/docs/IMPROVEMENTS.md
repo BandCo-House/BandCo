@@ -26,7 +26,12 @@
 
 | 우선순위 | 대상 파일 | 내용 | 발견 맥락 |
 |:-------:|----------|------|----------|
-| — | — | — | — |
+| 높음 | `.claude/agents/be-designer.md` | 설계 시 확인해야 할 구현 패턴 체크리스트 추가 필요: Controller 골격(`@Controller()` + 전체 경로, `AuthenticatedRequest`, `@UseGuards` 메서드별 적용), Module 등록(`AuthModule` import, `useExisting` 패턴), Service 생성자(`@Inject(SYMBOL)` + `PrismaService`), Prisma Record 타입(`Prisma.XxxGetPayload`), boolean query param Transform(`parseOptionalBooleanValue`). 현재는 "기존 모듈을 참고하라"고만 돼 있어 매번 코드 탐색으로 재발견해야 함. | places 모듈 설계 후 보완 작업 중 |
+| 높음 | `docs/backend/conventions.md` | 새 모듈 추가 시 반드시 따라야 할 패턴 섹션 보강 필요: (1) Controller — `@Controller()` + 전체 경로 방식, `AuthenticatedRequest` 인터페이스 선언, `@UseGuards` 메서드별 적용, `createSuccessResponse` wrapping. (2) Module — `AuthModule` import 필수, `useExisting`으로 Repository 심볼 바인딩. (3) Query DTO — boolean 파라미터는 반드시 `parseOptionalBooleanValue` + `booleanValidationMessage` 적용. | places 모듈 초기 설계에서 위 패턴들이 누락되어 보완 작업 필요 |
+| 중간 | `docs/backend/conventions.md` | 커서 기반 페이지네이션 `meta.next` URL 생성 방식 문서화 필요: `cursor__created_at={encodeURIComponent(item.createdAt)}&cursor__id={item.id}` 형태로 query string 직접 조합, bandId 등 경로 파라미터를 Repository 메서드에 전달해 next URL에 포함하는 패턴. | places 모듈 목록 조회 설계 중 next URL 생성 방식이 conventions에 없어 기존 코드 탐색으로 파악 |
+| 중간 | `docs/backend/conventions.md` | ORDER_DIRECTIONS는 Prisma 호환을 위해 소문자(`'asc'`/`'desc'`)로 정의한다는 규칙 추가 필요. songs는 소문자, places는 대문자로 불일치 발생 — 대문자를 쓰면 repository에서 `.toLowerCase() as 'asc' \| 'desc'` 캐스트 우회가 필요해짐. | places 모듈 리뷰 중 |
+| 낮음 | `.claude/agents/be-designer.md` | cursor__created_at 날짜 유효성 검사(`Number.isNaN`) 패턴을 Service 비즈니스 규칙 체크리스트에 추가. bands는 `validateCursorPair`에서 날짜 파싱 후 NaN 체크를 하는데 places에는 누락되어 잘못된 날짜가 Prisma에 전달될 수 있음. | bands와 places 비교 중 발견 |
+| 높음 | `CLAUDE.md`, `.claude/agents/be-orchestrator.md` | 하네스 Phase 4(QA) 이후 PR 생성을 Phase 5로 추가해야 함. 현재는 QA 통과 후 설계 문서 보관으로 끝나는데, API 단위로 작업할 때 PR까지 생성하는 흐름이 표준화되어야 함. `/pr` 슬래시 커맨드 또는 `be-orchestrate` 스킬 마지막 단계에 PR 생성 안내를 포함하는 방식 검토. | places 모듈 전체 구현 완료 후 PR 생성이 흐름에서 빠져 있음을 발견 |
 
 **기록 방법** (한 줄씩 추가):
 
