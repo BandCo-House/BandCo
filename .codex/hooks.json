@@ -1,5 +1,5 @@
 {
-  "description": "JamPlay backend Codex hooks.",
+  "description": "JamPlay git-root Codex hooks. Delegates backend policy to backend/scripts/hooks.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,7 +8,7 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-session-start.js\"",
             "timeout": 5,
-            "statusMessage": "Loading JamPlay backend harness context"
+            "statusMessage": "Loading JamPlay harness context"
           }
         ]
       }
@@ -20,7 +20,7 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-user-prompt-submit.js\"",
             "timeout": 5,
-            "statusMessage": "Checking JamPlay backend prompt policy"
+            "statusMessage": "Checking JamPlay prompt policy"
           }
         ]
       }
@@ -33,7 +33,7 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-pre-tool-use.js\"",
             "timeout": 5,
-            "statusMessage": "Checking JamPlay backend tool policy"
+            "statusMessage": "Checking JamPlay tool policy"
           }
         ]
       }
@@ -46,7 +46,7 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/backend/scripts/hooks/codex-post-tool-use.js\"",
             "timeout": 5,
-            "statusMessage": "Checking JamPlay backend follow-up context"
+            "statusMessage": "Checking JamPlay follow-up context"
           }
         ]
       }

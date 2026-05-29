@@ -14,16 +14,11 @@ try {
 
 const filePath = input.file_path || '';
 
-const isImplFile =
-  /src[/\\]modules[/\\].+\.(service|controller|prisma-repository)\.ts$/.test(filePath) &&
-  !filePath.endsWith('.spec.ts');
+const isImplFile = /src[/\\]modules[/\\].+\.(service|controller|prisma-repository)\.ts$/.test(filePath) && !filePath.endsWith('.spec.ts');
 
 if (!isImplFile) process.exit(0);
 
 if (!fs.existsSync('_workspace/design.md')) {
-  process.stderr.write(
-    '⛔ [설계 가드] _workspace/design.md 가 없습니다.\n' +
-    '구현 전 be-design 스킬로 설계를 먼저 완료하세요.\n'
-  );
+  process.stderr.write('⛔ [설계 가드] _workspace/design.md 가 없습니다.\n' + '구현 전 be-design 스킬로 설계를 먼저 완료하세요.\n');
   process.exit(2);
 }

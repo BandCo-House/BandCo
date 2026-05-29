@@ -6,7 +6,7 @@
 # Or copy this file to:
 #   $CODEX_HOME/jamplay-backend.config.toml
 # and run:
-#   codex -C . --profile-v2 jamplay-backend
+#   codex -C . --profile jamplay-backend
 
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"

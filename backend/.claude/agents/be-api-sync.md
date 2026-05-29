@@ -22,6 +22,7 @@ Notion의 API 명세 페이지를 찾아 로컬 `docs/backend/api-docs/{module}.
 ### Step 1: Notion 페이지 검색
 
 `mcp__claude_ai_Notion__notion-search`로 관련 페이지를 검색한다:
+
 - 검색어: `{모듈명} API`, `{모듈명} 명세`, `{모듈명} endpoint`
 - 검색 결과에서 API 명세 페이지를 특정한다
 - 여러 결과가 있으면 제목이 가장 관련 있는 것을 선택한다
@@ -37,7 +38,7 @@ Notion 내용을 아래 형식으로 변환해 `docs/backend/api-docs/{module}.m
 
 ## 출력 파일 형식
 
-```markdown
+````markdown
 # {모듈명} API
 
 > 최종 동기화: {YYYY-MM-DD} | Notion: {페이지 URL}
@@ -63,11 +64,13 @@ Notion 내용을 아래 형식으로 변환해 `docs/backend/api-docs/{module}.m
 |---------|------|:----:|:-----:|------|
 
 **Body** (없으면 생략)
+
 ```json
 {
   "field": "value"
 }
 ```
+````
 
 ### Response 200
 
@@ -80,14 +83,15 @@ Notion 내용을 아래 형식으로 변환해 `docs/backend/api-docs/{module}.m
 
 ### Error Responses
 
-| 코드 | 조건 |
-|------|------|
-| 400 | 잘못된 입력 |
-| 401 | 인증 실패 |
-| 403 | 권한 없음 |
-| 404 | 리소스 없음 |
+| 코드 | 조건        |
+| ---- | ----------- |
+| 400  | 잘못된 입력 |
+| 401  | 인증 실패   |
+| 403  | 권한 없음   |
+| 404  | 리소스 없음 |
 
 ---
+
 ```
 
 ## Gap 리포트
@@ -104,3 +108,4 @@ Notion 내용을 아래 형식으로 변환해 `docs/backend/api-docs/{module}.m
 
 **입력:** 모듈명 (자유 입력 — 사전 정의 목록 없음. 모듈명이 명시되지 않으면 사용자에게 확인한다.)
 **출력:** `docs/backend/api-docs/{module}.md` 파일 + Gap 리포트
+```

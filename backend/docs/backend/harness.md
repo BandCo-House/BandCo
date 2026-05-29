@@ -20,6 +20,8 @@
 
 ## 에이전트 팀 구성
 
+이 섹션의 에이전트·스킬 구조는 Claude 하네스의 원본 설계다. Codex는 `.claude/agents`와 `.claude/skills`를 직접 실행하지 않으므로, Codex에서는 같은 흐름을 `AGENTS.md`, `.codex/hooks.json`, `.codex/rules/default.rules`, `scripts/hooks/codex-*.js`로 재현한다.
+
 ### 아키텍처 패턴
 
 **Pipeline + 서브 에이전트 (Sequential)**
@@ -101,6 +103,41 @@ QA 리포트
 
 ---
 
+## Codex 이식 결정
+
+### Codex에서 그대로 옮긴 것
+
+| Claude 하네스 | Codex 적용 |
+|--------------|------------|
+| `CLAUDE.md` 규칙 | `AGENTS.md`에 반영 |
+| Stop 훅 `sh ./scripts/verify.sh` | `codex-stop-verify.js`에서 백엔드 변경 시 실행 |
+| 위험 명령 차단 | `rules/default.rules` + `codex-pre-tool-use.js` |
+| 구현 후 테스트/API 문서 알림 | `codex-post-tool-use.js`의 `additionalContext` |
+
+### Codex에서 다르게 처리한 것
+
+| 항목 | 처리 |
+|------|------|
+| `.claude/agents` 서브에이전트 호출 | Codex가 직접 실행하지 않는다. `AGENTS.md`에 수동 워크플로우로 기록한다. |
+| `.claude/skills` 자동 트리거 | Codex skill 형식이 아니므로 참고 문서로 남긴다. |
+| Claude Notion MCP 도구명 | Codex Notion connector가 있으면 해당 도구를 사용하고, 없으면 사용자에게 URL/내용을 요청한다. |
+| `CLAUDE_TOOL_INPUT` | Codex hook stdin JSON으로 대체한다. |
+
+### Codex 문서 탐색 원칙
+
+Codex가 백엔드 구현을 시작할 때 읽는 순서는 아래와 같다.
+
+1. `AGENTS.md`
+2. API 작업이면 `docs/backend/api-docs/`
+3. 구현 규칙은 `docs/backend/conventions.md`
+4. 테스트 작업이면 `docs/backend/testing.md`
+5. DB 구조는 `prisma/schema.prisma`
+6. 비자명한 작업이면 `_workspace/design.md`
+
+이 순서를 hook이 완전히 강제할 수는 없다. `PreToolUse`는 일부 도구 호출만 가로챌 수 있으므로, 문서 탐색은 `AGENTS.md`와 `UserPromptSubmit` context 주입으로 보강한다.
+
+---
+
 ## 아키텍처 결정 기록 (ADR)
 
 ### ADR-001: 서브 에이전트 파이프라인 선택
@@ -118,6 +155,14 @@ QA 리포트
 ### ADR-004: QA 에이전트에 general-purpose 타입 사용
 - **결정:** `Explore` 타입 아닌 `general-purpose` 사용
 - **이유:** `Explore`는 읽기 전용이므로 `sh ./scripts/verify.sh` 실행 불가. QA는 스크립트 실행 권한이 필요하다.
+
+### ADR-005: Codex는 실행 위치별 `.codex/` 레이어를 둔다
+- **결정:** 상위 작업 폴더 `.codex/`, 실제 Git 루트 `jamplay/.codex/`, 백엔드 직접 실행용 `jamplay/backend/.codex/`를 둔다.
+- **이유:** Codex 공식 설정은 Git 루트에서 현재 작업 디렉터리까지 `.codex/config.toml`을 계층적으로 읽는다. 현재 로컬 구조는 상위 작업 폴더와 실제 Git 루트가 다르므로, 어느 위치에서 시작해도 hook과 rules가 적용되게 한다.
+
+### ADR-006: Codex hook은 코드 영향 변경이 아니어도 백엔드 변경이면 최종 검증을 유지한다
+- **결정:** 위험 명령과 백엔드 구현 전 설계 문서를 차단하고, Stop 훅은 백엔드 변경이 있으면 `sh ./scripts/verify.sh`를 실행한다.
+- **이유:** 기존 테스트 실패가 있더라도 하네스는 검증 실패를 숨기지 않는다. 문서 확인·테스트 동기화처럼 hook이 완전히 강제하기 어려운 항목은 추가 context로 안내한다.
 
 ---
 
@@ -142,3 +187,4 @@ QA 리포트
 |------|------|----------|------|
 | 2026-05-28 | v1.0 | be-orchestrator, be-designer, be-qa + 스킬 3개 구성 | 초기 구축 |
 | 2026-05-28 | v1.1 | be-api-sync 추가, Notion MCP 통합, docs/backend 규칙 반영 | Notion API 명세 기반 워크플로우로 고도화 |
+| 2026-05-29 | v1.2 | Codex 루트 `.codex/` 레이어, rules, stdin 기반 hooks, AGENTS 문서 탐색 규칙 추가 | Claude 하네스를 Codex 동작 모델에 맞게 이식 |

@@ -23,16 +23,20 @@ model: sonnet
 ### Step 1: 규칙 문서 읽기
 
 검증 기준이 되는 문서를 먼저 읽는다:
+
 - `docs/backend/conventions.md` — 레이어 책임·DTO·soft delete·tx·네이밍 규칙
 - `docs/backend/testing.md` — 테스트 패턴·필수 커버리지·Stub 작성 규칙
 
 ### Step 2: 변경 파일 확인
+
 ```bash
 git diff --name-only HEAD
 ```
+
 변경된 파일 목록을 확인하고 각 파일을 읽는다.
 
 ### Step 3: 설계-구현 일치 확인 (design.md가 있는 경우)
+
 `_workspace/design.md`의 작업 범위, Repository 인터페이스, Service 비즈니스 규칙이 실제 구현과 일치하는지 확인한다.
 
 ### Step 4: 하네스 체크리스트 검증
@@ -40,6 +44,7 @@ git diff --name-only HEAD
 > Step 1에서 읽은 `conventions.md`와 `testing.md` 기준으로 검증한다. 아래는 Quick-reference 체크리스트다.
 
 #### 아키텍처 레이어
+
 - [ ] Service가 `@Inject(SYMBOL)`로 Repository 인터페이스에만 의존하는가?
 - [ ] `PrismaService`가 `$transaction` 진입점으로만 쓰였는가?
 - [ ] Controller가 `ApiSuccessResponse<T>`로 응답을 감쌌는가?
@@ -47,11 +52,13 @@ git diff --name-only HEAD
 - [ ] 비즈니스 로직이 Controller에 없는가?
 
 #### 트랜잭션
+
 - [ ] 새 Service 메서드가 `tx?: Prisma.TransactionClient`를 마지막 인자로 받는가?
 - [ ] 모든 repository 호출에 tx를 전달하는가?
 - [ ] 외부 tx가 있을 때 새 `$transaction`을 열지 않는가?
 
 #### 테스트
+
 - [ ] 새 Service 메서드마다 `.spec.ts` 테스트가 있는가?
 - [ ] happy path, NotFoundException, ForbiddenException, BadRequestException 케이스가 있는가?
 - [ ] `capturedTransactions` 패턴으로 tx 일관성을 검증하는가?
@@ -59,6 +66,7 @@ git diff --name-only HEAD
 - [ ] `jest.fn()` 또는 `TestingModule`을 사용하지 않았는가? (auth 모듈 제외)
 
 #### 코드 품질
+
 - [ ] 설명할 수 없는 코드가 없는가?
 - [ ] 요청받지 않은 기능·추상화가 추가되지 않았는가?
 - [ ] 관련 없는 코드를 임의로 수정하지 않았는가?
@@ -66,9 +74,11 @@ git diff --name-only HEAD
 - [ ] 중요 함수에 JSDoc 스타일 주석이 있는가?
 
 ### Step 5: verify.sh 실행
+
 ```bash
 sh ./scripts/verify.sh
 ```
+
 lint → format:check → build → test 순서로 전체 검증. 실패 시 에러 내용을 QA 리포트에 포함한다.
 
 ## QA 리포트 형식
@@ -77,23 +87,28 @@ lint → format:check → build → test 순서로 전체 검증. 실패 시 에
 ## QA 리포트
 
 ### 설계-구현 일치
+
 ✅ 일치 / ❌ 불일치: [불일치 내용]
 
 ### 체크리스트 결과
-| 항목 | 결과 | 위치 |
-|------|:----:|------|
+
+| 항목                                 | 결과  | 위치      |
+| ------------------------------------ | :---: | --------- |
 | Service → Repository 인터페이스 의존 | ✅/❌ | 파일:라인 |
-| tx 패턴 준수 | ✅/❌ | 파일:라인 |
-| 테스트 존재 및 커버리지 | ✅/❌ | 파일:라인 |
+| tx 패턴 준수                         | ✅/❌ | 파일:라인 |
+| 테스트 존재 및 커버리지              | ✅/❌ | 파일:라인 |
+
 | ...
 
 ### verify.sh 결과
+
 ✅ 통과 / ❌ 실패
 
 실패 내용:
 (에러 메시지 그대로)
 
 ### 수정 필요 항목
+
 1. [파일경로:라인번호] 문제 내용 — 수정 방향
 ```
 
