@@ -5,10 +5,12 @@ import { type Prisma } from '../../generated/prisma';
 
 import type { CreatePlaceInput } from './dto/create-place.dto';
 import type { GetBandPlacesQuery } from './dto/get-band-places-query.dto';
+import type { UpdatePlaceInput } from './dto/update-place.dto';
 import { PLACES_REPOSITORY, type PlacesRepository } from './repositories/places.repository';
 import type { CreatePlaceResult } from './types/create-place-result.type';
 import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
+import type { UpdatePlaceResult } from './types/update-place-result.type';
 
 @Injectable()
 export class PlacesService {
@@ -102,6 +104,46 @@ export class PlacesService {
     }
 
     return place;
+  }
+
+  /**
+   * 밴드 멤버는 장소를 부분 수정할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} placeId - 수정할 장소 ID
+   * @param {UpdatePlaceInput} input - 검증이 끝난 장소 수정 요청값
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdatePlaceResult>} 수정된 장소 정보
+   */
+  async updatePlace(userId: string, placeId: string, input: UpdatePlaceInput, tx?: Prisma.TransactionClient): Promise<UpdatePlaceResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<UpdatePlaceResult> => {
+      const place = await this.placesRepository.findPlaceForMutation(placeId, client);
+
+      if (place === null) {
+        throw new NotFoundException('요청한 장소를 찾을 수 없습니다.');
+      }
+
+      const member = await this.placesRepository.findBandMemberByBandIdAndUserId(place.bandId, userId, client);
+
+      if (member === null) {
+        throw new ForbiddenException('밴드 멤버만 장소를 수정할 수 있습니다.');
+      }
+
+      const hasUpdateField =
+        input.name !== undefined || input.address !== undefined || input.detailAddress !== undefined || input.imageUrl !== undefined;
+
+      if (!hasUpdateField) {
+        throw new BadRequestException('수정할 장소 정보가 필요합니다.');
+      }
+
+      return this.placesRepository.updatePlace(placeId, input, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
   }
 
   private validateCursorPair(query: GetBandPlacesQuery): void {

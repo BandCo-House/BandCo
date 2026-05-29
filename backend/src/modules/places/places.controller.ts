@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -7,9 +7,11 @@ import type { User } from '../../generated/prisma';
 import { CreatePlaceBodyDto } from './dto/create-place.dto';
 import { GetBandPlacesQueryDto } from './dto/get-band-places-query.dto';
 import { GetPlaceDetailQueryDto } from './dto/get-place-detail-query.dto';
+import { UpdatePlaceBodyDto } from './dto/update-place.dto';
 import type { CreatePlaceResult } from './types/create-place-result.type';
 import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
+import type { UpdatePlaceResult } from './types/update-place-result.type';
 import { PlacesService } from './places.service';
 
 interface AuthenticatedRequest {
@@ -54,5 +56,17 @@ export class PlacesController {
     const result = await this.placesService.getPlace(request.user.id, placeId, query.where__is_active);
 
     return createSuccessResponse('장소 상세 조회 성공', result);
+  }
+
+  @Patch('places/:placeId')
+  @UseGuards(AccessTokenGuard)
+  async updatePlace(
+    @Req() request: AuthenticatedRequest,
+    @Param('placeId') placeId: string,
+    @Body() input: UpdatePlaceBodyDto,
+  ): Promise<ApiSuccessResponse<UpdatePlaceResult>> {
+    const result = await this.placesService.updatePlace(request.user.id, placeId, input);
+
+    return createSuccessResponse('장소 수정 성공', result);
   }
 }

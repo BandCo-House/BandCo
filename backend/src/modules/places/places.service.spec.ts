@@ -188,6 +188,67 @@ describe('PlacesService', () => {
     });
   });
 
+  describe('updatePlace', () => {
+    it('장소를 성공적으로 수정한다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+      const result = await service.updatePlace(USER_ID, PLACE_ID, { name: '새 연습실' });
+
+      expect(result.placeId).toBe(PLACE_ID);
+    });
+
+    it('장소가 없으면 NotFoundException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ placeForMutation: null }), createPrismaServiceStub());
+
+      await expect(service.updatePlace(USER_ID, PLACE_ID, { name: '새 연습실' })).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub({ member: null }), createPrismaServiceStub());
+
+      await expect(service.updatePlace(USER_ID, PLACE_ID, { name: '새 연습실' })).rejects.toThrow(ForbiddenException);
+    });
+
+    it('수정할 필드가 없으면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+
+      await expect(service.updatePlace(USER_ID, PLACE_ID, {})).rejects.toThrow(BadRequestException);
+    });
+
+    it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createPlacesRepositoryStub({
+        onUpdatePlace: (_placeId, _input, tx) => {
+          capturedTransactions.push(tx);
+        },
+      });
+
+      repository.findPlaceForMutation = async (_placeId, tx) => {
+        capturedTransactions.push(tx);
+
+        return DEFAULT_PLACE_FOR_MUTATION;
+      };
+      repository.findBandMemberByBandIdAndUserId = async (_bandId, _userId, tx) => {
+        capturedTransactions.push(tx);
+
+        return DEFAULT_MEMBER;
+      };
+
+      const service = new PlacesService(repository, createPrismaServiceStub());
+      await service.updatePlace(USER_ID, PLACE_ID, { name: '새 연습실' });
+
+      expect(capturedTransactions.length).toBeGreaterThan(0);
+      const firstTx = capturedTransactions[0];
+      capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
+    });
+
+    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+      const externalTx = { transactionClient: true };
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceFailingTransactionStub());
+
+      await expect(service.updatePlace(USER_ID, PLACE_ID, { name: '새 연습실' }, externalTx as never)).resolves.toBeDefined();
+    });
+  });
+
   describe('createPlace', () => {
     it('장소를 성공적으로 생성한다', async () => {
       const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
