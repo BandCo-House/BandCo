@@ -9,9 +9,9 @@ import { GetBandPlacesQueryDto } from './dto/get-band-places-query.dto';
 import { GetPlaceDetailQueryDto } from './dto/get-place-detail-query.dto';
 import { UpdatePlaceBodyDto } from './dto/update-place.dto';
 import type { CreatePlaceResult } from './types/create-place-result.type';
+import type { DeletePlaceResult } from './types/delete-place-result.type';
 import type { PlaceDetail } from './types/place-detail.type';
 import type { GetBandPlacesResult } from './types/place-list.type';
-import type { DeletePlaceResult } from './types/delete-place-result.type';
 import type { UpdatePlaceResult } from './types/update-place-result.type';
 import { PlacesService } from './places.service';
 
