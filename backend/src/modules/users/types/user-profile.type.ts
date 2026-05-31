@@ -7,10 +7,22 @@ export interface UserProfileUserDetail {
   createdAt: string;
 }
 
+export interface ProfileMusicDetail {
+  externalTrackId: string;
+  sourceType: 'DEEZER';
+  title: string;
+  artistName: string;
+  albumName: string;
+  albumImageUrl: string | null;
+  durationMs: number;
+  previewUrl: string | null;
+  sourceUrl: string;
+}
+
 export interface UserProfileDetail {
   nickname: string;
   selfDescription: string | null;
-  profileMusicUrl: string | null;
+  profileMusic: ProfileMusicDetail | null;
   avatarUrl: string | null;
 }
 
