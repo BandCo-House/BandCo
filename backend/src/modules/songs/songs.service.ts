@@ -13,8 +13,6 @@ import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
-import { DeezerTrackClient, type DeezerTrackSearcher } from './deezer-track.client';
-import { parseDeezerTrackToSongPreview } from './deezer-track.parser';
 import { SpotifyTrackClient, type SpotifyTrackReader } from './spotify-track.client';
 import { parseSpotifyTrackToSongPreview } from './spotify-track.parser';
 
@@ -27,8 +25,6 @@ export class SongsService {
     private readonly skillsService: SkillsService,
     @Inject(SpotifyTrackClient)
     private readonly spotifyTrackReader: SpotifyTrackReader,
-    @Inject(DeezerTrackClient)
-    private readonly deezerTrackSearcher: DeezerTrackSearcher,
   ) {}
 
   /**
@@ -41,18 +37,6 @@ export class SongsService {
     const spotifyTrack = await this.spotifyTrackReader.findTrack(trackId);
 
     return parseSpotifyTrackToSongPreview(spotifyTrack);
-  }
-
-  /**
-   * Deezer track 검색 결과를 곡 등록 미리보기 데이터 목록으로 변환한다.
-   *
-   * @param {string} query - 곡명과 아티스트명을 포함한 검색어
-   * @returns {Promise<SongPreview[]>} 곡 등록 미리보기 데이터 목록
-   */
-  async searchDeezerTrackPreviews(query: string): Promise<SongPreview[]> {
-    const deezerTracks = await this.deezerTrackSearcher.searchTracks(query);
-
-    return deezerTracks.map(deezerTrack => parseDeezerTrackToSongPreview(deezerTrack));
   }
 
   /**

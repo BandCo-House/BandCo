@@ -7,7 +7,6 @@ import type { User } from '../../generated/prisma';
 
 import { CreateSongBodyDto } from './dto/create-song.dto';
 import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
-import { SearchDeezerTrackPreviewsQueryDto } from './dto/search-deezer-track-previews-query.dto';
 import { UpdateSongBodyDto } from './dto/update-song.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { DeleteSongResult } from './types/delete-song-result.type';
@@ -108,15 +107,5 @@ export class SongsController {
     const songPreview = await this.songsService.previewSpotifyTrack(trackId);
 
     return createSuccessResponse('Spotify 곡 미리보기 조회 성공', songPreview);
-  }
-
-  @Get('songs/deezer/tracks/search')
-  @ApiOperation({ summary: 'Deezer 곡 검색' })
-  @ApiResponse({ status: 200, description: 'Deezer 곡 검색 성공' })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async searchDeezerTrackPreviews(@Query() query: SearchDeezerTrackPreviewsQueryDto): Promise<ApiSuccessResponse<SongPreview[]>> {
-    const songPreviews = await this.songsService.searchDeezerTrackPreviews(query.query);
-
-    return createSuccessResponse('Deezer 곡 미리보기 목록 조회 성공', songPreviews);
   }
 }
