@@ -5,8 +5,10 @@ import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { SearchProfileMusicQueryDto } from './dto/search-profile-music-query.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { SelfUserGuard } from './guard/self-user.guard';
+import type { ProfileMusicPreview } from './types/profile-music-preview.type';
 import type { GetUsersResult } from './types/user-list.type';
 import type { GetUserProfileResult } from './types/user-profile.type';
 import { UsersService } from './users.service';
@@ -22,6 +24,18 @@ export class UsersController {
   async getUsers(@Query() query: GetUsersQueryDto): Promise<ApiSuccessResponse<GetUsersResult>> {
     const result = await this.usersService.getUsers(query);
     return createSuccessResponse('유저 목록 조회 성공', result);
+  }
+
+  @Get('profile-music/search')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '프로필 음악 검색' })
+  @ApiResponse({ status: 200, description: '프로필 음악 검색 성공' })
+  @ApiResponse({ status: 400, description: '검색어 누락' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  async searchProfileMusicPreviews(@Query() query: SearchProfileMusicQueryDto): Promise<ApiSuccessResponse<{ items: ProfileMusicPreview[] }>> {
+    const items = await this.usersService.searchProfileMusicPreviews(query.q);
+    return createSuccessResponse('프로필 음악 검색 성공', { items });
   }
 
   @Get(':userId/profiles')
