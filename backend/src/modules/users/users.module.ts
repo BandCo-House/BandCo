@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from 'src/auth/auth.module';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
+import { DeezerTrackClient } from '../songs/deezer-track.client';
 
 import { SelfUserGuard } from './guard/self-user.guard';
 import { UsersPrismaRepository } from './repositoreis/user.prisma-repository';
@@ -17,6 +18,7 @@ import { UsersService } from './users.service';
     UsersService,
     AccessTokenGuard,
     SelfUserGuard,
+    DeezerTrackClient,
     {
       provide: USERS_REPOSITORY,
       useClass: UsersPrismaRepository,
