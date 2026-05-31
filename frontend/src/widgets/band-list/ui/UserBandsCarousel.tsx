@@ -60,17 +60,19 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
                   to="/band/$bandId"
                   params={{ bandId: band.id }}
                   key={band.id}
-                  className="flex-none rounded-xl bg-surface-1/40 p-1"
+                  className="flex-none rounded-xl bg-surface-1/40 px-1 pt-1 pb-5 shadow-[0_2px_3px_1px_rgba(0,0,0,0.10)] outline-[0.5px] -outline-offset-1 outline-grey-50"
                 >
-                  <div className="h-30 w-30 rounded-xl">
+                  <div className="flex size-32 items-center justify-center overflow-hidden rounded-xl bg-grey-200">
                     <img
                       src={bandCoverUrl}
                       alt={band.name}
-                      className="h-30 w-30 rounded-xl object-cover"
+                      className="size-full rounded-xl object-cover"
                     />
                   </div>
-                  <div className="mt-4 mb-5 text-center">
-                    <h3 className="typo-xs-sb text-grey-50">{band.name}</h3>
+                  <div className="mt-4 text-center">
+                    <h3 className="max-w-32 truncate typo-xs-sb text-grey-50">
+                      {band.name}
+                    </h3>
                   </div>
                 </Link>
               );
