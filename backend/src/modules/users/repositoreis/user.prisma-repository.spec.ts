@@ -20,7 +20,20 @@ const userRecord = {
   email: 'test@example.com',
   status: 'ACTIVE',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  profile: { nickname: 'testuser', selfDescription: '안녕', profileMusicUrl: null, avatarUrl: null },
+  profile: {
+    nickname: 'testuser',
+    selfDescription: '안녕',
+    profileMusicSourceType: null,
+    profileMusicExternalTrackId: null,
+    profileMusicTitle: null,
+    profileMusicArtistName: null,
+    profileMusicAlbumName: null,
+    profileMusicAlbumImageUrl: null,
+    profileMusicDurationMs: null,
+    profileMusicPreviewUrl: null,
+    profileMusicSourceUrl: null,
+    avatarUrl: null,
+  },
   userSkills: [{ skillTypeId: 'skill-001', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: 'GUITAR' } }],
   favoriteGenres: [{ genreId: 'genre-001', genre: { name: 'ROCK' } }],
 };
@@ -166,8 +179,40 @@ describe('UsersPrismaRepository', () => {
       expect(result?.user.id).toBe('user-001');
       expect(result?.user.createdAt).toBe('2026-01-01T00:00:00.000Z');
       expect(result?.profile?.nickname).toBe('testuser');
+      expect(result?.profile?.profileMusic).toBeNull();
       expect(result?.skills[0]).toEqual({ skillTypeId: 'skill-001', skillName: 'GUITAR', level: 'ADVANCED', isPrimary: true });
       expect(result?.favoriteGenres[0]).toEqual({ genreId: 'genre-001', name: 'ROCK' });
+    });
+
+    it('profileMusicSourceType이 있으면 profileMusic 객체를 조합하여 반환한다', async () => {
+      const recordWithMusic = {
+        ...userRecord,
+        profile: {
+          ...userRecord.profile,
+          profileMusicSourceType: 'DEEZER',
+          profileMusicExternalTrackId: '123456789',
+          profileMusicTitle: 'Bohemian Rhapsody',
+          profileMusicArtistName: 'Queen',
+          profileMusicAlbumName: 'A Night at the Opera',
+          profileMusicAlbumImageUrl: 'https://cdn.deezer.com/cover.jpg',
+          profileMusicDurationMs: 354000,
+          profileMusicPreviewUrl: 'https://cdn.deezer.com/preview/abc123.mp3',
+          profileMusicSourceUrl: 'https://www.deezer.com/track/123456789',
+        },
+      };
+      mockPrisma.user.findUnique.mockResolvedValue(recordWithMusic);
+      const result = await repository.findUserProfileById('user-001');
+      expect(result?.profile?.profileMusic).toEqual({
+        externalTrackId: '123456789',
+        sourceType: 'DEEZER',
+        title: 'Bohemian Rhapsody',
+        artistName: 'Queen',
+        albumName: 'A Night at the Opera',
+        albumImageUrl: 'https://cdn.deezer.com/cover.jpg',
+        durationMs: 354000,
+        previewUrl: 'https://cdn.deezer.com/preview/abc123.mp3',
+        sourceUrl: 'https://www.deezer.com/track/123456789',
+      });
     });
 
     it('profile이 없으면 profile 필드가 null이다', async () => {
@@ -191,6 +236,55 @@ describe('UsersPrismaRepository', () => {
     it('profile이 있으면 userProfile.update를 호출한다', async () => {
       await repository.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
       expect(mockPrisma.userProfile.update).toHaveBeenCalledWith({ where: { userId: 'user-001' }, data: { nickname: '새닉네임' } });
+    });
+
+    it('profileMusic 객체가 전달되면 9개 필드를 매핑하여 저장한다', async () => {
+      const profileMusic = {
+        externalTrackId: '123456789',
+        sourceType: 'DEEZER' as const,
+        title: 'Bohemian Rhapsody',
+        artistName: 'Queen',
+        albumName: 'A Night at the Opera',
+        albumImageUrl: 'https://cdn.deezer.com/cover.jpg',
+        durationMs: 354000,
+        previewUrl: 'https://cdn.deezer.com/preview/abc123.mp3',
+        sourceUrl: 'https://www.deezer.com/track/123456789',
+      };
+      await repository.updateUserProfile('user-001', { profile: { profileMusic } });
+      expect(mockPrisma.userProfile.update).toHaveBeenCalledWith({
+        where: { userId: 'user-001' },
+        data: expect.objectContaining({
+          profileMusicExternalTrackId: '123456789',
+          profileMusicSourceType: 'DEEZER',
+          profileMusicTitle: 'Bohemian Rhapsody',
+          profileMusicDurationMs: 354000,
+        }),
+      });
+    });
+
+    it('profileMusic이 null이면 9개 필드를 모두 null로 초기화한다', async () => {
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: null } });
+      expect(mockPrisma.userProfile.update).toHaveBeenCalledWith({
+        where: { userId: 'user-001' },
+        data: expect.objectContaining({
+          profileMusicExternalTrackId: null,
+          profileMusicSourceType: null,
+          profileMusicTitle: null,
+          profileMusicArtistName: null,
+          profileMusicAlbumName: null,
+          profileMusicAlbumImageUrl: null,
+          profileMusicDurationMs: null,
+          profileMusicPreviewUrl: null,
+          profileMusicSourceUrl: null,
+        }),
+      });
+    });
+
+    it('profileMusic이 undefined이면 음악 필드를 변경하지 않는다', async () => {
+      await repository.updateUserProfile('user-001', { profile: { nickname: '닉네임만변경' } });
+      const callData = mockPrisma.userProfile.update.mock.calls[0]?.[0]?.data;
+      expect(callData).not.toHaveProperty('profileMusicExternalTrackId');
+      expect(callData).not.toHaveProperty('profileMusicSourceType');
     });
 
     it('personalInfo.email이 있으면 user.update를 호출한다', async () => {

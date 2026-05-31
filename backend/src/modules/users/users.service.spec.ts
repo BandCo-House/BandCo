@@ -2,6 +2,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { User } from 'src/generated/prisma';
 
+import { DeezerTrackClient } from '../songs/deezer-track.client';
+
 import type { GetUsersQuery } from './dto/get-users-query.dto';
 import type { UsersRepository } from './repositoreis/user.repository';
 import { USERS_REPOSITORY } from './repositoreis/user.repository';
@@ -13,7 +15,7 @@ const mockUser = { id: 'user-001', email: 'test@example.com' } as User;
 
 const mockProfile: GetUserProfileResult = {
   user: { id: 'user-001', email: 'test@example.com', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00.000Z' },
-  profile: { nickname: 'testuser', selfDescription: null, profileMusicUrl: null, avatarUrl: null },
+  profile: { nickname: 'testuser', selfDescription: null, profileMusic: null, avatarUrl: null },
   skills: [],
   favoriteGenres: [],
 };
@@ -43,12 +45,35 @@ const repositoryStub: UsersRepository = {
   },
 };
 
+const mockDeezerTracks = [
+  {
+    id: 123456789,
+    title: 'Bohemian Rhapsody',
+    duration: 354,
+    preview: 'https://cdn.deezer.com/preview/abc123.mp3',
+    link: 'https://www.deezer.com/track/123456789',
+    artist: { name: 'Queen' },
+    album: {
+      title: 'A Night at the Opera',
+      cover: null,
+      cover_medium: null,
+      cover_big: null,
+      cover_xl: 'https://cdn.deezer.com/images/cover_xl.jpg',
+    },
+  },
+];
+
+const deezerClientStub = {
+  searchTracks: jest.fn().mockResolvedValue(mockDeezerTracks),
+};
+
 describe('UsersService', () => {
   let service: UsersService;
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module = await Test.createTestingModule({
-      providers: [UsersService, { provide: USERS_REPOSITORY, useValue: repositoryStub }],
+      providers: [UsersService, { provide: USERS_REPOSITORY, useValue: repositoryStub }, { provide: DeezerTrackClient, useValue: deezerClientStub }],
     }).compile();
 
     service = module.get(UsersService);
@@ -102,6 +127,34 @@ describe('UsersService', () => {
     it('repository 결과를 그대로 반환한다', async () => {
       const result = await service.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
       expect(result.user.id).toBe('user-001');
+    });
+  });
+
+  describe('searchProfileMusicPreviews', () => {
+    it('검색어가 있으면 Deezer 결과를 ProfileMusicPreview 목록으로 반환한다', async () => {
+      const result = await service.searchProfileMusicPreviews('Bohemian Rhapsody');
+      expect(deezerClientStub.searchTracks).toHaveBeenCalledWith('Bohemian Rhapsody');
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('Bohemian Rhapsody');
+      expect(result[0].artistName).toBe('Queen');
+      expect(result[0].sourceType).toBe('DEEZER');
+    });
+
+    it('반환 결과에 releaseDate 필드가 없다', async () => {
+      const result = await service.searchProfileMusicPreviews('Queen');
+      expect(result[0]).not.toHaveProperty('releaseDate');
+    });
+
+    it('Deezer API가 빈 배열을 반환하면 빈 배열을 반환한다', async () => {
+      deezerClientStub.searchTracks.mockResolvedValueOnce([]);
+      const result = await service.searchProfileMusicPreviews('없는곡');
+      expect(result).toHaveLength(0);
+    });
+
+    it('Deezer API가 실패하면 예외가 전파된다', async () => {
+      const { BadGatewayException } = await import('@nestjs/common');
+      deezerClientStub.searchTracks.mockRejectedValueOnce(new BadGatewayException('Deezer 실패'));
+      await expect(service.searchProfileMusicPreviews('Queen')).rejects.toThrow(BadGatewayException);
     });
   });
 });
