@@ -121,7 +121,19 @@ export class UsersPrismaRepository implements UsersRepository {
         ? {
             nickname: user.profile.nickname,
             selfDescription: user.profile.selfDescription,
-            profileMusicUrl: user.profile.profileMusicUrl,
+            profileMusic: user.profile.profileMusicSourceType
+              ? {
+                  externalTrackId: user.profile.profileMusicExternalTrackId!,
+                  sourceType: user.profile.profileMusicSourceType as 'DEEZER',
+                  title: user.profile.profileMusicTitle!,
+                  artistName: user.profile.profileMusicArtistName!,
+                  albumName: user.profile.profileMusicAlbumName!,
+                  albumImageUrl: user.profile.profileMusicAlbumImageUrl,
+                  durationMs: user.profile.profileMusicDurationMs!,
+                  previewUrl: user.profile.profileMusicPreviewUrl,
+                  sourceUrl: user.profile.profileMusicSourceUrl!,
+                }
+              : null,
             avatarUrl: user.profile.avatarUrl,
           }
         : null,
@@ -141,7 +153,36 @@ export class UsersPrismaRepository implements UsersRepository {
   async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult> {
     const run = async (client: Prisma.TransactionClient) => {
       if (data.profile) {
-        await client.userProfile.update({ where: { userId }, data: data.profile });
+        const { profileMusic, ...restProfileData } = data.profile;
+
+        const profileMusicData =
+          profileMusic === null
+            ? {
+                profileMusicExternalTrackId: null,
+                profileMusicSourceType: null,
+                profileMusicTitle: null,
+                profileMusicArtistName: null,
+                profileMusicAlbumName: null,
+                profileMusicAlbumImageUrl: null,
+                profileMusicDurationMs: null,
+                profileMusicPreviewUrl: null,
+                profileMusicSourceUrl: null,
+              }
+            : profileMusic !== undefined
+              ? {
+                  profileMusicExternalTrackId: profileMusic.externalTrackId,
+                  profileMusicSourceType: profileMusic.sourceType,
+                  profileMusicTitle: profileMusic.title,
+                  profileMusicArtistName: profileMusic.artistName,
+                  profileMusicAlbumName: profileMusic.albumName,
+                  profileMusicAlbumImageUrl: profileMusic.albumImageUrl ?? null,
+                  profileMusicDurationMs: profileMusic.durationMs,
+                  profileMusicPreviewUrl: profileMusic.previewUrl ?? null,
+                  profileMusicSourceUrl: profileMusic.sourceUrl,
+                }
+              : {};
+
+        await client.userProfile.update({ where: { userId }, data: { ...restProfileData, ...profileMusicData } });
       }
 
       if (data.personalInfo?.email) {
