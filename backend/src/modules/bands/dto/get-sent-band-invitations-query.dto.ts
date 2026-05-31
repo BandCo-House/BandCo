@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsUUID, Min } from 'class-validator';
 import { normalizeOptionalStringValue, parseOptionalPositiveIntegerValue } from 'src/common/validation/transform.util';
@@ -15,24 +16,29 @@ export const SENT_BAND_INVITATION_STATUSES = Object.values(BandInvitationStatus)
 export type SentBandInvitationStatus = BandInvitationStatus;
 
 export class GetSentBandInvitationsQueryDto {
+  @ApiPropertyOptional({ enum: BandInvitationStatus, description: '초대 상태 필터', default: 'PENDING' })
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsEnum(SENT_BAND_INVITATION_STATUSES, { message: enumValidationMessage })
   where__invitation_status: SentBandInvitationStatus = BandInvitationStatus.PENDING;
 
+  @ApiPropertyOptional({ enum: ['asc', 'desc'], description: '생성일 정렬 방향', default: 'desc' })
   @IsOptional()
   @IsEnum(ORDER_DIRECTIONS, { message: enumValidationMessage })
   order__created_at: SentBandInvitationOrderDirection = 'desc';
 
+  @ApiPropertyOptional({ enum: ['asc', 'desc'], description: 'ID 정렬 방향', default: 'desc' })
   @IsOptional()
   @IsEnum(ORDER_DIRECTIONS, { message: enumValidationMessage })
   order__id: SentBandInvitationOrderDirection = 'desc';
 
+  @ApiPropertyOptional({ description: '한 번에 가져올 항목 수', default: 20, minimum: 1 })
   @Transform(parseOptionalPositiveIntegerValue)
   @IsInt({ message: intValidationMessage })
   @Min(1, { message: minValidationMessage })
   take: number = 20;
 
+  @ApiPropertyOptional({ description: '커서 ID (UUID)', example: '550e8400-e29b-41d4-a716-446655440000' })
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsUUID(undefined, { message: uuidValidationMessage })

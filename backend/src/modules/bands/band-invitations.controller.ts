@@ -1,4 +1,5 @@
 import { Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -17,12 +18,17 @@ interface AuthenticatedRequest {
   user: User;
 }
 
+@ApiTags('초대')
+@ApiBearerAuth('access-token')
 @Controller('invitations')
 export class BandInvitationsController {
   constructor(private readonly bandsService: BandsService) {}
 
   @Get('received')
   @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: '받은 밴드 초대 목록 조회' })
+  @ApiResponse({ status: 200, description: '받은 초대 목록 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async getReceivedBandInvitations(
     @Req() request: AuthenticatedRequest,
     @Query() query: GetReceivedBandInvitationsQueryDto,
@@ -34,6 +40,9 @@ export class BandInvitationsController {
 
   @Get('sent')
   @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: '보낸 밴드 초대 목록 조회' })
+  @ApiResponse({ status: 200, description: '보낸 초대 목록 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async getSentBandInvitations(
     @Req() request: AuthenticatedRequest,
     @Query() query: GetSentBandInvitationsQueryDto,
@@ -45,6 +54,12 @@ export class BandInvitationsController {
 
   @Post(':invitationId/accept')
   @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: '밴드 초대 수락' })
+  @ApiParam({ name: 'invitationId', description: '초대 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '밴드 초대 수락 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '초대를 찾을 수 없음' })
   async acceptBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') invitationId: string,
@@ -56,6 +71,12 @@ export class BandInvitationsController {
 
   @Post(':invitationId/decline')
   @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: '밴드 초대 거절' })
+  @ApiParam({ name: 'invitationId', description: '초대 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '밴드 초대 거절 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '초대를 찾을 수 없음' })
   async declineBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') invitationId: string,
@@ -67,6 +88,12 @@ export class BandInvitationsController {
 
   @Delete(':invitationId')
   @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: '보낸 밴드 초대 취소' })
+  @ApiParam({ name: 'invitationId', description: '초대 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '초대 취소 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '초대를 찾을 수 없음' })
   async deleteBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') invitationId: string,

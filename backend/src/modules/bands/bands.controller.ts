@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -30,12 +31,18 @@ interface AuthenticatedRequest {
   user: User;
 }
 
+@ApiTags('밴드')
 @Controller('bands')
 export class BandsController {
   constructor(private readonly bandsService: BandsService) {}
 
   @Post()
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 생성' })
+  @ApiResponse({ status: 201, description: '밴드 생성 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async createBand(@Req() request: AuthenticatedRequest, @Body() input: CreateBandBodyDto): Promise<ApiSuccessResponse<CreateBandResult>> {
     const createdBand = await this.bandsService.createBand(request.user.id, input);
 
@@ -44,6 +51,14 @@ export class BandsController {
 
   @Post(':bandId/invitations')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 초대 전송' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '밴드 초대 전송 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '밴드 또는 초대 대상 유저를 찾을 수 없음' })
   async createBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,
@@ -56,6 +71,13 @@ export class BandsController {
 
   @Post(':bandId/join-requests')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 가입 요청' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '밴드 가입 요청 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async createBandJoinRequest(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,
@@ -68,6 +90,13 @@ export class BandsController {
 
   @Get(':bandId/join-requests')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 가입 요청 목록 조회' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 가입 요청 목록 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async getBandJoinRequests(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,
@@ -80,6 +109,13 @@ export class BandsController {
 
   @Delete(':bandId/me')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 나가기' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 나가기 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '리더는 밴드를 나갈 수 없음' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async leaveBand(@Req() request: AuthenticatedRequest, @Param('bandId') bandId: string): Promise<ApiSuccessResponse<LeaveBandResult>> {
     const leftBand = await this.bandsService.leaveBand(request.user.id, bandId);
 
@@ -88,6 +124,13 @@ export class BandsController {
 
   @Delete(':bandId')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 삭제' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 삭제 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async deleteBand(@Req() request: AuthenticatedRequest, @Param('bandId') bandId: string): Promise<ApiSuccessResponse<DeleteBandResult>> {
     const deletedBand = await this.bandsService.deleteBand(request.user.id, bandId);
 
@@ -96,6 +139,10 @@ export class BandsController {
 
   @Get('me')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '내 밴드 목록 조회' })
+  @ApiResponse({ status: 200, description: '내 밴드 목록 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async getMyBands(@Req() request: AuthenticatedRequest, @Query() query: GetMyBandsQueryDto): Promise<ApiSuccessResponse<GetMyBandsResult>> {
     const bands = await this.bandsService.getMyBands(request.user.id, query);
 
@@ -103,6 +150,8 @@ export class BandsController {
   }
 
   @Get('search')
+  @ApiOperation({ summary: '밴드 검색' })
+  @ApiResponse({ status: 200, description: '밴드 검색 성공' })
   async searchBands(@Query() query: SearchBandsQueryDto): Promise<ApiSuccessResponse<SearchBandsResult>> {
     const bands = await this.bandsService.searchBands(query);
 
@@ -111,6 +160,14 @@ export class BandsController {
 
   @Patch(':bandId')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 정보 수정' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 정보 수정 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async updateBand(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,
@@ -122,6 +179,10 @@ export class BandsController {
   }
 
   @Get(':bandId/users')
+  @ApiOperation({ summary: '밴드 멤버 목록 조회' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 멤버 목록 조회 성공' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async getBandMembers(@Param('bandId') bandId: string, @Query() query: GetBandMembersQueryDto): Promise<ApiSuccessResponse<GetBandMembersResult>> {
     const members = await this.bandsService.getBandMembers(bandId, query);
 
@@ -130,6 +191,15 @@ export class BandsController {
 
   @Patch(':bandId/users/:userId')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 멤버 권한 변경' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiParam({ name: 'userId', description: '대상 유저 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 멤버 권한 변경 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '밴드 또는 멤버를 찾을 수 없음' })
   async updateBandMemberRole(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,

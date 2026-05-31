@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
@@ -15,6 +16,7 @@ import { SONG_SOURCE_TYPES } from './create-song.dto';
  * 곡 수정 요청 본문은 PATCH 의미에 맞춰 전달된 필드만 검증한다.
  */
 export class UpdateSongBodyDto {
+  @ApiPropertyOptional({ description: '곡 제목 (최대 200자)', example: 'Bohemian Rhapsody' })
   @Transform(trimStringValue)
   @IsOptional()
   @IsString({
@@ -28,6 +30,7 @@ export class UpdateSongBodyDto {
   })
   title?: string;
 
+  @ApiPropertyOptional({ description: '아티스트 이름 (최대 200자)', example: 'Queen' })
   @Transform(trimStringValue)
   @IsOptional()
   @IsString({
@@ -41,6 +44,7 @@ export class UpdateSongBodyDto {
   })
   artistName?: string;
 
+  @ApiPropertyOptional({ description: '음원 URL (null로 설정 시 삭제)', nullable: true, example: 'https://open.spotify.com/track/...' })
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
@@ -48,12 +52,14 @@ export class UpdateSongBodyDto {
   })
   sourceUrl?: string | null;
 
+  @ApiPropertyOptional({ enum: SONG_SOURCE_TYPES, description: '음원 출처 (null로 설정 시 삭제)', nullable: true, example: 'SPOTIFY' })
   @IsOptional()
   @IsEnum(SONG_SOURCE_TYPES, {
     message: enumValidationMessage,
   })
   sourceType?: SongSourceType | null;
 
+  @ApiPropertyOptional({ description: '곡 메모 (null로 설정 시 삭제)', nullable: true, example: '인트로 부분 연습 필요' })
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
@@ -61,6 +67,7 @@ export class UpdateSongBodyDto {
   })
   memo?: string | null;
 
+  @ApiPropertyOptional({ description: '스킬 타입 ID 목록 (UUID 배열)', type: [String] })
   @IsOptional()
   @IsArray()
   @IsUUID('4', {
