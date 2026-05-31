@@ -48,7 +48,10 @@ export function ProfileMusicSearchDialog({
     if (!open || !debouncedQuery.trim()) return;
 
     let ignore = false;
-    const searchTimerId = window.setTimeout(() => {
+
+    void Promise.resolve().then(() => {
+      if (ignore) return;
+
       setIsLoading(true);
 
       searchProfileMusic(debouncedQuery)
@@ -61,16 +64,25 @@ export function ProfileMusicSearchDialog({
         .finally(() => {
           if (!ignore) setIsLoading(false);
         });
-    }, 0);
+    });
 
     return () => {
       ignore = true;
-      window.clearTimeout(searchTimerId);
     };
   }, [debouncedQuery, open]);
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setQuery('');
+      setDebouncedQuery('');
+      setResults([]);
+      setIsLoading(false);
+    }
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <AppDialogContent className="p-8 text-grey-50">
         <AppDialogClose aria-label="곡 검색 닫기" />
         <AppDialogHeader>
@@ -83,6 +95,7 @@ export function ProfileMusicSearchDialog({
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-6 size-7 -translate-y-1/2 text-grey-50" />
             <input
+              aria-label="곡 검색: 제목 또는 가수"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="제목, 가수로 곡을 검색하세요"

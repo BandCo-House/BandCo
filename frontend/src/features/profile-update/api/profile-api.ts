@@ -37,12 +37,5 @@ export const updateUserProfile = (
   return apiPatch<unknown>(
     `/users/${encodeURIComponent(normalizedUserId)}/profiles`,
     data,
-    data instanceof FormData
-      ? {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      : undefined,
   ).then((result) => profileSchema.parse(result));
 };

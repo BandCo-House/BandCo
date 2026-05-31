@@ -254,7 +254,7 @@ export function ProfileCard({
                       ? '프로필 음악 일시정지'
                       : '프로필 음악 재생'
                 }
-                className={`relative flex size-25 items-center justify-center gap-2.5 rounded-full bg-surface-1 p-0 shadow-lg ${
+                className={`relative flex size-25 items-center justify-center gap-2.5 rounded-full bg-grey-400 p-0 shadow-lg ${
                   isEditing || canPlayProfileMusic
                     ? 'cursor-pointer'
                     : 'cursor-not-allowed opacity-40'

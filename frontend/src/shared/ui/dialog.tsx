@@ -179,6 +179,7 @@ function AppDialogContent({
   className,
   children,
   showGlow = true,
+  style,
   ...props
 }: React.ComponentProps<typeof DialogContent> & {
   showGlow?: boolean;
@@ -196,7 +197,7 @@ function AppDialogContent({
         borderWidth: '0.5px 1px 2px 0.5px',
         borderColor: 'color-mix(in srgb, var(--surface-1) 40%, transparent)',
         boxShadow: '0 3px 6px 2px rgba(255, 255, 255, 0.16)',
-        ...props.style,
+        ...style,
       }}
       {...props}
     >

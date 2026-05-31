@@ -35,7 +35,7 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
       emblaApi.off('select', updateScrollState);
       emblaApi.off('reInit', updateScrollState);
     };
-  }, [emblaApi, updateScrollState, bands.length]);
+  }, [emblaApi, updateScrollState]);
 
   return (
     <section

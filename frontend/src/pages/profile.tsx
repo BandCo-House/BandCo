@@ -1,10 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/app/providers/auth-context';
 import { useUserProfile } from '@/features/profile-get/model/useUserProfile';
 import { useMyBands } from '@/entities/band/api/useMyBands';
-import { updateUserProfile } from '@/features/profile-update/api/profile-api';
+import {
+  updateUserProfile,
+  type UpdateProfileRequest,
+} from '@/features/profile-update/api/profile-api';
 import type { ProfileMusic } from '@/entities/profile/model/types';
 
 // FSD Slices Imports
@@ -102,6 +105,7 @@ function ProfileRoutePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isMusicSearchOpen, setIsMusicSearchOpen] = useState(false);
   const [isLeaveEditDialogOpen, setIsLeaveEditDialogOpen] = useState(false);
+  const avatarPreviewUrlRef = useRef<string | null>(null);
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -121,6 +125,19 @@ function ProfileRoutePage() {
     };
   }, [isEditing]);
 
+  const revokeAvatarPreviewUrl = () => {
+    if (!avatarPreviewUrlRef.current) return;
+
+    URL.revokeObjectURL(avatarPreviewUrlRef.current);
+    avatarPreviewUrlRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      revokeAvatarPreviewUrl();
+    };
+  }, []);
+
   // 3. Save profile changes
   const handleSave = async () => {
     const result = profileEditSchema.safeParse(editForm);
@@ -136,11 +153,10 @@ function ProfileRoutePage() {
     const validatedData = result.data;
 
     try {
-      const profilePayload = {
+      const profilePayload: NonNullable<UpdateProfileRequest['profile']> = {
         nickname: validatedData.nickname,
         selfDescription: validatedData.selfDescription || null,
         profileMusic: validatedData.profileMusic,
-        avatarUrl: validatedData.avatarUrl || null,
       };
 
       if (avatarFile) {
@@ -154,6 +170,7 @@ function ProfileRoutePage() {
         formData.append('avatar', avatarFile);
         await updateUserProfile(targetUserId, formData);
       } else {
+        profilePayload.avatarUrl = validatedData.avatarUrl || null;
         await updateUserProfile(targetUserId, {
           profile: profilePayload,
         });
@@ -164,6 +181,8 @@ function ProfileRoutePage() {
       });
       setIsEditing(false);
       setAvatarFile(null);
+      setEditForm((prev) => ({ ...prev, avatarUrl: '' }));
+      revokeAvatarPreviewUrl();
       toast.success('프로필 정보가 저장되었습니다.');
     } catch (error) {
       console.error(error);
@@ -186,6 +205,7 @@ function ProfileRoutePage() {
   };
 
   const resetEditForm = () => {
+    revokeAvatarPreviewUrl();
     setEditForm({
       nickname: profile?.profile?.nickname || '',
       selfDescription: profile?.profile?.selfDescription || '',
@@ -262,6 +282,8 @@ function ProfileRoutePage() {
           onAvatarFileSelect={(file) => {
             void compressProfileImage(file)
               .then(({ file: compressedFile, previewUrl }) => {
+                revokeAvatarPreviewUrl();
+                avatarPreviewUrlRef.current = previewUrl;
                 setAvatarFile(compressedFile);
                 setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
               })
