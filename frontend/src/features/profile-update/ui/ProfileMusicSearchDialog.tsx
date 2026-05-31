@@ -8,12 +8,15 @@ import {
   Dialog,
   DialogTitle,
 } from '@/shared/ui/dialog';
-import { searchSongPreviews, type SongPreview } from '../api/song-search-api';
+import {
+  searchProfileMusic,
+  type ProfileMusicSearchResult,
+} from '../api/profile-music-api';
 
 type ProfileMusicSearchDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (song: SongPreview) => void;
+  onSelect: (song: ProfileMusicSearchResult) => void;
 };
 
 const formatDuration = (durationMs: number) => {
@@ -30,7 +33,7 @@ export function ProfileMusicSearchDialog({
 }: ProfileMusicSearchDialogProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [results, setResults] = useState<SongPreview[]>([]);
+  const [results, setResults] = useState<ProfileMusicSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const hasQuery = useMemo(() => query.trim().length > 0, [query]);
@@ -48,7 +51,7 @@ export function ProfileMusicSearchDialog({
     const searchTimerId = window.setTimeout(() => {
       setIsLoading(true);
 
-      searchSongPreviews(debouncedQuery)
+      searchProfileMusic(debouncedQuery)
         .then((items) => {
           if (!ignore) setResults(items);
         })

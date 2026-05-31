@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import type { Profile } from '../model/types';
+import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
 import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import GalleryIcon from '@/assets/icons/gallery.svg?react';
+import { toast } from 'sonner';
 
 export interface ProfileCardProps {
   profile: Profile;
@@ -11,7 +12,7 @@ export interface ProfileCardProps {
   editForm: {
     nickname: string;
     selfDescription: string;
-    profileMusicUrl: string;
+    profileMusic: ProfileMusic | null;
     avatarUrl: string;
   };
   onChangeEditForm: (fields: Partial<ProfileCardProps['editForm']>) => void;
@@ -42,13 +43,22 @@ export function ProfileCard({
   const profileName = profile.profile?.nickname || '익명의 아티스트';
   const avatarUrl = editForm.avatarUrl || profile.profile?.avatarUrl;
   const selfDescription = profile.profile?.selfDescription;
-  const musicUrl = editForm.profileMusicUrl || profile.profile?.profileMusicUrl;
-  const hasProfileMusic = Boolean(musicUrl);
-  const profileMusicTitle = hasProfileMusic ? '프로필 음악' : '음악 없음';
-  const profileMusicArtist = '';
+  const profileMusic = editForm.profileMusic ?? profile.profile?.profileMusic;
+  const musicUrl = profileMusic?.previewUrl ?? null;
+  const canPlayProfileMusic = Boolean(musicUrl);
+  const profileMusicTitle = profileMusic?.title ?? '음악 없음';
+  const profileMusicArtist = profileMusic?.artistName ?? '';
 
   const [isPlaying, setIsPlaying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const hasShownAudioErrorRef = useRef(false);
+
+  const showAudioErrorToast = () => {
+    if (hasShownAudioErrorRef.current) return;
+    hasShownAudioErrorRef.current = true;
+    toast.error('프로필 음악을 재생할 수 없습니다.');
+  };
 
   const handleLpClick = () => {
     if (isEditing) {
@@ -56,7 +66,18 @@ export function ProfileCard({
       return;
     }
 
-    if (musicUrl) setIsPlaying(!isPlaying);
+    const audio = audioRef.current;
+    if (!canPlayProfileMusic || !audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      return;
+    }
+
+    void audio.play().catch(() => {
+      setIsPlaying(false);
+      showAudioErrorToast();
+    });
   };
 
   return (
@@ -208,9 +229,24 @@ export function ProfileCard({
             </div>
 
             <div className="absolute -top-16 right-8 flex shrink-0 flex-col items-center">
+              <audio
+                ref={audioRef}
+                src={musicUrl || undefined}
+                preload="none"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => {
+                  setIsPlaying(false);
+                  hasShownAudioErrorRef.current = false;
+                }}
+                onEnded={() => setIsPlaying(false)}
+                onError={() => {
+                  setIsPlaying(false);
+                  showAudioErrorToast();
+                }}
+              />
               <button
                 onClick={handleLpClick}
-                disabled={!isEditing && !musicUrl}
+                disabled={!isEditing && !canPlayProfileMusic}
                 aria-label={
                   isEditing
                     ? '프로필 음악 수정'
@@ -219,7 +255,7 @@ export function ProfileCard({
                       : '프로필 음악 재생'
                 }
                 className={`relative flex size-25 items-center justify-center gap-2.5 rounded-full bg-surface-1 p-0 shadow-lg ${
-                  isEditing || musicUrl
+                  isEditing || canPlayProfileMusic
                     ? 'cursor-pointer'
                     : 'cursor-not-allowed opacity-40'
                 } ${isPlaying ? 'animate-[spin_8s_linear_infinite]' : ''}`}

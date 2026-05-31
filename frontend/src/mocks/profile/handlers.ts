@@ -15,7 +15,17 @@ const mockProfiles: Record<string, Profile> = {
     profile: {
       nickname: '김민준',
       selfDescription: '음악으로 세상과 소통하는 기타리스트',
-      profileMusicUrl: 'https://example.com/day6-timeofourlife.mp3',
+      profileMusic: {
+        externalTrackId: 'deezer-1',
+        sourceType: 'DEEZER',
+        title: '마치 흘러가는 바람처럼',
+        artistName: 'DAY6(데이식스)',
+        albumName: 'The Book of Us',
+        albumImageUrl: null,
+        durationMs: 202000,
+        previewUrl: 'https://example.com/day6-preview.mp3',
+        sourceUrl: 'https://www.deezer.com/track/demo-1',
+      },
       avatarUrl:
         'https://previews.123rf.com/images/paylessimages/paylessimages1502/paylessimages150204116/46228198-band-instruments-such.jpg',
     },
@@ -55,7 +65,7 @@ const mockProfiles: Record<string, Profile> = {
     profile: {
       nickname: '홍길동',
       selfDescription: '합주 잼을 좋아하는 베이시스트',
-      profileMusicUrl: null,
+      profileMusic: null,
       avatarUrl: null,
     },
     skills: [
@@ -137,7 +147,7 @@ export const profileHandlers = [
           profile: {
             nickname: `유저_${userId}`,
             selfDescription: null,
-            profileMusicUrl: null,
+            profileMusic: null,
             avatarUrl: null,
           },
           skills: [],
@@ -154,10 +164,10 @@ export const profileHandlers = [
             body.profile.selfDescription !== undefined
               ? body.profile.selfDescription
               : (current.profile?.selfDescription ?? null),
-          profileMusicUrl:
-            body.profile.profileMusicUrl !== undefined
-              ? body.profile.profileMusicUrl
-              : (current.profile?.profileMusicUrl ?? null),
+          profileMusic:
+            body.profile.profileMusic !== undefined
+              ? body.profile.profileMusic
+              : (current.profile?.profileMusic ?? null),
           avatarUrl:
             body.profile.avatarUrl !== undefined
               ? body.profile.avatarUrl

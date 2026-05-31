@@ -5,6 +5,7 @@ import { useAuth } from '@/app/providers/auth-context';
 import { useUserProfile } from '@/features/profile-get/model/useUserProfile';
 import { useMyBands } from '@/entities/band/api/useMyBands';
 import { updateUserProfile } from '@/features/profile-update/api/profile-api';
+import type { ProfileMusic } from '@/entities/profile/model/types';
 
 // FSD Slices Imports
 import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
@@ -90,12 +91,12 @@ function ProfileRoutePage() {
   const [editForm, setEditForm] = useState<{
     nickname: string;
     selfDescription: string;
-    profileMusicUrl: string;
+    profileMusic: ProfileMusic | null;
     avatarUrl: string;
   }>({
     nickname: '',
     selfDescription: '',
-    profileMusicUrl: '',
+    profileMusic: null,
     avatarUrl: '',
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -138,7 +139,7 @@ function ProfileRoutePage() {
       const profilePayload = {
         nickname: validatedData.nickname,
         selfDescription: validatedData.selfDescription || null,
-        profileMusicUrl: validatedData.profileMusicUrl || null,
+        profileMusic: validatedData.profileMusic,
         avatarUrl: validatedData.avatarUrl || null,
       };
 
@@ -177,7 +178,7 @@ function ProfileRoutePage() {
     navigator.clipboard
       .writeText(url.toString())
       .then(() => {
-        toast.success('프로필 주소가 클립보드에 성공적으로 복사되었습니다!');
+        toast.success('주소가 클립보드에 저장되었습니다.');
       })
       .catch(() => {
         toast.error('주소 복사에 실패했습니다.');
@@ -188,7 +189,7 @@ function ProfileRoutePage() {
     setEditForm({
       nickname: profile?.profile?.nickname || '',
       selfDescription: profile?.profile?.selfDescription || '',
-      profileMusicUrl: profile?.profile?.profileMusicUrl || '',
+      profileMusic: profile?.profile?.profileMusic ?? null,
       avatarUrl: profile?.profile?.avatarUrl || '',
     });
     setAvatarFile(null);
@@ -311,7 +312,7 @@ function ProfileRoutePage() {
           onSelect={(song) => {
             setEditForm((prev) => ({
               ...prev,
-              profileMusicUrl: song.previewUrl || song.sourceUrl,
+              profileMusic: song,
             }));
           }}
         />

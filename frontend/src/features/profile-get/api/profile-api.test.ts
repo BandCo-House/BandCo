@@ -22,15 +22,28 @@ describe('profile get 어댑터', () => {
       profile: {
         nickname: '김민준',
         selfDescription: '기타리스트입니다',
-        profileMusicUrl: 'https://example.com/song.mp3',
+        profileMusic: {
+          externalTrackId: 'track-1',
+          sourceType: 'DEEZER',
+          title: '곡 제목',
+          artistName: '아티스트',
+          albumName: '앨범',
+          albumImageUrl: null,
+          durationMs: 180000,
+          previewUrl: 'https://example.com/song.mp3',
+          sourceUrl: 'https://www.deezer.com/track/track-1',
+        },
         avatarUrl: null,
       },
       skills: [
-        { skillTypeId: 'skill-1', skillName: 'Guitar', level: 'ADVANCED', isPrimary: true },
+        {
+          skillTypeId: 'skill-1',
+          skillName: 'Guitar',
+          level: 'ADVANCED',
+          isPrimary: true,
+        },
       ],
-      favoriteGenres: [
-        { genreId: 'genre-1', name: 'Rock' },
-      ],
+      favoriteGenres: [{ genreId: 'genre-1', name: 'Rock' }],
     };
 
     mock.onGet('/users/user-001/profiles').reply(200, {
@@ -48,8 +61,20 @@ describe('profile get 어댑터', () => {
 
   it('userId에 특수문자가 포함된 경우 안전하게 인코딩하여 요청한다', async () => {
     const mockData = {
-      user: { id: 'user/001' },
-      profile: { nickname: '특수문자' },
+      user: {
+        id: 'user/001',
+        email: null,
+        status: 'ACTIVE',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+      profile: {
+        nickname: '특수문자',
+        selfDescription: null,
+        profileMusic: null,
+        avatarUrl: null,
+      },
+      skills: [],
+      favoriteGenres: [],
     };
 
     // 'user/001' -> 'user%2F001'

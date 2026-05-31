@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type { ApiResponse } from '@/shared/api';
 import type { Song } from '@/entities/song/model/types';
 import { API_URL } from '../config';
-import type { SongPreview } from '@/features/profile-update/api/song-search-api';
+import type { ProfileMusicSearchResult } from '@/features/profile-update/api/profile-music-api';
 
 const song: Song = {
   id: 'song-1',
@@ -25,17 +25,16 @@ const song: Song = {
 };
 
 export const songHandlers = [
-  http.get(`${API_URL}/songs/deezer/tracks/search`, ({ request }) => {
+  http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
     const url = new URL(request.url);
     const query = url.searchParams.get('query')?.trim() || '데이식스';
-    const previews: SongPreview[] = [
+    const previews: ProfileMusicSearchResult[] = [
       {
         externalTrackId: 'deezer-1',
         title: '마치 흘러가는 바람처럼',
         artistName: query.includes('데이') ? 'DAY6(데이식스)' : 'DAY6',
         albumName: 'The Book of Us',
         albumImageUrl: null,
-        releaseDate: '2019-07-15',
         durationMs: 202000,
         previewUrl: 'https://example.com/day6-preview.mp3',
         sourceUrl: 'https://www.deezer.com/track/demo-1',
@@ -47,7 +46,6 @@ export const songHandlers = [
         artistName: 'Whiteusedsocks',
         albumName: '건널목',
         albumImageUrl: null,
-        releaseDate: '2024-01-01',
         durationMs: 211000,
         previewUrl: 'https://example.com/crosswalk-preview.mp3',
         sourceUrl: 'https://www.deezer.com/track/demo-2',
@@ -55,7 +53,7 @@ export const songHandlers = [
       },
     ];
 
-    return HttpResponse.json<ApiResponse<SongPreview[]>>({
+    return HttpResponse.json<ApiResponse<ProfileMusicSearchResult[]>>({
       success: true,
       data: previews,
     });

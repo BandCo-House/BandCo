@@ -1,5 +1,7 @@
 import { apiPatch } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
+import { profileSchema } from '@/entities/profile/model/schema';
+import type { ProfileMusic } from '@/entities/profile/model/types';
 
 export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 
@@ -7,7 +9,7 @@ export type UpdateProfileRequest = {
   profile?: {
     nickname?: string;
     selfDescription?: string | null;
-    profileMusicUrl?: string | null;
+    profileMusic?: ProfileMusic | null;
     avatarUrl?: string | null;
   };
   personalInfo?: {
@@ -32,7 +34,7 @@ export const updateUserProfile = (
   if (!normalizedUserId) {
     return Promise.reject(new Error('userId is required'));
   }
-  return apiPatch<Profile>(
+  return apiPatch<unknown>(
     `/users/${encodeURIComponent(normalizedUserId)}/profiles`,
     data,
     data instanceof FormData
@@ -42,5 +44,5 @@ export const updateUserProfile = (
           },
         }
       : undefined,
-  );
+  ).then((result) => profileSchema.parse(result));
 };
