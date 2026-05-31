@@ -56,6 +56,22 @@ describe('profile get 어댑터', () => {
     const result = await getUserProfile('user-001');
 
     expect(result.profile?.nickname).toBe('김민준');
+    expect(result.profile?.profileMusic?.externalTrackId).toBe('track-1');
+    expect(result.profile?.profileMusic?.title).toBe('곡 제목');
+    expect(result.profile?.profileMusic?.sourceUrl).toBe(
+      'https://www.deezer.com/track/track-1',
+    );
+    expect(result.profile?.avatarUrl).toBeNull();
+    expect(result.skills[0]).toEqual({
+      skillTypeId: 'skill-1',
+      skillName: 'Guitar',
+      level: 'ADVANCED',
+      isPrimary: true,
+    });
+    expect(result.favoriteGenres[0]).toEqual({
+      genreId: 'genre-1',
+      name: 'Rock',
+    });
     expect(result.user.id).toBe('user-001');
   });
 
