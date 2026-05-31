@@ -15,6 +15,14 @@ import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
 import { compressProfileImage } from '@/features/profile-update/model/image-compression';
 import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
+import {
+  AppDialogBody,
+  AppDialogContent,
+  AppDialogFooter,
+  Dialog,
+  DialogTitle,
+} from '@/shared/ui/dialog';
+import { Button } from '@/shared/ui/button';
 
 // UI Imports
 
@@ -92,6 +100,7 @@ function ProfileRoutePage() {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isMusicSearchOpen, setIsMusicSearchOpen] = useState(false);
+  const [isLeaveEditDialogOpen, setIsLeaveEditDialogOpen] = useState(false);
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -175,6 +184,36 @@ function ProfileRoutePage() {
       });
   };
 
+  const resetEditForm = () => {
+    setEditForm({
+      nickname: profile?.profile?.nickname || '',
+      selfDescription: profile?.profile?.selfDescription || '',
+      profileMusicUrl: profile?.profile?.profileMusicUrl || '',
+      avatarUrl: profile?.profile?.avatarUrl || '',
+    });
+    setAvatarFile(null);
+  };
+
+  const enterEditMode = () => {
+    resetEditForm();
+    setIsEditing(true);
+  };
+
+  const requestExitEditMode = () => {
+    if (!isEditing) {
+      enterEditMode();
+      return;
+    }
+
+    setIsLeaveEditDialogOpen(true);
+  };
+
+  const discardEditChanges = () => {
+    resetEditForm();
+    setIsEditing(false);
+    setIsLeaveEditDialogOpen(false);
+  };
+
   if (loading && !profile) {
     return (
       <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
@@ -217,26 +256,7 @@ function ProfileRoutePage() {
           isLoggedIn={auth.user.isLoggedIn}
           onShare={handleShare}
           onInvite={() => setIsInviting(true)}
-          onToggleEdit={() => {
-            if (isEditing) {
-              setIsEditing(false);
-              setEditForm({
-                nickname: profile.profile?.nickname || '',
-                selfDescription: profile.profile?.selfDescription || '',
-                profileMusicUrl: profile.profile?.profileMusicUrl || '',
-                avatarUrl: profile.profile?.avatarUrl || '',
-              });
-              setAvatarFile(null);
-            } else {
-              setEditForm({
-                nickname: profile.profile?.nickname || '',
-                selfDescription: profile.profile?.selfDescription || '',
-                profileMusicUrl: profile.profile?.profileMusicUrl || '',
-                avatarUrl: profile.profile?.avatarUrl || '',
-              });
-              setIsEditing(true);
-            }
-          }}
+          onToggleEdit={requestExitEditMode}
           onSave={handleSave}
           onAvatarFileSelect={(file) => {
             void compressProfileImage(file)
@@ -295,6 +315,41 @@ function ProfileRoutePage() {
             }));
           }}
         />
+        <Dialog
+          open={isLeaveEditDialogOpen}
+          onOpenChange={setIsLeaveEditDialogOpen}
+        >
+          <AppDialogContent className="max-w-[calc(100%-2rem)] p-8 sm:max-w-2xl">
+            <AppDialogBody className="items-center gap-6 text-center">
+              <DialogTitle className="text-3xl text-grey-50">
+                편집 모드를 나가시겠습니까?
+              </DialogTitle>
+              <p className="typo-lg-sb text-grey-100">
+                변경사항이 저장되지 않습니다
+              </p>
+            </AppDialogBody>
+            <AppDialogFooter className="mt-8 flex-row justify-center gap-4">
+              <Button
+                type="button"
+                variant="neutral"
+                size="lg"
+                onClick={() => setIsLeaveEditDialogOpen(false)}
+                className="w-full text-grey-50"
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                variant="shining"
+                size="lg"
+                onClick={discardEditChanges}
+                className="w-full"
+              >
+                나가기
+              </Button>
+            </AppDialogFooter>
+          </AppDialogContent>
+        </Dialog>
       </div>
     </div>
   );

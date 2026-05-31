@@ -231,7 +231,7 @@ export function ProfileCard({
                 ) : isPlaying ? (
                   <Pause className="relative z-10 size-10 fill-white text-white" />
                 ) : (
-                  <Play className="relative z-10 size-10 translate-x-0.4 fill-white text-white" />
+                  <Play className="translate-x-0.4 relative z-10 size-10 fill-white text-white" />
                 )}
               </button>
             </div>
@@ -240,50 +240,26 @@ export function ProfileCard({
         <div className="absolute right-5 -bottom-7 left-5 z-20 mx-auto max-w-sm rounded-full p-0.5">
           <div className="absolute inset-0 rounded-full bg-surface-2 backdrop-blur-sm" />
           <div className="relative flex items-start gap-2 rounded-full px-4 py-2.5">
-            {isEditing ? (
-              <>
-                <Button
-                  variant="neutral"
-                  size="pill"
-                  width="flex"
-                  onClick={onSave}
-                  className="active:animate-[button-pop_180ms_ease-out]"
-                >
-                  변경 저장
-                </Button>
-                <Button
-                  variant="neutral"
-                  size="pill"
-                  width="fit"
-                  onClick={onToggleEdit}
-                  className="active:animate-[button-pop_180ms_ease-out]"
-                >
-                  취소
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="neutral"
-                  size="pill"
-                  width="flex"
-                  onClick={isMe ? onToggleEdit : onInvite}
-                  disabled={!isMe && !isLoggedIn}
-                  className="active:animate-[button-pop_180ms_ease-out]"
-                >
-                  {isMe ? '프로필 편집' : '초대하기'}
-                </Button>
-                <Button
-                  variant="neutral"
-                  size="pill"
-                  width="fit"
-                  onClick={onShare}
-                  className="active:animate-[button-pop_180ms_ease-out]"
-                >
-                  공유하기
-                </Button>
-              </>
-            )}
+            <Button
+              variant="neutral"
+              size="pill"
+              width="flex"
+              onClick={onInvite}
+              disabled={isMe || !isLoggedIn}
+              className="active:animate-[button-pop_180ms_ease-out]"
+            >
+              초대하기
+            </Button>
+            <Button
+              variant="neutral"
+              size="pill"
+              width="fit"
+              onClick={onShare}
+              disabled={isMe && isEditing}
+              className="active:animate-[button-pop_180ms_ease-out]"
+            >
+              공유하기
+            </Button>
           </div>
         </div>
       </div>
