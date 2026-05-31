@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
 import { enumValidationMessage } from '../../../common/validation-message/enum-validation.message';
@@ -8,6 +9,7 @@ import { BandMemberRole } from '../../../generated/prisma';
  * 밴드 멤버 권한 변경 요청 본문을 검증한다.
  */
 export class UpdateBandMemberRoleBodyDto {
+  @ApiProperty({ enum: BandMemberRole, description: '변경할 멤버 권한', example: 'MEMBER' })
   @IsString({
     message: stringValidationMessage,
   })
