@@ -49,13 +49,21 @@ model Genre {
 }
 
 model UserProfile {
-  userId          String    @id @map("user_id") @db.Uuid
-  nickname        String    @db.VarChar(255)
-  selfDescription String?   @map("self_description")
-  profileMusicUrl String?   @map("profile_music_url")
-  avatarUrl       String?   @map("avatar_url")
-  updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                      String                  @id @map("user_id") @db.Uuid
+  nickname                    String                  @db.VarChar(255)
+  selfDescription             String?                 @map("self_description")
+  profileMusicExternalTrackId String?                 @map("profile_music_external_track_id")
+  profileMusicSourceType      ProfileMusicSourceType? @map("profile_music_source_type")
+  profileMusicTitle           String?                 @map("profile_music_title") @db.VarChar(255)
+  profileMusicArtistName      String?                 @map("profile_music_artist_name") @db.VarChar(255)
+  profileMusicAlbumName       String?                 @map("profile_music_album_name") @db.VarChar(255)
+  profileMusicAlbumImageUrl   String?                 @map("profile_music_album_image_url")
+  profileMusicDurationMs      Int?                    @map("profile_music_duration_ms")
+  profileMusicPreviewUrl      String?                 @map("profile_music_preview_url")
+  profileMusicSourceUrl       String?                 @map("profile_music_source_url")
+  avatarUrl                   String?                 @map("avatar_url")
+  updatedAt                   DateTime?               @map("updated_at") @db.Timestamptz(6)
+  user                        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -515,4 +523,8 @@ enum BandMemberRole {
 enum TeamMemberRole {
   LEADER
   MEMBER
+}
+
+enum ProfileMusicSourceType {
+  DEEZER
 }
