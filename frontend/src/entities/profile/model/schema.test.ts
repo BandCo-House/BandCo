@@ -13,15 +13,28 @@ describe('profileSchema Zod Validation', () => {
       profile: {
         nickname: '김민준',
         selfDescription: '기타리스트입니다',
-        profileMusicUrl: 'https://example.com/song.mp3',
+        profileMusic: {
+          externalTrackId: 'track-1',
+          sourceType: 'DEEZER',
+          title: 'Bohemian Rhapsody',
+          artistName: 'Queen',
+          albumName: 'A Night at the Opera',
+          albumImageUrl: null,
+          durationMs: 180000,
+          previewUrl: 'https://example.com/song.mp3',
+          sourceUrl: 'https://www.deezer.com/track/track-1',
+        },
         avatarUrl: null,
       },
       skills: [
-        { skillTypeId: 'skill-1', skillName: 'Guitar', level: 'ADVANCED', isPrimary: true },
+        {
+          skillTypeId: 'skill-1',
+          skillName: 'Guitar',
+          level: 'ADVANCED',
+          isPrimary: true,
+        },
       ],
-      favoriteGenres: [
-        { genreId: 'genre-1', name: 'Rock' },
-      ],
+      favoriteGenres: [{ genreId: 'genre-1', name: 'Rock' }],
     };
 
     const parsed = profileSchema.safeParse(validData);

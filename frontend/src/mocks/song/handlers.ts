@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type { ApiResponse } from '@/shared/api';
 import type { Song } from '@/entities/song/model/types';
 import { API_URL } from '../config';
+import type { ProfileMusicSearchResult } from '@/features/profile-update/api/profile-music-api';
 
 const song: Song = {
   id: 'song-1',
@@ -24,6 +25,39 @@ const song: Song = {
 };
 
 export const songHandlers = [
+  http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('query')?.trim() || '데이식스';
+    const previews: ProfileMusicSearchResult[] = [
+      {
+        externalTrackId: 'deezer-1',
+        title: '마치 흘러가는 바람처럼',
+        artistName: query.includes('데이') ? 'DAY6(데이식스)' : 'DAY6',
+        albumName: 'The Book of Us',
+        albumImageUrl: null,
+        durationMs: 202000,
+        previewUrl: 'https://example.com/day6-preview.mp3',
+        sourceUrl: 'https://www.deezer.com/track/demo-1',
+        sourceType: 'DEEZER',
+      },
+      {
+        externalTrackId: 'deezer-2',
+        title: '건널목',
+        artistName: 'Whiteusedsocks',
+        albumName: '건널목',
+        albumImageUrl: null,
+        durationMs: 211000,
+        previewUrl: 'https://example.com/crosswalk-preview.mp3',
+        sourceUrl: 'https://www.deezer.com/track/demo-2',
+        sourceType: 'DEEZER',
+      },
+    ];
+
+    return HttpResponse.json<ApiResponse<ProfileMusicSearchResult[]>>({
+      success: true,
+      data: previews,
+    });
+  }),
   http.get(new RegExp(`^${API_URL}/songs/band-[^/]+$`), () => {
     return HttpResponse.json<ApiResponse<Song[]>>({
       success: true,

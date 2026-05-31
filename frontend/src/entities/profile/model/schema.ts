@@ -1,7 +1,24 @@
 import { z } from 'zod';
 
 export const userStatusSchema = z.enum(['ACTIVE', 'INACTIVE']);
-export const skillLevelSchema = z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
+export const skillLevelSchema = z.enum([
+  'BEGINNER',
+  'INTERMEDIATE',
+  'ADVANCED',
+]);
+export const profileMusicSourceTypeSchema = z.enum(['SPOTIFY', 'DEEZER']);
+
+export const profileMusicSchema = z.object({
+  externalTrackId: z.string(),
+  sourceType: profileMusicSourceTypeSchema,
+  title: z.string(),
+  artistName: z.string(),
+  albumName: z.string(),
+  albumImageUrl: z.string().nullable(),
+  durationMs: z.number(),
+  previewUrl: z.string().nullable(),
+  sourceUrl: z.string(),
+});
 
 export const profileUserDetailSchema = z.object({
   id: z.string(),
@@ -13,7 +30,7 @@ export const profileUserDetailSchema = z.object({
 export const profileDetailSchema = z.object({
   nickname: z.string(),
   selfDescription: z.string().nullable(),
-  profileMusicUrl: z.string().nullable(),
+  profileMusic: profileMusicSchema.nullable(),
   avatarUrl: z.string().nullable(),
 });
 
@@ -35,4 +52,3 @@ export const profileSchema = z.object({
   skills: z.array(userSkillDetailSchema),
   favoriteGenres: z.array(userFavoriteGenreDetailSchema),
 });
-

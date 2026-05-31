@@ -7,6 +7,9 @@
   --surface-popover: var(--greyScale-50);
   --gradient-top: #e6e9f0;
   --gradient-bottom: #f9f8f0;
+  --surface-1: #d7ddfa;
+  --surface-2: #e5e5f0;
+  --surface-3: #fcfcfd;
   --overlay-40: rgb(255 255 255 / 0.4);
   --overlay-24: rgb(255 255 255 / 0.24);
   --greyScale-50: #ffffff;
@@ -42,6 +45,9 @@
   --surface-popover: var(--primary-dark);
   --gradient-top: #020119;
   --gradient-bottom: #1b1b32;
+  --surface-1: #e8ecfc;
+  --surface-2: #87a1ba;
+  --surface-3: #65637a8f;
   --overlay-40: rgb(255 255 255 / 0.4);
   --overlay-24: rgb(255 255 255 / 0.24);
   --greyScale-50: #ffffff;

@@ -11,6 +11,7 @@ interface ButtonProps
   asChild?: boolean;
   isLoading?: boolean;
   loadingContent?: React.ReactNode;
+  fixedWidth?: number | string;
 }
 
 /**
@@ -32,11 +33,14 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
+  width = 'auto',
   asChild = false,
   isLoading = false,
   loadingContent,
   children,
   disabled,
+  fixedWidth,
+  style,
   ...props
 }: ButtonProps) {
   const Comp = asChild && !isLoading ? Slot.Root : 'button';
@@ -47,8 +51,17 @@ function Button({
       data-variant={variant}
       data-size={size}
       disabled={isLoading || disabled}
+      style={{
+        ...style,
+        width:
+          fixedWidth === undefined
+            ? style?.width
+            : typeof fixedWidth === 'number'
+              ? `${fixedWidth}px`
+              : fixedWidth,
+      }}
       className={resolveButtonClassName(
-        buttonVariants({ variant, size }),
+        buttonVariants({ variant, size, width }),
         className,
       )}
       {...props}
