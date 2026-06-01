@@ -105,25 +105,44 @@ updateNickname(userId, nickname, tx?):
 
 ---
 
-### 4. DTO 및 타입 정의
+### 4. API 번호 및 Swagger
 
-> **규칙 기준:** `docs/backend/conventions.md` Section 4 (DTO 규칙)
+> **규칙 기준:** `docs/backend/conventions.md` Section 10 (Swagger 데코레이터)
+
+작업 대상 API의 번호를 명시한다:
+
+- **기존 API**: `docs/backend/api-docs/{module}.md`에서 해당 엔드포인트의 `#N` 번호를 찾아 기록한다.
+- **신규 API**: 파일의 마지막 `#N` 번호 + 1을 부여하고, api-docs 파일에도 추가한다.
+
+예: `#3 POST /bands/invite — 신규 (기존 최대 #2 기준)`
+
+Controller에 추가할 Swagger 데코레이터 목록:
+
+```typescript
+@ApiOperation({ summary: '...' })
+@ApiResponse({ status: 200, description: '...' })
+@ApiResponse({ status: 400, description: '잘못된 입력' })
+```
+
+### 5. DTO 및 타입 정의
+
+> **규칙 기준:** `docs/backend/conventions.md` Section 4 (DTO 규칙), Section 10 (Swagger)
 
 설계 문서에 아래를 명시한다:
 
-- 요청 DTO 클래스명과 필드 목록 (class-validator 데코레이터 포함)
+- 요청 DTO 클래스명과 필드 목록 (class-validator 데코레이터 + `@ApiProperty` 포함)
 - Service 내부 반환 타입이 필요하면 `types/{name}.type.ts` 파일명
 
 ---
 
-### 5. Soft Delete 여부
+### 6. Soft Delete 여부
 
 > **규칙 기준:** `docs/backend/conventions.md` Section 8 (Soft Delete)
 
 조회 메서드를 설계할 때 관련 모델에 `deletedAt`이 있는지 `prisma/schema.prisma`에서 확인한다.
 `deletedAt`이 있으면 `where: { deletedAt: null }` 조건 필요 여부를 설계 문서에 명시한다.
 
-### 6. 트랜잭션 경계
+### 7. 트랜잭션 경계
 
 `tx?` 인자가 필요한 메서드와 이유:
 
@@ -133,7 +152,7 @@ updateNickname(userId, nickname, tx?):
 
 ---
 
-### 7. 테스트 계획
+### 8. 테스트 계획
 
 새 Service 메서드별 필수 테스트 케이스:
 
@@ -147,7 +166,7 @@ updateNickname(userId, nickname, tx?):
 
 ---
 
-### 8. 미결 사항
+### 9. 미결 사항
 
 모호하거나 추가 확인이 필요한 항목을 나열한다.
 
@@ -162,4 +181,7 @@ updateNickname(userId, nickname, tx?):
 - [ ] tx 경계가 명확한가?
 - [ ] 테스트 케이스가 happy path + NotFoundException + ForbiddenException + BadRequestException + tx 일관성 + 외부 tx를 포함하는가?
 - [ ] Prisma 모델과 설계가 일치하는가? (`prisma/schema.prisma` 기준)
+- [ ] DTO 필드에 `@ApiProperty`가 포함되었는가?
+- [ ] Controller 메서드에 Swagger 데코레이터(`@ApiOperation`, `@ApiResponse`)가 명시되었는가?
+- [ ] 작업 대상 API의 `#N` 번호가 명시되었는가? (신규면 마지막 번호 + 1)
 - [ ] 미결 사항이 있으면 명시했는가?
