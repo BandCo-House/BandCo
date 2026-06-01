@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh ./scripts/verify.sh"
+            "command": "node scripts/hooks/codex-stop-verify.js"
           }
         ]
       }
