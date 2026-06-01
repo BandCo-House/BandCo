@@ -213,3 +213,33 @@ ConflictException
 - Prisma 클라이언트는 `src/generated/prisma`에 생성됨 (기본 경로 아님).
 - 스키마 변경 후 반드시 `pnpm run prisma:generate` 실행.
 - `generated/` 디렉터리는 git에 커밋하지 않는다.
+
+---
+
+## 10. Swagger 데코레이터
+
+- **Controller**: 모든 Controller 클래스에 `@ApiTags`, 모든 핸들러 메서드에 `@ApiOperation`과 `@ApiResponse`를 반드시 추가한다.
+- **DTO**: 요청 DTO의 모든 public 필드에 `@ApiProperty`를 반드시 추가한다.
+- `@ApiResponse`에는 최소한 성공 케이스(2xx)와 주요 실패 케이스(400/401/403/404)를 명시한다.
+
+```typescript
+// Controller 예시
+@ApiTags('밴드')
+@Controller('bands')
+export class BandsController {
+  @Post()
+  @ApiOperation({ summary: '밴드 생성' })
+  @ApiResponse({ status: 201, description: '밴드 생성 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 입력' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  async createBand(@Body() dto: CreateBandDto) { ... }
+}
+
+// DTO 예시
+export class CreateBandDto {
+  @ApiProperty({ description: '밴드 이름', example: '락밴드' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+```
