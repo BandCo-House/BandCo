@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+
 import test from 'node:test';
 
 import { getConflictingSeedUserIds } from './seed-user-conflict.util';
