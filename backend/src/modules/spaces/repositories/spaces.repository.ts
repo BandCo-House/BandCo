@@ -6,6 +6,7 @@ import type { UpdateBandSpaceInput } from '../dto/update-band-space.dto';
 import type { AddSpaceMemberResult } from '../types/add-space-member-result.type';
 import type { GetBandSpacesResult } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
+import type { DeleteBandSpaceResult } from '../types/delete-band-space-result.type';
 import type { GetSpaceDetailResult } from '../types/space-detail.type';
 import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
 
@@ -25,4 +26,6 @@ export interface SpacesRepository {
   findBandMemberUserIds(bandId: string, tx?: Prisma.TransactionClient): Promise<string[]>;
   /** 전달된 필드만 업데이트한다 (PATCH 패턴). */
   updateBandSpace(spaceId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult>;
+  /** deletedAt을 현재 시각으로 설정한다 (soft delete). */
+  deleteBandSpace(spaceId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandSpaceResult>;
 }

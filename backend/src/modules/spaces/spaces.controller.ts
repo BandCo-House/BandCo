@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
@@ -9,6 +9,7 @@ import { UpdateBandSpaceBodyDto } from './dto/update-band-space.dto';
 import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
+import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 import { SpacesService } from './spaces.service';
@@ -56,5 +57,12 @@ export class SpacesController {
     const updatedSpace = await this.spacesService.updateBandSpace(bandspaceId, input);
 
     return createSuccessResponse('합주 공간 수정 성공', updatedSpace);
+  }
+
+  @Delete('bandspaces/:bandspaceId')
+  async deleteBandSpace(@Param('bandspaceId') bandspaceId: string): Promise<ApiSuccessResponse<DeleteBandSpaceResult>> {
+    const deletedSpace = await this.spacesService.deleteBandSpace(bandspaceId);
+
+    return createSuccessResponse('합주 공간 삭제 성공', deletedSpace);
   }
 }

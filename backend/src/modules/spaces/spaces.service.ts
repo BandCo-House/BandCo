@@ -11,6 +11,7 @@ import { SPACES_REPOSITORY, type SpacesRepository } from './repositories/spaces.
 import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
+import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 
@@ -71,5 +72,9 @@ export class SpacesService {
 
   async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput): Promise<UpdateBandSpaceResult> {
     return this.spacesRepository.updateBandSpace(spaceId, input);
+  }
+
+  async deleteBandSpace(spaceId: string): Promise<DeleteBandSpaceResult> {
+    return this.spacesRepository.deleteBandSpace(spaceId);
   }
 }

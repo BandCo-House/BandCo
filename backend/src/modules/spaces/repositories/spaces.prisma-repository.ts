@@ -9,6 +9,7 @@ import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
 import type { UpdateBandSpaceInput } from '../dto/update-band-space.dto';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
+import type { DeleteBandSpaceResult } from '../types/delete-band-space-result.type';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
 import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
 
@@ -480,5 +481,27 @@ export class SpacesPrismaRepository implements SpacesRepository {
       endDate: this.formatDateOnly(updated.endDate),
       updatedAt: now.toISOString(),
     };
+  }
+
+  async deleteBandSpace(spaceId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandSpaceResult> {
+    const client = tx ?? this.prisma;
+
+    const space = await client.bandSpace.findFirst({
+      where: { id: spaceId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (space === null) {
+      throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+    }
+
+    const now = new Date();
+
+    await client.bandSpace.update({
+      where: { id: spaceId },
+      data: { deletedAt: now },
+    });
+
+    return { spaceId, deletedAt: now.toISOString() };
   }
 }
