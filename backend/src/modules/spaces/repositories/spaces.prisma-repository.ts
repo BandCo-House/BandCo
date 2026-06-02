@@ -6,9 +6,11 @@ import type { Prisma } from '../../../generated/prisma';
 import type { AddSpaceMemberInput } from '../dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
+import type { UpdateBandSpaceInput } from '../dto/update-band-space.dto';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
+import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
 
 import type { AddSpaceMemberRepositoryResult, SpacesRepository } from './spaces.repository';
 
@@ -440,4 +442,43 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return members.map(m => m.userId);
   }
 
+  async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult> {
+    const client = tx ?? this.prisma;
+
+    const space = await client.bandSpace.findFirst({
+      where: { id: spaceId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (space === null) {
+      throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+    }
+
+    const now = new Date();
+
+    const updated = await client.bandSpace.update({
+      where: { id: spaceId },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.spaceType !== undefined && { spaceType: input.spaceType }),
+        ...(input.status !== undefined && { status: input.status }),
+        ...(input.startDate !== undefined && { startDate: new Date(`${input.startDate}T00:00:00.000Z`) }),
+        ...(input.endDate !== undefined && { endDate: new Date(`${input.endDate}T00:00:00.000Z`) }),
+        updatedAt: now,
+      },
+    });
+
+    return {
+      spaceId: updated.id,
+      bandId: updated.bandId,
+      name: updated.name,
+      description: updated.description ?? '',
+      spaceType: updated.spaceType ?? 'ONLINE',
+      status: updated.status,
+      startDate: this.formatDateOnly(updated.startDate),
+      endDate: this.formatDateOnly(updated.endDate),
+      updatedAt: now.toISOString(),
+    };
+  }
 }

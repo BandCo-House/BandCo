@@ -1,14 +1,16 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { AddSpaceMemberBodyDto } from './dto/add-space-member.dto';
 import { CreateBandSpaceBodyDto } from './dto/create-band-space.dto';
 import { GetBandSpacesQueryDto } from './dto/get-band-spaces-query.dto';
+import { UpdateBandSpaceBodyDto } from './dto/update-band-space.dto';
 import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
+import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 import { SpacesService } from './spaces.service';
 
 @Controller()
@@ -44,5 +46,15 @@ export class SpacesController {
     const spaceDetail = await this.spacesService.getSpaceDetail(bandspaceId);
 
     return createSuccessResponse('합주 공간 상세 조회 성공', spaceDetail);
+  }
+
+  @Patch('bandspaces/:bandspaceId')
+  async updateBandSpace(
+    @Param('bandspaceId') bandspaceId: string,
+    @Body() input: UpdateBandSpaceBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateBandSpaceResult>> {
+    const updatedSpace = await this.spacesService.updateBandSpace(bandspaceId, input);
+
+    return createSuccessResponse('합주 공간 수정 성공', updatedSpace);
   }
 }

@@ -6,11 +6,13 @@ import { NotificationsService } from '../notifications/notifications.service';
 import type { AddSpaceMemberInput } from './dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from './dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from './dto/get-band-spaces-query.dto';
+import type { UpdateBandSpaceInput } from './dto/update-band-space.dto';
 import { SPACES_REPOSITORY, type SpacesRepository } from './repositories/spaces.repository';
 import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
+import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 
 @Injectable()
 export class SpacesService {
@@ -65,5 +67,9 @@ export class SpacesService {
     }
 
     return spaceDetail;
+  }
+
+  async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput): Promise<UpdateBandSpaceResult> {
+    return this.spacesRepository.updateBandSpace(spaceId, input);
   }
 }
