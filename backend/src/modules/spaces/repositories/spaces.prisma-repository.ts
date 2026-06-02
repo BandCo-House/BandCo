@@ -6,12 +6,11 @@ import type { Prisma } from '../../../generated/prisma';
 import type { AddSpaceMemberInput } from '../dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
-import type { AddSpaceMemberResult } from '../types/add-space-member-result.type';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
 
-import type { SpacesRepository } from './spaces.repository';
+import type { AddSpaceMemberRepositoryResult, SpacesRepository } from './spaces.repository';
 
 const DEMO_BAND_MEMBER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -78,7 +77,7 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
 export class SpacesPrismaRepository implements SpacesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async addSpaceMember(spaceId: string, input: AddSpaceMemberInput): Promise<AddSpaceMemberResult> {
+  async addSpaceMember(spaceId: string, input: AddSpaceMemberInput): Promise<AddSpaceMemberRepositoryResult> {
     const [space, bandMember, existingMember] = await Promise.all([
       this.prisma.bandSpace.findFirst({
         where: {
@@ -87,6 +86,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
         },
         select: {
           id: true,
+          name: true,
         },
       }),
       this.prisma.bandMember.findUnique({
@@ -95,6 +95,7 @@ export class SpacesPrismaRepository implements SpacesRepository {
         },
         select: {
           id: true,
+          userId: true,
         },
       }),
       this.prisma.spaceMember.findFirst({
@@ -132,10 +133,12 @@ export class SpacesPrismaRepository implements SpacesRepository {
     return {
       memberId: createdMember.id,
       spaceId: createdMember.bandSpaceId,
+      userId: bandMember.userId,
       bandMemberId: createdMember.bandMemberId,
       role: createdMember.role,
       status: createdMember.status,
       joinedAt: createdMember.joinedAt.toISOString(),
+      spaceName: space.name,
     };
   }
 
@@ -427,4 +430,14 @@ export class SpacesPrismaRepository implements SpacesRepository {
 
     return role;
   }
+
+  async findBandMemberUserIds(bandId: string, tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    const members = await client.bandMember.findMany({
+      where: { bandId },
+      select: { userId: true },
+    });
+    return members.map(m => m.userId);
+  }
+
 }

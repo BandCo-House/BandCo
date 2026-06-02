@@ -1,5 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
+import { NotificationType } from '../../generated/prisma';
+import { NotificationsService } from '../notifications/notifications.service';
+
 import type { AddSpaceMemberInput } from './dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from './dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from './dto/get-band-spaces-query.dto';
@@ -11,14 +14,43 @@ import type { GetSpaceDetailResult } from './types/space-detail.type';
 
 @Injectable()
 export class SpacesService {
-  constructor(@Inject(SPACES_REPOSITORY) private readonly spacesRepository: SpacesRepository) {}
+  constructor(
+    @Inject(SPACES_REPOSITORY) private readonly spacesRepository: SpacesRepository,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async addSpaceMember(spaceId: string, input: AddSpaceMemberInput): Promise<AddSpaceMemberResult> {
-    return this.spacesRepository.addSpaceMember(spaceId, input);
+    const { spaceName, ...result } = await this.spacesRepository.addSpaceMember(spaceId, input);
+
+    await this.notificationsService.createNotification({
+      userId: result.userId,
+      type: NotificationType.NOTICE,
+      title: '합주 공간에 추가되었습니다',
+      description: spaceName,
+      targetPath: `/bandspaces/${spaceId}`,
+    });
+
+    return result;
   }
 
   async createBandSpace(bandId: string, input: CreateBandSpaceInput): Promise<CreateBandSpaceResult> {
-    return this.spacesRepository.createBandSpace(bandId, input);
+    const result = await this.spacesRepository.createBandSpace(bandId, input);
+
+    const memberUserIds = await this.spacesRepository.findBandMemberUserIds(bandId);
+
+    if (memberUserIds.length > 0) {
+      await this.notificationsService.createManyNotifications(
+        memberUserIds.map(userId => ({
+          userId,
+          type: NotificationType.NOTICE,
+          title: '새 합주 공간이 생성되었습니다',
+          description: result.name,
+          targetPath: `/bandspaces/${result.spaceId}`,
+        })),
+      );
+    }
+
+    return result;
   }
 
   async getBandSpaces(bandId: string, query: GetBandSpacesQuery): Promise<GetBandSpacesResult> {
