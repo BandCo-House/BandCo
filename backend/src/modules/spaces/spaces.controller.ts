@@ -11,6 +11,7 @@ import type { AddSpaceMemberResult } from './types/add-space-member-result.type'
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
+import type { RemoveSpaceMemberResult } from './types/remove-space-member-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 import type { UpdateSpaceMemberRoleResult } from './types/update-space-member-role-result.type';
@@ -77,5 +78,15 @@ export class SpacesController {
     const updatedMember = await this.spacesService.updateSpaceMemberRole(bandspaceId, memberId, input);
 
     return createSuccessResponse('합주 공간 멤버 역할 수정 성공', updatedMember);
+  }
+
+  @Delete('bandspaces/:bandspaceId/members/:memberId')
+  async removeSpaceMember(
+    @Param('bandspaceId') bandspaceId: string,
+    @Param('memberId') memberId: string,
+  ): Promise<ApiSuccessResponse<RemoveSpaceMemberResult>> {
+    const removedMember = await this.spacesService.removeSpaceMember(bandspaceId, memberId);
+
+    return createSuccessResponse('합주 공간 멤버 제거 성공', removedMember);
   }
 }

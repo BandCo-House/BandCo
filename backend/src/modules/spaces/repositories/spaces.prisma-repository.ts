@@ -14,7 +14,12 @@ import type { DeleteBandSpaceResult } from '../types/delete-band-space-result.ty
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
 import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
 
-import type { AddSpaceMemberRepositoryResult, SpacesRepository, UpdateSpaceMemberRoleRepositoryResult } from './spaces.repository';
+import type {
+  AddSpaceMemberRepositoryResult,
+  RemoveSpaceMemberRepositoryResult,
+  SpacesRepository,
+  UpdateSpaceMemberRoleRepositoryResult,
+} from './spaces.repository';
 
 const DEMO_BAND_MEMBER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -541,6 +546,34 @@ export class SpacesPrismaRepository implements SpacesRepository {
       role: input.role,
       spaceName: spaceMember.bandSpace.name,
       updatedAt: now.toISOString(),
+    };
+  }
+
+  async removeSpaceMember(spaceId: string, memberId: string, tx?: Prisma.TransactionClient): Promise<RemoveSpaceMemberRepositoryResult> {
+    const client = tx ?? this.prisma;
+
+    const spaceMember = await client.spaceMember.findFirst({
+      where: { id: memberId, bandSpaceId: spaceId },
+      include: {
+        bandSpace: { select: { name: true } },
+        bandMember: { select: { userId: true } },
+      },
+    });
+
+    if (spaceMember === null) {
+      throw new NotFoundException('합주 공간 멤버를 찾을 수 없습니다.');
+    }
+
+    await client.spaceMember.delete({ where: { id: memberId } });
+
+    const now = new Date();
+
+    return {
+      memberId,
+      spaceId,
+      recipientUserId: spaceMember.bandMember.userId,
+      spaceName: spaceMember.bandSpace.name,
+      removedAt: now.toISOString(),
     };
   }
 }

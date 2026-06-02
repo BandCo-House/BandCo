@@ -13,6 +13,7 @@ import type { AddSpaceMemberResult } from './types/add-space-member-result.type'
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
+import type { RemoveSpaceMemberResult } from './types/remove-space-member-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 import type { UpdateSpaceMemberRoleResult } from './types/update-space-member-role-result.type';
@@ -89,6 +90,19 @@ export class SpacesService {
       title: '합주 공간에서 역할이 변경되었습니다',
       description: spaceName,
       targetPath: `/bandspaces/${spaceId}`,
+    });
+
+    return result;
+  }
+
+  async removeSpaceMember(spaceId: string, memberId: string): Promise<RemoveSpaceMemberResult> {
+    const { recipientUserId, spaceName, ...result } = await this.spacesRepository.removeSpaceMember(spaceId, memberId);
+
+    await this.notificationsService.createNotification({
+      userId: recipientUserId,
+      type: NotificationType.NOTICE,
+      title: '합주 공간에서 제거되었습니다',
+      description: spaceName,
     });
 
     return result;

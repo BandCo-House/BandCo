@@ -8,6 +8,7 @@ import type { AddSpaceMemberResult } from '../types/add-space-member-result.type
 import type { GetBandSpacesResult } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from '../types/delete-band-space-result.type';
+import type { RemoveSpaceMemberResult } from '../types/remove-space-member-result.type';
 import type { GetSpaceDetailResult } from '../types/space-detail.type';
 import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
 import type { UpdateSpaceMemberRoleResult } from '../types/update-space-member-role-result.type';
@@ -21,6 +22,12 @@ export interface AddSpaceMemberRepositoryResult extends AddSpaceMemberResult {
 
 /** updateSpaceMemberRole 저장소 반환 타입. spaceName은 알림 전송용이며 API 응답에는 포함되지 않는다. */
 export interface UpdateSpaceMemberRoleRepositoryResult extends UpdateSpaceMemberRoleResult {
+  spaceName: string;
+}
+
+/** removeSpaceMember 저장소 반환 타입. recipientUserId, spaceName은 알림 전송용이며 API 응답에는 포함되지 않는다. */
+export interface RemoveSpaceMemberRepositoryResult extends RemoveSpaceMemberResult {
+  recipientUserId: string;
   spaceName: string;
 }
 
@@ -42,4 +49,6 @@ export interface SpacesRepository {
     input: UpdateSpaceMemberRoleInput,
     tx?: Prisma.TransactionClient,
   ): Promise<UpdateSpaceMemberRoleRepositoryResult>;
+  /** SpaceMember를 hard delete하고 알림용 recipientUserId, spaceName을 반환한다. */
+  removeSpaceMember(spaceId: string, memberId: string, tx?: Prisma.TransactionClient): Promise<RemoveSpaceMemberRepositoryResult>;
 }
