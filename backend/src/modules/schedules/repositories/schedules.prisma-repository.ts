@@ -147,15 +147,13 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
 
+    const startAtFilter: Prisma.DateTimeNullableFilter = {};
+    if (query.where__start_at__greater__than_equal) startAtFilter.gte = new Date(query.where__start_at__greater__than_equal);
+    if (query.where__start_at__less_than_equal) startAtFilter.lte = new Date(query.where__start_at__less_than_equal);
+
     const where: Prisma.ScheduleWhereInput = {
       bandSpaceId,
-      ...(query.where__start_at__greater__than_equal && { startAt: { gte: new Date(query.where__start_at__greater__than_equal) } }),
-      ...(query.where__start_at__less_than_equal && {
-        startAt: {
-          ...(query.where__start_at__greater__than_equal && { gte: new Date(query.where__start_at__greater__than_equal) }),
-          lte: new Date(query.where__start_at__less_than_equal),
-        },
-      }),
+      ...(Object.keys(startAtFilter).length > 0 && { startAt: startAtFilter }),
       ...(query.where__place_id && { placeId: query.where__place_id }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
@@ -209,19 +207,17 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
 
+    const startAtFilter: Prisma.DateTimeNullableFilter = {};
+    if (query.where__start_at__greater__than_equal) startAtFilter.gte = new Date(query.where__start_at__greater__than_equal);
+    if (query.where__start_at__less_than_equal) startAtFilter.lte = new Date(query.where__start_at__less_than_equal);
+
     const where: Prisma.ScheduleWhereInput = {
       bandSpace: { bandId, deletedAt: null },
-      ...(query.where__start_at__greater__than_equal && { startAt: { gte: new Date(query.where__start_at__greater__than_equal) } }),
-      ...(query.where__start_at__less_than_equal && {
-        startAt: {
-          ...(query.where__start_at__greater__than_equal && { gte: new Date(query.where__start_at__greater__than_equal) }),
-          lte: new Date(query.where__start_at__less_than_equal),
-        },
-      }),
+      ...(Object.keys(startAtFilter).length > 0 && { startAt: startAtFilter }),
       ...(query.where__place_id && { placeId: query.where__place_id }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
-      ...(query.cursor__start_at &&
+
         query.cursor__id && {
           OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
         }),
