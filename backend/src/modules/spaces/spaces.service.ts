@@ -7,6 +7,7 @@ import type { AddSpaceMemberInput } from './dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from './dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from './dto/get-band-spaces-query.dto';
 import type { UpdateBandSpaceInput } from './dto/update-band-space.dto';
+import type { UpdateSpaceMemberRoleInput } from './dto/update-space-member-role.dto';
 import { SPACES_REPOSITORY, type SpacesRepository } from './repositories/spaces.repository';
 import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
@@ -14,6 +15,7 @@ import type { CreateBandSpaceResult } from './types/create-band-space-result.typ
 import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
+import type { UpdateSpaceMemberRoleResult } from './types/update-space-member-role-result.type';
 
 @Injectable()
 export class SpacesService {
@@ -76,5 +78,19 @@ export class SpacesService {
 
   async deleteBandSpace(spaceId: string): Promise<DeleteBandSpaceResult> {
     return this.spacesRepository.deleteBandSpace(spaceId);
+  }
+
+  async updateSpaceMemberRole(spaceId: string, memberId: string, input: UpdateSpaceMemberRoleInput): Promise<UpdateSpaceMemberRoleResult> {
+    const { spaceName, ...result } = await this.spacesRepository.updateSpaceMemberRole(spaceId, memberId, input);
+
+    await this.notificationsService.createNotification({
+      userId: result.userId,
+      type: NotificationType.NOTICE,
+      title: '합주 공간에서 역할이 변경되었습니다',
+      description: spaceName,
+      targetPath: `/bandspaces/${spaceId}`,
+    });
+
+    return result;
   }
 }

@@ -6,12 +6,14 @@ import { AddSpaceMemberBodyDto } from './dto/add-space-member.dto';
 import { CreateBandSpaceBodyDto } from './dto/create-band-space.dto';
 import { GetBandSpacesQueryDto } from './dto/get-band-spaces-query.dto';
 import { UpdateBandSpaceBodyDto } from './dto/update-band-space.dto';
+import { UpdateSpaceMemberRoleBodyDto } from './dto/update-space-member-role.dto';
 import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
 import type { GetSpaceDetailResult } from './types/space-detail.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
+import type { UpdateSpaceMemberRoleResult } from './types/update-space-member-role-result.type';
 import { SpacesService } from './spaces.service';
 
 @Controller()
@@ -64,5 +66,16 @@ export class SpacesController {
     const deletedSpace = await this.spacesService.deleteBandSpace(bandspaceId);
 
     return createSuccessResponse('합주 공간 삭제 성공', deletedSpace);
+  }
+
+  @Patch('bandspaces/:bandspaceId/members/:memberId')
+  async updateSpaceMemberRole(
+    @Param('bandspaceId') bandspaceId: string,
+    @Param('memberId') memberId: string,
+    @Body() input: UpdateSpaceMemberRoleBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateSpaceMemberRoleResult>> {
+    const updatedMember = await this.spacesService.updateSpaceMemberRole(bandspaceId, memberId, input);
+
+    return createSuccessResponse('합주 공간 멤버 역할 수정 성공', updatedMember);
   }
 }

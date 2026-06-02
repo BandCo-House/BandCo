@@ -7,13 +7,14 @@ import type { AddSpaceMemberInput } from '../dto/add-space-member.dto';
 import type { CreateBandSpaceInput } from '../dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
 import type { UpdateBandSpaceInput } from '../dto/update-band-space.dto';
+import type { UpdateSpaceMemberRoleInput } from '../dto/update-space-member-role.dto';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from '../types/delete-band-space-result.type';
 import type { GetSpaceDetailResult, SpaceMemberDetail } from '../types/space-detail.type';
 import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
 
-import type { AddSpaceMemberRepositoryResult, SpacesRepository } from './spaces.repository';
+import type { AddSpaceMemberRepositoryResult, SpacesRepository, UpdateSpaceMemberRoleRepositoryResult } from './spaces.repository';
 
 const DEMO_BAND_MEMBER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -503,5 +504,43 @@ export class SpacesPrismaRepository implements SpacesRepository {
     });
 
     return { spaceId, deletedAt: now.toISOString() };
+  }
+
+  async updateSpaceMemberRole(
+    spaceId: string,
+    memberId: string,
+    input: UpdateSpaceMemberRoleInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UpdateSpaceMemberRoleRepositoryResult> {
+    const client = tx ?? this.prisma;
+
+    const spaceMember = await client.spaceMember.findFirst({
+      where: { id: memberId, bandSpaceId: spaceId },
+      include: {
+        bandSpace: { select: { name: true } },
+        bandMember: { select: { userId: true } },
+      },
+    });
+
+    if (spaceMember === null) {
+      throw new NotFoundException('합주 공간 멤버를 찾을 수 없습니다.');
+    }
+
+    const now = new Date();
+
+    await client.spaceMember.update({
+      where: { id: memberId },
+      data: { role: input.role },
+    });
+
+    return {
+      memberId,
+      spaceId,
+      userId: spaceMember.bandMember.userId,
+      bandMemberId: spaceMember.bandMemberId,
+      role: input.role,
+      spaceName: spaceMember.bandSpace.name,
+      updatedAt: now.toISOString(),
+    };
   }
 }
