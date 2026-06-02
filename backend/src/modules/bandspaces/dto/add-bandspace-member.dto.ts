@@ -11,7 +11,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /**
  * 합주 공간 멤버 추가 요청 본문을 검증한다.
  */
-export class AddSpaceMemberBodyDto {
+export class AddBandSpaceMemberBodyDto {
   @IsString({
     message: stringValidationMessage,
   })
@@ -29,4 +29,4 @@ export class AddSpaceMemberBodyDto {
   role: SpaceMemberRole = BandSpaceMemberRole.MEMBER;
 }
 
-export type AddSpaceMemberInput = AddSpaceMemberBodyDto;
+export type AddBandSpaceMemberInput = AddBandSpaceMemberBodyDto;

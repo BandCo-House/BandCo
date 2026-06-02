@@ -8,10 +8,10 @@ import type { SpaceMemberRole } from '../types/band-space-list-item.type';
 /**
  * 합주 공간 멤버 역할 수정 요청 본문을 검증한다.
  */
-export class UpdateSpaceMemberRoleBodyDto {
+export class UpdateBandSpaceMemberRoleBodyDto {
   @IsString({ message: stringValidationMessage })
   @IsEnum(BandSpaceMemberRole, { message: enumValidationMessage })
   role: SpaceMemberRole = BandSpaceMemberRole.MEMBER;
 }
 
-export type UpdateSpaceMemberRoleInput = UpdateSpaceMemberRoleBodyDto;
+export type UpdateBandSpaceMemberRoleInput = UpdateBandSpaceMemberRoleBodyDto;

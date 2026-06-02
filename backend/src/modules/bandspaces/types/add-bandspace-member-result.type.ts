@@ -1,6 +1,6 @@
 import type { BandSpaceMemberRole, BandSpaceMemberStatus } from '../../../generated/prisma';
 
-export interface AddSpaceMemberResult {
+export interface AddBandSpaceMemberResult {
   memberId: string;
   spaceId: string;
   userId: string;

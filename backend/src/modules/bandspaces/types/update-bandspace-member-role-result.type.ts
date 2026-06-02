@@ -1,6 +1,6 @@
 import type { BandSpaceMemberRole } from '../../../generated/prisma';
 
-export interface UpdateSpaceMemberRoleResult {
+export interface UpdateBandSpaceMemberRoleResult {
   memberId: string;
   spaceId: string;
   userId: string;

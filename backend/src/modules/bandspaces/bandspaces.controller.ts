@@ -2,52 +2,52 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
-import { AddSpaceMemberBodyDto } from './dto/add-space-member.dto';
+import { AddBandSpaceMemberBodyDto } from './dto/add-bandspace-member.dto';
 import { CreateBandSpaceBodyDto } from './dto/create-band-space.dto';
 import { GetBandSpacesQueryDto } from './dto/get-band-spaces-query.dto';
 import { UpdateBandSpaceBodyDto } from './dto/update-band-space.dto';
-import { UpdateSpaceMemberRoleBodyDto } from './dto/update-space-member-role.dto';
-import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
+import { UpdateBandSpaceMemberRoleBodyDto } from './dto/update-bandspace-member-role.dto';
+import type { AddBandSpaceMemberResult } from './types/add-bandspace-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
+import type { GetBandSpaceDetailResult } from './types/bandspace-detail.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
-import type { RemoveSpaceMemberResult } from './types/remove-space-member-result.type';
-import type { GetSpaceDetailResult } from './types/space-detail.type';
+import type { RemoveBandSpaceMemberResult } from './types/remove-bandspace-member-result.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
-import type { UpdateSpaceMemberRoleResult } from './types/update-space-member-role-result.type';
-import { SpacesService } from './spaces.service';
+import type { UpdateBandSpaceMemberRoleResult } from './types/update-bandspace-member-role-result.type';
+import { BandSpacesService } from './bandspaces.service';
 
 @Controller()
-export class SpacesController {
-  constructor(private readonly spacesService: SpacesService) {}
+export class BandSpacesController {
+  constructor(private readonly bandSpacesService: BandSpacesService) {}
 
   @Post('bandspaces/:bandspaceId/members')
-  async addSpaceMember(
+  async addBandSpaceMember(
     @Param('bandspaceId') bandspaceId: string,
-    @Body() input: AddSpaceMemberBodyDto,
-  ): Promise<ApiSuccessResponse<AddSpaceMemberResult>> {
-    const createdMember = await this.spacesService.addSpaceMember(bandspaceId, input);
+    @Body() input: AddBandSpaceMemberBodyDto,
+  ): Promise<ApiSuccessResponse<AddBandSpaceMemberResult>> {
+    const createdMember = await this.bandSpacesService.addBandSpaceMember(bandspaceId, input);
 
     return createSuccessResponse('합주 공간 멤버 추가 성공', createdMember);
   }
 
   @Post('bands/:bandId/bandspaces')
   async createBandSpace(@Param('bandId') bandId: string, @Body() input: CreateBandSpaceBodyDto): Promise<ApiSuccessResponse<CreateBandSpaceResult>> {
-    const createdSpace = await this.spacesService.createBandSpace(bandId, input);
+    const createdSpace = await this.bandSpacesService.createBandSpace(bandId, input);
 
     return createSuccessResponse('합주 공간 생성 성공', createdSpace);
   }
 
   @Get('bands/:bandId/bandspaces')
   async getBandSpaces(@Param('bandId') bandId: string, @Query() query: GetBandSpacesQueryDto): Promise<ApiSuccessResponse<GetBandSpacesResult>> {
-    const spaces = await this.spacesService.getBandSpaces(bandId, query);
+    const spaces = await this.bandSpacesService.getBandSpaces(bandId, query);
 
     return createSuccessResponse('합주 공간 목록 조회 성공', spaces);
   }
 
   @Get('bandspaces/:bandspaceId')
-  async getSpaceDetail(@Param('bandspaceId') bandspaceId: string): Promise<ApiSuccessResponse<GetSpaceDetailResult>> {
-    const spaceDetail = await this.spacesService.getSpaceDetail(bandspaceId);
+  async getBandSpaceDetail(@Param('bandspaceId') bandspaceId: string): Promise<ApiSuccessResponse<GetBandSpaceDetailResult>> {
+    const spaceDetail = await this.bandSpacesService.getBandSpaceDetail(bandspaceId);
 
     return createSuccessResponse('합주 공간 상세 조회 성공', spaceDetail);
   }
@@ -57,35 +57,35 @@ export class SpacesController {
     @Param('bandspaceId') bandspaceId: string,
     @Body() input: UpdateBandSpaceBodyDto,
   ): Promise<ApiSuccessResponse<UpdateBandSpaceResult>> {
-    const updatedSpace = await this.spacesService.updateBandSpace(bandspaceId, input);
+    const updatedSpace = await this.bandSpacesService.updateBandSpace(bandspaceId, input);
 
     return createSuccessResponse('합주 공간 수정 성공', updatedSpace);
   }
 
   @Delete('bandspaces/:bandspaceId')
   async deleteBandSpace(@Param('bandspaceId') bandspaceId: string): Promise<ApiSuccessResponse<DeleteBandSpaceResult>> {
-    const deletedSpace = await this.spacesService.deleteBandSpace(bandspaceId);
+    const deletedSpace = await this.bandSpacesService.deleteBandSpace(bandspaceId);
 
     return createSuccessResponse('합주 공간 삭제 성공', deletedSpace);
   }
 
   @Patch('bandspaces/:bandspaceId/members/:memberId')
-  async updateSpaceMemberRole(
+  async updateBandSpaceMemberRole(
     @Param('bandspaceId') bandspaceId: string,
     @Param('memberId') memberId: string,
-    @Body() input: UpdateSpaceMemberRoleBodyDto,
-  ): Promise<ApiSuccessResponse<UpdateSpaceMemberRoleResult>> {
-    const updatedMember = await this.spacesService.updateSpaceMemberRole(bandspaceId, memberId, input);
+    @Body() input: UpdateBandSpaceMemberRoleBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateBandSpaceMemberRoleResult>> {
+    const updatedMember = await this.bandSpacesService.updateBandSpaceMemberRole(bandspaceId, memberId, input);
 
     return createSuccessResponse('합주 공간 멤버 역할 수정 성공', updatedMember);
   }
 
   @Delete('bandspaces/:bandspaceId/members/:memberId')
-  async removeSpaceMember(
+  async removeBandSpaceMember(
     @Param('bandspaceId') bandspaceId: string,
     @Param('memberId') memberId: string,
-  ): Promise<ApiSuccessResponse<RemoveSpaceMemberResult>> {
-    const removedMember = await this.spacesService.removeSpaceMember(bandspaceId, memberId);
+  ): Promise<ApiSuccessResponse<RemoveBandSpaceMemberResult>> {
+    const removedMember = await this.bandSpacesService.removeBandSpaceMember(bandspaceId, memberId);
 
     return createSuccessResponse('합주 공간 멤버 제거 성공', removedMember);
   }

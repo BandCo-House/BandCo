@@ -3,30 +3,30 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationType } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
-import type { AddSpaceMemberInput } from './dto/add-space-member.dto';
+import type { AddBandSpaceMemberInput } from './dto/add-bandspace-member.dto';
 import type { CreateBandSpaceInput } from './dto/create-band-space.dto';
 import type { GetBandSpacesQuery } from './dto/get-band-spaces-query.dto';
 import type { UpdateBandSpaceInput } from './dto/update-band-space.dto';
-import type { UpdateSpaceMemberRoleInput } from './dto/update-space-member-role.dto';
-import { SPACES_REPOSITORY, type SpacesRepository } from './repositories/spaces.repository';
-import type { AddSpaceMemberResult } from './types/add-space-member-result.type';
+import type { UpdateBandSpaceMemberRoleInput } from './dto/update-bandspace-member-role.dto';
+import { BAND_SPACES_REPOSITORY, type BandSpacesRepository } from './repositories/bandspaces.repository';
+import type { AddBandSpaceMemberResult } from './types/add-bandspace-member-result.type';
 import type { GetBandSpacesResult } from './types/band-space-list-item.type';
+import type { GetBandSpaceDetailResult } from './types/bandspace-detail.type';
 import type { CreateBandSpaceResult } from './types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from './types/delete-band-space-result.type';
-import type { RemoveSpaceMemberResult } from './types/remove-space-member-result.type';
-import type { GetSpaceDetailResult } from './types/space-detail.type';
+import type { RemoveBandSpaceMemberResult } from './types/remove-bandspace-member-result.type';
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
-import type { UpdateSpaceMemberRoleResult } from './types/update-space-member-role-result.type';
+import type { UpdateBandSpaceMemberRoleResult } from './types/update-bandspace-member-role-result.type';
 
 @Injectable()
-export class SpacesService {
+export class BandSpacesService {
   constructor(
-    @Inject(SPACES_REPOSITORY) private readonly spacesRepository: SpacesRepository,
+    @Inject(BAND_SPACES_REPOSITORY) private readonly bandSpacesRepository: BandSpacesRepository,
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async addSpaceMember(spaceId: string, input: AddSpaceMemberInput): Promise<AddSpaceMemberResult> {
-    const { spaceName, ...result } = await this.spacesRepository.addSpaceMember(spaceId, input);
+  async addBandSpaceMember(spaceId: string, input: AddBandSpaceMemberInput): Promise<AddBandSpaceMemberResult> {
+    const { spaceName, ...result } = await this.bandSpacesRepository.addBandSpaceMember(spaceId, input);
 
     await this.notificationsService.createNotification({
       userId: result.userId,
@@ -40,9 +40,9 @@ export class SpacesService {
   }
 
   async createBandSpace(bandId: string, input: CreateBandSpaceInput): Promise<CreateBandSpaceResult> {
-    const result = await this.spacesRepository.createBandSpace(bandId, input);
+    const result = await this.bandSpacesRepository.createBandSpace(bandId, input);
 
-    const memberUserIds = await this.spacesRepository.findBandMemberUserIds(bandId);
+    const memberUserIds = await this.bandSpacesRepository.findBandMemberUserIds(bandId);
 
     if (memberUserIds.length > 0) {
       await this.notificationsService.createManyNotifications(
@@ -60,11 +60,11 @@ export class SpacesService {
   }
 
   async getBandSpaces(bandId: string, query: GetBandSpacesQuery): Promise<GetBandSpacesResult> {
-    return this.spacesRepository.findBandSpaces(bandId, query);
+    return this.bandSpacesRepository.findBandSpaces(bandId, query);
   }
 
-  async getSpaceDetail(spaceId: string): Promise<GetSpaceDetailResult> {
-    const spaceDetail = await this.spacesRepository.findDetailBySpaceId(spaceId);
+  async getBandSpaceDetail(spaceId: string): Promise<GetBandSpaceDetailResult> {
+    const spaceDetail = await this.bandSpacesRepository.findDetailByBandSpaceId(spaceId);
 
     if (spaceDetail === undefined) {
       throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
@@ -74,15 +74,19 @@ export class SpacesService {
   }
 
   async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput): Promise<UpdateBandSpaceResult> {
-    return this.spacesRepository.updateBandSpace(spaceId, input);
+    return this.bandSpacesRepository.updateBandSpace(spaceId, input);
   }
 
   async deleteBandSpace(spaceId: string): Promise<DeleteBandSpaceResult> {
-    return this.spacesRepository.deleteBandSpace(spaceId);
+    return this.bandSpacesRepository.deleteBandSpace(spaceId);
   }
 
-  async updateSpaceMemberRole(spaceId: string, memberId: string, input: UpdateSpaceMemberRoleInput): Promise<UpdateSpaceMemberRoleResult> {
-    const { spaceName, ...result } = await this.spacesRepository.updateSpaceMemberRole(spaceId, memberId, input);
+  async updateBandSpaceMemberRole(
+    spaceId: string,
+    memberId: string,
+    input: UpdateBandSpaceMemberRoleInput,
+  ): Promise<UpdateBandSpaceMemberRoleResult> {
+    const { spaceName, ...result } = await this.bandSpacesRepository.updateBandSpaceMemberRole(spaceId, memberId, input);
 
     await this.notificationsService.createNotification({
       userId: result.userId,
@@ -95,8 +99,8 @@ export class SpacesService {
     return result;
   }
 
-  async removeSpaceMember(spaceId: string, memberId: string): Promise<RemoveSpaceMemberResult> {
-    const { recipientUserId, spaceName, ...result } = await this.spacesRepository.removeSpaceMember(spaceId, memberId);
+  async removeBandSpaceMember(spaceId: string, memberId: string): Promise<RemoveBandSpaceMemberResult> {
+    const { recipientUserId, spaceName, ...result } = await this.bandSpacesRepository.removeBandSpaceMember(spaceId, memberId);
 
     await this.notificationsService.createNotification({
       userId: recipientUserId,

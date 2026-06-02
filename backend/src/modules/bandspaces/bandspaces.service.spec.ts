@@ -4,12 +4,12 @@ import { Test } from '@nestjs/testing';
 import { NotificationType } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
-import type { SpacesRepository } from './repositories/spaces.repository';
-import { SPACES_REPOSITORY } from './repositories/spaces.repository';
-import { SpacesService } from './spaces.service';
+import type { BandSpacesRepository } from './repositories/bandspaces.repository';
+import { BAND_SPACES_REPOSITORY } from './repositories/bandspaces.repository';
+import { BandSpacesService } from './bandspaces.service';
 
-const repositoryStub: SpacesRepository = {
-  async addSpaceMember(spaceId, input) {
+const repositoryStub: BandSpacesRepository = {
+  async addBandSpaceMember(spaceId, input) {
     return {
       memberId: 'member-001',
       spaceId,
@@ -59,7 +59,7 @@ const repositoryStub: SpacesRepository = {
       pagination: { page: 1, size: 1, totalCount: 1, hasNext: false },
     };
   },
-  async findDetailBySpaceId(spaceId) {
+  async findDetailByBandSpaceId(spaceId) {
     if (spaceId !== 'space-001') return undefined;
 
     return {
@@ -105,7 +105,7 @@ const repositoryStub: SpacesRepository = {
       deletedAt: '2026-05-29T10:00:00.000Z',
     };
   },
-  async updateSpaceMemberRole(spaceId, memberId, input) {
+  async updateBandSpaceMemberRole(spaceId, memberId, input) {
     return {
       memberId,
       spaceId,
@@ -116,7 +116,7 @@ const repositoryStub: SpacesRepository = {
       updatedAt: '2026-05-29T10:00:00.000Z',
     };
   },
-  async removeSpaceMember(spaceId, memberId) {
+  async removeBandSpaceMember(spaceId, memberId) {
     return {
       memberId,
       spaceId,
@@ -127,23 +127,23 @@ const repositoryStub: SpacesRepository = {
   },
 };
 
-const notFoundRepositoryStub: Partial<SpacesRepository> = {
+const notFoundRepositoryStub: Partial<BandSpacesRepository> = {
   async updateBandSpace() {
     throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
   },
   async deleteBandSpace() {
     throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
   },
-  async updateSpaceMemberRole() {
+  async updateBandSpaceMemberRole() {
     throw new NotFoundException('합주 공간 멤버를 찾을 수 없습니다.');
   },
-  async removeSpaceMember() {
+  async removeBandSpaceMember() {
     throw new NotFoundException('합주 공간 멤버를 찾을 수 없습니다.');
   },
 };
 
-describe('SpacesService', () => {
-  let service: SpacesService;
+describe('BandSpacesService', () => {
+  let service: BandSpacesService;
   let notificationsServiceMock: { createNotification: jest.Mock; createManyNotifications: jest.Mock };
 
   beforeEach(async () => {
@@ -154,18 +154,18 @@ describe('SpacesService', () => {
 
     const module = await Test.createTestingModule({
       providers: [
-        SpacesService,
-        { provide: SPACES_REPOSITORY, useValue: repositoryStub },
+        BandSpacesService,
+        { provide: BAND_SPACES_REPOSITORY, useValue: repositoryStub },
         { provide: NotificationsService, useValue: notificationsServiceMock },
       ],
     }).compile();
 
-    service = module.get(SpacesService);
+    service = module.get(BandSpacesService);
   });
 
-  describe('addSpaceMember', () => {
+  describe('addBandSpaceMember', () => {
     it('멤버 추가 결과를 반환하고 추가된 멤버에게 알림을 전송한다', async () => {
-      const result = await service.addSpaceMember('space-001', {
+      const result = await service.addBandSpaceMember('space-001', {
         bandMemberId: '22222222-2222-2222-2222-222222222222',
         role: 'MEMBER',
       });
@@ -219,9 +219,9 @@ describe('SpacesService', () => {
     });
   });
 
-  describe('getSpaceDetail', () => {
+  describe('getBandSpaceDetail', () => {
     it('공간이 존재하면 상세 정보를 반환한다', async () => {
-      const result = await service.getSpaceDetail('space-001');
+      const result = await service.getBandSpaceDetail('space-001');
 
       expect(result.space.spaceId).toBe('space-001');
       expect(result.members).toHaveLength(2);
@@ -231,7 +231,7 @@ describe('SpacesService', () => {
     });
 
     it('공간이 없으면 NotFoundException을 던진다', async () => {
-      await expect(service.getSpaceDetail('space-missing')).rejects.toThrow(NotFoundException);
+      await expect(service.getBandSpaceDetail('space-missing')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -246,13 +246,13 @@ describe('SpacesService', () => {
     it('공간이 없으면 NotFoundException을 전파한다', async () => {
       const module = await Test.createTestingModule({
         providers: [
-          SpacesService,
-          { provide: SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
+          BandSpacesService,
+          { provide: BAND_SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
           { provide: NotificationsService, useValue: notificationsServiceMock },
         ],
       }).compile();
 
-      const notFoundService = module.get(SpacesService);
+      const notFoundService = module.get(BandSpacesService);
 
       await expect(notFoundService.updateBandSpace('space-missing', {})).rejects.toThrow(NotFoundException);
     });
@@ -269,21 +269,21 @@ describe('SpacesService', () => {
     it('공간이 없으면 NotFoundException을 전파한다', async () => {
       const module = await Test.createTestingModule({
         providers: [
-          SpacesService,
-          { provide: SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
+          BandSpacesService,
+          { provide: BAND_SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
           { provide: NotificationsService, useValue: notificationsServiceMock },
         ],
       }).compile();
 
-      const notFoundService = module.get(SpacesService);
+      const notFoundService = module.get(BandSpacesService);
 
       await expect(notFoundService.deleteBandSpace('space-missing')).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('updateSpaceMemberRole', () => {
+  describe('updateBandSpaceMemberRole', () => {
     it('역할 수정 결과를 반환하고 해당 멤버에게 알림을 전송한다', async () => {
-      const result = await service.updateSpaceMemberRole('space-001', 'member-001', { role: 'LEADER' });
+      const result = await service.updateBandSpaceMemberRole('space-001', 'member-001', { role: 'LEADER' });
 
       expect(result.memberId).toBe('member-001');
       expect(result.role).toBe('LEADER');
@@ -296,21 +296,21 @@ describe('SpacesService', () => {
     it('멤버가 없으면 NotFoundException을 전파한다', async () => {
       const module = await Test.createTestingModule({
         providers: [
-          SpacesService,
-          { provide: SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
+          BandSpacesService,
+          { provide: BAND_SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
           { provide: NotificationsService, useValue: notificationsServiceMock },
         ],
       }).compile();
 
-      const notFoundService = module.get(SpacesService);
+      const notFoundService = module.get(BandSpacesService);
 
-      await expect(notFoundService.updateSpaceMemberRole('space-001', 'member-missing', { role: 'LEADER' })).rejects.toThrow(NotFoundException);
+      await expect(notFoundService.updateBandSpaceMemberRole('space-001', 'member-missing', { role: 'LEADER' })).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('removeSpaceMember', () => {
+  describe('removeBandSpaceMember', () => {
     it('제거 결과(memberId, spaceId, removedAt)를 반환하고 해당 멤버에게 알림을 전송한다', async () => {
-      const result = await service.removeSpaceMember('space-001', 'member-001');
+      const result = await service.removeBandSpaceMember('space-001', 'member-001');
 
       expect(result.memberId).toBe('member-001');
       expect(result.spaceId).toBe('space-001');
@@ -323,15 +323,15 @@ describe('SpacesService', () => {
     it('멤버가 없으면 NotFoundException을 전파한다', async () => {
       const module = await Test.createTestingModule({
         providers: [
-          SpacesService,
-          { provide: SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
+          BandSpacesService,
+          { provide: BAND_SPACES_REPOSITORY, useValue: { ...repositoryStub, ...notFoundRepositoryStub } },
           { provide: NotificationsService, useValue: notificationsServiceMock },
         ],
       }).compile();
 
-      const notFoundService = module.get(SpacesService);
+      const notFoundService = module.get(BandSpacesService);
 
-      await expect(notFoundService.removeSpaceMember('space-001', 'member-missing')).rejects.toThrow(NotFoundException);
+      await expect(notFoundService.removeBandSpaceMember('space-001', 'member-missing')).rejects.toThrow(NotFoundException);
     });
   });
 });
