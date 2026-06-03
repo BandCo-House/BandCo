@@ -13,6 +13,8 @@ async function bootstrap(): Promise<void> {
   const appConfig = getAppConfig();
   const prismaService = app.get(PrismaService);
 
+  app.enableCors();
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
