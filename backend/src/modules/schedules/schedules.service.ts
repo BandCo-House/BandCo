@@ -47,17 +47,21 @@ export class SchedulesService {
 
     const result = await (tx ? run(tx) : this.prisma.$transaction(run));
 
-    const memberUserIds = await this.schedulesRepository.findSpaceMemberUserIds(bandSpaceId);
-    if (memberUserIds.length > 0) {
-      await this.notificationsService.createManyNotifications(
-        memberUserIds.map(userId => ({
-          userId,
-          type: NotificationType.NOTICE,
-          title: '새 합주 일정이 생성되었습니다',
-          description: result.title,
-          targetPath: `/schedules/${result.scheduleId}`,
-        })),
-      );
+    try {
+      const memberUserIds = await this.schedulesRepository.findSpaceMemberUserIds(bandSpaceId);
+      if (memberUserIds.length > 0) {
+        await this.notificationsService.createManyNotifications(
+          memberUserIds.map(userId => ({
+            userId,
+            type: NotificationType.NOTICE,
+            title: '새 합주 일정이 생성되었습니다',
+            description: result.title,
+            targetPath: `/schedules/${result.scheduleId}`,
+          })),
+        );
+      }
+    } catch {
+      /* 알림 실패는 비즈니스 로직에 영향을 주지 않는다 */
     }
 
     return result;
@@ -91,16 +95,20 @@ export class SchedulesService {
 
     await this.schedulesRepository.deleteSchedule(scheduleId, tx);
 
-    const memberUserIds = await this.schedulesRepository.findSpaceMemberUserIds(spaceId);
-    if (memberUserIds.length > 0) {
-      await this.notificationsService.createManyNotifications(
-        memberUserIds.map(userId => ({
-          userId,
-          type: NotificationType.NOTICE,
-          title: '합주 일정이 삭제되었습니다',
-          description: title,
-        })),
-      );
+    try {
+      const memberUserIds = await this.schedulesRepository.findSpaceMemberUserIds(spaceId);
+      if (memberUserIds.length > 0) {
+        await this.notificationsService.createManyNotifications(
+          memberUserIds.map(userId => ({
+            userId,
+            type: NotificationType.NOTICE,
+            title: '합주 일정이 삭제되었습니다',
+            description: title,
+          })),
+        );
+      }
+    } catch {
+      /* 알림 실패는 비즈니스 로직에 영향을 주지 않는다 */
     }
 
     return { scheduleId, deletedAt: new Date().toISOString() };
