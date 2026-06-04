@@ -2,6 +2,7 @@ import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
 import type { GetSchedulesQuery } from '../dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
+import type { GetBandSchedulesResult } from '../types/band-schedule-list-item.type';
 import type { CreateScheduleResult } from '../types/create-schedule-result.type';
 import type { GetScheduleDetailResult } from '../types/schedule-detail.type';
 import type { GetSpaceSchedulesResult } from '../types/schedule-list-item.type';
@@ -42,4 +43,10 @@ export interface SchedulesRepository {
 
   /** 합주 공간 멤버의 userId 목록을 반환한다. 알림 수신자 조회에 사용한다. */
   findSpaceMemberUserIds(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<string[]>;
+
+  /** 밴드 기준 전체 공간의 일정 목록을 cursor pagination으로 조회한다. */
+  findSchedulesByBandId(bandId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult>;
+
+  /** 밴드 존재 여부를 확인한다 (deletedAt: null 조건 포함). */
+  findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
 }

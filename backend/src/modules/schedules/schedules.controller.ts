@@ -5,6 +5,7 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import { CreateScheduleBodyDto } from './dto/create-schedule.dto';
 import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
 import { UpdateScheduleBodyDto } from './dto/update-schedule.dto';
+import type { GetBandSchedulesResult } from './types/band-schedule-list-item.type';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
 import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
 import type { GetScheduleDetailResult } from './types/schedule-detail.type';
@@ -53,5 +54,11 @@ export class SchedulesController {
   async getScheduleDetail(@Param('scheduleId') scheduleId: string): Promise<ApiSuccessResponse<GetScheduleDetailResult>> {
     const result = await this.schedulesService.getScheduleDetail(scheduleId);
     return createSuccessResponse('합주 일정 상세 조회 성공', result);
+  }
+
+  @Get('bands/:bandId/schedules')
+  async getBandSchedules(@Param('bandId') bandId: string, @Query() query: GetSchedulesQueryDto): Promise<ApiSuccessResponse<GetBandSchedulesResult>> {
+    const result = await this.schedulesService.getBandSchedules(bandId, query);
+    return createSuccessResponse('밴드 일정 목록 조회 성공', result);
   }
 }

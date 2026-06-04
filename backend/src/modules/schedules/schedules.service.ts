@@ -9,6 +9,7 @@ import type { CreateScheduleInput } from './dto/create-schedule.dto';
 import type { GetSchedulesQuery } from './dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from './dto/update-schedule.dto';
 import { SCHEDULES_REPOSITORY, type SchedulesRepository } from './repositories/schedules.repository';
+import type { GetBandSchedulesResult } from './types/band-schedule-list-item.type';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
 import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
 import type { GetScheduleDetailResult } from './types/schedule-detail.type';
@@ -112,5 +113,13 @@ export class SchedulesService {
     if (!result) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
 
     return result;
+  }
+
+  /** 밴드에 속한 전체 공간의 일정 목록을 조회한다. */
+  async getBandSchedules(bandId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult> {
+    const band = await this.schedulesRepository.findBandById(bandId, tx);
+    if (!band) throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+
+    return this.schedulesRepository.findSchedulesByBandId(bandId, query, tx);
   }
 }

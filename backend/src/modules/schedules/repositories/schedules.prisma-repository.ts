@@ -5,6 +5,7 @@ import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
 import type { GetSchedulesQuery } from '../dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
+import type { BandScheduleListItem, GetBandSchedulesResult } from '../types/band-schedule-list-item.type';
 import type { CreateScheduleResult, ScheduleSongItem } from '../types/create-schedule-result.type';
 import type { GetScheduleDetailResult } from '../types/schedule-detail.type';
 import type { GetSpaceSchedulesResult, ScheduleListMeta } from '../types/schedule-list-item.type';
@@ -196,6 +197,73 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
   async deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<void> {
     const client = tx ?? this.prisma;
     await client.schedule.delete({ where: { id: scheduleId } });
+  }
+
+  async findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    return client.band.findFirst({
+      where: { id: bandId, deletedAt: null },
+      select: { id: true },
+    });
+  }
+
+  async findSchedulesByBandId(bandId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult> {
+    const client = tx ?? this.prisma;
+    const take = query.take ?? 50;
+
+    const where: Prisma.ScheduleWhereInput = {
+      bandSpace: { bandId, deletedAt: null },
+      ...(query.where__start_at__greater__than_equal && { startAt: { gte: new Date(query.where__start_at__greater__than_equal) } }),
+      ...(query.where__start_at__less_than_equal && {
+        startAt: {
+          ...(query.where__start_at__greater__than_equal && { gte: new Date(query.where__start_at__greater__than_equal) }),
+          lte: new Date(query.where__start_at__less_than_equal),
+        },
+      }),
+      ...(query.where__place_id && { placeId: query.where__place_id }),
+      ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
+      ...(query.where__status && { status: query.where__status }),
+      ...(query.cursor__start_at &&
+        query.cursor__id && {
+          OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
+        }),
+    };
+
+    const rows = await client.schedule.findMany({
+      where,
+      orderBy: [{ startAt: 'asc' }, { id: 'asc' }],
+      take: take + 1,
+      include: {
+        bandSpace: { select: { id: true, name: true } },
+      },
+    });
+
+    const hasNext = rows.length > take;
+    const items = hasNext ? rows.slice(0, take) : rows;
+    const lastItem = items[items.length - 1];
+
+    const meta: ScheduleListMeta = {
+      count: items.length,
+      take,
+      cursor: lastItem?.startAt ? { startAt: lastItem.startAt.toISOString(), id: lastItem.id } : null,
+      next: hasNext && lastItem?.startAt ? `?cursor__start_at=${encodeURIComponent(lastItem.startAt.toISOString())}&cursor__id=${lastItem.id}` : null,
+    };
+
+    return {
+      items: items.map(
+        (row): BandScheduleListItem => ({
+          scheduleId: row.id,
+          spaceId: row.bandSpaceId,
+          space: { spaceId: row.bandSpace.id, name: row.bandSpace.name },
+          scheduleType: row.scheduleType,
+          title: row.title,
+          startAt: row.startAt?.toISOString() ?? null,
+          endAt: row.endAt?.toISOString() ?? null,
+          status: row.status,
+        }),
+      ),
+      meta,
+    };
   }
 
   async findSchedulesBySpaceId(bandSpaceId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetSpaceSchedulesResult> {
