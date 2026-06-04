@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { buildNextPath } from '../../../common/url';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
@@ -260,7 +261,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       count: items.length,
       take,
       cursor: lastItem?.startAt ? { startAt: lastItem.startAt.toISOString(), id: lastItem.id } : null,
-      next: hasNext && lastItem?.startAt ? `?cursor__start_at=${encodeURIComponent(lastItem.startAt.toISOString())}&cursor__id=${lastItem.id}` : null,
+      next: hasNext && lastItem?.startAt ? buildNextPath('', { cursor__start_at: lastItem.startAt.toISOString(), cursor__id: lastItem.id }) : null,
     };
 
     return {
@@ -321,7 +322,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       count: items.length,
       take,
       cursor: lastItem?.startAt ? { startAt: lastItem.startAt.toISOString(), id: lastItem.id } : null,
-      next: hasNext && lastItem?.startAt ? `?cursor__start_at=${encodeURIComponent(lastItem.startAt.toISOString())}&cursor__id=${lastItem.id}` : null,
+      next: hasNext && lastItem?.startAt ? buildNextPath('', { cursor__start_at: lastItem.startAt.toISOString(), cursor__id: lastItem.id }) : null,
     };
 
     return {
