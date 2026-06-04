@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
@@ -15,7 +15,6 @@ import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
 import type { GetScheduleDetailResult } from './types/schedule-detail.type';
 import type { GetSpaceSchedulesResult } from './types/schedule-list-item.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
-import { DEMO_BAND_MEMBER_ID } from './schedules.constants';
 
 @Injectable()
 export class SchedulesService {
@@ -25,17 +24,25 @@ export class SchedulesService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  /** 밴드 공간에 일정을 생성한다. 공간 존재 확인 후 시간 범위를 검증한다. */
-  async createSchedule(bandSpaceId: string, input: CreateScheduleInput, tx?: Prisma.TransactionClient): Promise<CreateScheduleResult> {
+  /** 밴드 공간에 일정을 생성한다. 공간 존재 및 멤버 여부를 확인한 후 시간 범위를 검증한다. */
+  async createSchedule(
+    bandSpaceId: string,
+    userId: string,
+    input: CreateScheduleInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<CreateScheduleResult> {
     const run = async (client: Prisma.TransactionClient): Promise<CreateScheduleResult> => {
       const space = await this.schedulesRepository.findBandSpaceById(bandSpaceId, client);
       if (!space) throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+
+      const bandMember = await this.schedulesRepository.findBandMemberByBandSpaceIdAndUserId(bandSpaceId, userId, client);
+      if (!bandMember) throw new ForbiddenException('해당 합주 공간의 멤버가 아닙니다.');
 
       if (input.startAt && input.endAt && new Date(input.startAt) >= new Date(input.endAt)) {
         throw new BadRequestException('종료 시간은 시작 시간보다 이후여야 합니다.');
       }
 
-      return this.schedulesRepository.createSchedule(bandSpaceId, DEMO_BAND_MEMBER_ID, input, client);
+      return this.schedulesRepository.createSchedule(bandSpaceId, bandMember.id, input, client);
     };
 
     const result = await (tx ? run(tx) : this.prisma.$transaction(run));

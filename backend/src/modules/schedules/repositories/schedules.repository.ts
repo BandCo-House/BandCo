@@ -49,4 +49,7 @@ export interface SchedulesRepository {
 
   /** 밴드 존재 여부를 확인한다 (deletedAt: null 조건 포함). */
   findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
+
+  /** 밴드 공간 기준으로 특정 사용자의 밴드 멤버 정보를 조회한다. 공간 멤버 여부 검증에 사용한다. */
+  findBandMemberByBandSpaceIdAndUserId(bandSpaceId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
 }

@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
 
 import { NotificationType, ScheduleStatus, ScheduleType } from '../../generated/prisma';
@@ -16,6 +16,7 @@ const BAND_SPACE_ID = '11111111-1111-4111-8111-111111111111';
 const SCHEDULE_ID = '22222222-2222-4222-8222-222222222222';
 const BAND_ID = '33333333-3333-4333-8333-333333333333';
 const BAND_MEMBER_ID = '44444444-4444-4444-8444-444444444444';
+const USER_ID = '66666666-6666-4666-8666-666666666666';
 const SONG_ID = '55555555-5555-4555-8555-555555555555';
 const MEMBER_USER_ID_1 = 'aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const MEMBER_USER_ID_2 = 'aaaaaaa2-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -129,6 +130,9 @@ function createRepositoryStub(overrides?: Partial<SchedulesRepository>): Schedul
     async findBandById(bandId) {
       return bandId === BAND_ID ? { id: BAND_ID } : null;
     },
+    async findBandMemberByBandSpaceIdAndUserId(bandSpaceId, userId) {
+      return bandSpaceId === BAND_SPACE_ID && userId === USER_ID ? { id: BAND_MEMBER_ID } : null;
+    },
     async findSpaceMemberUserIds() {
       return [MEMBER_USER_ID_1, MEMBER_USER_ID_2];
     },
@@ -164,7 +168,7 @@ describe('SchedulesService', () => {
     it('일정 생성 결과를 반환한다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      const result = await service.createSchedule(BAND_SPACE_ID, {
+      const result = await service.createSchedule(BAND_SPACE_ID, USER_ID, {
         title: '좋은 날 합주',
         scheduleType: ScheduleType.PRACTICE,
         startAt: '2026-06-01T14:00:00+09:00',
@@ -180,7 +184,7 @@ describe('SchedulesService', () => {
       const notificationsMock = createNotificationsServiceMock();
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), notificationsMock);
 
-      await service.createSchedule(BAND_SPACE_ID, {
+      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
         title: '좋은 날 합주',
         scheduleType: ScheduleType.PRACTICE,
         startAt: '2026-06-01T14:00:00+09:00',
@@ -200,7 +204,7 @@ describe('SchedulesService', () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
       await expect(
-        service.createSchedule('missing-space-id', {
+        service.createSchedule('missing-space-id', USER_ID, {
           title: '합주',
           scheduleType: ScheduleType.PRACTICE,
           startAt: '2026-06-01T14:00:00+09:00',
@@ -210,11 +214,25 @@ describe('SchedulesService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('공간 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.createSchedule(BAND_SPACE_ID, 'non-member-user-id', {
+          title: '합주',
+          scheduleType: ScheduleType.PRACTICE,
+          startAt: '2026-06-01T14:00:00+09:00',
+          endAt: '2026-06-01T16:00:00+09:00',
+          status: ScheduleStatus.PLANNED,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('endAt이 startAt보다 이전이면 BadRequestException을 던진다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
       await expect(
-        service.createSchedule(BAND_SPACE_ID, {
+        service.createSchedule(BAND_SPACE_ID, USER_ID, {
           title: '합주',
           scheduleType: ScheduleType.PRACTICE,
           startAt: '2026-06-01T16:00:00+09:00',
@@ -231,6 +249,10 @@ describe('SchedulesService', () => {
           capturedTransactions.push(tx);
           return { id: BAND_SPACE_ID };
         },
+        async findBandMemberByBandSpaceIdAndUserId(_spaceId, _userId, tx) {
+          capturedTransactions.push(tx);
+          return { id: BAND_MEMBER_ID };
+        },
         async createSchedule(_spaceId, _memberId, _input, tx) {
           capturedTransactions.push(tx);
           return createScheduleResult;
@@ -238,7 +260,7 @@ describe('SchedulesService', () => {
       });
       const service = new SchedulesService(stub, createPrismaServiceStub(), createNotificationsServiceMock());
 
-      await service.createSchedule(BAND_SPACE_ID, {
+      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
         title: '합주',
         scheduleType: ScheduleType.PRACTICE,
         startAt: '2026-06-01T14:00:00+09:00',
@@ -246,8 +268,9 @@ describe('SchedulesService', () => {
         status: ScheduleStatus.PLANNED,
       });
 
-      expect(capturedTransactions).toHaveLength(2);
+      expect(capturedTransactions).toHaveLength(3);
       expect(capturedTransactions[0]).toBe(capturedTransactions[1]);
+      expect(capturedTransactions[1]).toBe(capturedTransactions[2]);
     });
 
     it('외부 tx가 있으면 새 transaction을 열지 않는다', async () => {
@@ -257,6 +280,7 @@ describe('SchedulesService', () => {
       await expect(
         service.createSchedule(
           BAND_SPACE_ID,
+          USER_ID,
           {
             title: '합주',
             scheduleType: ScheduleType.PRACTICE,

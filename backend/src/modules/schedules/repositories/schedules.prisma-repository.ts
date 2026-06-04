@@ -202,6 +202,17 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     await client.schedule.delete({ where: { id: scheduleId } });
   }
 
+  async findBandMemberByBandSpaceIdAndUserId(bandSpaceId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    return client.bandMember.findFirst({
+      where: {
+        userId,
+        band: { bandSpaces: { some: { id: bandSpaceId, deletedAt: null } } },
+      },
+      select: { id: true },
+    });
+  }
+
   async findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
     const client = tx ?? this.prisma;
     return client.band.findFirst({

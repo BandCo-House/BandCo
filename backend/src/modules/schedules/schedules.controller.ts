@@ -1,6 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
+import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
+import type { User } from '../../generated/prisma';
 
 import { CreateScheduleBodyDto } from './dto/create-schedule.dto';
 import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
@@ -13,16 +15,22 @@ import type { GetSpaceSchedulesResult } from './types/schedule-list-item.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { SchedulesService } from './schedules.service';
 
+interface AuthenticatedRequest {
+  user: User;
+}
+
 @Controller()
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
+  @UseGuards(AccessTokenGuard)
   @Post('bandspaces/:bandspaceId/schedules')
   async createSchedule(
+    @Req() request: AuthenticatedRequest,
     @Param('bandspaceId') bandspaceId: string,
     @Body() input: CreateScheduleBodyDto,
   ): Promise<ApiSuccessResponse<CreateScheduleResult>> {
-    const result = await this.schedulesService.createSchedule(bandspaceId, input);
+    const result = await this.schedulesService.createSchedule(bandspaceId, request.user.id, input);
     return createSuccessResponse('합주 일정 생성 성공', result);
   }
 
