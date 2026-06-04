@@ -15,8 +15,9 @@ import type { UpdateBandSpaceMemberRoleResult } from '../types/update-bandspace-
 
 export const BAND_SPACES_REPOSITORY = Symbol('BAND_SPACES_REPOSITORY');
 
-/** addBandSpaceMember 저장소 반환 타입. spaceName은 알림 전송용이며 API 응답에는 포함되지 않는다. */
+/** addBandSpaceMember 저장소 반환 타입. userId, spaceName은 알림 전송용이며 API 응답에는 포함되지 않는다. */
 export interface AddBandSpaceMemberRepositoryResult extends AddBandSpaceMemberResult {
+  userId: string;
   spaceName: string;
 }
 

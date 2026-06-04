@@ -172,7 +172,6 @@ describe('BandSpacesService', () => {
 
       expect(result.memberId).toBe('member-001');
       expect(result.spaceId).toBe('space-001');
-      expect(result.userId).toBe('11111111-1111-1111-1111-111111111111');
       expect(result.role).toBe('MEMBER');
       expect(notificationsServiceMock.createNotification).toHaveBeenCalledWith(
         expect.objectContaining({ userId: '11111111-1111-1111-1111-111111111111', type: NotificationType.NOTICE }),

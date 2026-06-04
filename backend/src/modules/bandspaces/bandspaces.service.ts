@@ -26,10 +26,10 @@ export class BandSpacesService {
   ) {}
 
   async addBandSpaceMember(spaceId: string, input: AddBandSpaceMemberInput): Promise<AddBandSpaceMemberResult> {
-    const { spaceName, ...result } = await this.bandSpacesRepository.addBandSpaceMember(spaceId, input);
+    const { spaceName, userId, ...result } = await this.bandSpacesRepository.addBandSpaceMember(spaceId, input);
 
     await this.notificationsService.createNotification({
-      userId: result.userId,
+      userId,
       type: NotificationType.NOTICE,
       title: '합주 공간에 추가되었습니다',
       description: spaceName,
