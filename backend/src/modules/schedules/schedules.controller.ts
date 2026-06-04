@@ -1,10 +1,11 @@
-import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { CreateScheduleBodyDto } from './dto/create-schedule.dto';
 import { UpdateScheduleBodyDto } from './dto/update-schedule.dto';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
+import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { SchedulesService } from './schedules.service';
 
@@ -28,5 +29,11 @@ export class SchedulesController {
   ): Promise<ApiSuccessResponse<UpdateScheduleResult>> {
     const result = await this.schedulesService.updateSchedule(scheduleId, input);
     return createSuccessResponse('합주 일정 수정 성공', result);
+  }
+
+  @Delete('schedules/:scheduleId')
+  async deleteSchedule(@Param('scheduleId') scheduleId: string): Promise<ApiSuccessResponse<DeleteScheduleResult>> {
+    const result = await this.schedulesService.deleteSchedule(scheduleId);
+    return createSuccessResponse('합주 일정 삭제 성공', result);
   }
 }

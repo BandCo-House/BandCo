@@ -9,6 +9,7 @@ import type { CreateScheduleInput } from './dto/create-schedule.dto';
 import type { UpdateScheduleInput } from './dto/update-schedule.dto';
 import { SCHEDULES_REPOSITORY, type SchedulesRepository } from './repositories/schedules.repository';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
+import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { DEMO_BAND_MEMBER_ID } from './schedules.constants';
 
@@ -68,5 +69,29 @@ export class SchedulesService {
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  /** 일정을 삭제한다. hard delete이며 deletedAt은 서비스 레이어에서 생성한다. */
+  async deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<DeleteScheduleResult> {
+    const existing = await this.schedulesRepository.findScheduleById(scheduleId, tx);
+    if (!existing) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
+
+    const { spaceId, title } = existing.schedule;
+
+    await this.schedulesRepository.deleteSchedule(scheduleId, tx);
+
+    const memberUserIds = await this.schedulesRepository.findSpaceMemberUserIds(spaceId);
+    if (memberUserIds.length > 0) {
+      await this.notificationsService.createManyNotifications(
+        memberUserIds.map(userId => ({
+          userId,
+          type: NotificationType.NOTICE,
+          title: '합주 일정이 삭제되었습니다',
+          description: title,
+        })),
+      );
+    }
+
+    return { scheduleId, deletedAt: new Date().toISOString() };
   }
 }

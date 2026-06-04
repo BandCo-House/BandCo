@@ -97,11 +97,18 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
   async findScheduleById(
     scheduleId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{ schedule: { startAt: string | null; endAt: string | null } } | undefined> {
+  ): Promise<{ schedule: { spaceId: string; title: string; startAt: string | null; endAt: string | null } } | undefined> {
     const client = tx ?? this.prisma;
     const row = await client.schedule.findUnique({ where: { id: scheduleId } });
     if (!row) return undefined;
-    return { schedule: { startAt: row.startAt?.toISOString() ?? null, endAt: row.endAt?.toISOString() ?? null } };
+    return {
+      schedule: {
+        spaceId: row.bandSpaceId,
+        title: row.title,
+        startAt: row.startAt?.toISOString() ?? null,
+        endAt: row.endAt?.toISOString() ?? null,
+      },
+    };
   }
 
   async updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult> {
@@ -159,5 +166,10 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       memo: updated.memo,
       updatedAt: updated.updatedAt.toISOString(),
     };
+  }
+
+  async deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.schedule.delete({ where: { id: scheduleId } });
   }
 }

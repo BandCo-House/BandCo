@@ -29,7 +29,10 @@ export interface SchedulesRepository {
   findScheduleById(
     scheduleId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{ schedule: { startAt: string | null; endAt: string | null } } | undefined>;
+  ): Promise<{ schedule: { spaceId: string; title: string; startAt: string | null; endAt: string | null } } | undefined>;
+
+  /** 일정을 hard delete한다. */
+  deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<void>;
 
   /** 밴드 공간 존재 여부를 확인한다 (deletedAt: null 조건 포함). */
   findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
