@@ -34,7 +34,7 @@ export class GetSchedulesQueryDto {
   @IsOptional()
   @IsString({ message: stringValidationMessage })
   @IsISO8601({ strict: true, strictSeparator: true }, { message: iso8601ValidationMessage })
-  where__start_at__greater__than_equal?: string;
+  where__start_at__greater_than_equal?: string;
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })

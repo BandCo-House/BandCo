@@ -227,10 +227,10 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
 
     const where: Prisma.ScheduleWhereInput = {
       bandSpace: { bandId, deletedAt: null },
-      ...(query.where__start_at__greater__than_equal && { startAt: { gte: new Date(query.where__start_at__greater__than_equal) } }),
+      ...(query.where__start_at__greater_than_equal && { startAt: { gte: new Date(query.where__start_at__greater_than_equal) } }),
       ...(query.where__start_at__less_than_equal && {
         startAt: {
-          ...(query.where__start_at__greater__than_equal && { gte: new Date(query.where__start_at__greater__than_equal) }),
+          ...(query.where__start_at__greater_than_equal && { gte: new Date(query.where__start_at__greater_than_equal) }),
           lte: new Date(query.where__start_at__less_than_equal),
         },
       }),
@@ -286,10 +286,10 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
 
     const where: Prisma.ScheduleWhereInput = {
       bandSpaceId,
-      ...(query.where__start_at__greater__than_equal && { startAt: { gte: new Date(query.where__start_at__greater__than_equal) } }),
+      ...(query.where__start_at__greater_than_equal && { startAt: { gte: new Date(query.where__start_at__greater_than_equal) } }),
       ...(query.where__start_at__less_than_equal && {
         startAt: {
-          ...(query.where__start_at__greater__than_equal && { gte: new Date(query.where__start_at__greater__than_equal) }),
+          ...(query.where__start_at__greater_than_equal && { gte: new Date(query.where__start_at__greater_than_equal) }),
           lte: new Date(query.where__start_at__less_than_equal),
         },
       }),
