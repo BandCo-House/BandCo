@@ -1,7 +1,9 @@
 import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
+import type { GetSchedulesQuery } from '../dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
 import type { CreateScheduleResult } from '../types/create-schedule-result.type';
+import type { GetSpaceSchedulesResult } from '../types/schedule-list-item.type';
 import type { UpdateScheduleResult } from '../types/update-schedule-result.type';
 
 export const SCHEDULES_REPOSITORY = Symbol('SCHEDULES_REPOSITORY');
@@ -33,6 +35,9 @@ export interface SchedulesRepository {
 
   /** 일정을 hard delete한다. */
   deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<void>;
+
+  /** 밴드 공간 기준 일정 목록을 cursor pagination으로 조회한다. */
+  findSchedulesBySpaceId(bandSpaceId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetSpaceSchedulesResult>;
 
   /** 밴드 공간 존재 여부를 확인한다 (deletedAt: null 조건 포함). */
   findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;

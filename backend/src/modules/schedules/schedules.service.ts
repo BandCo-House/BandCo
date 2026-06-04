@@ -6,10 +6,12 @@ import { NotificationType } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
 import type { CreateScheduleInput } from './dto/create-schedule.dto';
+import type { GetSchedulesQuery } from './dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from './dto/update-schedule.dto';
 import { SCHEDULES_REPOSITORY, type SchedulesRepository } from './repositories/schedules.repository';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
 import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
+import type { GetSpaceSchedulesResult } from './types/schedule-list-item.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { DEMO_BAND_MEMBER_ID } from './schedules.constants';
 
@@ -93,5 +95,13 @@ export class SchedulesService {
     }
 
     return { scheduleId, deletedAt: new Date().toISOString() };
+  }
+
+  /** 밴드 공간 기준 일정 목록을 cursor pagination으로 조회한다. */
+  async getSpaceSchedules(bandSpaceId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetSpaceSchedulesResult> {
+    const space = await this.schedulesRepository.findBandSpaceById(bandSpaceId, tx);
+    if (!space) throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+
+    return this.schedulesRepository.findSchedulesBySpaceId(bandSpaceId, query, tx);
   }
 }

@@ -1,11 +1,13 @@
-import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { CreateScheduleBodyDto } from './dto/create-schedule.dto';
+import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
 import { UpdateScheduleBodyDto } from './dto/update-schedule.dto';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
 import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
+import type { GetSpaceSchedulesResult } from './types/schedule-list-item.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { SchedulesService } from './schedules.service';
 
@@ -35,5 +37,14 @@ export class SchedulesController {
   async deleteSchedule(@Param('scheduleId') scheduleId: string): Promise<ApiSuccessResponse<DeleteScheduleResult>> {
     const result = await this.schedulesService.deleteSchedule(scheduleId);
     return createSuccessResponse('합주 일정 삭제 성공', result);
+  }
+
+  @Get('bandspaces/:bandspaceId/schedules')
+  async getSpaceSchedules(
+    @Param('bandspaceId') bandspaceId: string,
+    @Query() query: GetSchedulesQueryDto,
+  ): Promise<ApiSuccessResponse<GetSpaceSchedulesResult>> {
+    const result = await this.schedulesService.getSpaceSchedules(bandspaceId, query);
+    return createSuccessResponse('합주 일정 목록 조회 성공', result);
   }
 }
