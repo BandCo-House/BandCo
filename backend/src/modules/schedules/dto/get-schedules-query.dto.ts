@@ -1,8 +1,9 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
 import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
+import { maxValidationMessage } from 'src/common/validation-message/max-validation.message';
 import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
@@ -27,6 +28,7 @@ export class GetSchedulesQueryDto {
   @Type(() => Number)
   @IsInt({ message: intValidationMessage })
   @Min(1, { message: minValidationMessage })
+  @Max(100, { message: maxValidationMessage })
   take?: number = 50;
 
   @IsOptional()
