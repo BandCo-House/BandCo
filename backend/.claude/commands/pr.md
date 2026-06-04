@@ -54,7 +54,8 @@ cat ../.github/pull_request_template.md
 
 - **소요 시간**: `git log dev..HEAD`와 변경 파일 규모를 보고 리뷰 시간 추산
 - **작업 요약**: 한 줄로 이 PR의 핵심 변경을 설명
-- **작업 내용**: `git log dev..HEAD --oneline` 커밋 목록 기반으로 번호 목록
+- **작업 내용**: `git log dev..HEAD --oneline` 커밋 목록 기반으로 번호 목록. API 변경이 있으면 `docs/backend/api-docs/{module}.md`의 `#N` 번호를 함께 표기한다.
+  - 예: `#3 POST /bands/invite 추가`, `#1 GET /bands 응답 필드 변경`
 - **주요 고민 및 해결 과정**: 비자명한 구현 결정이 있으면 기술, 없으면 "없음"
 - **참고 문서**: 관련 외부 문서 링크 (없으면 생략)
 - **리뷰 요구사항**: 리뷰어가 집중해야 할 부분 (없으면 생략)

@@ -1,10 +1,14 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/app/providers/auth-context';
 import { useUserProfile } from '@/features/profile-get/model/useUserProfile';
 import { useMyBands } from '@/entities/band/api/useMyBands';
-import { updateUserProfile } from '@/features/profile-update/api/profile-api';
+import {
+  updateUserProfile,
+  type UpdateProfileRequest,
+} from '@/features/profile-update/api/profile-api';
+import type { ProfileMusic } from '@/entities/profile/model/types';
 
 // FSD Slices Imports
 import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
@@ -13,6 +17,16 @@ import { GenreEditSection } from '@/features/profile-update/ui/GenreEditSection'
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
+import { compressProfileImage } from '@/features/profile-update/model/image-compression';
+import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
+import {
+  AppDialogBody,
+  AppDialogContent,
+  AppDialogFooter,
+  Dialog,
+  DialogTitle,
+} from '@/shared/ui/dialog';
+import { Button } from '@/shared/ui/button';
 
 // UI Imports
 
@@ -62,7 +76,7 @@ function ProfileRoutePage() {
 
   const loggedInUserId = auth.user.isLoggedIn ? auth.user.id : null;
   const targetUserId =
-    search.userId !== undefined ? search.userId : (loggedInUserId || '');
+    search.userId !== undefined ? search.userId : loggedInUserId || '';
   const isMe = !!loggedInUserId && targetUserId === loggedInUserId;
 
   const queryClient = useQueryClient();
@@ -80,12 +94,18 @@ function ProfileRoutePage() {
   const [editForm, setEditForm] = useState<{
     nickname: string;
     selfDescription: string;
-    profileMusicUrl: string;
+    profileMusic: ProfileMusic | null;
+    avatarUrl: string;
   }>({
     nickname: '',
     selfDescription: '',
-    profileMusicUrl: '',
+    profileMusic: null,
+    avatarUrl: '',
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isMusicSearchOpen, setIsMusicSearchOpen] = useState(false);
+  const [isLeaveEditDialogOpen, setIsLeaveEditDialogOpen] = useState(false);
+  const avatarPreviewUrlRef = useRef<string | null>(null);
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -105,6 +125,19 @@ function ProfileRoutePage() {
     };
   }, [isEditing]);
 
+  const revokeAvatarPreviewUrl = () => {
+    if (!avatarPreviewUrlRef.current) return;
+
+    URL.revokeObjectURL(avatarPreviewUrlRef.current);
+    avatarPreviewUrlRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      revokeAvatarPreviewUrl();
+    };
+  }, []);
+
   // 3. Save profile changes
   const handleSave = async () => {
     const result = profileEditSchema.safeParse(editForm);
@@ -120,20 +153,39 @@ function ProfileRoutePage() {
     const validatedData = result.data;
 
     try {
-      await updateUserProfile(targetUserId, {
-        profile: {
-          nickname: validatedData.nickname,
-          selfDescription: validatedData.selfDescription || null,
-          profileMusicUrl: validatedData.profileMusicUrl || null,
-        },
-      });
+      const profilePayload: NonNullable<UpdateProfileRequest['profile']> = {
+        nickname: validatedData.nickname,
+        selfDescription: validatedData.selfDescription || null,
+        profileMusic: validatedData.profileMusic,
+      };
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append(
+          'profile',
+          new Blob([JSON.stringify(profilePayload)], {
+            type: 'application/json',
+          }),
+        );
+        formData.append('avatar', avatarFile);
+        await updateUserProfile(targetUserId, formData);
+      } else {
+        profilePayload.avatarUrl = validatedData.avatarUrl || null;
+        await updateUserProfile(targetUserId, {
+          profile: profilePayload,
+        });
+      }
 
       queryClient.invalidateQueries({
         queryKey: ['user-profiles', 'detail', targetUserId],
       });
       setIsEditing(false);
+      setAvatarFile(null);
+      setEditForm((prev) => ({ ...prev, avatarUrl: '' }));
+      revokeAvatarPreviewUrl();
       toast.success('프로필 정보가 저장되었습니다.');
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error('정보 수정 도중 에러가 발생했습니다.');
     }
   };
@@ -145,11 +197,42 @@ function ProfileRoutePage() {
     navigator.clipboard
       .writeText(url.toString())
       .then(() => {
-        toast.success('프로필 주소가 클립보드에 성공적으로 복사되었습니다!');
+        toast.success('주소가 클립보드에 저장되었습니다.');
       })
       .catch(() => {
         toast.error('주소 복사에 실패했습니다.');
       });
+  };
+
+  const resetEditForm = () => {
+    revokeAvatarPreviewUrl();
+    setEditForm({
+      nickname: profile?.profile?.nickname || '',
+      selfDescription: profile?.profile?.selfDescription || '',
+      profileMusic: profile?.profile?.profileMusic ?? null,
+      avatarUrl: profile?.profile?.avatarUrl || '',
+    });
+    setAvatarFile(null);
+  };
+
+  const enterEditMode = () => {
+    resetEditForm();
+    setIsEditing(true);
+  };
+
+  const requestExitEditMode = () => {
+    if (!isEditing) {
+      enterEditMode();
+      return;
+    }
+
+    setIsLeaveEditDialogOpen(true);
+  };
+
+  const discardEditChanges = () => {
+    resetEditForm();
+    setIsEditing(false);
+    setIsLeaveEditDialogOpen(false);
   };
 
   if (loading && !profile) {
@@ -194,24 +277,25 @@ function ProfileRoutePage() {
           isLoggedIn={auth.user.isLoggedIn}
           onShare={handleShare}
           onInvite={() => setIsInviting(true)}
-          onToggleEdit={() => {
-            if (isEditing) {
-              setIsEditing(false);
-              setEditForm({
-                nickname: profile.profile?.nickname || '',
-                selfDescription: profile.profile?.selfDescription || '',
-                profileMusicUrl: profile.profile?.profileMusicUrl || '',
-              });
-            } else {
-              setEditForm({
-                nickname: profile.profile?.nickname || '',
-                selfDescription: profile.profile?.selfDescription || '',
-                profileMusicUrl: profile.profile?.profileMusicUrl || '',
-              });
-              setIsEditing(true);
-            }
-          }}
+          onToggleEdit={requestExitEditMode}
           onSave={handleSave}
+          onAvatarFileSelect={(file) => {
+            void compressProfileImage(file)
+              .then(({ file: compressedFile, previewUrl }) => {
+                revokeAvatarPreviewUrl();
+                avatarPreviewUrlRef.current = previewUrl;
+                setAvatarFile(compressedFile);
+                setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
+              })
+              .catch((error) => {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : '이미지 처리 도중 에러가 발생했습니다.',
+                );
+              });
+          }}
+          onOpenMusicSearch={() => setIsMusicSearchOpen(true)}
         />
         <div className="bg-gradient-top pb-6">
           <div className="flex flex-col gap-2 px-5">
@@ -244,6 +328,51 @@ function ProfileRoutePage() {
             isLoggedIn={auth.user.isLoggedIn}
           />
         )}
+        <ProfileMusicSearchDialog
+          open={isMusicSearchOpen}
+          onOpenChange={setIsMusicSearchOpen}
+          onSelect={(song) => {
+            setEditForm((prev) => ({
+              ...prev,
+              profileMusic: song,
+            }));
+          }}
+        />
+        <Dialog
+          open={isLeaveEditDialogOpen}
+          onOpenChange={setIsLeaveEditDialogOpen}
+        >
+          <AppDialogContent className="max-w-[calc(100%-2rem)] p-8 sm:max-w-2xl">
+            <AppDialogBody className="items-center gap-6 text-center">
+              <DialogTitle className="text-3xl text-grey-50">
+                편집 모드를 나가시겠습니까?
+              </DialogTitle>
+              <p className="typo-lg-sb text-grey-100">
+                변경사항이 저장되지 않습니다
+              </p>
+            </AppDialogBody>
+            <AppDialogFooter className="mt-8 flex-row justify-center gap-4">
+              <Button
+                type="button"
+                variant="neutral"
+                size="lg"
+                onClick={() => setIsLeaveEditDialogOpen(false)}
+                className="w-full text-grey-50"
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                variant="shining"
+                size="lg"
+                onClick={discardEditChanges}
+                className="w-full"
+              >
+                나가기
+              </Button>
+            </AppDialogFooter>
+          </AppDialogContent>
+        </Dialog>
       </div>
     </div>
   );

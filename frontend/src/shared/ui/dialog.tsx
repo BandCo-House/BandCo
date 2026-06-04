@@ -47,15 +47,17 @@ function DialogOverlay({
 
 function DialogContent({
   className,
+  overlayClassName,
   children,
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
+  overlayClassName?: string;
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
@@ -116,6 +118,155 @@ function DialogFooter({
   );
 }
 
+function AppDialogGlow({ className, ...props }: React.ComponentProps<'svg'>) {
+  const gradientId = React.useId();
+  const filterId = React.useId();
+
+  return (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 353 678"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn('pointer-events-none absolute inset-0 z-0', className)}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      {...props}
+    >
+      <g filter={`url(#${filterId})`}>
+        <path
+          d="M354.222 684.439C141.51 721.444 -54.6672 585.939 -147.429 541.939C-240.19 497.939 -433.917 1162.65 -127.171 1226.5C179.575 1290.35 904.543 908.945 926.82 537.628C989.673 -510.001 214.544 94.999 345.197 392.771C393.139 502.038 445.738 668.518 354.222 684.439Z"
+          fill={`url(#${gradientId})`}
+        />
+      </g>
+      <defs>
+        <filter
+          id={filterId}
+          x="-438.551"
+          y="-198.039"
+          width={1514}
+          height="1576.58"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity={0} result="BackgroundImageFix" />
+          <feBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="BackgroundImageFix"
+            result="shape"
+          />
+          <feGaussianBlur stdDeviation="72.5" result="effect1_foregroundBlur" />
+        </filter>
+        <linearGradient
+          id={gradientId}
+          x1="3.40972"
+          y1={742}
+          x2="663.109"
+          y2="232.642"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0.0511104" stopColor="#E1FC73" stopOpacity="0.2" />
+          <stop offset="0.853476" stopColor="#E1FC73" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function AppDialogContent({
+  className,
+  children,
+  showGlow = true,
+  style,
+  ...props
+}: React.ComponentProps<typeof DialogContent> & {
+  showGlow?: boolean;
+}) {
+  return (
+    <DialogContent
+      showCloseButton={false}
+      overlayClassName="backdrop-blur-none"
+      className={cn(
+        'overflow-hidden rounded-xl border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
+        className,
+      )}
+      style={{
+        borderStyle: 'solid',
+        borderWidth: '0.5px 1px 2px 0.5px',
+        borderColor: 'color-mix(in srgb, var(--surface-1) 40%, transparent)',
+        boxShadow: '0 3px 6px 2px rgba(255, 255, 255, 0.16)',
+        ...style,
+      }}
+      {...props}
+    >
+      {showGlow && <AppDialogGlow />}
+      {children}
+    </DialogContent>
+  );
+}
+
+function AppDialogClose({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogClose>) {
+  return (
+    <DialogClose
+      type="button"
+      className={cn(
+        'absolute top-6 right-6 z-50 flex size-10 items-center justify-center rounded-full text-grey-100 transition-colors hover:text-primary focus-visible:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:text-primary',
+        className,
+      )}
+      {...props}
+    >
+      {children ?? (
+        <>
+          <XIcon className="size-8" />
+          <span className="sr-only">닫기</span>
+        </>
+      )}
+    </DialogClose>
+  );
+}
+
+function AppDialogHeader({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogHeader>) {
+  return (
+    <DialogHeader
+      className={cn('relative z-10 mb-2 text-left', className)}
+      {...props}
+    />
+  );
+}
+
+function AppDialogBody({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      className={cn(
+        'relative z-10 flex flex-col gap-9 text-grey-100',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function AppDialogFooter({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogFooter>) {
+  return (
+    <DialogFooter
+      className={cn('relative z-10 mt-8 items-end', className)}
+      {...props}
+    />
+  );
+}
+
 function DialogTitle({
   className,
   ...props
@@ -144,6 +295,12 @@ function DialogDescription({
 
 export {
   Dialog,
+  AppDialogBody,
+  AppDialogClose,
+  AppDialogContent,
+  AppDialogFooter,
+  AppDialogGlow,
+  AppDialogHeader,
   DialogClose,
   DialogContent,
   DialogDescription,

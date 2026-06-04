@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 /**
  * 헤더 탭 아이템 정의
  */
@@ -28,19 +30,23 @@ export type HeaderResolveContext = {
  * 동적 resolve 함수가 반환할 수 있는 헤더 필드
  */
 export type HeaderResolveResult = {
-  title?: string;
+  title?: string | (() => ReactNode);
+  titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;
   meta?: string[];
   tabs?: HeaderTab[];
   rightActionLabel?: string;
+  heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
+  renderRight?: () => ReactNode;
 };
 
 /**
  * 라우트 staticData에 저장되는 헤더 설정
  */
 export type HeaderStaticConfig = {
-  title?: string;
+  title?: string | (() => ReactNode);
+  titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;
   showBack?: boolean;
@@ -55,6 +61,9 @@ export type HeaderStaticConfig = {
     params: Record<string, string>,
   ) => Record<string, string>;
   resolve?: (ctx: HeaderResolveContext) => HeaderResolveResult;
+  
+  heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
+  renderRight?: () => ReactNode;
 };
 
 /**
@@ -63,3 +72,4 @@ export type HeaderStaticConfig = {
 export type RouteStaticData = {
   header?: HeaderStaticConfig;
 };
+

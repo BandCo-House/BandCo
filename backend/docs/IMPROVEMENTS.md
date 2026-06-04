@@ -49,3 +49,9 @@
 | 2026-05-26 | AGENTS.md, CLAUDE.md | 상황별 docs 참고 문서 가이드 추가 |
 | 2026-05-26 | AGENTS.md, CLAUDE.md, docs/backend/api-docs/README.md | 모듈 문서와 API 명세서 위치 참고 규칙 추가 |
 | 2026-05-26 | AGENTS.md, CLAUDE.md | 새 도메인 모듈 추가 시 modules 설계 문서 작성 규칙 추가 |
+| 2026-06-01 | .claude/agents/be-orchestrator.md | be-orchestrate skill과 Phase 구조 동기화 (0~5단계), 설계 문서 자동 보관 단계(Phase 5) 추가 |
+| 2026-06-01 | .claude/agents/be-qa.md | be-qa skill 대비 누락된 체크리스트 항목 동기화 (DTO/타입, Soft Delete, Prisma, 네이밍, Swagger) |
+| 2026-06-01 | docs/backend/conventions.md | Section 10 Swagger 데코레이터 규칙 신규 추가 |
+| 2026-06-01 | .claude/agents/be-designer.md, .claude/skills/be-design/SKILL.md | API 번호(#N) 명시 및 신규 API 넘버 부여 규칙 추가, @ApiProperty 설계 포함 |
+| 2026-06-01 | .claude/agents/be-api-sync.md, .claude/skills/be-api-sync/SKILL.md | Notion #N 넘버링 보존, 출처 URL 노출 제거 |
+| 2026-06-01 | .claude/commands/pr.md | 작업 내용에 API #N 번호 표기 규칙 추가 |

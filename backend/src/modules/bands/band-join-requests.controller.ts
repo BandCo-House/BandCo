@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -14,12 +15,17 @@ interface AuthenticatedRequest {
   user: User;
 }
 
+@ApiTags('가입 요청')
 @Controller('join-requests')
 export class BandJoinRequestsController {
   constructor(private readonly bandsService: BandsService) {}
 
   @Get('sent')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '내가 보낸 가입 요청 목록 조회' })
+  @ApiResponse({ status: 200, description: '내가 보낸 가입 요청 목록 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async getSentBandJoinRequests(
     @Req() request: AuthenticatedRequest,
     @Query() query: GetSentBandJoinRequestsQueryDto,
@@ -31,6 +37,13 @@ export class BandJoinRequestsController {
 
   @Post(':joinRequestId/approve')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 가입 요청 승인' })
+  @ApiParam({ name: 'joinRequestId', description: '가입 요청 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '가입 요청 승인 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '가입 요청을 찾을 수 없음' })
   async approveBandJoinRequest(
     @Req() request: AuthenticatedRequest,
     @Param('joinRequestId') joinRequestId: string,
@@ -42,6 +55,13 @@ export class BandJoinRequestsController {
 
   @Post(':joinRequestId/reject')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 가입 요청 거절' })
+  @ApiParam({ name: 'joinRequestId', description: '가입 요청 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '가입 요청 거절 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '가입 요청을 찾을 수 없음' })
   async rejectBandJoinRequest(
     @Req() request: AuthenticatedRequest,
     @Param('joinRequestId') joinRequestId: string,

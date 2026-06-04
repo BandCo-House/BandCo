@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
@@ -12,6 +13,7 @@ import { uuidValidationMessage } from '../../../common/validation-message/uuid-v
  * 밴드 생성 요청 본문을 검증한다.
  */
 export class CreateBandBodyDto {
+  @ApiProperty({ description: '밴드 이름 (최대 40자)', example: '록밴드' })
   @Transform(trimStringValue)
   @IsString({
     message: stringValidationMessage,
@@ -24,6 +26,7 @@ export class CreateBandBodyDto {
   })
   name!: string;
 
+  @ApiPropertyOptional({ description: '밴드 소개', example: '함께 음악을 만들어가는 밴드입니다.' })
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
@@ -31,11 +34,13 @@ export class CreateBandBodyDto {
   })
   description?: string;
 
+  @ApiProperty({ description: '밴드 공개 여부', example: true })
   @IsBoolean({
     message: booleanValidationMessage,
   })
   visibility!: boolean;
 
+  @ApiPropertyOptional({ description: '밴드 커버 이미지 URL', example: 'https://example.com/cover.jpg' })
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({
@@ -43,6 +48,7 @@ export class CreateBandBodyDto {
   })
   coverImgUrl?: string;
 
+  @ApiPropertyOptional({ description: '장르 ID 목록 (UUID 배열)', type: [String] })
   @IsOptional()
   @IsArray()
   @IsUUID('4', {
@@ -51,6 +57,7 @@ export class CreateBandBodyDto {
   })
   genreIds?: string[];
 
+  @ApiPropertyOptional({ description: '초대할 유저 ID 목록 (UUID 배열)', type: [String] })
   @IsOptional()
   @IsArray()
   @IsUUID('4', {

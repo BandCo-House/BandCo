@@ -28,6 +28,9 @@ describe('buildGeneratedTokenCss', () => {
           },
         },
         surface: {
+          1: { value: '#010101' },
+          2: { value: '#020202' },
+          3: { value: '#030303' },
           'gradient-top': { value: '#999999' },
           'gradient-bottom': { value: '#aaaaaa' },
         },
@@ -47,6 +50,9 @@ describe('buildGeneratedTokenCss', () => {
     expect(css).toContain('--secondary: #444444;');
     expect(css).toContain('--success: #666666;');
     expect(css).toContain('--semantic-success-surface: #555555;');
+    expect(css).toContain('--surface-1: #010101;');
+    expect(css).toContain('--surface-2: #020202;');
+    expect(css).toContain('--surface-3: #030303;');
     expect(css).toContain('--greyScale-600: #343434;');
     expect(css).toContain(`--Round-full: ${DEFAULT_ROUND_FULL};`);
   });
@@ -71,6 +77,9 @@ describe('buildGeneratedTokenCss', () => {
           },
         },
         surface: {
+          1: { value: '#010101' },
+          2: { value: '#020202' },
+          3: { value: '#030303' },
           'gradient-top': { value: '#999999' },
           'gradient-bottom': { value: '#aaaaaa' },
         },
@@ -102,6 +111,9 @@ describe('buildGeneratedTokenCss', () => {
           },
         },
         surface: {
+          1: { value: '#414141' },
+          2: { value: '#424242' },
+          3: { value: '#434343' },
           'gradient-top': { value: '#404040' },
           'gradient-bottom': { value: '#505050' },
         },
@@ -121,6 +133,9 @@ describe('buildGeneratedTokenCss', () => {
     expect(css).toContain('--primary-light: #bcbcbc;');
     expect(css).not.toContain('--main-light:');
     expect(css).toContain('--secondary: #dedede;');
+    expect(css).toContain('--surface-1: #414141;');
+    expect(css).toContain('--surface-2: #424242;');
+    expect(css).toContain('--surface-3: #434343;');
     expect(css).toContain('--gradient-top: #404040;');
   });
 
@@ -153,6 +168,9 @@ describe('buildGeneratedTokenCss', () => {
             },
           },
           surface: {
+            1: { value: '#010101' },
+            2: { value: '#020202' },
+            3: { value: '#030303' },
             'gradient-top': { value: '#999999' },
             'gradient-bottom': { value: '#aaaaaa' },
           },

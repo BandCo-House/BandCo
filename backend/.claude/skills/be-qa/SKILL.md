@@ -80,6 +80,12 @@ git diff --name-only HEAD
 - [ ] 파일명이 kebab-case인가? (`bands-service.ts` 등)
 - [ ] 타입 파일이 `<name>.type.ts` 형식인가? (`create-band-result.type.ts` 등)
 
+**Swagger**
+
+- [ ] Controller 클래스에 `@ApiTags`가 있는가?
+- [ ] 각 핸들러 메서드에 `@ApiOperation`과 `@ApiResponse`가 있는가?
+- [ ] 요청 DTO의 모든 public 필드에 `@ApiProperty`가 있는가?
+
 **코드 품질**
 
 - [ ] 설명할 수 없는 코드가 없는가?

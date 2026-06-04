@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import type { Profile } from '../model/types';
+import { useRef, useState } from 'react';
+import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
-import { Play, Pause, Check, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
+import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
+import GalleryIcon from '@/assets/icons/gallery.svg?react';
+import { toast } from 'sonner';
 
 export interface ProfileCardProps {
   profile: Profile;
@@ -10,7 +12,8 @@ export interface ProfileCardProps {
   editForm: {
     nickname: string;
     selfDescription: string;
-    profileMusicUrl: string;
+    profileMusic: ProfileMusic | null;
+    avatarUrl: string;
   };
   onChangeEditForm: (fields: Partial<ProfileCardProps['editForm']>) => void;
   isMe: boolean;
@@ -19,27 +22,9 @@ export interface ProfileCardProps {
   onInvite: () => void;
   onToggleEdit: () => void;
   onSave: () => void;
+  onAvatarFileSelect: (file: File) => void;
+  onOpenMusicSearch: () => void;
 }
-
-const PillButton = ({
-  onClick,
-  children,
-  className = '',
-  disabled = false,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
-}) => (
-  <Button
-    onClick={onClick}
-    disabled={disabled}
-    className={`relative z-30 flex h-full cursor-pointer items-center justify-center rounded-full border border-grey-50 bg-white/50 px-5 py-4 typo-base-b text-gradient-bottom transition-all duration-300 hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/50 ${className}`}
-  >
-    {children}
-  </Button>
-);
 
 export function ProfileCard({
   profile,
@@ -52,92 +37,151 @@ export function ProfileCard({
   onInvite,
   onToggleEdit,
   onSave,
+  onAvatarFileSelect,
+  onOpenMusicSearch,
 }: ProfileCardProps) {
   const profileName = profile.profile?.nickname || '익명의 아티스트';
-  const avatarUrl = profile.profile?.avatarUrl;
+  const avatarUrl = editForm.avatarUrl || profile.profile?.avatarUrl;
   const selfDescription = profile.profile?.selfDescription;
-  const musicUrl = profile.profile?.profileMusicUrl;
+  const profileMusic = isEditing
+    ? editForm.profileMusic
+    : profile.profile?.profileMusic;
+  const musicUrl = profileMusic?.previewUrl ?? null;
+  const canPlayProfileMusic = Boolean(musicUrl);
+  const profileMusicTitle = profileMusic?.title ?? '음악 없음';
+  const profileMusicArtist = profileMusic?.artistName ?? '';
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const hasShownAudioErrorRef = useRef(false);
+
+  const showAudioErrorToast = () => {
+    if (hasShownAudioErrorRef.current) return;
+    hasShownAudioErrorRef.current = true;
+    toast.error('프로필 음악을 재생할 수 없습니다.');
+  };
 
   const handleLpClick = () => {
-    if (musicUrl) {
-      setIsPlaying(!isPlaying);
+    if (isEditing) {
+      onOpenMusicSearch();
+      return;
     }
+
+    const audio = audioRef.current;
+    if (!canPlayProfileMusic || !audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      return;
+    }
+
+    void audio.play().catch(() => {
+      setIsPlaying(false);
+      showAudioErrorToast();
+    });
   };
 
   return (
-    <div className="relative bg-gradient-bottom pb-12">
-      <div className="absolute -top-px -left-px z-30 h-1/4 w-full bg-linear-to-b from-black to-black/0" />
-      <div className="">
-        {avatarUrl && (
+    <div className="relative isolate bg-gradient-top pb-12">
+      {avatarUrl && (
+        <div className="absolute top-0 left-0 z-0 h-full w-full overflow-hidden">
           <img
             src={avatarUrl}
             alt="profile-cover"
-            className="absolute top-0 left-0 h-[75vh] w-full object-fill object-center blur-[2px] brightness-[0.4] filter"
+            className="h-full w-full object-cover object-center brightness-[0.72] filter"
           />
-        )}
+        </div>
+      )}
+      <div className="absolute top-0 left-0 z-10 h-full w-full bg-linear-to-b from-[#020119] via-[#020119]/10 via-45% to-[#020119]" />
 
-        <div className="relative z-50 flex h-[60px] items-center justify-between px-5">
-          <h1 className="flex items-center gap-2 typo-lg-b font-semibold text-grey-50">
-            {isMe && isEditing && (
-              <button
-                type="button"
-                aria-label="편집 취소"
-                onClick={onToggleEdit}
-                className="cursor-pointer"
-              >
-                <ChevronLeft />
-              </button>
-            )}
-            {isMe ? '마이페이지' : `${profileName}님의 프로필`}
-          </h1>
-          {isMe && (
+      <div className="relative z-50 flex min-h-9 w-full items-center justify-between px-5 py-3">
+        <h1 className="flex min-h-9 items-center gap-2 typo-lg-b font-semibold text-grey-50">
+          {isMe && isEditing && (
             <button
-              onClick={isEditing ? onSave : onToggleEdit}
-              className="flex cursor-pointer items-center gap-1.5 typo-sm-m transition-colors hover:text-white"
+              type="button"
+              aria-label="편집 취소"
+              onClick={onToggleEdit}
+              className="flex size-9 cursor-pointer items-center justify-center"
             >
-              {isEditing ? (
-                <>
-                  <span className="text-primary">저장</span>
-                  <CheckIcon className="size-4 text-primary" />
-                </>
-              ) : (
-                <>
-                  <span className="text-grey-300">수정</span>
-                  <Edit className="size-4 text-grey-300" />
-                </>
-              )}
+              <ChevronLeft />
             </button>
           )}
-        </div>
+          {!isMe
+            ? `${profileName}님의 프로필`
+            : isEditing
+              ? '프로필 편집'
+              : '마이페이지'}
+        </h1>
+        {isMe && (
+          <button
+            onClick={isEditing ? onSave : onToggleEdit}
+            className="flex min-h-9 cursor-pointer items-center justify-center gap-2.5 px-3 py-2 typo-sm-m transition-colors hover:text-white"
+          >
+            {isEditing ? (
+              <>
+                <span className="text-primary">저장</span>
+                <CheckIcon className="size-4 text-primary" />
+              </>
+            ) : (
+              <>
+                <span className="text-grey-300">수정</span>
+                <Edit className="size-4 text-grey-300" />
+              </>
+            )}
+          </button>
+        )}
       </div>
 
-      {/* 카드 시작 지점(35vh)부터 이미지 끝(75vh)까지 blur 오버레이 */}
-      {/* z-index 없이 DOM 순서상 이미지(z-auto) 위, 카드(z-10) 아래에 위치 */}
-      <div className="absolute top-[45vh] left-0 h-[30vh] w-full backdrop-blur-3xl" />
+      {isEditing && (
+        <>
+          <button
+            type="button"
+            aria-label="프로필 이미지 선택"
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute top-74 left-5 z-30 flex size-9 items-center justify-center rounded-full bg-overlay-24 p-2.5 text-primary backdrop-blur-md"
+          >
+            <GalleryIcon className="size-4" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onAvatarFileSelect(file);
+              event.target.value = '';
+            }}
+          />
+        </>
+      )}
 
-      {/* 2. Glassmorphism Main Content Card Area */}
-      <div className="relative z-10 mt-[35vh] rounded-[20px] backdrop-blur-lg">
-        <div className="absolute h-full w-full rounded-[20px] bg-white/40" />
+      <div className="relative z-20 mt-72 mb-12 rounded-xl backdrop-blur-lg">
+        <div className="absolute h-full w-full rounded-xl bg-white/40 backdrop-blur-lg" />
 
         <div className="relative z-20">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              {/* 1. Track Music Info Header (Always visible) */}
-              <div className="mt-5.5 flex w-full flex-col items-center justify-center gap-1.5 typo-sm-m text-grey-100">
-                <div className="flex items-center gap-2">
-                  <span>건널목</span>
-                  <span>·</span>
-                  <span>{musicUrl ? 'Whiteusedsocks' : 'No Music'}</span>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={isEditing ? onOpenMusicSearch : undefined}
+                className="mt-5.5 mr-34 ml-auto flex max-w-52 items-center justify-end gap-1.5 typo-sm-m text-grey-100"
+              >
+                <span className="truncate">{profileMusicTitle}</span>
+                {profileMusicArtist && (
+                  <>
+                    <span>·</span>
+                    <span className="truncate text-right">
+                      {profileMusicArtist}
+                    </span>
+                  </>
+                )}
+              </button>
 
-              {/* 2. Main Profile Content Area (Artist Name & Intro) */}
-              <div className="mt-10 mb-18 pr-24 pl-10 text-grey-50">
-                {/* Nickname / Artist Name Section */}
+              <div className="mx-auto mt-10 mb-20 grid w-full max-w-65 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 text-grey-50">
                 {isEditing ? (
-                  <div className="mb-4 flex items-baseline gap-2.5">
+                  <>
                     <label
                       htmlFor="nickname-input"
                       className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
@@ -151,23 +195,22 @@ export function ProfileCard({
                         onChangeEditForm({ nickname: e.target.value })
                       }
                       placeholder="닉네임 입력"
-                      className="h-auto flex-1 rounded-none border-0 bg-transparent p-0 typo-3xl-b text-white caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
+                      className="w-full rounded-none border-0 bg-transparent p-0 typo-3xl-b text-white caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
                     />
-                  </div>
+                  </>
                 ) : (
-                  <h2 className="mb-2 typo-3xl-b leading-tight tracking-tight text-white">
+                  <h2 className="col-span-2 typo-3xl-b leading-tight tracking-tight text-white">
                     {profileName}
                   </h2>
                 )}
 
-                {/* Self Description Section */}
                 {isEditing ? (
-                  <div className="flex items-baseline gap-2.5">
+                  <>
                     <label
                       htmlFor="description-input"
                       className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
                     >
-                      한 줄 소개
+                      소개
                     </label>
                     <Input
                       id="description-input"
@@ -176,76 +219,86 @@ export function ProfileCard({
                         onChangeEditForm({ selfDescription: e.target.value })
                       }
                       placeholder="한 줄 소개 입력"
-                      className="h-auto flex-1 rounded-none border-0 bg-transparent p-0 typo-base-sb caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
+                      className="w-full rounded-none border-0 bg-transparent p-0 typo-base-sb caret-primary shadow-none outline-none focus:ring-0 focus-visible:ring-0"
                     />
-                  </div>
+                  </>
                 ) : (
-                  selfDescription && (
-                    <p className="typo-base-sb leading-relaxed">
-                      {selfDescription}
-                    </p>
-                  )
+                  <p className="col-span-2 typo-base-sb leading-relaxed">
+                    {selfDescription}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Right: Analog LP Player Disk */}
-            <div className="absolute -top-8 right-8 flex shrink-0 flex-col items-center">
+            <div className="absolute -top-16 right-8 flex shrink-0 flex-col items-center">
+              <audio
+                ref={audioRef}
+                src={musicUrl || undefined}
+                preload="none"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => {
+                  setIsPlaying(false);
+                  hasShownAudioErrorRef.current = false;
+                }}
+                onEnded={() => setIsPlaying(false)}
+                onError={() => {
+                  setIsPlaying(false);
+                  showAudioErrorToast();
+                }}
+              />
               <button
                 onClick={handleLpClick}
-                disabled={!musicUrl}
-                className={`relative flex size-20 items-center justify-center rounded-full border border-slate-800/80 bg-slate-950 shadow-2xl transition-all duration-500 ${
-                  musicUrl
-                    ? 'cursor-pointer hover:scale-105 active:scale-95'
+                disabled={!isEditing && !canPlayProfileMusic}
+                aria-label={
+                  isEditing
+                    ? '프로필 음악 수정'
+                    : isPlaying
+                      ? '프로필 음악 일시정지'
+                      : '프로필 음악 재생'
+                }
+                className={`relative flex size-25 items-center justify-center gap-2.5 rounded-full bg-grey-400 p-0 shadow-lg ${
+                  isEditing || canPlayProfileMusic
+                    ? 'cursor-pointer'
                     : 'cursor-not-allowed opacity-40'
                 } ${isPlaying ? 'animate-[spin_8s_linear_infinite]' : ''}`}
               >
-                {/* LP Disk grooved texture pattern */}
-                <div className="absolute inset-1 rounded-full border border-dashed border-slate-800 opacity-60" />
-                <div className="absolute inset-3 rounded-full border border-slate-800 opacity-40" />
-                <div className="absolute inset-5 rounded-full border border-dashed border-slate-700/60 opacity-30" />
-
-                {/* Center Label Area */}
-                <div className="absolute inset-6 flex items-center justify-center rounded-full border border-slate-800 bg-slate-900">
-                  <div className="size-2 rounded-full border border-slate-800 bg-slate-950" />
-                </div>
-
-                {/* Floating Play Indicator Button */}
-                <div className="absolute z-10 flex size-8 items-center justify-center rounded-full border border-white/30 bg-white/20 shadow-md backdrop-blur-sm">
-                  {isPlaying ? (
-                    <Pause className="size-3.5 fill-white text-white" />
-                  ) : (
-                    <Play className="size-3.5 translate-x-px fill-white text-white" />
-                  )}
-                </div>
+                {isEditing ? (
+                  <span className="relative z-10 flex size-12 items-center justify-center rounded-full bg-primary text-primary-dark">
+                    <Edit className="size-5" />
+                  </span>
+                ) : isPlaying ? (
+                  <Pause className="relative z-10 size-10 fill-white text-white" />
+                ) : (
+                  <Play className="translate-x-0.4 relative z-10 size-10 fill-white text-white" />
+                )}
               </button>
             </div>
           </div>
         </div>
-        <div className="absolute right-6 -bottom-6 left-6 z-20 flex items-center gap-2 overflow-hidden rounded-full bg-[#61759E]/56 px-4 py-2.5 shadow-2xl backdrop-blur-lg transition-all duration-300">
-          {isEditing ? (
-            <>
-              <PillButton onClick={onSave} className="flex-2">
-                <Check className="size-4" /> 변경 저장
-              </PillButton>
-              <PillButton onClick={onToggleEdit} className="flex-1">
-                취소
-              </PillButton>
-            </>
-          ) : (
-            <>
-              <PillButton
-                onClick={isMe ? onToggleEdit : onInvite}
-                disabled={!isMe && !isLoggedIn}
-                className="flex-2"
-              >
-                {isMe ? '프로필 편집' : '초대하기'}
-              </PillButton>
-              <PillButton onClick={onShare} className="flex-1">
-                공유하기
-              </PillButton>
-            </>
-          )}
+        <div className="absolute right-5 -bottom-7 left-5 z-20 mx-auto max-w-sm rounded-full p-0.5">
+          <div className="absolute inset-0 rounded-full bg-surface-2 backdrop-blur-sm" />
+          <div className="relative flex items-start gap-2 rounded-full px-4 py-2.5">
+            <Button
+              variant="neutral"
+              size="pill"
+              width="flex"
+              onClick={onInvite}
+              disabled={isMe || !isLoggedIn}
+              className="active:animate-[button-pop_180ms_ease-out]"
+            >
+              초대하기
+            </Button>
+            <Button
+              variant="neutral"
+              size="pill"
+              width="fit"
+              onClick={onShare}
+              disabled={isMe && isEditing}
+              className="active:animate-[button-pop_180ms_ease-out]"
+            >
+              공유하기
+            </Button>
+          </div>
         </div>
       </div>
     </div>
