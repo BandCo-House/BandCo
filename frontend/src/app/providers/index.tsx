@@ -1,6 +1,14 @@
-import type { ReactNode } from "react";
-import { QueryProvider } from "./QueryProvider";
+import type { ReactNode } from 'react';
+import { AuthProvider } from '@/app/providers/AuthProvider';
+import { QueryProvider } from '@/app/providers/QueryProvider';
+import { ThemeProvider } from '@/app/providers/ThemeProvider';
 
 export const Providers = ({ children }: { children: ReactNode }) => {
-  return <QueryProvider>{children}</QueryProvider>;
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <QueryProvider>{children}</QueryProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 };

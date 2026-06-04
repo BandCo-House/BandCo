@@ -1,27 +1,29 @@
 # ==============================
-# OS / File Explorer Artifacts
+# Dependencies
 # ==============================
-.DS_Store
-Thumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+node_modules/
 
 # ==============================
-# Editor / IDE
+# Build Output
 # ==============================
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+dist/
+.vite/
+*.tsbuildinfo
 
 # ==============================
-# Logs
+# Test Outputs
 # ==============================
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
+coverage/
+.vitest/
+playwright-report/
+test-results/
+blob-report/
+
+# ==============================
+# Playwright Runtime
+# ==============================
+playwright/.cache/
+playwright/.auth/
 
 # ==============================
 # Environment Files
@@ -33,38 +35,6 @@ pnpm-debug.log*
 .env.production
 
 # ==============================
-# Dependencies (pnpm workspace package)
-# ==============================
-node_modules/
-
-# ==============================
-# Build Output (React + Vite)
-# ==============================
-dist/
-.vite/
-*.tsbuildinfo
-
-# ==============================
-# Test Outputs (Vitest / Playwright)
-# ==============================
-coverage/
-.vitest/
-playwright-report/
-test-results/
-blob-report/
-
-# ==============================
-# Vercel
+# Hosting (Vercel)
 # ==============================
 .vercel/
-
-# Playwright
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
-
-
-# AI Skills
-/.agents
-/.agent

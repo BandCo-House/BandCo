@@ -5,6 +5,10 @@ import importPlugin from 'eslint-plugin-import';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import prettierPlugin from 'eslint-plugin-prettier';
 import { builtinModules } from 'node:module';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 export default [
   // ------------------------------------------------------------
@@ -16,6 +20,7 @@ export default [
       'node_modules/**',
       'coverage/**',
       'logs/**',
+      'src/generated/**',
       '**/*.config.*',
       '**/eslint.config.*',
       // Nest 기본 test 폴더를 린트에서 제외하고 싶으면 활성화
@@ -31,12 +36,17 @@ export default [
   // ------------------------------------------------------------
   // 2) TypeScript 추천 룰
   // ------------------------------------------------------------
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommended.map(config => ({
+    ...config,
+    files: ['src/**/*.ts', 'prisma/**/*.ts'],
+  })),
 
   // ------------------------------------------------------------
   // 3) TS/Node 공통 설정
   // ------------------------------------------------------------
   {
+    files: ['src/**/*.ts', 'prisma/**/*.ts'],
+
     plugins: {
       prettier: prettierPlugin,
       import: importPlugin,
@@ -55,7 +65,8 @@ export default [
 
       parser: tseslint.parser,
       parserOptions: {
-        projectService: true,
+        project: ['./tsconfig.eslint.json'],
+        tsconfigRootDir: currentDirectory,
       },
     },
 
@@ -141,6 +152,32 @@ export default [
       'import/no-duplicates': 'error',
       'import/first': 'error',
       'import/newline-after-import': 'error',
+    },
+  },
+
+  // ------------------------------------------------------------
+  // 4) 하네스 Hook 스크립트
+  // ------------------------------------------------------------
+  {
+    files: ['scripts/hooks/**/*.js'],
+
+    plugins: {
+      prettier: prettierPlugin,
+    },
+
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+    },
+
+    rules: {
+      'prettier/prettier': 'error',
+      'no-console': 'off',
+      'prefer-const': 'error',
     },
   },
 ];

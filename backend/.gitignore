@@ -1,24 +1,21 @@
 # ==============================
-# OS / File Explorer Artifacts
+# Dependencies
 # ==============================
-.DS_Store
-Thumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+node_modules/
 
 # ==============================
-# Editor / IDE
+# Build Output
 # ==============================
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+dist/
+build/
+coverage/
+src/generated/prisma/
+*.tsbuildinfo
 
 # ==============================
 # Logs
 # ==============================
-logs
+logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
@@ -33,29 +30,20 @@ pnpm-debug.log*
 .env.production
 
 # ==============================
-# Dependencies (pnpm workspace package)
-# ==============================
-node_modules/
-
-# ==============================
-# Build Output (NestJS / TypeScript)
-# ==============================
-dist/
-build/
-coverage/
-*.tsbuildinfo
-
-# ==============================
 # Runtime / Temp
 # ==============================
 tmp/
 temp/
 *.pid
-*.seed
 *.pid.lock
+*.seed
 
 # ==============================
 # Testing (Jest)
 # ==============================
 .jest-cache/
 
+# ==============================
+# Workspace (작업 임시 공간)
+# ==============================
+_workspace/

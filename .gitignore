@@ -1,32 +1,36 @@
-# OS / Finder artifacts
+# ==============================
+# OS / File Explorer Artifacts
+# ==============================
 .DS_Store
 Thumbs.db
 Desktop.ini
+$RECYCLE.BIN/
 
-# Editor / IDE
+# ==============================
+# Editor / IDE (Global)
+# ==============================
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# Dependencies
-node_modules/
-.pnpm-store/
-
-# Build / Coverage
-dist/
-build/
-coverage/
-.turbo/
-
-# Logs
-logs/
+# ==============================
+# Logs (Global tools)
+# ==============================
 *.log
-npm-debug.log*
-pnpm-debug.log*
 
-# Env
+# ==============================
+# Workspace / Tooling Cache
+# ==============================
+.pnpm-store/
+.turbo/
+node_modules
+
+# ==============================
+# Environment (root-level only)
+# ==============================
 .env
 .env.local
 .env.*.local
+

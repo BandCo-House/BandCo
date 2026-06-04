@@ -1,11 +1,12 @@
 {
-  "name": "jamplay",
+  "name": "bandco",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "commit": "cz"
+    "commit": "cz",
+    "pr": "bash scripts/create-pr.sh"
   },
   "config": {
     "commitizen": {

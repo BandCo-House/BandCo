@@ -12,10 +12,14 @@ const queryClient = new QueryClient({
 });
 
 export const QueryProvider = ({ children }: { children: ReactNode }) => {
+  const shouldShowQueryDevtools = import.meta.env.MODE === "development";
+
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      {shouldShowQueryDevtools ? (
+        <ReactQueryDevtools initialIsOpen={false} />
+      ) : null}
     </QueryClientProvider>
   );
 };

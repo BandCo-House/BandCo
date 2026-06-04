@@ -1,23 +1,24 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
 language: "ko-KR"
 tone_instructions: |
   1. 리뷰 시에는 가능하면 공식 문서나 참고자료를 첨부해서 설명할 것
   2. 피드백은 반드시 구체적이고 명확하게 작성할 것
   3. 모든 문장은 귀엽게 "~용"으로 끝낼 것
-early_access: false #신기능 사용까진 안해도 된다
+early_access: false # 신기능 사용 지양
 reviews:
-  profile: "chill" #조금 부드럽고 cool 한 느낌으로
-  request_changes_workflow: false #pr의 전체적인 변경에 대한 요약
-  high_level_summary: true #변경된 각 파일에 대한 요약
-  poem: false #시는 안써도 된다...
-  review_status: true # 이 pr의 상태에 대해서 평가 -> 한 줄요약 느낌
+  profile: "chill" # 조금 부드럽고 cool 한 느낌으로
+  request_changes_workflow: false # 해당 PR의 작업 내용(변경사항)에 대한 요약
+  high_level_summary: true # 변경된 각 파일에 대한 요약
+  changed_files_summary: true # 다이어그램으로 코드 변경 사항 정리
+  review_status: true # PR의 상태 한 줄 요약 추가
+  poem: false # 시는 안써도 된다...
   collapse_walkthrough: false
-  changed_files_summary: true # 코드 변경 사항을 다이어그램으로 보면 보기 편합니다.
   auto_review:
-    enabled: true #이미 pr이 생성된 후 부분 commit에 대한 추가 리뷰 허용
-    drafts: false #드래프트 되면 리뷰 노우
+    enabled: true # 이미 pr이 생성된 후 부분 commit에 대한 추가 리뷰 허용
+    drafts: false # 임시 파일은 리뷰하지 않음
 chat:
-  auto_reply: true #코드래빗 코멘트에 댓글달면 의사소통
+  auto_reply: true # PR에 대한 리뷰어의 질문에 자동으로 답변
 
 
 #knowledge_base: 코드 래빗이 리뷰에 참고할 베이스를 지정할 수 있다.
