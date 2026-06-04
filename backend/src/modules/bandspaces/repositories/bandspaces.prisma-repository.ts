@@ -9,7 +9,7 @@ import type { GetBandSpacesQuery } from '../dto/get-band-spaces-query.dto';
 import type { UpdateBandSpaceInput } from '../dto/update-band-space.dto';
 import type { UpdateBandSpaceMemberRoleInput } from '../dto/update-bandspace-member-role.dto';
 import type { BandSpaceListItem, GetBandSpacesResult, SpaceMemberRole } from '../types/band-space-list-item.type';
-import type { GetBandSpaceDetailResult, BandSpaceMemberDetail } from '../types/bandspace-detail.type';
+import type { BandSpaceMemberDetail, GetBandSpaceDetailResult } from '../types/bandspace-detail.type';
 import type { CreateBandSpaceResult } from '../types/create-band-space-result.type';
 import type { DeleteBandSpaceResult } from '../types/delete-band-space-result.type';
 import type { UpdateBandSpaceResult } from '../types/update-band-space-result.type';
