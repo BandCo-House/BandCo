@@ -3,6 +3,7 @@ import type { CreateScheduleInput } from '../dto/create-schedule.dto';
 import type { GetSchedulesQuery } from '../dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
 import type { CreateScheduleResult } from '../types/create-schedule-result.type';
+import type { GetScheduleDetailResult } from '../types/schedule-detail.type';
 import type { GetSpaceSchedulesResult } from '../types/schedule-list-item.type';
 import type { UpdateScheduleResult } from '../types/update-schedule-result.type';
 
@@ -28,10 +29,7 @@ export interface SchedulesRepository {
   updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult>;
 
   /** 일정 상세 정보를 조회한다. */
-  findScheduleById(
-    scheduleId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{ schedule: { spaceId: string; title: string; startAt: string | null; endAt: string | null } } | undefined>;
+  findScheduleById(scheduleId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult | undefined>;
 
   /** 일정을 hard delete한다. */
   deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<void>;

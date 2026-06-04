@@ -11,6 +11,7 @@ import type { UpdateScheduleInput } from './dto/update-schedule.dto';
 import { SCHEDULES_REPOSITORY, type SchedulesRepository } from './repositories/schedules.repository';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
 import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
+import type { GetScheduleDetailResult } from './types/schedule-detail.type';
 import type { GetSpaceSchedulesResult } from './types/schedule-list-item.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { DEMO_BAND_MEMBER_ID } from './schedules.constants';
@@ -103,5 +104,13 @@ export class SchedulesService {
     if (!space) throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
 
     return this.schedulesRepository.findSchedulesBySpaceId(bandSpaceId, query, tx);
+  }
+
+  /** 일정 상세 정보를 조회한다. */
+  async getScheduleDetail(scheduleId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult> {
+    const result = await this.schedulesRepository.findScheduleById(scheduleId, tx);
+    if (!result) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
+
+    return result;
   }
 }

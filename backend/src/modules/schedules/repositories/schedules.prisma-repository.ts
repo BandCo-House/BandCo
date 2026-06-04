@@ -5,7 +5,8 @@ import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
 import type { GetSchedulesQuery } from '../dto/get-schedules-query.dto';
 import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
-import type { CreateScheduleResult } from '../types/create-schedule-result.type';
+import type { CreateScheduleResult, ScheduleSongItem } from '../types/create-schedule-result.type';
+import type { GetScheduleDetailResult } from '../types/schedule-detail.type';
 import type { GetSpaceSchedulesResult, ScheduleListMeta } from '../types/schedule-list-item.type';
 import type { UpdateScheduleResult } from '../types/update-schedule-result.type';
 
@@ -96,19 +97,41 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     return members.map(m => m.bandMember.userId);
   }
 
-  async findScheduleById(
-    scheduleId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{ schedule: { spaceId: string; title: string; startAt: string | null; endAt: string | null } } | undefined> {
+  async findScheduleById(scheduleId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult | undefined> {
     const client = tx ?? this.prisma;
-    const row = await client.schedule.findUnique({ where: { id: scheduleId } });
+
+    const row = await client.schedule.findUnique({
+      where: { id: scheduleId },
+      include: {
+        place: { select: { id: true, name: true, address: true } },
+        scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
+        participants: { select: { id: true, bandMemberId: true, attendanceStatus: true, note: true } },
+      },
+    });
+
     if (!row) return undefined;
+
     return {
       schedule: {
+        scheduleId: row.id,
         spaceId: row.bandSpaceId,
+        scheduleType: row.scheduleType,
         title: row.title,
         startAt: row.startAt?.toISOString() ?? null,
         endAt: row.endAt?.toISOString() ?? null,
+        status: row.status,
+        place: row.place ? { placeId: row.place.id, name: row.place.name, address: row.place.address } : null,
+        songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName }) as ScheduleSongItem),
+        participants: row.participants.map(p => ({
+          participantId: p.id,
+          bandMemberId: p.bandMemberId,
+          attendanceStatus: p.attendanceStatus ?? null,
+          note: p.note ?? null,
+        })),
+        memo: row.memo,
+        createdByBandMemberId: row.createdByBandMemberId,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
       },
     };
   }

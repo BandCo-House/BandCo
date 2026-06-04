@@ -7,6 +7,7 @@ import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
 import { UpdateScheduleBodyDto } from './dto/update-schedule.dto';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
 import type { DeleteScheduleResult } from './types/delete-schedule-result.type';
+import type { GetScheduleDetailResult } from './types/schedule-detail.type';
 import type { GetSpaceSchedulesResult } from './types/schedule-list-item.type';
 import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { SchedulesService } from './schedules.service';
@@ -46,5 +47,11 @@ export class SchedulesController {
   ): Promise<ApiSuccessResponse<GetSpaceSchedulesResult>> {
     const result = await this.schedulesService.getSpaceSchedules(bandspaceId, query);
     return createSuccessResponse('합주 일정 목록 조회 성공', result);
+  }
+
+  @Get('schedules/:scheduleId')
+  async getScheduleDetail(@Param('scheduleId') scheduleId: string): Promise<ApiSuccessResponse<GetScheduleDetailResult>> {
+    const result = await this.schedulesService.getScheduleDetail(scheduleId);
+    return createSuccessResponse('합주 일정 상세 조회 성공', result);
   }
 }
