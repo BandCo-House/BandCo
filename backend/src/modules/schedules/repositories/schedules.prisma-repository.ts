@@ -25,6 +25,9 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
   ): Promise<CreateScheduleResult> {
     const client = tx ?? this.prisma;
 
+    const songIds = [...new Set(input.songIds ?? [])];
+    const participantBandMemberIds = [...new Set(input.participantBandMemberIds ?? [])];
+
     const schedule = await client.schedule.create({
       data: {
         bandSpaceId,
@@ -39,15 +42,15 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       },
     });
 
-    if (input.songIds && input.songIds.length > 0) {
+    if (songIds.length > 0) {
       await client.scheduleSong.createMany({
-        data: input.songIds.map(songId => ({ scheduleId: schedule.id, songId })),
+        data: songIds.map(songId => ({ scheduleId: schedule.id, songId })),
       });
     }
 
-    if (input.participantBandMemberIds && input.participantBandMemberIds.length > 0) {
+    if (participantBandMemberIds.length > 0) {
       await client.scheduleParticipant.createMany({
-        data: input.participantBandMemberIds.map(bandMemberId => ({
+        data: participantBandMemberIds.map(bandMemberId => ({
           scheduleId: schedule.id,
           bandMemberId,
         })),
@@ -55,14 +58,14 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     }
 
     const songs =
-      input.songIds && input.songIds.length > 0
+      songIds.length > 0
         ? await client.song.findMany({
-            where: { id: { in: input.songIds } },
+            where: { id: { in: songIds } },
             select: { id: true, title: true, artistName: true },
           })
         : [];
 
-    const participantCount = input.participantBandMemberIds?.length ?? 0;
+    const participantCount = participantBandMemberIds.length;
 
     return {
       scheduleId: schedule.id,
