@@ -93,5 +93,6 @@ jobs:
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
+              --env-file /root/.env \
               -p "$HOST_PORT:$CONTAINER_PORT" \
               "$IMAGE"
