@@ -141,8 +141,6 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
 
 ## #30 합주 공간 멤버 추가
 
-> ⚠️ 미결: 명세는 `userId`를 받으나 현재 구현은 `bandMemberId` 사용. 어느 것이 맞는지 확인 필요.
-
 - Method: `POST`
 - Path: `/bandspaces/{bandspaceId}/members`
 
@@ -150,7 +148,7 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
 
 ```json
 {
-  "userId": "uuid",
+  "bandMemberId": "uuid",
   "role": "MEMBER"
 }
 ```
@@ -165,7 +163,6 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
   "data": {
     "memberId": "space-member-uuid",
     "spaceId": "space-uuid",
-    "userId": "user-uuid",
     "bandMemberId": "band-member-uuid",
     "role": "MEMBER",
     "status": "ACTIVE",
