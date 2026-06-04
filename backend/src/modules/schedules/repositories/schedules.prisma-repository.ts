@@ -3,7 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
+import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
 import type { CreateScheduleResult } from '../types/create-schedule-result.type';
+import type { UpdateScheduleResult } from '../types/update-schedule-result.type';
 
 import type { SchedulesRepository } from './schedules.repository';
 
@@ -90,5 +92,72 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       include: { bandMember: { select: { userId: true } } },
     });
     return members.map(m => m.bandMember.userId);
+  }
+
+  async findScheduleById(
+    scheduleId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ schedule: { startAt: string | null; endAt: string | null } } | undefined> {
+    const client = tx ?? this.prisma;
+    const row = await client.schedule.findUnique({ where: { id: scheduleId } });
+    if (!row) return undefined;
+    return { schedule: { startAt: row.startAt?.toISOString() ?? null, endAt: row.endAt?.toISOString() ?? null } };
+  }
+
+  async updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult> {
+    const client = tx ?? this.prisma;
+
+    const updated = await client.schedule.update({
+      where: { id: scheduleId },
+      data: {
+        ...(input.title !== undefined && { title: input.title }),
+        ...(input.scheduleType !== undefined && { scheduleType: input.scheduleType }),
+        ...(input.startAt !== undefined && { startAt: new Date(input.startAt) }),
+        ...(input.endAt !== undefined && { endAt: new Date(input.endAt) }),
+        ...(input.placeId !== undefined && { placeId: input.placeId }),
+        ...(input.status !== undefined && { status: input.status }),
+        ...(input.memo !== undefined && { memo: input.memo }),
+      },
+    });
+
+    if (input.songIds !== undefined) {
+      await client.scheduleSong.deleteMany({ where: { scheduleId } });
+      if (input.songIds.length > 0) {
+        await client.scheduleSong.createMany({
+          data: input.songIds.map(songId => ({ scheduleId, songId })),
+        });
+      }
+    }
+
+    if (input.participantBandMemberIds !== undefined) {
+      await client.scheduleParticipant.deleteMany({ where: { scheduleId } });
+      if (input.participantBandMemberIds.length > 0) {
+        await client.scheduleParticipant.createMany({
+          data: input.participantBandMemberIds.map(bandMemberId => ({ scheduleId, bandMemberId })),
+        });
+      }
+    }
+
+    const songIds =
+      input.songIds !== undefined
+        ? input.songIds
+        : (await client.scheduleSong.findMany({ where: { scheduleId }, select: { songId: true } })).map(s => s.songId);
+
+    const participantCount = await client.scheduleParticipant.count({ where: { scheduleId } });
+
+    return {
+      scheduleId: updated.id,
+      spaceId: updated.bandSpaceId,
+      scheduleType: updated.scheduleType,
+      title: updated.title,
+      startAt: updated.startAt?.toISOString() ?? null,
+      endAt: updated.endAt?.toISOString() ?? null,
+      placeId: updated.placeId,
+      status: updated.status,
+      songIds,
+      participantCount,
+      memo: updated.memo,
+      updatedAt: updated.updatedAt.toISOString(),
+    };
   }
 }

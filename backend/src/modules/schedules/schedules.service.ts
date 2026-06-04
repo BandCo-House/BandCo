@@ -6,8 +6,10 @@ import { NotificationType } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
 import type { CreateScheduleInput } from './dto/create-schedule.dto';
+import type { UpdateScheduleInput } from './dto/update-schedule.dto';
 import { SCHEDULES_REPOSITORY, type SchedulesRepository } from './repositories/schedules.repository';
 import type { CreateScheduleResult } from './types/create-schedule-result.type';
+import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { DEMO_BAND_MEMBER_ID } from './schedules.constants';
 
 @Injectable()
@@ -47,5 +49,24 @@ export class SchedulesService {
     }
 
     return result;
+  }
+
+  /** 일정을 수정한다. 기존 값과 합산하여 시간 범위를 검증한다. */
+  async updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<UpdateScheduleResult> => {
+      const existing = await this.schedulesRepository.findScheduleById(scheduleId, client);
+      if (!existing) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
+
+      const startAt = input.startAt ? new Date(input.startAt) : existing.schedule.startAt ? new Date(existing.schedule.startAt) : null;
+      const endAt = input.endAt ? new Date(input.endAt) : existing.schedule.endAt ? new Date(existing.schedule.endAt) : null;
+
+      if (startAt && endAt && startAt >= endAt) {
+        throw new BadRequestException('종료 시간은 시작 시간보다 이후여야 합니다.');
+      }
+
+      return this.schedulesRepository.updateSchedule(scheduleId, input, client);
+    };
+
+    return tx ? run(tx) : this.prisma.$transaction(run);
   }
 }

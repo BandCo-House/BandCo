@@ -1,6 +1,8 @@
 import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
+import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
 import type { CreateScheduleResult } from '../types/create-schedule-result.type';
+import type { UpdateScheduleResult } from '../types/update-schedule-result.type';
 
 export const SCHEDULES_REPOSITORY = Symbol('SCHEDULES_REPOSITORY');
 
@@ -15,6 +17,19 @@ export interface SchedulesRepository {
     input: CreateScheduleInput,
     tx?: Prisma.TransactionClient,
   ): Promise<CreateScheduleResult>;
+
+  /**
+   * 일정을 수정한다.
+   * songIds가 있으면 ScheduleSong을 전량 교체(deleteMany → createMany)한다.
+   * participantBandMemberIds가 있으면 ScheduleParticipant를 전량 교체한다.
+   */
+  updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult>;
+
+  /** 일정 상세 정보를 조회한다. */
+  findScheduleById(
+    scheduleId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ schedule: { startAt: string | null; endAt: string | null } } | undefined>;
 
   /** 밴드 공간 존재 여부를 확인한다 (deletedAt: null 조건 포함). */
   findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
