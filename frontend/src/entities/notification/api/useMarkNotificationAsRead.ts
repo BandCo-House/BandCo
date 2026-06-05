@@ -37,6 +37,7 @@ export const useMarkNotificationAsRead = () => {
           };
         },
       );
+      queryClient.invalidateQueries({ queryKey: notificationQueries.all });
     },
   });
 };

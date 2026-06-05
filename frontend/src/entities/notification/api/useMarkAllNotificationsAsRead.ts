@@ -25,6 +25,7 @@ export const useMarkAllNotificationsAsRead = () => {
           };
         },
       );
+      queryClient.invalidateQueries({ queryKey: notificationQueries.all });
     },
   });
 };

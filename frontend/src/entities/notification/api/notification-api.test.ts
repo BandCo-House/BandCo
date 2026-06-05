@@ -4,6 +4,7 @@ import { apiClient } from '@/shared/api/client';
 import {
   getNotificationList,
   getUnreadNotificationBadge,
+  deleteManyNotifications,
 } from './notification-api';
 
 const mock = new MockAdapter(apiClient);
@@ -133,5 +134,21 @@ describe('getNotificationList 어댑터', () => {
     });
 
     await expect(getNotificationList()).rejects.toThrow();
+  });
+});
+
+describe('deleteManyNotifications 어댑터', () => {
+  it('DELETE /notifications 요청을 정상 payload와 함께 전송하고 성공적으로 마무리된다', async () => {
+    mock.onDelete('/notifications', { data: { notificationIds: ['id-1', 'id-2'] } }).reply(200, {
+      status: 'success',
+      error: null,
+      message: '삭제 성공',
+      data: {
+        deletedCount: 2,
+        notificationIds: ['id-1', 'id-2'],
+      },
+    });
+
+    await expect(deleteManyNotifications(['id-1', 'id-2'])).resolves.toBeUndefined();
   });
 });

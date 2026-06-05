@@ -75,3 +75,12 @@ export const markNotificationAsRead = async (notificationId: string) => {
 export const markAllNotificationsAsRead = async () => {
   await apiClient.patch('/notifications/read-all');
 };
+
+/**
+ * 다중 알림을 삭제합니다.
+ */
+export const deleteManyNotifications = async (
+  notificationIds: string[],
+): Promise<void> => {
+  await apiClient.delete('/notifications', { data: { notificationIds } });
+};
