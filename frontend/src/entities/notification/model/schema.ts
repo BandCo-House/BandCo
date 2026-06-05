@@ -23,16 +23,15 @@ export const notificationItemSchema = z.object({
   createdAt: z.string(),
 });
 
-export const notificationPaginationSchema = z.object({
-  page: z.number().int().positive(),
-  size: z.number().int().positive(),
-  totalCount: z.number().int().nonnegative(),
-  hasNext: z.boolean(),
+export const notificationMetaSchema = z.object({
+  count: z.number().int().nonnegative(),
+  take: z.number().int().positive(),
+  next: z.string().nullable(),
 });
 
 export const notificationListSchema = z.object({
   items: z.array(notificationItemSchema),
-  pagination: notificationPaginationSchema,
+  meta: notificationMetaSchema,
 });
 
 export const notificationUnreadSummaryResponseSchema = z.discriminatedUnion(

@@ -8,16 +8,41 @@ import {
   notificationUnreadSummaryResponseSchema,
 } from '../model/schema';
 
+export interface GetNotificationListParams {
+  where__is_read?: boolean;
+  take?: number;
+  cursor__id?: string;
+}
+
 /**
  * 알림 목록을 조회한다.
  */
-export const getNotificationList = async (): Promise<NotificationList> => {
-  const response = await apiClient.get('/notifications');
+export const getNotificationList = async (
+  params?: GetNotificationListParams,
+): Promise<NotificationList> => {
+  const response = await apiClient.get('/notifications/me', { params });
   const parsed = notificationListResponseSchema.parse(response.data);
 
   if (parsed.status === 'error') throw new Error(parsed.message);
 
   return parsed.data;
+};
+
+/**
+ * 뱃지용으로 읽지 않은 알림을 최대 10개 조회합니다. (백엔드 추가 엔드포인트 없음)
+ */
+export const getUnreadNotificationBadge = async (): Promise<{
+  count: number;
+  hasMore: boolean;
+}> => {
+  const data = await getNotificationList({
+    where__is_read: false,
+    take: 10,
+  });
+  return {
+    count: data.items.length,
+    hasMore: data.meta.next !== null,
+  };
 };
 
 /**

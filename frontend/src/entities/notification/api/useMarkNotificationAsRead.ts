@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { markNotificationAsRead } from './notification-api';
 import { notificationQueries } from './useNotificationUnreadSummary';
-import type { NotificationType, NotificationUnreadSummary } from '../model/types';
+import type {
+  NotificationType,
+  NotificationUnreadSummary,
+} from '../model/types';
 
 /**
  * 개별 알림을 읽음 처리하고 unread summary 캐시를 동기화합니다.
@@ -10,7 +13,9 @@ export const useMarkNotificationAsRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ notificationId }: {
+    mutationFn: ({
+      notificationId,
+    }: {
       notificationId: string;
       type: NotificationType;
     }) => markNotificationAsRead(notificationId),
