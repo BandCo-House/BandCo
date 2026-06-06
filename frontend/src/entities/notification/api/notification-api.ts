@@ -10,6 +10,7 @@ import {
 
 export interface GetNotificationListParams {
   where__is_read?: boolean;
+  where__type?: 'NOTICE' | 'INVITE' | 'REMINDER';
   take?: number;
   cursor__id?: string;
 }
@@ -46,7 +47,7 @@ export const getUnreadNotificationBadge = async (): Promise<{
 };
 
 /**
- * 읽지 않은 알림 요약 정보를 조회한다.
+ * 읽지 않은 알림 요약 정보를 조회한다.(현재 백엔드쪽에서 미구현이지만 추후 구현될 수도 있으니 유지해 둠)
  */
 export const getNotificationUnreadSummary =
   async (): Promise<NotificationUnreadSummary> => {

@@ -59,7 +59,8 @@ export const PageHeader = ({
     >
       <div
         className={cn(
-          'mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 transition-all duration-200',
+          'mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 transition-all duration-200',
+          showBack ? 'pr-5 pl-2' : 'px-5',
           HEIGHT_CLASSES[heightVariant],
         )}
       >
@@ -68,13 +69,13 @@ export const PageHeader = ({
             <button
               type="button"
               aria-label="뒤로 가기"
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-key"
               onClick={onBack}
             >
               <ArrowRightIcon
                 aria-hidden="true"
                 data-slot="svg-icon"
-                className="size-6 rotate-180"
+                className="size-6 rotate-180 text-grey-50"
               />
             </button>
           ) : null}

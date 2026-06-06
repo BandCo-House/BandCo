@@ -25,14 +25,20 @@ export const notificationHandlers = [
   http.get(`${API_URL}/notifications/me`, ({ request }) => {
     const url = new URL(request.url);
     const whereIsRead = url.searchParams.get('where__is_read');
+    const whereType = url.searchParams.get('where__type');
     const take = Number(url.searchParams.get('take') || 20);
     const cursorId = url.searchParams.get('cursor__id');
 
     let filtered = mockNotifications;
+
+    if (whereType) {
+      filtered = filtered.filter((n) => n.type === whereType);
+    }
+
     if (whereIsRead === 'true') {
-      filtered = mockNotifications.filter((n) => n.isRead);
+      filtered = filtered.filter((n) => n.isRead);
     } else if (whereIsRead === 'false') {
-      filtered = mockNotifications.filter((n) => !n.isRead);
+      filtered = filtered.filter((n) => !n.isRead);
     }
 
     // 커서 기반 페이징 로직 구현

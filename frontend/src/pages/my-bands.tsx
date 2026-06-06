@@ -20,6 +20,9 @@ function MyBandsHeaderActions() {
       </Link>
       <Link
         to="/notifications"
+        search={{
+          tab:"INVITE"
+        }}
         className="relative rounded-full transition-colors p-1"
         aria-label="알림"
       >

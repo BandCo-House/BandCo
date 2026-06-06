@@ -5,7 +5,10 @@ import { notificationQueries } from './useNotificationUnreadSummary';
 /**
  * 알림 목록을 무한 스크롤(Cursor 페이징) 형태로 조회합니다.
  */
-export const useNotificationList = (params?: { where__is_read?: boolean }) => {
+export const useNotificationList = (params?: {
+  where__is_read?: boolean;
+  where__type?: 'NOTICE' | 'INVITE' | 'REMINDER';
+}) => {
   return useInfiniteQuery({
     queryKey: [...notificationQueries.list(), params],
     queryFn: ({ pageParam }) =>
