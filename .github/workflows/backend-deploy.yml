@@ -17,7 +17,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: jamplay-backend
-  DOCKER_CONTEXT: ./backend
+  BUILD_CONTEXT: ./backend
   DOCKERFILE_PATH: ./backend/Dockerfile
   CONTAINER_NAME: jamplay-backend
   CONTAINER_PORT: 3000
@@ -47,7 +47,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
-          context: ${{ env.DOCKER_CONTEXT }}
+          context: ${{ env.BUILD_CONTEXT }}
           file: ${{ env.DOCKERFILE_PATH }}
           push: true
           tags: |
