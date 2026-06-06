@@ -28,9 +28,6 @@ jobs:
     name: Build and push backend image
     runs-on: ubuntu-latest
 
-    outputs:
-      image: ${{ steps.image.outputs.image }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -56,10 +53,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Export image tag
-        id: image
-        run: echo "image=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
-
   deploy:
     name: Deploy backend
     runs-on: ubuntu-latest
@@ -69,7 +62,7 @@ jobs:
       - name: Deploy through SSH
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         env:
-          IMAGE: ${{ needs.build-and-push.outputs.image }}
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
