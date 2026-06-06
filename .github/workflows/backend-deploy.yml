@@ -16,10 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_REPOSITORY: jamplay-backend
+  IMAGE_REPOSITORY: bandco-be
   BUILD_CONTEXT: ./backend
   DOCKERFILE_PATH: ./backend/Dockerfile
-  CONTAINER_NAME: jamplay-backend
+  CONTAINER_NAME: bandco-nest
   CONTAINER_PORT: 3000
   HOST_PORT: ${{ vars.BACKEND_HOST_PORT || '3000' }}
 
