@@ -5,10 +5,11 @@ import { useBandNotices } from '@/entities/notice/api/useBandNotices';
 const NOTICE_LIMIT = 2;
 
 const formatNoticeDate = (iso: string): string => {
+  // ISO의 날짜 부분을 타임존 영향 없이 표시하기 위해 UTC 기준으로 읽는다.
   const date = new Date(iso);
-  const year = String(date.getFullYear()).slice(2);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = String(date.getUTCFullYear()).slice(2);
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}/${month}/${day}`;
 };
 
