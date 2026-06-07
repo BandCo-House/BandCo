@@ -21,12 +21,12 @@ description: 백엔드 API를 frontend/src에 연동하는 스킬. "API 연동�
 
 엔드포인트·요청/응답 형태는 **항상 `backend/` 폴더의 최신 코드를 읽어** 확인한다 (읽기 전용, 수정 금지). 추측하거나 오래된 문서에 의존하지 않는다.
 
-| 확인 대상         | 위치                                                       |
-| ----------------- | ---------------------------------------------------------- |
-| 경로·메서드·응답  | `backend/src/modules/{module}/*.controller.ts`            |
-| 요청 body 필드    | `backend/src/modules/{module}/dto/*.dto.ts`               |
-| 응답 모델·필드    | `backend/prisma/schema.prisma`, 관련 service 반환 타입     |
-| (보조) 정리된 명세 | `backend/docs/backend/api-docs/`                          |
+| 확인 대상          | 위치                                                   |
+| ------------------ | ------------------------------------------------------ |
+| 경로·메서드·응답   | `backend/src/modules/{module}/*.controller.ts`         |
+| 요청 body 필드     | `backend/src/modules/{module}/dto/*.dto.ts`            |
+| 응답 모델·필드     | `backend/prisma/schema.prisma`, 관련 service 반환 타입 |
+| (보조) 정리된 명세 | `backend/docs/backend/api-docs/`                       |
 
 - endpoint는 백엔드 실제 path만 적는다 (`/bands`, `/auth/login/email`). base URL을 붙이지 않는다.
 - 응답은 `status: 'success' | 'error'` + `error: string | null` + `message: string` + (성공 시) `data` 형태다. schema로 parse한 뒤 `status === 'error'`이면 throw하고 `data`를 반환한다 (`src/entities/notification/api/notification-api.ts` 패턴).
@@ -75,10 +75,10 @@ export const createSchedule = (data: CreateScheduleRequest) =>
 
 ## Step 4: 훅 (TanStack Query)
 
-| 종류        | 패턴                                                              | 위치        |
-| ----------- | ---------------------------------------------------------------- | ----------- |
-| 조회        | `useQuery` + query key 객체 (`bandKeys`)                         | `entities/` |
-| 변경(행위)  | `useMutation` + `onSuccess`에서 `invalidateQueries`             | `features/` |
+| 종류       | 패턴                                                | 위치        |
+| ---------- | --------------------------------------------------- | ----------- |
+| 조회       | `useQuery` + query key 객체 (`bandKeys`)            | `entities/` |
+| 변경(행위) | `useMutation` + `onSuccess`에서 `invalidateQueries` | `features/` |
 
 query key는 도메인 파일에 모아 재사용한다.
 
@@ -102,6 +102,22 @@ const mutation = useMutation({
 });
 ```
 
+## 페칭 상태 설계 (없음·넘침·오류 — 필수 검토)
+
+데이터를 불러오는 모든 화면은 **없음 / 넘침 / 오류** 세 상태를 의도적으로 설계한다. 정보의 중요도에 따라 처리 수준을 다르게 한다.
+
+| 상태           | 핵심 정보 (없으면 화면 자체가 무의미) | 보조 정보 (일부만 빠져도 됨)                        |
+| -------------- | ------------------------------------- | --------------------------------------------------- |
+| 없음(empty)    | 빈 상태 안내 + 액션 유도              | "없음" 텍스트/플레이스홀더로 자리만 표시            |
+| 넘침(overflow) | 페이지네이션·무한 스크롤              | 상위 N개만 노출 + 더보기(별도 목록 페이지로 라우팅) |
+| 오류(error)    | 에러 화면/재시도, 필요 시 404 라우팅  | 그 블록만 "불러오지 못했어요" 표시, 나머지는 유지   |
+
+- **핵심 정보**(예: 밴드 상세 본문)는 실패 시 페이지 전체를 에러/404로 처리한다.
+- **보조 정보**(예: 공지·배너·요약 카드)는 실패해도 그 블록만 대체 문구로 보여주고 나머지 화면은 정상 렌더한다.
+- 넘침은 보통 백엔드 `size`/`limit` 파라미터로 잘라 받고, 전체는 별도 목록 페이지에서 본다.
+- 색·아이콘만으로 상태를 전달하지 말고 텍스트를 함께 둔다 (`AGENTS.md` 접근성).
+- `useQuery`의 `isLoading`/`isError`/빈 배열을 각각 분기하고, 빈 상태와 오류 상태를 혼동하지 않는다.
+
 ## Step 5: MSW 핸들러
 
 dev는 MSW가 요청을 가로채므로 핸들러를 함께 추가한다.
@@ -123,4 +139,5 @@ API 함수는 `fe-test` 스킬의 axios-mock-adapter 패턴으로 테스트를 �
 - [ ] 조회 hook은 entities, mutation은 features에 두었는가?
 - [ ] query key를 도메인 파일에 모아 재사용하고, mutation 후 invalidate했는가?
 - [ ] MSW 핸들러를 `mocks/handlers.ts`에 합쳤는가?
+- [ ] 없음·넘침·오류 상태를 정보 중요도(핵심=전체 에러/404, 보조=블록만 대체)에 맞게 분기했는가?
 - [ ] 범위가 커지면 PR 분리를 제안했는가?
