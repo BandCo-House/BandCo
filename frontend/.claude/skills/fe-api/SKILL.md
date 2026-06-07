@@ -29,7 +29,7 @@ description: 백엔드 API를 frontend/src에 연동하는 스킬. "API 연동�
 | (보조) 정리된 명세 | `backend/docs/backend/api-docs/`                          |
 
 - endpoint는 백엔드 실제 path만 적는다 (`/bands`, `/auth/login/email`). base URL을 붙이지 않는다.
-- 성공 응답은 `{ success, data, message?, error? }` 형태다 (`src/shared/api/types.ts`의 `ApiResponse<T>`).
+- 응답은 `status: 'success' | 'error'` + `error: string | null` + `message: string` + (성공 시) `data` 형태다. schema로 parse한 뒤 `status === 'error'`이면 throw하고 `data`를 반환한다 (`src/entities/notification/api/notification-api.ts` 패턴).
 - 외부 응답은 `any`가 아니라 `unknown`으로 받아 zod로 parse하거나 타입을 좁힌다.
 - backend 코드로도 불명확하면 추측하지 말고 사용자에게 확인한다.
 
@@ -38,11 +38,16 @@ description: 백엔드 API를 frontend/src에 연동하는 스킬. "API 연동�
 `entities/{domain}/model/`에 타입과 schema를 둔다. schema가 있으면 `z.infer` 기반 타입을 유지한다.
 
 ```typescript
-// entities/band/model/schema.ts
+// entities/band/model/schema.ts — status 기반 응답 계약
 export const bandListResponseSchema = z.object({
+  status: z.enum(['success', 'error']),
+  error: z.string().nullable(),
+  message: z.string(),
   data: z.object({ items: z.array(bandSchema) }),
 });
 ```
+
+에러 분기가 필요하면 `status`로 좁히는 discriminated union을 쓴다 (`entities/notification/model/schema.ts` 패턴).
 
 ## Step 3: API 함수
 
@@ -56,6 +61,7 @@ import { bandListResponseSchema } from '../model/schema';
 export const getBands = async (): Promise<Band[]> => {
   const response = await apiClient.get('/bands');
   const parsed = bandListResponseSchema.parse(response.data);
+  if (parsed.status === 'error') throw new Error(parsed.message);
   return parsed.data.items;
 };
 ```

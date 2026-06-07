@@ -57,9 +57,12 @@ gh api repos/{owner}/{repo}/pulls/{number}/comments   # 인라인(라인) 리뷰
 
 ```bash
 pnpm --dir frontend exec tsc -b
+pnpm --dir frontend exec prettier --check .
 pnpm --dir frontend run lint
 pnpm --dir frontend test
 ```
+
+(포맷 검증을 빠뜨리면 리뷰 반영 후 스타일 드리프트를 놓친다. `AGENTS.md` "검증" 표의 4단계를 모두 실행한다.)
 
 결과를 아래 형식으로 보고한다.
 
