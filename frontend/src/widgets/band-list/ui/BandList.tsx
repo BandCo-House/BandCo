@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BandCard } from '@/entities/band/ui/BandCard';
 import { SpeedDialFab } from '@/shared/ui/speed-dial-fab';
 import { BandCreateDialog } from './BandCreateDialog';
@@ -10,10 +10,16 @@ export const BandList = () => {
   const [isInviteCodeDialogOpen, setIsInviteCodeDialogOpen] = useState(false);
   const { data: bands = [], isLoading } = useMyBands();
 
-  const fabActions = [
-    { label: '새 밴드', onClick: () => setIsCreateDialogOpen(true) },
-    { label: '초대코드 입력', onClick: () => setIsInviteCodeDialogOpen(true) },
-  ];
+  const fabActions = useMemo(
+    () => [
+      { label: '새 밴드', onClick: () => setIsCreateDialogOpen(true) },
+      {
+        label: '초대코드 입력',
+        onClick: () => setIsInviteCodeDialogOpen(true),
+      },
+    ],
+    [setIsCreateDialogOpen, setIsInviteCodeDialogOpen],
+  );
 
   if (isLoading) return <div data-testid="band-list">로딩 중...</div>;
 
