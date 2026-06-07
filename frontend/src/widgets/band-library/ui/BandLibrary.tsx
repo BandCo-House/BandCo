@@ -81,7 +81,7 @@ export const BandLibrary = () => {
           <SectionState
             isLoading={songsQuery.isLoading}
             isError={songsQuery.isError}
-            isEmpty={songs.length === 0}
+            isEmpty
             emptyText="등록된 합주곡이 없어요."
             errorText="합주곡을 불러오지 못했어요."
           />
@@ -102,7 +102,7 @@ export const BandLibrary = () => {
           <SectionState
             isLoading={placesQuery.isLoading}
             isError={placesQuery.isError}
-            isEmpty={places.length === 0}
+            isEmpty
             emptyText="등록된 연습 장소가 없어요."
             errorText="연습 장소를 불러오지 못했어요."
           />

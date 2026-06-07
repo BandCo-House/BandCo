@@ -5,7 +5,7 @@ export const spaceStatusSchema = z.enum(['ACTIVE', 'INACTIVE']);
 
 const membershipSchema = z.object({
   isMember: z.boolean(),
-  role: z.string(),
+  role: z.enum(['LEADER', 'MEMBER']),
 });
 
 /**

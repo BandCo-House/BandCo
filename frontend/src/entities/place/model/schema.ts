@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 /**
  * 연습 장소(Place) 스키마.
- * 목록(`GET /bands/:bandId/places`)과 상세(`GET /places/:placeId`)를 모두 수용하도록
- * 목록 응답에 없는 bandId/updatedAt은 optional로 둔다.
+ * 목록(`GET /bands/:bandId/places`)·상세·생성·수정 응답을 모두 수용하도록
+ * 엔드포인트별로 빠질 수 있는 bandId/createdAt/updatedAt은 optional로 둔다.
  */
 export const placeSchema = z.object({
   placeId: z.string(),
