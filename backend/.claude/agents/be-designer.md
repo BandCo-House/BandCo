@@ -96,9 +96,15 @@ updateNickname(userId, nickname, tx?):
 3. 업데이트 실행 → 결과 반환
 ```
 
+### API 번호
+
+작업 대상 API가 `docs/backend/api-docs/{module}.md`에 있으면 해당 `#N` 번호를 명시한다. 새로 추가하는 API면 파일의 마지막 번호 + 1을 부여하고 api-docs 파일에도 추가한다.
+
+예: `#3 POST /bands — 새 API (기존 최대 #2 기준)`
+
 ### DTO 정의
 
-요청/응답 DTO 구조 (class-validator 데코레이터 포함).
+요청/응답 DTO 구조 (class-validator 데코레이터 + `@ApiProperty` 포함).
 
 ### 트랜잭션 경계
 
@@ -127,6 +133,9 @@ updateNickname(userId, nickname, tx?):
 - [ ] 트랜잭션 경계가 명확한가?
 - [ ] 테스트 케이스가 happy path + NotFoundException + ForbiddenException + BadRequestException + tx 일관성 + 외부 tx를 포함하는가?
 - [ ] Prisma 모델과 설계가 일치하는가?
+- [ ] DTO 필드에 `@ApiProperty`가 포함되었는가?
+- [ ] Controller 메서드에 `@ApiOperation`, `@ApiResponse` 데코레이터가 포함되었는가?
+- [ ] 작업 대상 API의 `#N` 번호가 명시되었는가?
 
 ## 이전 산출물 재사용
 

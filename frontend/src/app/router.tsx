@@ -7,6 +7,7 @@ export const createAppRouter = () => {
     routeTree,
     context: {} as RouterContext,
     defaultPendingMinMs: 150,
+    scrollRestoration: true,
   });
 };
 

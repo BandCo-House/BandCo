@@ -1,14 +1,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const { findRepoRoot, getBackendDir, readHookInput, run, writeJson } = require('./codex-hook-utils');
 
+const isWin = process.platform === 'win32';
 const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
-const steps = [
-  ['pnpm.cmd', ['run', 'lint']],
-  ['pnpm.cmd', ['run', 'format:check']],
-  ['pnpm.cmd', ['run', 'build']],
-  ['pnpm.cmd', ['run', 'test']],
-];
 
 const input = readHookInput();
 
@@ -45,57 +41,31 @@ if (!hasBackendChanges) {
   process.exit(0);
 }
 
-const shellStep = run('sh', ['./scripts/verify.sh'], { cwd: backendDir });
+// Windows: Git Bash 절대 경로 사용. Mac/Linux: sh 사용.
+const shellCmd = isWin && fs.existsSync(gitBash) ? gitBash : 'sh';
+const shellArgs = isWin && fs.existsSync(gitBash) ? ['./scripts/verify.sh'] : ['./scripts/verify.sh'];
+
+const shellStep = spawnSync(shellCmd, shellArgs, {
+  cwd: backendDir,
+  encoding: 'utf8',
+  shell: false,
+  stdio: ['ignore', 'pipe', 'pipe'],
+});
 
 if (shellStep.status === 0) {
   writeJson({
     hookSpecificOutput: {
       hookEventName: 'Stop',
-      additionalContext: 'JamPlay backend verification passed: sh ./scripts/verify.sh',
+      additionalContext: 'JamPlay backend verification passed.',
     },
   });
   process.exit(0);
 }
 
-if (process.platform !== 'win32') {
-  process.stderr.write(shellStep.stdout || '');
-  process.stderr.write(shellStep.stderr || '');
-  writeJson({
-    decision: 'block',
-    reason: 'JamPlay backend verification failed: sh ./scripts/verify.sh',
-  });
-  process.exit(shellStep.status || 1);
-}
-
-const gitBashStep = run(gitBash, ['-lc', './scripts/verify.sh'], { cwd: backendDir });
-
-if (gitBashStep.status === 0) {
-  writeJson({
-    hookSpecificOutput: {
-      hookEventName: 'Stop',
-      additionalContext: 'JamPlay backend verification passed with Git Bash: sh ./scripts/verify.sh',
-    },
-  });
-  process.exit(0);
-}
-
-for (const [command, args] of steps) {
-  const result = run(command, args, { cwd: backendDir });
-
-  if (result.status !== 0) {
-    process.stderr.write(result.stdout || '');
-    process.stderr.write(result.stderr || '');
-    writeJson({
-      decision: 'block',
-      reason: `JamPlay verification failed at: ${command} ${args.join(' ')}`,
-    });
-    process.exit(result.status || 1);
-  }
-}
-
+process.stderr.write(shellStep.stdout || '');
+process.stderr.write(shellStep.stderr || '');
 writeJson({
-  hookSpecificOutput: {
-    hookEventName: 'Stop',
-    additionalContext: 'JamPlay backend verification passed with Windows pnpm.cmd fallback.',
-  },
+  decision: 'block',
+  reason: 'JamPlay backend verify.sh failed. 위 출력을 확인하세요.',
 });
+process.exit(shellStep.status || 1);

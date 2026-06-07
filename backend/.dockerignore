@@ -1,0 +1,10 @@
+node_modules
+dist
+src/generated
+.git
+.gitignore
+*.tsbuildinfo
+_workspace
+docs
+.claude
+npm-debug.log

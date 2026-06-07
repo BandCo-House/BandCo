@@ -24,12 +24,26 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          '--normal-bg': 'var(--gradient-top)',
-          '--normal-text': 'var(--primary-main)',
-          '--normal-border': 'var(--overlay-40)',
-          '--border-radius': '1rem',
+          '--normal-bg': 'rgba(255, 255, 255, 0.24)',
+          '--normal-text': 'var(--greyScale-50)',
+          '--normal-border':
+            'color-mix(in srgb, var(--surface-1) 40%, transparent)',
+          '--border-radius': 'var(--radius-xl)',
         } as React.CSSProperties
       }
+      closeButton={false}
+      toastOptions={{
+        closeButton: false,
+        classNames: {
+          toast:
+            'relative isolate w-[min(calc(100vw-2rem),40rem)] overflow-hidden whitespace-normal break-words rounded-xl border-0 bg-white/24 px-6 py-5 text-grey-50 shadow-none backdrop-blur-md before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[radial-gradient(circle_at_88%_50%,var(--primary-main)_0%,rgba(236,252,171,0.32)_24%,transparent_58%)] before:blur-2xl before:content-[""] [border-color:color-mix(in_srgb,var(--surface-1)_40%,transparent)] [border-style:solid] [border-width:0.5px_1px_2px_0.5px] [box-shadow:0_3px_6px_2px_rgba(255,255,255,0.16)]',
+          icon: 'relative z-10',
+          content: 'relative z-10 min-w-0 whitespace-normal break-words',
+          title: 'whitespace-normal break-words typo-lg-sb text-grey-50',
+          description: 'whitespace-normal break-words text-grey-100',
+          closeButton: 'hidden',
+        },
+      }}
       {...props}
     />
   );

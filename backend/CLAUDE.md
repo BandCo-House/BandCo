@@ -162,3 +162,7 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 |------|----------|------|------|
 | 2026-05-28 | v1.0 초기 구성: be-orchestrator, be-designer, be-qa + 스킬 3개 | 전체 | 백엔드 전용 에이전트 팀 하네스 구축 |
 | 2026-05-28 | v1.1 be-api-sync 추가, Notion MCP 통합, docs/backend 규칙 반영 | 전체 | Notion API 명세 기반 워크플로우 고도화 |
+| 2026-06-01 | v2.0 agent-skill 충돌 해소, be-orchestrator Phase 0~5 동기화, 설계 문서 보관 단계 추가 | be-orchestrator | skill과 agent가 같은 역할을 다르게 정의해 설계 문서가 designs/에 안 남는 문제 수정 |
+| 2026-06-01 | v2.0 be-qa agent 체크리스트 확장 (DTO/타입·Soft Delete·Prisma·네이밍·Swagger) | be-qa agent | skill 대비 누락된 검증 항목 동기화 |
+| 2026-06-01 | v2.0 Swagger 데코레이터 의무화 (@ApiTags·@ApiOperation·@ApiResponse·@ApiProperty) | conventions.md, be-designer, be-design, be-qa | Swagger 도입으로 명세 명확화 |
+| 2026-06-01 | v2.0 API 넘버링 보존·참조 규칙 추가, Notion 출처 URL 제거 | be-api-sync, be-design, pr.md | Notion #N 번호를 PR·설계에서 참조 가능하도록 |

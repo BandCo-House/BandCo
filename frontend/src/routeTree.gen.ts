@@ -10,8 +10,11 @@
 
 import { Route as rootRouteImport } from './pages/__root'
 import { Route as SignupRouteImport } from './pages/signup'
+import { Route as SearchRouteImport } from './pages/search'
 import { Route as ProfileRouteImport } from './pages/profile'
 import { Route as OnboardingRouteImport } from './pages/onboarding'
+import { Route as NotificationsRouteImport } from './pages/notifications'
+import { Route as MyBandsRouteImport } from './pages/my-bands'
 import { Route as LoginRouteImport } from './pages/login'
 import { Route as ForgotPasswordRouteImport } from './pages/forgot-password'
 import { Route as AdminRouteImport } from './pages/admin'
@@ -31,6 +34,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -39,6 +47,16 @@ const ProfileRoute = ProfileRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyBandsRoute = MyBandsRouteImport.update({
+  id: '/my-bands',
+  path: '/my-bands',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -114,8 +132,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-bands': typeof MyBandsRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
@@ -132,8 +153,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-bands': typeof MyBandsRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
@@ -149,8 +173,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-bands': typeof MyBandsRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
@@ -169,8 +196,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/forgot-password'
     | '/login'
+    | '/my-bands'
+    | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/search'
     | '/signup'
     | '/band/$bandId'
     | '/band/$bandId/settings'
@@ -187,8 +217,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/forgot-password'
     | '/login'
+    | '/my-bands'
+    | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/search'
     | '/signup'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
@@ -203,8 +236,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/forgot-password'
     | '/login'
+    | '/my-bands'
+    | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/search'
     | '/signup'
     | '/band/$bandId'
     | '/band/$bandId/settings'
@@ -222,8 +258,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  MyBandsRoute: typeof MyBandsRoute
+  NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   ProfileRoute: typeof ProfileRoute
+  SearchRoute: typeof SearchRoute
   SignupRoute: typeof SignupRoute
   BandBandIdRoute: typeof BandBandIdRouteWithChildren
   SongSongIdTeamsRoute: typeof SongSongIdTeamsRoute
@@ -239,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -251,6 +297,20 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-bands': {
+      id: '/my-bands'
+      path: '/my-bands'
+      fullPath: '/my-bands'
+      preLoaderRoute: typeof MyBandsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -386,8 +446,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  MyBandsRoute: MyBandsRoute,
+  NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   ProfileRoute: ProfileRoute,
+  SearchRoute: SearchRoute,
   SignupRoute: SignupRoute,
   BandBandIdRoute: BandBandIdRouteWithChildren,
   SongSongIdTeamsRoute: SongSongIdTeamsRoute,

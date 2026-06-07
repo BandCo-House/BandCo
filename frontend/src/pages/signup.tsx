@@ -42,7 +42,7 @@ export function SignupPage() {
           profile: {
             nickname: data.name,
             selfDescription: null,
-            profileMusicUrl: null,
+            profileMusic: null,
             avatarUrl: null,
           },
           personalInfo: {

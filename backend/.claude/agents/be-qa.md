@@ -60,15 +60,45 @@ git diff --name-only HEAD
 #### 테스트
 
 - [ ] 새 Service 메서드마다 `.spec.ts` 테스트가 있는가?
-- [ ] happy path, NotFoundException, ForbiddenException, BadRequestException 케이스가 있는가?
+- [ ] happy path 케이스가 있는가?
+- [ ] NotFoundException, ForbiddenException, BadRequestException 케이스가 있는가? (해당 시나리오가 있는 경우)
 - [ ] `capturedTransactions` 패턴으로 tx 일관성을 검증하는가?
 - [ ] `createPrismaServiceFailingTransactionStub`으로 외부 tx 전달을 검증하는가?
 - [ ] `jest.fn()` 또는 `TestingModule`을 사용하지 않았는가? (auth 모듈 제외)
+- [ ] Stub 기본값이 happy path를 반환하는가?
+
+#### DTO 및 타입
+
+- [ ] 요청 DTO에 class-validator 데코레이터가 있는가? (`@IsString()`, `@IsNotEmpty()` 등)
+- [ ] Service 내부 반환 타입이 `types/{name}.type.ts`에 정의되었는가? (DTO에 넣지 않음)
+- [ ] 복잡한 로직 검증 (`from > to` 같은 비교)은 DTO가 아닌 Service에서 처리하는가?
+
+#### Soft Delete
+
+- [ ] `Band`, `User`, `BandSpace` 등 `deletedAt`이 있는 모델을 조회할 때 `where: { deletedAt: null }` 조건이 포함되었는가?
+- [ ] 신규 모델에 불필요하게 `deletedAt`이 추가되지 않았는가?
+
+#### Prisma
+
+- [ ] Prisma import가 `src/generated/prisma`를 사용하는가? (기본 경로 아님)
+- [ ] 스키마 변경 후 `pnpm run prisma:generate`가 실행되었는가?
+
+#### 네이밍 및 파일 구조
+
+- [ ] Repository가 인터페이스(`*.repository.ts`)와 구현체(`*.prisma-repository.ts`)로 분리되었는가?
+- [ ] 파일명이 kebab-case인가? (`bands-service.ts` 등)
+- [ ] 타입 파일이 `<name>.type.ts` 형식인가? (`create-band-result.type.ts` 등)
+
+#### Swagger
+
+- [ ] Controller 클래스에 `@ApiTags`가 있는가?
+- [ ] 각 핸들러 메서드에 `@ApiOperation`과 `@ApiResponse`가 있는가?
+- [ ] 요청 DTO의 모든 public 필드에 `@ApiProperty`가 있는가?
 
 #### 코드 품질
 
 - [ ] 설명할 수 없는 코드가 없는가?
-- [ ] 요청받지 않은 기능·추상화가 추가되지 않았는가?
+- [ ] 요청받지 않은 기능·추상화·유연성이 추가되지 않았는가?
 - [ ] 관련 없는 코드를 임의로 수정하지 않았는가?
 - [ ] 주석이 있다면 한국어로 작성했는가?
 - [ ] 중요 함수에 JSDoc 스타일 주석이 있는가?
