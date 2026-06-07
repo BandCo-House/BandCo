@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Headers, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBasicAuth, ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../common/api-response';
@@ -44,11 +44,10 @@ export class AuthController {
   @ApiOperation({ summary: '이메일 로그인' })
   @ApiResponse({ status: 201, description: '로그인 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async loginEmail(@Headers('authorization') authHeader: string) {
-    const token = this.authService.extractTokenFromHeader(authHeader, false);
-    const { email, password } = this.authService.decodeBasicToken(token);
-
-    return this.authService.loginUser(email, password);
+  async loginEmail(@Req() req: { user: { id: string; email: string } }) {
+    // BasicTokenGuard가 인증을 마치고 req.user에 담은 유저로 토큰을 발급한다.
+    const { email, id } = req.user;
+    return this.authService.loginUser(email, id);
   }
 
   @Post('register/email')
