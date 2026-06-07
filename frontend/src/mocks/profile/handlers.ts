@@ -1,8 +1,35 @@
 import { http, HttpResponse } from 'msw';
 import type { ApiResponse } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
+import type { ProfileMusicPreview } from '@/entities/profile/api/profile-music-api';
 import type { UpdateProfileRequest } from '@/features/profile-update/api/profile-api';
 import { API_URL } from '../config';
+
+// 프로필 음악 검색(공용) mock — GET /users/profile-music/search
+const profileMusicPreviews: ProfileMusicPreview[] = [
+  {
+    externalTrackId: 'deezer-1',
+    sourceType: 'DEEZER',
+    title: '마치 흘러가는 바람처럼',
+    artistName: 'DAY6(데이식스)',
+    albumName: 'The Book of Us',
+    albumImageUrl: null,
+    durationMs: 202000,
+    previewUrl: 'https://example.com/day6-preview.mp3',
+    sourceUrl: 'https://www.deezer.com/track/demo-1',
+  },
+  {
+    externalTrackId: 'deezer-2',
+    sourceType: 'DEEZER',
+    title: '건널목',
+    artistName: 'Whiteusedsocks',
+    albumName: '건널목',
+    albumImageUrl: null,
+    durationMs: 211000,
+    previewUrl: 'https://example.com/crosswalk-preview.mp3',
+    sourceUrl: 'https://www.deezer.com/track/demo-2',
+  },
+];
 
 const mockProfiles: Record<string, Profile> = {
   'user-001': {
@@ -84,6 +111,17 @@ const mockProfiles: Record<string, Profile> = {
 };
 
 export const profileHandlers = [
+  http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('query')?.trim() ?? '';
+    const items = query ? profileMusicPreviews : [];
+
+    return HttpResponse.json<ApiResponse<ProfileMusicPreview[]>>({
+      success: true,
+      data: items,
+    });
+  }),
+
   http.get(`${API_URL}/users/:userId/profiles`, ({ params }) => {
     const { userId } = params as { userId: string };
     const userProfile = mockProfiles[userId];
