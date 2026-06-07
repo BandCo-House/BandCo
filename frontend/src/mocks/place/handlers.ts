@@ -4,28 +4,40 @@ import type { Place } from '@/entities/place/model/types';
 import { API_URL } from '../config';
 
 // 밴드 라이브러리 연습 장소 목록 mock (GET /bands/:bandId/places)
-const bandPlaces: Place[] = Array.from({ length: 5 }, (_, i) => ({
-  placeId: `place-${i + 1}`,
-  bandId: 'band-1',
-  name: '연습실 A',
-  address: '서울특별시 신촌로 94',
-  detailAddress: null,
-  imageUrl: null,
-  isActive: true,
-  createdAt: '2026-05-01T00:00:00+09:00',
-  updatedAt: '2026-05-01T00:00:00+09:00',
-}));
+const PLACE_FIXTURES = [
+  { name: '신촌 연습실 A', address: '서울특별시 신촌로 94' },
+  { name: '합정 사운드룸', address: '서울특별시 마포구 양화로 45' },
+  { name: '홍대 드럼스튜디오', address: '서울특별시 마포구 와우산로 21' },
+  { name: '강남 밴드연습실', address: '서울특별시 강남구 테헤란로 123' },
+  { name: '이태원 자유합주실', address: '서울특별시 용산구 이태원로 200' },
+];
+
+const buildBandPlaces = (bandId: string): Place[] =>
+  PLACE_FIXTURES.map((fixture, i) => ({
+    placeId: `place-${i + 1}`,
+    bandId,
+    name: fixture.name,
+    address: fixture.address,
+    detailAddress: null,
+    imageUrl: null,
+    isActive: true,
+    createdAt: '2026-05-01T00:00:00+09:00',
+    updatedAt: '2026-05-01T00:00:00+09:00',
+  }));
 
 export const placeHandlers = [
-  http.get(`${API_URL}/bands/:bandId/places`, () => {
+  http.get(`${API_URL}/bands/:bandId/places`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+    const items = buildBandPlaces(bandId);
+
     return HttpResponse.json<
       ApiResponse<{ bandId: string; items: Place[]; meta: unknown }>
     >({
       success: true,
       data: {
-        bandId: 'band-1',
-        items: bandPlaces,
-        meta: { count: bandPlaces.length, take: 20, cursor: null, next: null },
+        bandId,
+        items,
+        meta: { count: items.length, take: 20, cursor: null, next: null },
       },
     });
   }),

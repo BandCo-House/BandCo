@@ -113,8 +113,14 @@ const mockProfiles: Record<string, Profile> = {
 export const profileHandlers = [
   http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
     const url = new URL(request.url);
-    const query = url.searchParams.get('query')?.trim() ?? '';
-    const items = query ? profileMusicPreviews : [];
+    const query = (url.searchParams.get('query') ?? '').trim().toLowerCase();
+    const items = query
+      ? profileMusicPreviews.filter(
+          (track) =>
+            track.title.toLowerCase().includes(query) ||
+            track.artistName.toLowerCase().includes(query),
+        )
+      : [];
 
     return HttpResponse.json<ApiResponse<ProfileMusicPreview[]>>({
       success: true,
