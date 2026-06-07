@@ -301,7 +301,7 @@ describe('앱 라우터', () => {
     unmount();
   });
 
-  it('밴드 상세의 뒤로가기는 루트(MyBands)로 이동한다', async () => {
+  it('밴드 상세의 뒤로가기는 내 밴드 페이지로 이동한다', async () => {
     const router = createRouterForTest('/band/1', {
       isLoggedIn: true,
       isAdmin: false,
@@ -312,7 +312,9 @@ describe('앱 라우터', () => {
     await screen.findByText('BandDetailPage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('my-bands-route-page'),
+    ).toBeInTheDocument();
   });
 
   it.skip('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
