@@ -39,6 +39,8 @@ export type HeaderResolveResult = {
   rightActionLabel?: string;
   heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
   renderRight?: () => ReactNode;
+  renderBottom?: () => ReactNode;
+  bottomBlur?: boolean;
 };
 
 /**
@@ -61,9 +63,11 @@ export type HeaderStaticConfig = {
     params: Record<string, string>,
   ) => Record<string, string>;
   resolve?: (ctx: HeaderResolveContext) => HeaderResolveResult;
-  
+
   heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
   renderRight?: () => ReactNode;
+  renderBottom?: () => ReactNode;
+  bottomBlur?: boolean;
 };
 
 /**
@@ -71,5 +75,6 @@ export type HeaderStaticConfig = {
  */
 export type RouteStaticData = {
   header?: HeaderStaticConfig;
+  /** 본문 wrapper의 기본 패딩(px-5 py-8)을 제거하고 페이지가 직접 패딩을 관리한다. */
+  fullBleed?: boolean;
 };
-

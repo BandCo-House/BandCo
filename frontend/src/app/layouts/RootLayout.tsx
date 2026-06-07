@@ -27,13 +27,13 @@ export const RootLayout = () => {
   );
   const currentParams = (activeMatch?.params ?? {}) as Record<string, string>;
 
-  const header = resolveHeader(
-    activeMatch?.staticData as RouteStaticData | undefined,
-    {
-      params: currentParams,
-      loaderData: activeMatch?.loaderData,
-    },
-  );
+  const staticData = activeMatch?.staticData as RouteStaticData | undefined;
+  const isFullBleed = staticData?.fullBleed ?? false;
+
+  const header = resolveHeader(staticData, {
+    params: currentParams,
+    loaderData: activeMatch?.loaderData,
+  });
 
   const onBack = header?.showBack
     ? () => {
@@ -129,6 +129,8 @@ export const RootLayout = () => {
         rightContent,
         heightVariant: header.heightVariant,
         renderRight: header.renderRight,
+        renderBottom: header.renderBottom,
+        bottomBlur: header.bottomBlur,
       }
     : null;
 
@@ -150,10 +152,18 @@ export const RootLayout = () => {
           'mx-auto min-h-0 w-full flex-1',
           pageHeaderProps ? undefined : 'min-h-screen',
           showBottomNav && 'mb-16',
-          pageHeaderProps && HEIGHT_MARGIN_CLASSES[header?.heightVariant || 'lg'],
+          pageHeaderProps &&
+            (header?.renderBottom
+              ? 'mt-[120px]'
+              : HEIGHT_MARGIN_CLASSES[header?.heightVariant || 'lg']),
         )}
       >
-        <div className="mx-auto w-full max-w-7xl px-5 py-8">
+        <div
+          className={cn(
+            'mx-auto w-full max-w-7xl',
+            !isFullBleed && 'px-5 py-8',
+          )}
+        >
           <Outlet />
         </div>
       </main>
