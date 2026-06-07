@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ComingSoon } from '@/shared/ui/coming-soon';
 
 export const Route = createFileRoute('/song/$songId/teams')({
   component: SongTeamsRoutePage,
@@ -11,5 +12,10 @@ export const Route = createFileRoute('/song/$songId/teams')({
 
 // 곡별 팀 목록 라우트 전용 화면
 function SongTeamsRoutePage() {
-  return <div>SongTeamsPage</div>;
+  return (
+    <>
+      <span className="sr-only">SongTeamsPage</span>
+      <ComingSoon />
+    </>
+  );
 }
