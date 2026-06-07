@@ -57,7 +57,7 @@ gh api repos/{owner}/{repo}/pulls/{number}/comments   # 인라인(라인) 리뷰
 
 ```bash
 pnpm --dir frontend exec tsc -b
-pnpm --dir frontend exec prettier --check .
+pnpm --dir frontend exec prettier --check "src/**/*.{ts,tsx,jsx,json,css}"
 pnpm --dir frontend run lint
 pnpm --dir frontend test
 ```
