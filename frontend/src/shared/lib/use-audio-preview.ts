@@ -6,6 +6,9 @@ interface UseAudioPreviewOptions {
   errorMessage?: string;
 }
 
+// 앱 전체에서 한 번에 하나의 미리듣기만 재생되도록 현재 재생 중인 오디오를 추적한다.
+let activeAudio: HTMLAudioElement | null = null;
+
 /**
  * 곡 미리듣기(preview) 오디오 재생을 관리하는 공용 훅.
  * `audioRef`를 `<audio>`에 연결하고 `audioEventProps`를 spread한 뒤 버튼에서 `toggle`을 호출한다.
@@ -42,12 +45,23 @@ export const useAudioPreview = (
   }, [canPlay, isPlaying, showError]);
 
   const audioEventProps = {
-    onPlay: () => setIsPlaying(true),
+    onPlay: () => {
+      // 직전에 재생 중이던 다른 오디오를 멈춘다
+      if (activeAudio && activeAudio !== audioRef.current) {
+        activeAudio.pause();
+      }
+      activeAudio = audioRef.current;
+      setIsPlaying(true);
+    },
     onPause: () => {
+      if (activeAudio === audioRef.current) activeAudio = null;
       setIsPlaying(false);
       hasShownErrorRef.current = false;
     },
-    onEnded: () => setIsPlaying(false),
+    onEnded: () => {
+      if (activeAudio === audioRef.current) activeAudio = null;
+      setIsPlaying(false);
+    },
     onError: () => {
       setIsPlaying(false);
       showError();
