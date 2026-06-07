@@ -38,6 +38,7 @@ export const WeekDatePicker = ({
     [value],
   );
   const monthLabel = `${value.getFullYear()}년 ${value.getMonth() + 1}월`;
+  const selectedWeekday = value.getDay();
 
   return (
     <section className={cn('flex flex-col gap-5', className)}>
@@ -65,10 +66,13 @@ export const WeekDatePicker = ({
 
       <div>
         <div className="flex">
-          {WEEKDAY_LABELS.map((weekday) => (
+          {WEEKDAY_LABELS.map((weekday, index) => (
             <span
               key={weekday}
-              className="flex-1 text-center typo-xs-m text-grey-300"
+              className={cn(
+                'flex-1 text-center typo-xs-m',
+                index === selectedWeekday ? 'text-grey-50' : 'text-grey-300',
+              )}
             >
               {weekday}
             </span>
