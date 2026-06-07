@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { BandCard } from '@/entities/band/ui/BandCard';
+import { SpeedDialFab } from '@/shared/ui/speed-dial-fab';
 import { BandCreateDialog } from './BandCreateDialog';
 import { InviteCodeDialog } from './InviteCodeDialog';
-import { BandListFAB } from './BandListFAB';
 import { useMyBands } from '@/entities/band/api/useMyBands';
 
 export const BandList = () => {
@@ -10,15 +10,21 @@ export const BandList = () => {
   const [isInviteCodeDialogOpen, setIsInviteCodeDialogOpen] = useState(false);
   const { data: bands = [], isLoading } = useMyBands();
 
+  const fabActions = [
+    { label: '새 밴드', onClick: () => setIsCreateDialogOpen(true) },
+    { label: '초대코드 입력', onClick: () => setIsInviteCodeDialogOpen(true) },
+  ];
+
   if (isLoading) return <div data-testid="band-list">로딩 중...</div>;
 
   if (bands.length === 0)
     return (
       <>
         <div data-testid="band-list">아직 참여한 밴드가 없어요</div>
-        <BandListFAB
-          onCreateClick={() => setIsCreateDialogOpen(true)}
-          onInviteClick={() => setIsInviteCodeDialogOpen(true)}
+        <SpeedDialFab
+          className="bottom-24"
+          mainLabel="밴드 메뉴 열기"
+          actions={fabActions}
         />
         <BandCreateDialog
           open={isCreateDialogOpen}
@@ -42,9 +48,10 @@ export const BandList = () => {
           ))}
         </ul>
 
-        <BandListFAB
-          onCreateClick={() => setIsCreateDialogOpen(true)}
-          onInviteClick={() => setIsInviteCodeDialogOpen(true)}
+        <SpeedDialFab
+          className="bottom-24"
+          mainLabel="밴드 메뉴 열기"
+          actions={fabActions}
         />
 
         <BandCreateDialog
