@@ -18,15 +18,29 @@ describe('createBand 어댑터', () => {
       visibility: true,
     };
     const responseData = {
-      band: {
+      items: {
         id: 'band-123',
         name: '우리 밴드',
         description: '주 1회 합주',
         visibility: true,
-        inviteCode: 'INV123',
-        bmId: 'bm-1',
+        coverImgUrl: 'https://cdn.example.com/bands/cover.png',
+        genres: [
+          {
+            id: 'genre-1',
+            name: 'rock',
+          },
+        ],
+        bandMasterUserId: 'bm-1',
         createdAt: '2026-03-03T18:20:10.123+09:00',
-        updatedAt: '2026-03-03T18:20:10.123+09:00',
+        invitations: {
+          success: [
+            {
+              userId: 'user-1',
+              invitationId: 'invite-1',
+            },
+          ],
+          failed: [],
+        },
       },
     };
 
@@ -39,7 +53,7 @@ describe('createBand 어댑터', () => {
 
     const result = await createBand(requestBody);
 
-    expect(result).toEqual(responseData.band);
+    expect(result).toEqual(responseData.items);
   });
 
   it('name, description, visibility가 서버에 그대로 전달된다', async () => {
@@ -54,15 +68,19 @@ describe('createBand 어댑터', () => {
           error: null,
           message: '밴드 생성 성공',
           data: {
-            band: {
+            items: {
               id: 'band-456',
               name: '테스트 밴드',
               description: null,
               visibility: true,
-              inviteCode: 'INV456',
-              bmId: 'bm-1',
+              coverImgUrl: null,
+              genres: [],
+              bandMasterUserId: 'bm-1',
               createdAt: '2026-03-03T18:20:10.123+09:00',
-              updatedAt: '2026-03-03T18:20:10.123+09:00',
+              invitations: {
+                success: [],
+                failed: [],
+              },
             },
           },
         },
@@ -95,14 +113,19 @@ describe('createBand 어댑터', () => {
       error: null,
       message: '밴드 생성 성공',
       data: {
-        band: {
+        items: {
           id: 'band-123',
-          name: '우리 밴드',
+          // name is omitted (required field)
           description: '주 1회 합주',
           visibility: true,
-          inviteCode: 'INV123',
+          coverImgUrl: null,
+          genres: [],
+          bandMasterUserId: 'bm-1',
           createdAt: '2026-03-03T18:20:10.123+09:00',
-          updatedAt: '2026-03-03T18:20:10.123+09:00',
+          invitations: {
+            success: [],
+            failed: [],
+          },
         },
       },
     });

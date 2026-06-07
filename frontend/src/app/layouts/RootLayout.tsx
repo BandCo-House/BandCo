@@ -1,17 +1,30 @@
-import { Outlet, useMatches, useRouter } from '@tanstack/react-router';
-import { cn } from '@/shared/lib/utils';
 import {
-  HomeHeaderUtilities,
+  Link,
+  Outlet,
+  useMatches,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import {
   PageHeader,
   type RouteStaticData,
   resolveHeader,
 } from '@/widgets/page-header';
+import { BottomNavBar } from '@/widgets/bottom-nav';
+
+/** 하단 네비게이션을 표시하지 않을 경로 목록 */
+const HIDDEN_NAV_PATHS = ['/login', '/signup', '/onboarding'];
 
 export const RootLayout = () => {
   const router = useRouter();
   const matches = useMatches();
   const activeMatch = matches.at(-1);
-  const currentPathname = router.state.location.pathname;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showBottomNav = !HIDDEN_NAV_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
   const currentParams = (activeMatch?.params ?? {}) as Record<string, string>;
 
   const header = resolveHeader(
@@ -21,52 +34,6 @@ export const RootLayout = () => {
       loaderData: activeMatch?.loaderData,
     },
   );
-
-  const onRightActionClick = header?.rightActionTo
-    ? () => {
-        const params = header.getRightActionParams?.(currentParams);
-
-        router.navigate({
-          to: header.rightActionTo as never,
-          ...(params ? { params: params as never } : {}),
-        });
-      }
-    : undefined;
-
-  const resolvedTabs = header?.tabs?.map((tab) => {
-    const tabTo = tab.getTo?.(currentParams) ?? tab.to;
-    const tabParams = tab.getParams?.(currentParams);
-    const tabOnClick = tabTo
-      ? () => {
-          const [tabPath, tabQuery] = tabTo.split('?');
-          const tabSearch = tabQuery
-            ? Object.fromEntries(new URLSearchParams(tabQuery).entries())
-            : undefined;
-
-          router.navigate({
-            to: tabPath as never,
-            ...(tabParams ? { params: tabParams as never } : {}),
-            ...(tabSearch ? { search: tabSearch as never } : {}),
-          });
-        }
-      : tab.onClick;
-
-    const isActiveByMatcher = tab.isActive?.({
-      pathname: currentPathname,
-      params: currentParams,
-    });
-    const isActiveByPath = tab.activePathPrefixes
-      ? tab.activePathPrefixes.some((prefix) =>
-          currentPathname.startsWith(prefix),
-        )
-      : undefined;
-
-    return {
-      ...tab,
-      active: isActiveByMatcher ?? isActiveByPath ?? tab.active,
-      onClick: tabOnClick,
-    };
-  });
 
   const onBack = header?.showBack
     ? () => {
@@ -88,42 +55,109 @@ export const RootLayout = () => {
       }
     : undefined;
 
+  const rightContent = (() => {
+    if (!header) return undefined;
+
+    const tabs = header.tabs?.map((tab) => {
+      const tabTo = tab.getTo?.(currentParams) ?? tab.to;
+      const [tabPath, tabSearchString] = tabTo?.split('?') ?? [];
+      const tabSearch = tabSearchString
+        ? Object.fromEntries(new URLSearchParams(tabSearchString))
+        : undefined;
+      const tabParams = tab.getParams?.(currentParams);
+      const isActive =
+        tab.active ??
+        tab.isActive?.({
+          pathname: router.state.location.pathname,
+          params: currentParams,
+        }) ??
+        false;
+      const tabButton = (
+        <Button
+          type="button"
+          variant={isActive ? 'default' : 'outline'}
+          size="sm"
+          data-variant={isActive ? 'default' : 'outline'}
+          onClick={tab.onClick}
+        >
+          {tab.label}
+        </Button>
+      );
+
+      return tabPath ? (
+        <Link
+          key={tab.key}
+          to={tabPath as never}
+          {...(tabParams ? { params: tabParams as never } : {})}
+          {...(tabSearch ? { search: tabSearch as never } : {})}
+        >
+          {tabButton}
+        </Link>
+      ) : (
+        <span key={tab.key}>{tabButton}</span>
+      );
+    });
+
+    const rightActionParams = header.getRightActionParams?.(currentParams);
+    const rightAction =
+      header.rightActionLabel && header.rightActionTo ? (
+        <Link
+          to={header.rightActionTo as never}
+          {...(rightActionParams ? { params: rightActionParams as never } : {})}
+        >
+          <Button type="button" variant="outline" size="sm">
+            {header.rightActionLabel}
+          </Button>
+        </Link>
+      ) : null;
+
+    if (!tabs?.length && !rightAction) return undefined;
+
+    return (
+      <div className="flex items-center gap-2">
+        {tabs}
+        {rightAction}
+      </div>
+    );
+  })();
+
   const pageHeaderProps = header
     ? {
         title: header.title ?? '',
-        subtitle: header.subtitle,
-        brandLabel: header.brandLabel,
+        titleSize: header.titleSize,
         showBack: header.showBack,
-        meta: header.meta,
-        tabs: resolvedTabs,
-        rightActionLabel: header.rightActionLabel,
-        rightContent: header.showUtilities ? (
-          <HomeHeaderUtilities
-            showSearchBar={header.showSearchBar}
-            showProfileAvatar={header.showProfileAvatar}
-            showNotificationTrigger={header.showNotificationTrigger}
-          />
-        ) : undefined,
+        rightContent,
+        heightVariant: header.heightVariant,
+        renderRight: header.renderRight,
       }
     : null;
 
+  const HEIGHT_MARGIN_CLASSES = {
+    xs: 'mt-9',
+    sm: 'mt-14',
+    md: 'mt-[60px]',
+    lg: 'mt-16',
+  };
+
   return (
-    <div className="min-h-screen">
+    <div className="mx-auto flex min-h-dvh max-w-[648px] flex-col">
       {pageHeaderProps ? (
-        <PageHeader
-          {...pageHeaderProps}
-          onBack={onBack}
-          onRightActionClick={onRightActionClick}
-        />
+        <PageHeader {...pageHeaderProps} onBack={onBack} />
       ) : null}
+
       <main
         className={cn(
-          'mx-auto w-full max-w-7xl px-6 py-8',
-          pageHeaderProps ? 'pt-[calc(8rem+2rem)]' : undefined,
+          'mx-auto min-h-0 w-full flex-1',
+          pageHeaderProps ? undefined : 'min-h-screen',
+          showBottomNav && 'mb-16',
+          pageHeaderProps && HEIGHT_MARGIN_CLASSES[header?.heightVariant || 'lg'],
         )}
       >
-        <Outlet />
+        <div className="mx-auto w-full max-w-7xl px-5 py-8">
+          <Outlet />
+        </div>
       </main>
+      {showBottomNav ? <BottomNavBar /> : null}
     </div>
   );
 };

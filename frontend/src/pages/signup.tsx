@@ -3,13 +3,21 @@ import { useState } from 'react';
 import { useAuth } from '@/app/providers/auth-context';
 import { registerEmail } from '@/features/auth/api/auth.service';
 import { SignupForm } from '@/features/auth/ui/SignupForm';
+import { updateUserProfile } from '@/features/profile-update/api/profile-api';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
 import axios from 'axios';
+import { getUserIdFromToken } from '@/shared/lib/jwt';
 
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
   component: SignupPage,
+  staticData: {
+    header: {
+      title: '회원가입',
+      backBehavior: 'browser',
+    },
+  },
 });
 
 export function SignupPage() {
@@ -25,21 +33,48 @@ export function SignupPage() {
       const res = await registerEmail(data);
       // 회원가입 성공 시 자동 로그인
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/' });
+      try {
+        const userId = getUserIdFromToken(res.accessToken);
+        if (!userId) {
+          throw new Error('User ID not found in token');
+        }
+        await updateUserProfile(userId, {
+          profile: {
+            nickname: data.name,
+            selfDescription: null,
+            profileMusic: null,
+            avatarUrl: null,
+          },
+          personalInfo: {
+            email: data.email,
+          },
+        });
+        await navigate({ to: '/onboarding', search: { name: data.name } });
+      } catch (profileUpdateError) {
+        console.error(
+          '회원가입 후 프로필 저장에 실패했습니다.',
+          profileUpdateError,
+        );
+        await navigate({
+          to: '/onboarding',
+          search: { name: data.name, profileUpdateFailed: '1' },
+        });
+      }
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
         setError(err.response?.data?.message || '회원가입에 실패했습니다.');
       } else {
         setError('회원가입에 실패했습니다.');
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <div className="max-w-145 mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center">
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full flex-col">
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
+        <div className="mb-6 rounded-2xl bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
           {error}
         </div>
       )}

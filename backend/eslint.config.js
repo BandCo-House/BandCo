@@ -36,12 +36,17 @@ export default [
   // ------------------------------------------------------------
   // 2) TypeScript 추천 룰
   // ------------------------------------------------------------
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommended.map(config => ({
+    ...config,
+    files: ['src/**/*.ts', 'prisma/**/*.ts'],
+  })),
 
   // ------------------------------------------------------------
   // 3) TS/Node 공통 설정
   // ------------------------------------------------------------
   {
+    files: ['src/**/*.ts', 'prisma/**/*.ts'],
+
     plugins: {
       prettier: prettierPlugin,
       import: importPlugin,
@@ -147,6 +152,32 @@ export default [
       'import/no-duplicates': 'error',
       'import/first': 'error',
       'import/newline-after-import': 'error',
+    },
+  },
+
+  // ------------------------------------------------------------
+  // 4) 하네스 Hook 스크립트
+  // ------------------------------------------------------------
+  {
+    files: ['scripts/hooks/**/*.js'],
+
+    plugins: {
+      prettier: prettierPlugin,
+    },
+
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+    },
+
+    rules: {
+      'prettier/prettier': 'error',
+      'no-console': 'off',
+      'prefer-const': 'error',
     },
   },
 ];

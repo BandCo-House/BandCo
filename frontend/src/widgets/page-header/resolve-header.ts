@@ -1,24 +1,16 @@
-import type { HeaderResolveContext, HeaderStaticConfig, RouteStaticData } from './types';
+import type {
+  HeaderResolveContext,
+  HeaderStaticConfig,
+  RouteStaticData,
+} from './types';
 
 /**
  * 모든 라우트 헤더에 공통 적용되는 기본값
  * 개별 라우트는 필요한 필드만 선언하면 된다.
  */
-const HEADER_DEFAULTS: Pick<
-  HeaderStaticConfig,
-  | 'showBack'
-  | 'backBehavior'
-  | 'showUtilities'
-  | 'showSearchBar'
-  | 'showProfileAvatar'
-  | 'showNotificationTrigger'
-> = {
+const HEADER_DEFAULTS: Pick<HeaderStaticConfig, 'showBack' | 'backBehavior'> = {
   showBack: true,
   backBehavior: 'route',
-  showUtilities: true,
-  showSearchBar: false,
-  showProfileAvatar: true,
-  showNotificationTrigger: false,
 };
 
 /**

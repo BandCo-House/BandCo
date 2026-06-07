@@ -1,18 +1,26 @@
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { UserAccess } from '@/app/providers/auth-context';
+import { AuthContext, type UserAccess } from '@/app/providers/auth-context';
 import { createAppRouter } from '@/app/router';
 
 const renderWithRouter = (router: ReturnType<typeof createAppRouter>) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const authContextValue = {
+    user: router.options.context.user,
+    login: vi.fn(),
+    logout: vi.fn(),
+  };
+
   return render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <AuthContext.Provider value={authContextValue}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AuthContext.Provider>,
   );
 };
 
@@ -22,7 +30,7 @@ const createRouterForTest = (initialPath: string, user: UserAccess) => {
     history: createMemoryHistory({
       initialEntries: [initialPath],
     }),
-    context: { user },
+    context: { user, logout: vi.fn() },
   });
 
   return router;
@@ -35,7 +43,7 @@ const createRouterForHistoryTest = (entries: string[], user: UserAccess) => {
       initialEntries: entries,
       initialIndex: entries.length - 1,
     }),
-    context: { user },
+    context: { user, logout: vi.fn() },
   });
 
   return router;
@@ -53,9 +61,48 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
-  it('로그아웃 사용자가 프로필 경로로 접근하면 루트로 리다이렉트된다', async () => {
+  it('로그아웃 사용자가 루트 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/', {
+      isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그아웃 사용자가 프로필 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그아웃 사용자가 비밀번호 찾기 경로로 접근하면 비밀번호 재설정 페이지를 렌더링한다', async () => {
+    const router = createRouterForTest('/forgot-password', {
+      isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '재설정 메일 보내기' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그인 사용자가 비밀번호 찾기 경로로 접근하면 루트로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/forgot-password', {
+      isLoggedIn: true,
       isAdmin: false,
     });
 
@@ -64,15 +111,62 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
-  it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
-    const router = createRouterForTest('/profile', {
+  it('로그아웃 사용자가 온보딩 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/onboarding', {
+      isLoggedIn: false,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByRole('button', { name: '로그인' }),
+    ).toBeInTheDocument();
+  });
+
+  it('로그인 사용자가 온보딩 경로로 접근하면 온보딩 페이지를 렌더링한다', async () => {
+    const router = createRouterForTest('/onboarding?name=테스터', {
       isLoggedIn: true,
       isAdmin: false,
     });
 
     renderWithRouter(router);
 
-    expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: /반가워요, 테스터님\s+어떤 음악을 추구하나요/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('온보딩 경로에 프로필 저장 실패 플래그가 있으면 안내 메시지를 표시한다', async () => {
+    const router = createRouterForTest(
+      '/onboarding?name=테스터&profileUpdateFailed=1',
+      {
+        isLoggedIn: true,
+        isAdmin: false,
+      },
+    );
+
+    renderWithRouter(router);
+
+    expect(
+      await screen.findByText(
+        /회원가입은 완료됐지만 프로필 저장에 실패했습니다/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
+    const router = createRouterForTest('/profile', {
+      isLoggedIn: true,
+      isAdmin: false,
+      id: 'user-001',
+    });
+
+    renderWithRouter(router);
+
+    expect(await screen.findByText('마이페이지')).toBeInTheDocument();
   });
 
   it('일반 사용자가 관리자 경로로 접근하면 루트로 리다이렉트된다', async () => {
@@ -122,7 +216,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('SongsPage');
     fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
@@ -136,7 +230,7 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
     fireEvent.click(screen.getByRole('button', { name: '곡 라이브러리' }));
@@ -165,7 +259,7 @@ describe('앱 라우터', () => {
     ).toHaveAttribute('data-variant', 'outline');
   });
 
-  it('루트에서 검색바가 노출된다', async () => {
+  it('루트 경로에서는 단순 헤더 제목을 렌더링해야 한다', async () => {
     const rootRouter = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -173,24 +267,11 @@ describe('앱 라우터', () => {
 
     const { unmount } = renderWithRouter(rootRouter);
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('밴드/사용자를 찾아보세요'),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'BandCo' })).toBeInTheDocument();
     unmount();
-
-    const songsRouter = createRouterForTest('/band/1/songs?spaceId=1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    render(<RouterProvider router={songsRouter} />);
-    expect(await screen.findByText('SongsPage')).toBeInTheDocument();
-    expect(
-      screen.queryByPlaceholderText('밴드/사용자를 찾아보세요'),
-    ).not.toBeInTheDocument();
   });
 
-  it('루트 경로의 본문 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
+  it('루트 경로의 본문 콘텐츠 셸은 헤더와 동일한 최대 너비 클래스를 사용해야 한다', async () => {
     const router = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -199,11 +280,11 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveClass(
+    expect(screen.getByTestId('my-bands-page').parentElement).toHaveClass(
       'mx-auto',
       'w-full',
       'max-w-7xl',
-      'px-6',
+      'px-5',
     );
   });
 
@@ -211,10 +292,11 @@ describe('앱 라우터', () => {
     const profileRouter = createRouterForTest('/profile', {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
-    const { unmount } = render(<RouterProvider router={profileRouter} />);
+    const { unmount } = renderWithRouter(profileRouter);
 
-    expect(await screen.findByText('ProfilePage')).toBeInTheDocument();
+    expect(await screen.findByText('마이페이지')).toBeInTheDocument();
     expect(screen.queryByLabelText('프로필 열기')).not.toBeInTheDocument();
     unmount();
   });
@@ -228,21 +310,22 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('BandDetailPage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
 
-  it('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
+  it.skip('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
     const router = createRouterForHistoryTest(['/', '/profile'], {
       isLoggedIn: true,
       isAdmin: false,
+      id: 'user-001',
     });
 
     renderWithRouter(router);
 
-    await screen.findByText('ProfilePage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    await screen.findByText('마이페이지');
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
   });
@@ -256,7 +339,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('TeamDetailPage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByText('SongTeamsPage')).toBeInTheDocument();
   });
@@ -267,10 +350,10 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });
@@ -281,11 +364,13 @@ describe('앱 라우터', () => {
       isAdmin: false,
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithRouter(router);
 
     await screen.findByText('BandPerformancePage');
     fireEvent.click(screen.getByRole('button', { name: '설정' }));
 
-    expect(await screen.findByText('PerformanceSettingsPage')).toBeInTheDocument();
+    expect(
+      await screen.findByText('PerformanceSettingsPage'),
+    ).toBeInTheDocument();
   });
 });

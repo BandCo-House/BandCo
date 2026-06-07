@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 /**
  * 헤더 탭 아이템 정의
  */
@@ -10,7 +12,10 @@ export type HeaderTab = {
   getTo?: (params: Record<string, string>) => string;
   getParams?: (params: Record<string, string>) => Record<string, string>;
   activePathPrefixes?: string[];
-  isActive?: (context: { pathname: string; params: Record<string, string> }) => boolean;
+  isActive?: (context: {
+    pathname: string;
+    params: Record<string, string>;
+  }) => boolean;
 };
 
 /**
@@ -25,35 +30,40 @@ export type HeaderResolveContext = {
  * 동적 resolve 함수가 반환할 수 있는 헤더 필드
  */
 export type HeaderResolveResult = {
-  title?: string;
+  title?: string | (() => ReactNode);
+  titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;
   meta?: string[];
   tabs?: HeaderTab[];
   rightActionLabel?: string;
+  heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
+  renderRight?: () => ReactNode;
 };
 
 /**
  * 라우트 staticData에 저장되는 헤더 설정
  */
 export type HeaderStaticConfig = {
-  title?: string;
+  title?: string | (() => ReactNode);
+  titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;
   showBack?: boolean;
   backBehavior?: 'route' | 'browser';
   backTo?: string;
   getBackParams?: (params: Record<string, string>) => Record<string, string>;
-  showUtilities?: boolean;
-  showSearchBar?: boolean;
-  showProfileAvatar?: boolean;
-  showNotificationTrigger?: boolean;
   meta?: string[];
   tabs?: HeaderTab[];
   rightActionLabel?: string;
   rightActionTo?: string;
-  getRightActionParams?: (params: Record<string, string>) => Record<string, string>;
+  getRightActionParams?: (
+    params: Record<string, string>,
+  ) => Record<string, string>;
   resolve?: (ctx: HeaderResolveContext) => HeaderResolveResult;
+  
+  heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
+  renderRight?: () => ReactNode;
 };
 
 /**
@@ -62,3 +72,4 @@ export type HeaderStaticConfig = {
 export type RouteStaticData = {
   header?: HeaderStaticConfig;
 };
+

@@ -14,7 +14,7 @@ export interface BandSpaceMembership {
 export interface BandSpaceListItem {
   spaceId: string;
   bandId: string;
-  createdByUserId: string;
+  createdByBandMemberId: string;
   name: string;
   description: string;
   spaceType: SpaceType;

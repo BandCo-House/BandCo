@@ -1,14 +1,16 @@
-import { useState } from 'react';
 import { Button } from '@/shared/ui/button';
 import {
+  AppDialogBody,
+  AppDialogClose,
+  AppDialogContent,
+  AppDialogFooter,
+  AppDialogHeader,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
+import { useInviteAccept } from '@/features/invite-accept/model/useInviteAccept';
+import { cn } from '@/shared/lib/utils';
 
 type InviteCodeDialogProps = {
   open: boolean;
@@ -19,39 +21,54 @@ export const InviteCodeDialog = ({
   open,
   onOpenChange,
 }: InviteCodeDialogProps) => {
-  const [inviteCode, setInviteCode] = useState('');
+  const { code, setCode, submit, isLoading, isDisabled } = useInviteAccept({
+    onSuccess: () => onOpenChange(false),
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>초대 코드 입력</DialogTitle>
-          <DialogDescription>
-            초대 코드를 입력하는 UI만 먼저 연결합니다.
-          </DialogDescription>
-        </DialogHeader>
+      <AppDialogContent>
+        <AppDialogClose />
+        <AppDialogHeader>
+          <DialogTitle className="text-2xl text-grey-100">
+            초대코드 입력
+          </DialogTitle>
+        </AppDialogHeader>
+        <AppDialogBody>
+          <label htmlFor="invite-code" className="flex flex-col gap-3">
+            <div className="flex items-center gap-1">
+              <span className="typo-lg-sb">초대코드</span>
+              <div className="h-1 w-1 rounded-full bg-destructive"></div>
+            </div>
+            <Input
+              id="invite-code"
+              variant="underline"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="초대 코드를 입력하세요"
+              className="border-grey-200/80 placeholder:text-grey-200 hover:border-grey-100 focus-visible:border-grey-100"
+            />
+          </label>
+        </AppDialogBody>
 
-        <div className="pt-4">
-          <Input
-            value={inviteCode}
-            onChange={(event) => setInviteCode(event.target.value)}
-            placeholder="초대 코드를 입력하세요"
-          />
-        </div>
-
-        <DialogFooter className="sm:justify-end">
+        <AppDialogFooter>
           <Button
             type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
+            size="lg"
+            className={cn(
+              'w-fit text-base',
+              isDisabled && 'border border-white bg-white/60',
+            )}
+            variant={'shining'}
+            disabled={isDisabled}
+            isLoading={isLoading}
+            loadingContent="처리 중..."
+            onClick={submit}
           >
-            취소
-          </Button>
-          <Button type="button" onClick={() => onOpenChange(false)}>
             확인
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </AppDialogFooter>
+      </AppDialogContent>
     </Dialog>
   );
 };

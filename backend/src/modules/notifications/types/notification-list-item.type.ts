@@ -1,4 +1,3 @@
-import type { PaginationResult } from '../../../common/pagination';
 import type { NotificationType } from '../../../generated/prisma';
 
 export interface NotificationListItem {
@@ -11,7 +10,13 @@ export interface NotificationListItem {
   createdAt: string;
 }
 
+export interface NotificationListMeta {
+  count: number;
+  take: number;
+  next: string | null;
+}
+
 export interface GetNotificationsResult {
   items: NotificationListItem[];
-  pagination: PaginationResult;
+  meta: NotificationListMeta;
 }

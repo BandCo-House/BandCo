@@ -332,22 +332,22 @@ async function upsertSpaces(): Promise<void> {
       bandId: seedIds.band,
       name: '2026 하계공연 준비',
       description: '여름 축제 공연 준비 팀',
-      spaceType: 'STUDIO',
+      spaceType: 'PERFORMANCE',
       status: 'ACTIVE',
       startDate: new Date('2026-08-01'),
       endDate: new Date('2026-08-20'),
-      createdByUserId: seedIds.users.minjun,
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
     create: {
       id: seedIds.spaces.summerShow,
       bandId: seedIds.band,
       name: '2026 하계공연 준비',
       description: '여름 축제 공연 준비 팀',
-      spaceType: 'STUDIO',
+      spaceType: 'PERFORMANCE',
       status: 'ACTIVE',
       startDate: new Date('2026-08-01'),
       endDate: new Date('2026-08-20'),
-      createdByUserId: seedIds.users.minjun,
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
   });
 
@@ -357,22 +357,22 @@ async function upsertSpaces(): Promise<void> {
       bandId: seedIds.band,
       name: '봄 정기공연 어쿠스틱 세션',
       description: '어쿠스틱 편성 연습 공간',
-      spaceType: 'PRACTICE_ROOM',
+      spaceType: 'PRACTICE',
       status: 'ACTIVE',
       startDate: new Date('2026-03-01'),
       endDate: new Date('2026-03-25'),
-      createdByUserId: seedIds.users.seoyeon,
+      createdByBandMemberId: seedIds.bandMembers.seoyeon,
     },
     create: {
       id: seedIds.spaces.acousticSession,
       bandId: seedIds.band,
       name: '봄 정기공연 어쿠스틱 세션',
       description: '어쿠스틱 편성 연습 공간',
-      spaceType: 'PRACTICE_ROOM',
+      spaceType: 'PRACTICE',
       status: 'ACTIVE',
       startDate: new Date('2026-03-01'),
       endDate: new Date('2026-03-25'),
-      createdByUserId: seedIds.users.seoyeon,
+      createdByBandMemberId: seedIds.bandMembers.seoyeon,
     },
   });
 }
@@ -386,15 +386,15 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.summerLeader },
     update: {
-      spaceId: seedIds.spaces.summerShow,
-      userId: seedIds.users.minjun,
+      bandSpaceId: seedIds.spaces.summerShow,
+      bandMemberId: seedIds.bandMembers.minjun,
       role: 'LEADER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.summerLeader,
-      spaceId: seedIds.spaces.summerShow,
-      userId: seedIds.users.minjun,
+      bandSpaceId: seedIds.spaces.summerShow,
+      bandMemberId: seedIds.bandMembers.minjun,
       role: 'LEADER',
       status: 'ACTIVE',
     },
@@ -403,15 +403,15 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.summerMember },
     update: {
-      spaceId: seedIds.spaces.summerShow,
-      userId: seedIds.users.seoyeon,
+      bandSpaceId: seedIds.spaces.summerShow,
+      bandMemberId: seedIds.bandMembers.seoyeon,
       role: 'MEMBER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.summerMember,
-      spaceId: seedIds.spaces.summerShow,
-      userId: seedIds.users.seoyeon,
+      bandSpaceId: seedIds.spaces.summerShow,
+      bandMemberId: seedIds.bandMembers.seoyeon,
       role: 'MEMBER',
       status: 'ACTIVE',
     },
@@ -420,15 +420,15 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.acousticLeader },
     update: {
-      spaceId: seedIds.spaces.acousticSession,
-      userId: seedIds.users.seoyeon,
+      bandSpaceId: seedIds.spaces.acousticSession,
+      bandMemberId: seedIds.bandMembers.seoyeon,
       role: 'LEADER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.acousticLeader,
-      spaceId: seedIds.spaces.acousticSession,
-      userId: seedIds.users.seoyeon,
+      bandSpaceId: seedIds.spaces.acousticSession,
+      bandMemberId: seedIds.bandMembers.seoyeon,
       role: 'LEADER',
       status: 'ACTIVE',
     },
@@ -437,15 +437,15 @@ async function upsertSpaceMembers(): Promise<void> {
   await prisma.spaceMember.upsert({
     where: { id: seedIds.spaceMembers.acousticMember },
     update: {
-      spaceId: seedIds.spaces.acousticSession,
-      userId: seedIds.users.minjun,
+      bandSpaceId: seedIds.spaces.acousticSession,
+      bandMemberId: seedIds.bandMembers.minjun,
       role: 'MEMBER',
       status: 'ACTIVE',
     },
     create: {
       id: seedIds.spaceMembers.acousticMember,
-      spaceId: seedIds.spaces.acousticSession,
-      userId: seedIds.users.minjun,
+      bandSpaceId: seedIds.spaces.acousticSession,
+      bandMemberId: seedIds.bandMembers.minjun,
       role: 'MEMBER',
       status: 'ACTIVE',
     },
@@ -466,7 +466,7 @@ async function upsertSongs(): Promise<void> {
       artistName: 'Jamplay',
       key: 'G',
       bpm: 118,
-      createdByUserId: seedIds.users.minjun,
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
     create: {
       id: seedIds.songs.first,
@@ -475,7 +475,7 @@ async function upsertSongs(): Promise<void> {
       artistName: 'Jamplay',
       key: 'G',
       bpm: 118,
-      createdByUserId: seedIds.users.minjun,
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
   });
 
@@ -487,7 +487,7 @@ async function upsertSongs(): Promise<void> {
       artistName: 'Jamplay',
       key: 'C',
       bpm: 92,
-      createdByUserId: seedIds.users.seoyeon,
+      createdByBandMemberId: seedIds.bandMembers.seoyeon,
     },
     create: {
       id: seedIds.songs.second,
@@ -496,7 +496,7 @@ async function upsertSongs(): Promise<void> {
       artistName: 'Jamplay',
       key: 'C',
       bpm: 92,
-      createdByUserId: seedIds.users.seoyeon,
+      createdByBandMemberId: seedIds.bandMembers.seoyeon,
     },
   });
 
@@ -508,7 +508,7 @@ async function upsertSongs(): Promise<void> {
       artistName: 'Jamplay',
       key: 'D',
       bpm: 132,
-      createdByUserId: seedIds.users.jiho,
+      createdByBandMemberId: seedIds.bandMembers.jiho,
     },
     create: {
       id: seedIds.songs.third,
@@ -517,7 +517,7 @@ async function upsertSongs(): Promise<void> {
       artistName: 'Jamplay',
       key: 'D',
       bpm: 132,
-      createdByUserId: seedIds.users.jiho,
+      createdByBandMemberId: seedIds.bandMembers.jiho,
     },
   });
 }
@@ -538,8 +538,8 @@ async function upsertSchedules(): Promise<void> {
       startAt: new Date('2026-08-03T10:00:00.000Z'),
       endAt: new Date('2026-08-03T13:00:00.000Z'),
       memo: '오프닝 두 곡 집중 점검',
-      status: 'SCHEDULED',
-      createdByUserId: seedIds.users.minjun,
+      status: 'PLANNED',
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
     create: {
       id: seedIds.schedules.summerPractice,
@@ -550,8 +550,8 @@ async function upsertSchedules(): Promise<void> {
       startAt: new Date('2026-08-03T10:00:00.000Z'),
       endAt: new Date('2026-08-03T13:00:00.000Z'),
       memo: '오프닝 두 곡 집중 점검',
-      status: 'SCHEDULED',
-      createdByUserId: seedIds.users.minjun,
+      status: 'PLANNED',
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
   });
 
@@ -565,8 +565,8 @@ async function upsertSchedules(): Promise<void> {
       startAt: new Date('2026-08-05T11:00:00.000Z'),
       endAt: new Date('2026-08-05T12:00:00.000Z'),
       memo: '무대 진입 동선과 장비 체크',
-      status: 'SCHEDULED',
-      createdByUserId: seedIds.users.minjun,
+      status: 'PLANNED',
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
     create: {
       id: seedIds.schedules.summerMeeting,
@@ -577,8 +577,8 @@ async function upsertSchedules(): Promise<void> {
       startAt: new Date('2026-08-05T11:00:00.000Z'),
       endAt: new Date('2026-08-05T12:00:00.000Z'),
       memo: '무대 진입 동선과 장비 체크',
-      status: 'SCHEDULED',
-      createdByUserId: seedIds.users.minjun,
+      status: 'PLANNED',
+      createdByBandMemberId: seedIds.bandMembers.minjun,
     },
   });
 
@@ -592,8 +592,8 @@ async function upsertSchedules(): Promise<void> {
       startAt: new Date('2026-03-05T19:00:00.000Z'),
       endAt: new Date('2026-03-05T21:00:00.000Z'),
       memo: '키 변경과 코러스 정리',
-      status: 'SCHEDULED',
-      createdByUserId: seedIds.users.seoyeon,
+      status: 'PLANNED',
+      createdByBandMemberId: seedIds.bandMembers.seoyeon,
     },
     create: {
       id: seedIds.schedules.acousticPractice,
@@ -604,8 +604,8 @@ async function upsertSchedules(): Promise<void> {
       startAt: new Date('2026-03-05T19:00:00.000Z'),
       endAt: new Date('2026-03-05T21:00:00.000Z'),
       memo: '키 변경과 코러스 정리',
-      status: 'SCHEDULED',
-      createdByUserId: seedIds.users.seoyeon,
+      status: 'PLANNED',
+      createdByBandMemberId: seedIds.bandMembers.seoyeon,
     },
   });
 }
@@ -620,15 +620,15 @@ async function upsertScheduleParticipants(): Promise<void> {
     where: { id: seedIds.scheduleParticipants.summerLeader },
     update: {
       scheduleId: seedIds.schedules.summerPractice,
-      userId: seedIds.users.minjun,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.minjun,
+      attendanceStatus: 'ATTENDING',
       note: '장비 세팅 30분 전 도착 예정',
     },
     create: {
       id: seedIds.scheduleParticipants.summerLeader,
       scheduleId: seedIds.schedules.summerPractice,
-      userId: seedIds.users.minjun,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.minjun,
+      attendanceStatus: 'ATTENDING',
       note: '장비 세팅 30분 전 도착 예정',
     },
   });
@@ -637,15 +637,15 @@ async function upsertScheduleParticipants(): Promise<void> {
     where: { id: seedIds.scheduleParticipants.summerMember },
     update: {
       scheduleId: seedIds.schedules.summerPractice,
-      userId: seedIds.users.seoyeon,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.seoyeon,
+      attendanceStatus: 'ATTENDING',
       note: '어쿠스틱 기타 지참',
     },
     create: {
       id: seedIds.scheduleParticipants.summerMember,
       scheduleId: seedIds.schedules.summerPractice,
-      userId: seedIds.users.seoyeon,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.seoyeon,
+      attendanceStatus: 'ATTENDING',
       note: '어쿠스틱 기타 지참',
     },
   });
@@ -654,15 +654,15 @@ async function upsertScheduleParticipants(): Promise<void> {
     where: { id: seedIds.scheduleParticipants.meetingLeader },
     update: {
       scheduleId: seedIds.schedules.summerMeeting,
-      userId: seedIds.users.minjun,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.minjun,
+      attendanceStatus: 'ATTENDING',
       note: '진행표 초안 공유 예정',
     },
     create: {
       id: seedIds.scheduleParticipants.meetingLeader,
       scheduleId: seedIds.schedules.summerMeeting,
-      userId: seedIds.users.minjun,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.minjun,
+      attendanceStatus: 'ATTENDING',
       note: '진행표 초안 공유 예정',
     },
   });
@@ -671,15 +671,15 @@ async function upsertScheduleParticipants(): Promise<void> {
     where: { id: seedIds.scheduleParticipants.acousticLeader },
     update: {
       scheduleId: seedIds.schedules.acousticPractice,
-      userId: seedIds.users.seoyeon,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.seoyeon,
+      attendanceStatus: 'ATTENDING',
       note: '편곡 버전 최종 확인',
     },
     create: {
       id: seedIds.scheduleParticipants.acousticLeader,
       scheduleId: seedIds.schedules.acousticPractice,
-      userId: seedIds.users.seoyeon,
-      attendanceStatus: 'ATTEND',
+      bandMemberId: seedIds.bandMembers.seoyeon,
+      attendanceStatus: 'ATTENDING',
       note: '편곡 버전 최종 확인',
     },
   });
@@ -696,19 +696,17 @@ async function upsertTeams(): Promise<void> {
     update: {
       bandId: seedIds.band,
       name: '하계공연 메인팀',
-      targetScheduleId: seedIds.schedules.summerPractice,
-      note: '여름 축제 메인 셋리스트 팀',
+      description: '여름 축제 메인 셋리스트 팀',
       status: 'ACTIVE',
-      teamLeaderUserId: seedIds.users.minjun,
+      teamLeaderBandMemberId: seedIds.bandMembers.minjun,
     },
     create: {
       id: seedIds.teams.summerMain,
       bandId: seedIds.band,
       name: '하계공연 메인팀',
-      targetScheduleId: seedIds.schedules.summerPractice,
-      note: '여름 축제 메인 셋리스트 팀',
+      description: '여름 축제 메인 셋리스트 팀',
       status: 'ACTIVE',
-      teamLeaderUserId: seedIds.users.minjun,
+      teamLeaderBandMemberId: seedIds.bandMembers.minjun,
     },
   });
 
@@ -717,19 +715,17 @@ async function upsertTeams(): Promise<void> {
     update: {
       bandId: seedIds.band,
       name: '어쿠스틱 유닛',
-      targetScheduleId: seedIds.schedules.acousticPractice,
-      note: '소극장 편성 어쿠스틱 팀',
+      description: '소극장 편성 어쿠스틱 팀',
       status: 'ACTIVE',
-      teamLeaderUserId: seedIds.users.seoyeon,
+      teamLeaderBandMemberId: seedIds.bandMembers.seoyeon,
     },
     create: {
       id: seedIds.teams.acousticUnit,
       bandId: seedIds.band,
       name: '어쿠스틱 유닛',
-      targetScheduleId: seedIds.schedules.acousticPractice,
-      note: '소극장 편성 어쿠스틱 팀',
+      description: '소극장 편성 어쿠스틱 팀',
       status: 'ACTIVE',
-      teamLeaderUserId: seedIds.users.seoyeon,
+      teamLeaderBandMemberId: seedIds.bandMembers.seoyeon,
     },
   });
 }
@@ -744,12 +740,12 @@ async function upsertTeamMembers(): Promise<void> {
     where: { id: seedIds.teamMembers.summerLeader },
     update: {
       teamId: seedIds.teams.summerMain,
-      userId: seedIds.users.minjun,
+      bandMemberId: seedIds.bandMembers.minjun,
     },
     create: {
       id: seedIds.teamMembers.summerLeader,
       teamId: seedIds.teams.summerMain,
-      userId: seedIds.users.minjun,
+      bandMemberId: seedIds.bandMembers.minjun,
     },
   });
 
@@ -757,12 +753,12 @@ async function upsertTeamMembers(): Promise<void> {
     where: { id: seedIds.teamMembers.summerMember },
     update: {
       teamId: seedIds.teams.summerMain,
-      userId: seedIds.users.jiho,
+      bandMemberId: seedIds.bandMembers.jiho,
     },
     create: {
       id: seedIds.teamMembers.summerMember,
       teamId: seedIds.teams.summerMain,
-      userId: seedIds.users.jiho,
+      bandMemberId: seedIds.bandMembers.jiho,
     },
   });
 
@@ -770,12 +766,12 @@ async function upsertTeamMembers(): Promise<void> {
     where: { id: seedIds.teamMembers.acousticLeader },
     update: {
       teamId: seedIds.teams.acousticUnit,
-      userId: seedIds.users.seoyeon,
+      bandMemberId: seedIds.bandMembers.seoyeon,
     },
     create: {
       id: seedIds.teamMembers.acousticLeader,
       teamId: seedIds.teams.acousticUnit,
-      userId: seedIds.users.seoyeon,
+      bandMemberId: seedIds.bandMembers.seoyeon,
     },
   });
 }

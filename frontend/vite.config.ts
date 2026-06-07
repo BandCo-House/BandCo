@@ -1,42 +1,48 @@
-import path from "path";
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import svgr from "vite-plugin-svgr";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import path from 'path';
+import tailwindcss from '@tailwindcss/vite';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    TanStackRouterVite({
-      target: "react",
-      routesDirectory: "./src/pages",
-      generatedRouteTree: "./src/routeTree.gen.ts",
-      autoCodeSplitting: false,
-    }),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const apiProxyTarget = env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler"]],
-      },
-    }),
+  return {
+    plugins: [
+      TanStackRouterVite({
+        target: 'react',
+        routesDirectory: './src/pages',
+        generatedRouteTree: './src/routeTree.gen.ts',
+        autoCodeSplitting: false,
+      }),
 
-    tailwindcss(),
-    svgr(),
-  ],
+      react({
+        babel: {
+          plugins: [['babel-plugin-react-compiler']],
+        },
+      }),
 
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
+      tailwindcss(),
+      svgr(),
+    ],
 
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
       },
     },
-  },
+
+    server: {
+      proxy: {
+        '/api': {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
+    },
+  };
 });

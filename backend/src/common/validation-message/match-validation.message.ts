@@ -1,4 +1,4 @@
-import { ValidationArguments } from 'class-validator';
+import type { ValidationArguments } from 'class-validator';
 
 export const matchValidationMessage = (args: ValidationArguments) => {
   const pattern = args.constraints[0];

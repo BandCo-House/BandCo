@@ -14,7 +14,7 @@ export interface SpaceDetail {
 }
 
 export interface SpaceMemberDetail {
-  userId: string;
+  bandMemberId: string;
   nickname: string;
   role: BandSpaceMembership['role'];
   status: 'ACTIVE' | 'INACTIVE';

@@ -20,5 +20,9 @@ export const Route = createFileRoute('/band/$bandId/')({
 
 // 밴드 상세 라우트 전용 화면
 function BandDetailRoutePage() {
-  return <div className="flex-1 overflow-hidden p-6"></div>;
+  return (
+    <div className="flex-1 overflow-hidden p-6">
+      <span className="sr-only">BandDetailPage</span>
+    </div>
+  );
 }

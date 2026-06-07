@@ -1,4 +1,4 @@
-import { ValidationArguments } from 'class-validator';
+import type { ValidationArguments } from 'class-validator';
 
 export const lengthValidationMessage = (args: ValidationArguments) => {
   if (args.constraints.length === 2) {

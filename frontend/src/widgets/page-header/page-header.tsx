@@ -1,133 +1,92 @@
 import type { ReactNode } from 'react';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { cn } from '@/shared/lib/utils';
-import { BackButton } from '@/shared/ui/back-button';
-import { Button } from '@/shared/ui/button';
-import type { HeaderTab } from './types';
 
 export type PageHeaderProps = {
-  title: string;
-  subtitle?: string;
-  brandLabel?: string;
+  title: string | (() => ReactNode);
+  titleSize?: 'md' | 'lg';
   showBack?: boolean;
   onBack?: () => void;
-  meta?: string[];
-  tabs?: HeaderTab[];
-  rightActionLabel?: string;
-  onRightActionClick?: () => void;
   rightContent?: ReactNode;
-  className?: string;
+  heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
+  renderRight?: () => ReactNode;
+};
+
+const HEIGHT_CLASSES = {
+  xs: 'min-h-9',
+  sm: 'min-h-14',
+  md: 'min-h-[60px]',
+  lg: 'min-h-16',
 };
 
 /**
- * 라우트 레벨에서 공통으로 사용하는 표준 페이지 헤더
+ * 라우트 레벨에서 공통으로 사용하는 표준 페이지 헤더 (높이 및 타이틀 커스텀 확장)
  */
 export const PageHeader = ({
   title,
-  subtitle,
-  brandLabel,
+  titleSize = 'lg',
   showBack = false,
   onBack,
-  meta,
-  tabs,
-  rightActionLabel,
-  onRightActionClick,
   rightContent,
-  className,
+  heightVariant = 'lg',
+  renderRight,
 }: PageHeaderProps) => {
+  const renderTitleArea = () => {
+    if (!title) return null;
+
+    // Case 1: 타이틀이 함수(컴포넌트 렌더러)인 경우 -> 기본 h1 스타일 무시하고 통째로 렌더링
+    if (typeof title === 'function') {
+      return <div className="min-w-0 flex-1">{title()}</div>;
+    }
+
+    // Case 2: 타이틀이 일반 텍스트(string)인 경우
+    const titleClass = cn(
+      'min-w-0 truncate text-grey-50',
+      titleSize === 'md' ? 'typo-lg-sb' : 'typo-xl-sb',
+    );
+
+    return <h1 className={titleClass}>{title}</h1>;
+  };
+
   return (
     <header
-      className={cn(
-        'fixed inset-x-0 top-0 z-40 bg-background/72 shadow-xl/5 backdrop-blur-xl',
-        className,
-      )}
+      className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 backdrop-blur-sm"
+      style={{
+        background:
+          'linear-gradient(135deg, var(--gradient-top) 0%, var(--gradient-bottom) 100%)',
+        backgroundAttachment: 'fixed',
+      }}
     >
-      <div className="mx-auto grid min-h-24 w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-6 sm:gap-5">
-        <div className="min-w-0 flex items-center gap-3 sm:gap-4">
-          {!showBack ? (
-            <span
-              aria-hidden="true"
-              className="size-11 shrink-0 rounded-xl bg-foreground"
-            />
-          ) : null}
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-3 sm:gap-4">
-              {showBack ? (
-                <BackButton
-                  label="뒤로"
-                  variant="ghost"
-                  className="typo-sm-sb"
-                  onClick={onBack}
-                />
-              ) : null}
-
-              <div className="min-w-0">
-                {brandLabel ? (
-                  <p className="mb-1 typo-xs-sb text-muted">
-                    {brandLabel}
-                  </p>
-                ) : null}
-                <h1
-                  className={cn(
-                    'typo-2xl-b truncate',
-                    title === 'BandCo' ? 'sr-only sm:not-sr-only' : undefined,
-                  )}
-                >
-                  {title}
-                </h1>
-                {subtitle ? (
-                  <p className="typo-base-r mt-1 text-muted">
-                    {subtitle}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            {meta && meta.length > 0 ? (
-              <div className="typo-sm-m mt-4 flex flex-wrap items-center gap-4 text-muted">
-                {meta.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="min-w-0">{rightContent}</div>
-
-        <div className="flex items-center justify-end gap-5">
-          {tabs && tabs.length > 0 ? (
-            <nav className="hidden items-center gap-2 md:flex">
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.key}
-                  type="button"
-                  variant={tab.active ? 'default' : 'outline'}
-                  className={cn(
-                    'typo-sm-sb h-9 rounded-lg px-4',
-                    tab.active
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'bg-transparent text-foreground hover:bg-muted',
-                  )}
-                  onClick={tab.onClick}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </nav>
-          ) : null}
-
-          {rightActionLabel ? (
-            <Button
+      <div
+        className={cn(
+          'mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 transition-all duration-200',
+          HEIGHT_CLASSES[heightVariant],
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          {showBack ? (
+            <button
               type="button"
-              variant="outline"
-              className="typo-sm-sb h-9 rounded-lg border border-border px-4"
-              onClick={onRightActionClick}
+              aria-label="뒤로 가기"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-overlay-24 focus-visible:outline-2 focus-visible:outline-key"
+              onClick={onBack}
             >
-              {rightActionLabel}
-            </Button>
+              <ArrowRightIcon
+                aria-hidden="true"
+                data-slot="svg-icon"
+                className="size-6 rotate-180"
+              />
+            </button>
           ) : null}
+
+          {renderTitleArea()}
         </div>
+
+        {renderRight || rightContent ? (
+          <div className="flex min-w-0 items-center justify-end gap-2">
+            {renderRight ? renderRight() : rightContent}
+          </div>
+        ) : null}
       </div>
     </header>
   );
