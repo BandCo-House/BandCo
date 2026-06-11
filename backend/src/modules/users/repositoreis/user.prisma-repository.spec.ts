@@ -78,6 +78,17 @@ describe('UsersPrismaRepository', () => {
       mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-001', email: null });
       await expect(repository.findAuthUserById('user-001')).resolves.toBeNull();
     });
+
+    it('tx가 전달되면 tx 클라이언트로 findFirst를 호출한다', async () => {
+      const txClient = { user: { findFirst: jest.fn().mockResolvedValue(userRecord) } };
+      const result = await repository.findAuthUserById('user-001', txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.user.findFirst).toHaveBeenCalledWith({
+        where: { id: 'user-001', deletedAt: null, status: 'ACTIVE' },
+        select: { id: true, email: true },
+      });
+      expect(mockPrisma.user.findFirst).not.toHaveBeenCalled();
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com' });
+    });
   });
 
   describe('findUserForPasswordAuth', () => {
@@ -94,6 +105,19 @@ describe('UsersPrismaRepository', () => {
     it('email이 없으면 null을 반환한다', async () => {
       mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-001', email: null, passwordHash: 'hash' });
       await expect(repository.findUserForPasswordAuth('test@example.com')).resolves.toBeNull();
+    });
+
+    it('tx가 전달되면 tx 클라이언트로 findFirst를 호출한다', async () => {
+      const txClient = {
+        user: { findFirst: jest.fn().mockResolvedValue({ id: 'user-001', email: 'test@example.com', passwordHash: 'hash' }) },
+      };
+      const result = await repository.findUserForPasswordAuth('test@example.com', txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.user.findFirst).toHaveBeenCalledWith({
+        where: { email: 'test@example.com', deletedAt: null, status: 'ACTIVE' },
+        select: { id: true, email: true, passwordHash: true },
+      });
+      expect(mockPrisma.user.findFirst).not.toHaveBeenCalled();
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com', passwordHash: 'hash' });
     });
   });
 
