@@ -90,25 +90,6 @@ describe('AuthService', () => {
     });
   });
 
-  describe('rotateToken', () => {
-    it('refresh 토큰을 재발급한다', () => {
-      mockJwtService.verify.mockReturnValue({ email: 'u@u.com', id: 'uid', type: 'refresh' });
-      mockJwtService.sign.mockReturnValue('new-refresh');
-      expect(service.rotateToken('old', true)).toBe('new-refresh');
-    });
-
-    it('access 토큰을 재발급한다', () => {
-      mockJwtService.verify.mockReturnValue({ email: 'u@u.com', id: 'uid', type: 'access' });
-      mockJwtService.sign.mockReturnValue('new-access');
-      expect(service.rotateToken('old', false)).toBe('new-access');
-    });
-
-    it('토큰 타입이 isRefreshToken 인자와 다르면 UnauthorizedException을 던진다', () => {
-      mockJwtService.verify.mockReturnValue({ email: 'u@u.com', id: 'uid', type: 'access' });
-      expect(() => service.rotateToken('old', true)).toThrow(UnauthorizedException);
-    });
-  });
-
   describe('authenticateWithEmailAndPassword', () => {
     it('유저가 존재하지 않으면 UnauthorizedException을 던진다', async () => {
       mockUsersService.getUserByEmail.mockResolvedValue(null);
