@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   async authenticateWithEmailAndPassword(email: string, password: string): Promise<{ id: string; email: string }> {
-    const user = await this.usersService.getUserByEmail(email);
+    const user = await this.usersService.getUserForPasswordAuth(email);
 
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 유저입니다.');
