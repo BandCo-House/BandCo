@@ -7,8 +7,19 @@ import type { GetUserProfileResult } from '../types/user-profile.type';
 
 export const USERS_REPOSITORY = Symbol('USERS_REPOSITORY');
 
+export type AuthUser = {
+  id: string;
+  email: string;
+};
+
+export type PasswordAuthUser = AuthUser & {
+  passwordHash: string | null;
+};
+
 export interface UsersRepository {
-  findByEmail(email: string, tx?: Prisma.TransactionClient): Promise<User | null>;
+  findByEmail(email: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
+  findAuthUserById(id: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
+  findUserForPasswordAuth(email: string, tx?: Prisma.TransactionClient): Promise<PasswordAuthUser | null>;
   createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient): Promise<User>;
   findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult>;
   findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null>;

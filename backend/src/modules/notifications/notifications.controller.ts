@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import type { User } from 'src/generated/prisma';
+import type { AuthUser } from 'src/modules/users/repositoreis/user.repository';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -27,7 +27,7 @@ export class NotificationsController {
   @ApiOperation({ summary: '알림 목록 조회' })
   @ApiResponse({ status: 200, description: '알림 목록 조회 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async getNotifications(@Req() req: { user: User }, @Query() query: GetNotificationsQueryDto): Promise<ApiSuccessResponse<GetNotificationsResult>> {
+  async getNotifications(@Req() req: { user: AuthUser }, @Query() query: GetNotificationsQueryDto): Promise<ApiSuccessResponse<GetNotificationsResult>> {
     const result = await this.notificationsService.getNotifications(req.user.id, query);
     return createSuccessResponse('알림 목록 조회 성공', result);
   }
@@ -36,7 +36,7 @@ export class NotificationsController {
   @ApiOperation({ summary: '전체 알림 읽음 처리' })
   @ApiResponse({ status: 200, description: '전체 알림 읽음 처리 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async markAllNotificationsAsRead(@Req() req: { user: User }): Promise<ApiSuccessResponse<MarkAllReadResult>> {
+  async markAllNotificationsAsRead(@Req() req: { user: AuthUser }): Promise<ApiSuccessResponse<MarkAllReadResult>> {
     const result = await this.notificationsService.markAllNotificationsAsRead(req.user.id);
     return createSuccessResponse('전체 알림 읽음 처리 성공', result);
   }
@@ -46,7 +46,7 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '다건 알림 읽음 처리 성공' })
   @ApiResponse({ status: 400, description: '잘못된 요청' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async markManyNotificationsAsRead(@Req() req: { user: User }, @Body() dto: MarkManyReadDto): Promise<ApiSuccessResponse<MarkManyReadResult>> {
+  async markManyNotificationsAsRead(@Req() req: { user: AuthUser }, @Body() dto: MarkManyReadDto): Promise<ApiSuccessResponse<MarkManyReadResult>> {
     const result = await this.notificationsService.markManyNotificationsAsRead(req.user.id, dto.notificationIds);
     return createSuccessResponse('다건 알림 읽음 처리 성공', result);
   }
@@ -58,7 +58,7 @@ export class NotificationsController {
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 404, description: '알림을 찾을 수 없음' })
   async markNotificationAsRead(
-    @Req() req: { user: User },
+    @Req() req: { user: AuthUser },
     @Param('notificationId') notificationId: string,
   ): Promise<ApiSuccessResponse<MarkNotificationReadResult>> {
     const result = await this.notificationsService.markNotificationAsRead(req.user.id, notificationId);
@@ -71,7 +71,7 @@ export class NotificationsController {
   @ApiResponse({ status: 400, description: '잘못된 요청' })
   @ApiResponse({ status: 401, description: '인증 실패' })
   async deleteManyNotifications(
-    @Req() req: { user: User },
+    @Req() req: { user: AuthUser },
     @Body() dto: DeleteManyNotificationsDto,
   ): Promise<ApiSuccessResponse<DeleteManyNotificationsResult>> {
     const result = await this.notificationsService.deleteManyNotifications(req.user.id, dto.notificationIds);
@@ -85,7 +85,7 @@ export class NotificationsController {
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 404, description: '알림을 찾을 수 없음' })
   async deleteNotification(
-    @Req() req: { user: User },
+    @Req() req: { user: AuthUser },
     @Param('notificationId') notificationId: string,
   ): Promise<ApiSuccessResponse<DeleteNotificationResult>> {
     const result = await this.notificationsService.deleteNotification(req.user.id, notificationId);

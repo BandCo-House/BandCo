@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   async authenticateWithEmailAndPassword(email: string, password: string): Promise<{ id: string; email: string }> {
-    const user = await this.usersService.getUserByEmail(email);
+    const user = await this.usersService.getUserForPasswordAuth(email);
 
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 유저입니다.');
@@ -86,15 +86,6 @@ export class AuthService {
     });
   }
 
-  rotateToken(token: string, isRefreshToken: boolean) {
-    const decoded = this.jwtService.verify(token, {
-      secret: 'jamplay',
-    }) as JwtPayload;
-    if (decoded.type !== (isRefreshToken ? 'refresh' : 'access')) {
-      throw new UnauthorizedException('재발급은 refresh 토큰만 가능합니다.');
-    }
-    return this.signToken(decoded.email, decoded.id, isRefreshToken);
-  }
   extractTokenFromHeader(rawToken: string, isBearer: boolean) {
     const splitToken = rawToken.split(' ');
     const prefix = isBearer ? 'Bearer' : 'Basic';

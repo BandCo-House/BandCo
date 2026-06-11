@@ -12,7 +12,7 @@ const mockAuthService = {
 };
 
 const mockUsersService = {
-  getUserByEmail: jest.fn(),
+  getAuthUserById: jest.fn(),
 };
 
 const createContext = (authHeader?: string) => {
@@ -27,8 +27,8 @@ const createContext = (authHeader?: string) => {
 
 const setupValidBearer = (tokenType: 'access' | 'refresh') => {
   mockAuthService.extractTokenFromHeader.mockReturnValue('token');
-  mockAuthService.verifyToken.mockReturnValue({ email: 'u@u.com', type: tokenType });
-  mockUsersService.getUserByEmail.mockResolvedValue({ id: 'uid', email: 'u@u.com' });
+  mockAuthService.verifyToken.mockReturnValue({ id: 'uid', email: 'u@u.com', type: tokenType });
+  mockUsersService.getAuthUserById.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
 };
 
 describe('BearerTokenGuard', () => {
@@ -51,8 +51,8 @@ describe('BearerTokenGuard', () => {
   it('토큰의 유저가 존재하지 않으면 UnauthorizedException을 던진다', async () => {
     const { ctx } = createContext('Bearer token');
     mockAuthService.extractTokenFromHeader.mockReturnValue('token');
-    mockAuthService.verifyToken.mockReturnValue({ email: 'ghost@u.com', type: 'access' });
-    mockUsersService.getUserByEmail.mockResolvedValue(null);
+    mockAuthService.verifyToken.mockReturnValue({ id: 'ghost-id', email: 'ghost@u.com', type: 'access' });
+    mockUsersService.getAuthUserById.mockResolvedValue(null);
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
   });
@@ -67,6 +67,7 @@ describe('BearerTokenGuard', () => {
     expect(request.token).toBe('token');
     expect(request.tokenType).toBe('access');
     expect(request.user).toEqual({ id: 'uid', email: 'u@u.com' });
+    expect(mockUsersService.getAuthUserById).toHaveBeenCalledWith('uid');
   });
 });
 

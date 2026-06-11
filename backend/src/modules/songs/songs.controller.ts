@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
-import type { User } from '../../generated/prisma';
+import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { CreateSongBodyDto } from './dto/create-song.dto';
 import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
@@ -17,7 +17,7 @@ import type { UpdateSongResult } from './types/update-song-result.type';
 import { SongsService } from './songs.service';
 
 interface AuthenticatedRequest {
-  user: User;
+  user: AuthUser;
 }
 
 @ApiTags('곡')

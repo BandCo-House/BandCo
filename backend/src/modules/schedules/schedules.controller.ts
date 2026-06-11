@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuard
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
-import type { User } from '../../generated/prisma';
+import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { CreateScheduleBodyDto } from './dto/create-schedule.dto';
 import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
@@ -16,7 +16,7 @@ import type { UpdateScheduleResult } from './types/update-schedule-result.type';
 import { SchedulesService } from './schedules.service';
 
 interface AuthenticatedRequest {
-  user: User;
+  user: AuthUser;
 }
 
 @Controller()

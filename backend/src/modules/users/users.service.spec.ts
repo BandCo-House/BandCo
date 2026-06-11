@@ -9,7 +9,7 @@ import type { GetUsersResult } from './types/user-list.type';
 import type { GetUserProfileResult } from './types/user-profile.type';
 import { UsersService } from './users.service';
 
-const mockUser = { id: 'user-001', email: 'test@example.com' } as User;
+const mockUser = { id: 'user-001', email: 'test@example.com' };
 
 const mockProfile: GetUserProfileResult = {
   user: { id: 'user-001', email: 'test@example.com', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00.000Z' },
@@ -28,6 +28,12 @@ const mockListResult: GetUsersResult = {
 const repositoryStub: UsersRepository = {
   async findByEmail(email) {
     return email === 'test@example.com' ? mockUser : null;
+  },
+  async findAuthUserById(id) {
+    return id === 'user-001' ? mockUser : null;
+  },
+  async findUserForPasswordAuth(email) {
+    return email === 'test@example.com' ? { id: 'user-001', email: 'test@example.com', passwordHash: 'hash' } : null;
   },
   async createUserWithEmail(email) {
     return { ...mockUser, email } as User;
@@ -62,6 +68,30 @@ describe('UsersService', () => {
 
     it('이메일이 없으면 null을 반환한다', async () => {
       const result = await service.getUserByEmail('none@example.com');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getAuthUserById', () => {
+    it('id가 존재하면 인증용 유저 정보를 반환한다', async () => {
+      const result = await service.getAuthUserById('user-001');
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com' });
+    });
+
+    it('id가 없으면 null을 반환한다', async () => {
+      const result = await service.getAuthUserById('unknown-id');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getUserForPasswordAuth', () => {
+    it('이메일이 존재하면 passwordHash를 포함한 로그인용 유저 정보를 반환한다', async () => {
+      const result = await service.getUserForPasswordAuth('test@example.com');
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com', passwordHash: 'hash' });
+    });
+
+    it('이메일이 없으면 null을 반환한다', async () => {
+      const result = await service.getUserForPasswordAuth('none@example.com');
       expect(result).toBeNull();
     });
   });
