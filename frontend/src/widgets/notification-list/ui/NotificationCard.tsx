@@ -1,7 +1,10 @@
+import { useState } from 'react';
+import { MoreVertical } from 'lucide-react';
 import type {
   NotificationItem,
   NotificationType,
 } from '@/entities/notification/model/types';
+import { NotificationCardMenuSheet } from './NotificationCardMenuSheet';
 
 type NotificationCardProps = {
   noti: NotificationItem;
@@ -14,6 +17,8 @@ type NotificationCardProps = {
     targetPath?: string,
     isRead?: boolean,
   ) => void;
+  onDelete: (notificationId: string) => void;
+  onMarkAsRead: (notificationId: string) => void;
 };
 
 export const NotificationCard = ({
@@ -22,7 +27,10 @@ export const NotificationCard = ({
   isSelected,
   onToggleSelect,
   onAction,
+  onDelete,
+  onMarkAsRead,
 }: NotificationCardProps) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isClickable = isEditMode || noti.type !== 'INVITE';
 
   const handleClick = isClickable
@@ -54,12 +62,12 @@ export const NotificationCard = ({
             }
           : undefined
       }
-      className={`relative flex gap-3 rounded-lg border p-4 transition-all duration-200 ${
+      className={`relative flex gap-3 rounded-lg border border-[rgba(39,43,34,0.8)] p-4 transition-all duration-200 ${
         isClickable ? 'cursor-pointer active:scale-[0.995]' : ''
       } ${
         !noti.isRead
-          ? 'border-border bg-surface-1'
-          : 'border-border bg-surface-3 opacity-75'
+          ? 'bg-[rgba(220,226,249,0.4)]'
+          : 'bg-[rgba(101,99,122,0.48)]'
       }`}
     >
       {/* 편집 모드 체크박스 */}
@@ -91,23 +99,25 @@ export const NotificationCard = ({
       )}
 
       {/* 알림 상세 텍스트 */}
-      <div className="flex flex-1 flex-col justify-center gap-1">
+      <div className="flex flex-1 flex-col justify-center gap-0.5">
         <h3
-          className={`typo-sm-b ${
-            !noti.isRead ? 'text-foreground' : 'text-grey-200'
+          className={`typo-sm-b pr-6 ${
+            !noti.isRead ? 'text-white' : 'text-[#C6C6C8]'
           }`}
         >
           {noti.title}
         </h3>
-        <p className="line-clamp-1 typo-xs-m text-grey-300">
+        <p
+          className={`line-clamp-1 typo-xs-m pr-6 ${
+            !noti.isRead ? 'text-[#C6C6C8]' : 'text-[#9D9D9F]'
+          }`}
+        >
           {noti.description}
         </p>
 
         {/* INVITE 전용 액션 버튼 영역 */}
         {noti.type === 'INVITE' && !isEditMode && (
-          <div className="mt-2 flex items-center gap-4 self-end">
-            {/* 초대장 보기 — primary-light(#9CA578) 텍스트 */}
-
+          <div className="mt-3 flex items-center gap-4 self-end">
             <button
               type="button"
               onClick={(e) => {
@@ -119,34 +129,62 @@ export const NotificationCard = ({
                   noti.isRead,
                 );
               }}
-              className="typo-xs-m text-primary-light"
+              className="typo-xs-m text-[#9CA578] transition-opacity hover:opacity-80"
             >
               초대장 보기
             </button>
-            {/* 수락 버튼 — primary(#ECFCAB) 테두리+텍스트 */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAction(
-                  noti.notificationId,
-                  noti.type,
-                  noti.targetPath,
-                  noti.isRead,
-                );
-              }}
-              className="rounded-full border border-primary px-4 py-1.5 typo-xs-m text-primary transition-opacity hover:opacity-80"
-            >
-              수락
-            </button>
+
+            {/* 수락 / 수락됨 버튼 분기 */}
+            {!noti.isRead ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction(
+                    noti.notificationId,
+                    noti.type,
+                    noti.targetPath,
+                    noti.isRead,
+                  );
+                }}
+                className="rounded-full border border-primary px-4 py-1.5 typo-xs-m text-primary transition-all hover:bg-primary hover:text-black"
+              >
+                수락
+              </button>
+            ) : (
+              <div
+                className="rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-m text-[#C6C6C8] flex items-center gap-1 cursor-default select-none"
+              >
+                수락됨
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* 안 읽은 점 (우측 상단) */}
-      {!noti.isRead && !isEditMode && (
-        <span className="absolute top-4 right-4 h-1.5 w-1.5 rounded-full bg-destructive" />
+      {/* 우측 상단 세로 삼점 메뉴 버튼 */}
+      {!isEditMode && (
+        <button
+          type="button"
+          aria-label="알림 메뉴 열기"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(true);
+          }}
+          className="absolute top-4 right-4 text-grey-200 hover:text-white transition-colors"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
       )}
+
+      {/* 바텀 모달 (분리된 Sheet 활용) */}
+      <NotificationCardMenuSheet
+        isOpen={isMenuOpen}
+        onOpenChange={setIsMenuOpen}
+        noti={noti}
+        onDelete={() => onDelete(noti.notificationId)}
+        onMarkAsRead={() => onMarkAsRead(noti.notificationId)}
+      />
     </div>
   );
 };

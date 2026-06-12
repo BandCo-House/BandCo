@@ -148,7 +148,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       >
         {/* 탭 네비게이션 */}
         <div className="pt-2 pb-0">
-          <div className="flex w-full gap-4 px-0">
+          <div className="flex w-full gap-4 px-5">
             {TAB_CONFIGS.map(({ key, label }) => {
               const isActive = tab === key;
               const hasUnreadForTab =
@@ -161,15 +161,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   onClick={() =>
                     navigate({ to: '/notifications', search: { tab: key } })
                   }
-                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 typo-sm-sb transition-all duration-200 ${
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 transition-all duration-200 ${
                     isActive
-                      ? 'bg-primary text-secondary-surface shadow-sm'
-                      : 'bg-transparent text-grey-100 hover:text-white'
+                      ? 'h-[34px] bg-primary typo-base-b text-black shadow-sm'
+                      : 'h-[30px] bg-transparent typo-sm-b text-primary/60 hover:text-primary'
                   }`}
                 >
                   {label}
                   {!isActive && hasUnreadForTab && (
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" />
+                    <span className="absolute top-2 right-4 h-[5px] w-[5px] shrink-0 rounded-full bg-[#D6705C]" />
                   )}
                 </button>
               );
@@ -179,12 +179,12 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
 
         {/* 모두 읽음 버튼 바 */}
         {!isLoading && !isError && hasNotifications && !isEditMode && (
-          <div className="mt-0 flex items-center justify-end py-2">
+          <div className="mt-2 flex items-center justify-end px-5 pb-4">
             <button
               type="button"
               onClick={handleMarkAllAsRead}
               disabled={markAllAsReadMutation.isPending || !hasUnread}
-              className="typo-xs-m text-grey-300 disabled:opacity-40"
+              className="rounded-full border border-grey-300 px-4 py-1.5 typo-xs-m text-grey-300 transition-all hover:bg-grey-300 hover:text-black disabled:opacity-40"
             >
               모두 읽음
             </button>
@@ -215,7 +215,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
           <p className="typo-base-r">도착한 알림이 없습니다.</p>
         </div>
       ) : (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {notifications.map((noti) => (
             <NotificationCard
               key={noti.notificationId}
@@ -224,6 +224,13 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
               isSelected={selectedIds.has(noti.notificationId)}
               onToggleSelect={handleToggleSelect}
               onAction={handleNotificationAction}
+              onDelete={(id) => deleteManyMutation.mutate([id])}
+              onMarkAsRead={(id) =>
+                markAsReadMutation.mutate({
+                  notificationId: id,
+                  type: noti.type,
+                })
+              }
             />
           ))}
         </div>
