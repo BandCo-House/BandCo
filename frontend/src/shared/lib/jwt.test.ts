@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getUserIdFromToken } from './jwt';
+import { getUserIdFromToken, isTokenExpired } from './jwt';
 
 // Mock JWT payload: {"email":"test@example.com","id":"user-001","type":"access"}
 const mockToken = 'header.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpZCI6InVzZXItMDAxIiwidHlwZSI6ImFjY2VzcyJ9.signature';
@@ -40,5 +40,37 @@ describe('getUserIdFromToken', () => {
 
   it('유효하지 않은 토큰 형식이면 null을 반환한다', () => {
     expect(getUserIdFromToken('invalid-token')).toBeNull();
+  });
+});
+
+describe('isTokenExpired', () => {
+  it('토큰의 exp가 현재 시간보다 미래이면 false를 반환한다', () => {
+    // 1시간 후 만료되는 토큰 (현재 시각 2026-06-12 기준)
+    const futureTime = Math.floor(Date.now() / 1000) + 3600;
+    const futureToken = `header.${window.btoa(JSON.stringify({ exp: futureTime }))}.signature`;
+    expect(isTokenExpired(futureToken)).toBe(false);
+  });
+
+  it('토큰의 exp가 현재 시간보다 과거이면 true를 반환한다', () => {
+    // 1시간 전 만료된 토큰
+    const pastTime = Math.floor(Date.now() / 1000) - 3600;
+    const pastToken = `header.${window.btoa(JSON.stringify({ exp: pastTime }))}.signature`;
+    expect(isTokenExpired(pastToken)).toBe(true);
+  });
+
+  it('토큰에 exp가 없으면 true(만료됨)를 반환한다', () => {
+    const noExpToken = `header.${window.btoa(JSON.stringify({ id: 'user-001' }))}.signature`;
+    expect(isTokenExpired(noExpToken)).toBe(true);
+  });
+
+  it('토큰의 exp가 숫자가 아니면 true를 반환한다', () => {
+    const invalidExpToken = `header.${window.btoa(JSON.stringify({ exp: 'invalid' }))}.signature`;
+    expect(isTokenExpired(invalidExpToken)).toBe(true);
+  });
+
+  it('토큰이 null이거나 잘못된 형식이면 true를 반환한다', () => {
+    expect(isTokenExpired(null)).toBe(true);
+    expect(isTokenExpired('')).toBe(true);
+    expect(isTokenExpired('invalid-token')).toBe(true);
   });
 });

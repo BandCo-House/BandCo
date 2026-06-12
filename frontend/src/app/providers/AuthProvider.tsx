@@ -6,19 +6,32 @@ import {
 } from '@/app/providers/auth-context';
 import {
   getAccessToken,
+  getRefreshToken,
   setTokens,
   clearTokens,
 } from '@/shared/lib/auth-storage';
-import { getUserIdFromToken } from '@/shared/lib/jwt';
+import { getUserIdFromToken, isTokenExpired } from '@/shared/lib/jwt';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserAccess>(() => {
-    const token = getAccessToken();
-    const userId = getUserIdFromToken(token);
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+    
+    const userId = getUserIdFromToken(accessToken);
+    const isAccessExpired = isTokenExpired(accessToken);
+    const isRefreshExpired = isTokenExpired(refreshToken);
+    
+    // 액세스 토큰이 유효하거나, 혹은 액세스 토큰은 만료되었으나 리프레시 토큰이 만료되지 않고 존재하는 경우 로그인 유지
+    const isLoggedIn = !!userId && (!isAccessExpired || (!!refreshToken && !isRefreshExpired));
+    
+    if (accessToken && (isAccessExpired && (!refreshToken || isRefreshExpired))) {
+      clearTokens();
+    }
+    
     return {
-      isLoggedIn: !!userId,
+      isLoggedIn,
       isAdmin: false,
-      id: userId,
+      id: isLoggedIn ? userId : null,
     };
   });
 

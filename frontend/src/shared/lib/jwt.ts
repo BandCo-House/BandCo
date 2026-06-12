@@ -1,8 +1,10 @@
-/**
- * JWT Access Token에서 유저 ID를 파싱합니다.
- * 토큰이 유효하지 않거나 id 필드가 없으면 null을 반환합니다.
- */
-export const getUserIdFromToken = (token: string | null): string | null => {
+interface JwtPayload {
+  id?: string;
+  exp?: number;
+  [key: string]: unknown;
+}
+
+export const decodeToken = (token: string | null): JwtPayload | null => {
   if (!token) return null;
   try {
     const base64Url = token.split('.')[1];
@@ -19,9 +21,22 @@ export const getUserIdFromToken = (token: string | null): string | null => {
         .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join(''),
     );
-    const payload = JSON.parse(jsonPayload) as { id?: unknown };
-    return typeof payload.id === 'string' ? payload.id : null;
+    return JSON.parse(jsonPayload) as JwtPayload;
   } catch {
     return null;
   }
 };
+
+export const getUserIdFromToken = (token: string | null): string | null => {
+  const payload = decodeToken(token);
+  return payload && typeof payload.id === 'string' ? payload.id : null;
+};
+
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  const payload = decodeToken(token);
+  if (!payload) return true;
+  if (payload.exp === undefined || typeof payload.exp !== 'number') return true;
+  return payload.exp * 1000 < Date.now();
+};
+

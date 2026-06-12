@@ -10,9 +10,15 @@ const MOCK_ACCESS_TOKEN =
   '.eyJpZCI6InVzZXItMDAxIiwiZW1haWwiOiJtZW1iZXJAZXhhbXBsZS5jb20iLCJ0eXBlIjoiYWNjZXNzIn0' +
   '.mock-signature';
 
+// payload: {"id":"user-001","email":"member@example.com","type":"refresh","exp":4102444800} (2100년 만료)
+const MOCK_REFRESH_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9' +
+  '.eyJpZCI6InVzZXItMDAxIiwiZW1haWwiOiJtZW1iZXJAZXhhbXBsZS5jb20iLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6NDEwMjQ0NDgwMH0' +
+  '.mock-signature';
+
 const mockTokenResponse: TokenResponse = {
   accessToken: MOCK_ACCESS_TOKEN,
-  refreshToken: 'mock-refresh-token',
+  refreshToken: MOCK_REFRESH_TOKEN,
 };
 
 /**
@@ -105,7 +111,13 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json({ refreshToken: 'mock-rotated-refresh-token' });
+    // payload: {"id":"user-001","email":"member@example.com","type":"refresh","exp":4102444800} (2100년 만료)
+    const mockRotatedRefreshToken =
+      'eyJhbGciOiJIUzI1NiJ9' +
+      '.eyJpZCI6InVzZXItMDAxIiwiZW1haWwiOiJtZW1iZXJAZXhhbXBsZS5jb20iLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6NDEwMjQ0NDgwMH0' +
+      '.mock-signature';
+
+    return HttpResponse.json({ refreshToken: mockRotatedRefreshToken });
   }),
 
   // 이메일 로그인 (Basic Auth)

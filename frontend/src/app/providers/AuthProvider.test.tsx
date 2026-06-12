@@ -2,16 +2,17 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './auth-context';
-import { getAccessToken } from '@/shared/lib/auth-storage';
+import { getAccessToken, getRefreshToken, clearTokens } from '@/shared/lib/auth-storage';
 
 vi.mock('@/shared/lib/auth-storage', () => ({
   getAccessToken: vi.fn(),
+  getRefreshToken: vi.fn(),
   setTokens: vi.fn(),
   clearTokens: vi.fn(),
 }));
 
-// Mock JWT payload: {"email":"test@example.com","id":"user-001","type":"access"}
-const mockToken = 'header.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpZCI6InVzZXItMDAxIiwidHlwZSI6ImFjY2VzcyJ9.signature';
+// Mock JWT payload: {"email":"test@example.com","id":"user-001","type":"access","exp":미래}
+const mockToken = `header.${window.btoa(JSON.stringify({ email: 'test@example.com', id: 'user-001', type: 'access', exp: Math.floor(Date.now() / 1000) + 3600 })).replace(/=/g, '')}.signature`;
 
 const TestComponent = () => {
   const auth = useAuth();
@@ -36,8 +37,9 @@ describe('AuthProvider JWT Decoding', () => {
   });
 
   it('패딩이 유실된 Base64URL 토큰(길이 % 4 == 2)에서도 ID를 정상적으로 파싱한다', () => {
-    // {"id":"usr1"} -> base64url "eyJpZCI6InVzcjEifQ" (length: 18)
-    const tokenLen2 = 'header.eyJpZCI6InVzcjEifQ.signature';
+    // {"id":"usr1","exp":미래} -> btoa 변환 후 패딩(=) 유실 모의
+    const base64Len2 = window.btoa(JSON.stringify({ id: 'usr1', exp: Math.floor(Date.now() / 1000) + 3600 })).replace(/=/g, '');
+    const tokenLen2 = `header.${base64Len2}.signature`;
     vi.mocked(getAccessToken).mockReturnValue(tokenLen2);
     render(
       <AuthProvider>
@@ -49,8 +51,9 @@ describe('AuthProvider JWT Decoding', () => {
   });
 
   it('패딩이 유실된 Base64URL 토큰(길이 % 4 == 3)에서도 ID를 정상적으로 파싱한다', () => {
-    // {"id":"ab"} -> base64url "eyJpZCI6ImFiIn0" (length: 15)
-    const tokenLen3 = 'header.eyJpZCI6ImFiIn0.signature';
+    // {"id":"ab","exp":미래} -> btoa 변환 후 패딩(=) 유실 모의
+    const base64Len3 = window.btoa(JSON.stringify({ id: 'ab', exp: Math.floor(Date.now() / 1000) + 3600 })).replace(/=/g, '');
+    const tokenLen3 = `header.${base64Len3}.signature`;
     vi.mocked(getAccessToken).mockReturnValue(tokenLen3);
     render(
       <AuthProvider>
@@ -85,5 +88,66 @@ describe('AuthProvider JWT Decoding', () => {
     );
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');
     expect(screen.getByTestId('user-id').textContent).toBe('NULL');
+  });
+});
+
+describe('AuthProvider Token Expiration Logic', () => {
+  const mockValidToken = `header.${window.btoa(JSON.stringify({ id: 'user-001', exp: Math.floor(Date.now() / 1000) + 3600 }))}.signature`;
+  const mockExpiredToken = `header.${window.btoa(JSON.stringify({ id: 'user-001', exp: Math.floor(Date.now() / 1000) - 3600 }))}.signature`;
+  const mockValidRefreshToken = `header.${window.btoa(JSON.stringify({ id: 'user-001', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600 }))}.signature`;
+  const mockExpiredRefreshToken = `header.${window.btoa(JSON.stringify({ id: 'user-001', type: 'refresh', exp: Math.floor(Date.now() / 1000) - 3600 }))}.signature`;
+
+  it('유효한 액세스 토큰이 존재하면 리프레시 토큰이 없어도 로그인 상태를 유지한다', () => {
+    vi.mocked(getAccessToken).mockReturnValue(mockValidToken);
+    vi.mocked(getRefreshToken).mockReturnValue(null);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('logged-in').textContent).toBe('YES');
+  });
+
+  it('액세스 토큰이 만료되었으나 리프레시 토큰이 유효하게 존재하면 로그인 상태를 유지한다', () => {
+    vi.mocked(getAccessToken).mockReturnValue(mockExpiredToken);
+    vi.mocked(getRefreshToken).mockReturnValue(mockValidRefreshToken);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('logged-in').textContent).toBe('YES');
+  });
+
+  it('액세스 토큰이 만료되었고 리프레시 토큰이 없으면 로그인 만료 처리되고 clearTokens를 실행한다', () => {
+    vi.mocked(getAccessToken).mockReturnValue(mockExpiredToken);
+    vi.mocked(getRefreshToken).mockReturnValue(null);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('logged-in').textContent).toBe('NO');
+    expect(clearTokens).toHaveBeenCalled();
+  });
+
+  it('액세스 토큰이 만료되었고 리프레시 토큰도 만료되었다면 로그인 만료 처리되고 clearTokens를 실행한다', () => {
+    vi.mocked(getAccessToken).mockReturnValue(mockExpiredToken);
+    vi.mocked(getRefreshToken).mockReturnValue(mockExpiredRefreshToken);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('logged-in').textContent).toBe('NO');
+    expect(clearTokens).toHaveBeenCalled();
   });
 });
