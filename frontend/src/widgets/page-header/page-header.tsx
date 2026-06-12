@@ -59,7 +59,7 @@ export const PageHeader = ({
     >
       <div
         className={cn(
-          'mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 transition-all duration-200',
+          'mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4',
           showBack ? 'pr-5 pl-2' : 'px-5',
           HEIGHT_CLASSES[heightVariant],
         )}

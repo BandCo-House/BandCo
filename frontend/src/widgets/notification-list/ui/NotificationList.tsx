@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { CheckCheck, Loader2, Mail } from 'lucide-react';
-import { Button } from '@/shared/ui/button';
+import { Loader2, Mail } from 'lucide-react';
 import { useNotificationList } from '@/entities/notification/api/useNotificationList';
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
@@ -139,10 +138,17 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   return (
     <div data-testid="notifications-page" className="w-full pb-16">
       {/* 통합 sticky 헤더 (탭 바 + 요약/모두읽음 바) */}
-      <div className="sticky top-[64px] z-30 -mx-5 -mt-8 bg-background px-5">
+      <div
+        className="sticky top-[64px] z-30 -mx-5 -mt-8 px-5"
+        style={{
+          background:
+            'linear-gradient(135deg, var(--gradient-top) 0%, var(--gradient-bottom) 100%)',
+          backgroundAttachment: 'fixed',
+        }}
+      >
         {/* 탭 네비게이션 */}
         <div className="pt-2 pb-0">
-          <div className="bg-grey-5 flex w-full rounded-xl p-1">
+          <div className="flex w-full gap-4 px-0">
             {TAB_CONFIGS.map(({ key, label }) => {
               const isActive = tab === key;
               const hasUnreadForTab =
@@ -155,15 +161,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   onClick={() =>
                     navigate({ to: '/notifications', search: { tab: key } })
                   }
-                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 typo-sm-sb transition-all duration-200 ${
                     isActive
-                      ? 'bg-white text-grey-100 shadow-xs'
-                      : 'text-grey-40 hover:text-grey-70'
+                      ? 'bg-primary text-secondary-surface shadow-sm'
+                      : 'bg-transparent text-grey-100 hover:text-white'
                   }`}
                 >
                   {label}
                   {!isActive && hasUnreadForTab && (
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive" />
                   )}
                 </button>
               );
@@ -171,21 +177,17 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
           </div>
         </div>
 
-        {/* 새로운 알림 / 모두 읽음 바 */}
+        {/* 모두 읽음 버튼 바 */}
         {!isLoading && !isError && hasNotifications && !isEditMode && (
-          <div className="border-grey-10 mt-0 flex items-center justify-between border-b py-3">
-            <h2 className="typo-lg-b text-grey-100">새로운 알림</h2>
-            <Button
+          <div className="mt-0 flex items-center justify-end py-2">
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               onClick={handleMarkAllAsRead}
               disabled={markAllAsReadMutation.isPending || !hasUnread}
-              className="flex h-8 items-center gap-1 text-grey-50 transition-colors hover:text-grey-100"
+              className="typo-xs-m text-grey-300 disabled:opacity-40"
             >
-              <CheckCheck className="h-4 w-4" />
               모두 읽음
-            </Button>
+            </button>
           </div>
         )}
       </div>
@@ -230,22 +232,21 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       {/* 더 보기 페이징 버튼 */}
       {hasNextPage && (
         <div className="mt-8 flex justify-center">
-          <Button
+          <button
             type="button"
-            variant="outline"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="flex w-full max-w-xs items-center justify-center gap-2"
+            className="flex w-full max-w-xs items-center justify-center gap-2 rounded-full border border-border py-2.5 typo-sm-m text-foreground disabled:opacity-40"
           >
             {isFetchingNextPage ? (
               <>
-                <Loader2 className="text-grey-40 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 불러오는 중...
               </>
             ) : (
               '알림 더 보기'
             )}
-          </Button>
+          </button>
         </div>
       )}
     </div>
