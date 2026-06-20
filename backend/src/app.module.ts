@@ -6,11 +6,23 @@ import { BandsModule } from './modules/bands/bands.module';
 import { BandSpacesModule } from './modules/bandspaces/bandspaces.module';
 import { CommonModule } from './modules/common/common.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PlacesModule } from './modules/places/places.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SongsModule } from './modules/songs/songs.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
-  imports: [PrismaModule, BandSpacesModule, AuthModule, NotificationsModule, SongsModule, UsersModule, BandsModule, SchedulesModule, CommonModule],
+  imports: [
+    PrismaModule,
+    BandSpacesModule,
+    AuthModule,
+    NotificationsModule,
+    SongsModule,
+    UsersModule,
+    BandsModule,
+    SchedulesModule,
+    CommonModule,
+    PlacesModule,
+  ],
 })
 export class AppModule {}
