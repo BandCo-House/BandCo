@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { buildNextPath } from '../../../common/url/url.util';
 import { PrismaService } from '../../../database/prisma';
 import type { BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { CreatePlaceInput } from '../dto/create-place.dto';
@@ -129,7 +130,13 @@ export class PlacesPrismaRepository implements PlacesRepository {
     const cursor = count > 0 ? { createdAt: items[0].createdAt, id: places[0].id } : null;
     const lastItem = count === query.take ? items[count - 1] : null;
     const next = lastItem
-      ? `/bands/${bandId}/places?cursor__created_at=${encodeURIComponent(lastItem.createdAt)}&cursor__id=${places[count - 1].id}&take=${query.take}&order__created_at=${query.order__created_at}&order__id=${query.order__id}`
+      ? buildNextPath(`/bands/${bandId}/places`, {
+          cursor__created_at: lastItem.createdAt,
+          cursor__id: places[count - 1].id,
+          take: query.take,
+          order__created_at: query.order__created_at,
+          order__id: query.order__id,
+        })
       : null;
 
     return {

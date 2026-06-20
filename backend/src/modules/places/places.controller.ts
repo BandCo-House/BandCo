@@ -23,6 +23,16 @@ interface AuthenticatedRequest {
 export class PlacesController {
   constructor(private readonly placesService: PlacesService) {}
 
+  /**
+   * 밴드에 새 장소를 등록한다.
+   *
+   * @param {AuthenticatedRequest} request - 인증된 요청 객체 (request.user.id 사용)
+   * @param {string} bandId - 장소를 등록할 밴드 ID
+   * @param {CreatePlaceBodyDto} input - 장소 생성에 필요한 본문 데이터
+   * @returns {Promise<ApiSuccessResponse<CreatePlaceResult>>} 생성된 장소 정보
+   * @throws {ForbiddenException} 요청 사용자가 해당 밴드 멤버가 아닌 경우
+   * @throws {BadRequestException} 입력 데이터 유효성 검사 실패
+   */
   @Post('bands/:bandId/places')
   @UseGuards(AccessTokenGuard)
   async createPlace(
@@ -35,6 +45,16 @@ export class PlacesController {
     return createSuccessResponse('장소 생성 성공', result);
   }
 
+  /**
+   * 밴드에 등록된 장소 목록을 페이지네이션으로 조회한다.
+   *
+   * @param {AuthenticatedRequest} request - 인증된 요청 객체 (request.user.id 사용)
+   * @param {string} bandId - 장소 목록을 조회할 밴드 ID
+   * @param {GetBandPlacesQueryDto} query - 페이지네이션 및 필터 조건
+   * @returns {Promise<ApiSuccessResponse<GetBandPlacesResult>>} 장소 목록과 페이지네이션 메타
+   * @throws {ForbiddenException} 요청 사용자가 해당 밴드 멤버가 아닌 경우
+   * @throws {NotFoundException} 밴드가 존재하지 않는 경우
+   */
   @Get('bands/:bandId/places')
   @UseGuards(AccessTokenGuard)
   async getBandPlaces(
@@ -47,6 +67,16 @@ export class PlacesController {
     return createSuccessResponse('장소 목록 조회 성공', result);
   }
 
+  /**
+   * 특정 장소의 상세 정보를 조회한다.
+   *
+   * @param {AuthenticatedRequest} request - 인증된 요청 객체 (request.user.id 사용)
+   * @param {string} placeId - 조회할 장소 ID
+   * @param {GetPlaceDetailQueryDto} query - 활성 여부 필터 (where__is_active)
+   * @returns {Promise<ApiSuccessResponse<PlaceDetail>>} 장소 상세 정보
+   * @throws {ForbiddenException} 요청 사용자가 해당 장소의 밴드 멤버가 아닌 경우
+   * @throws {NotFoundException} 장소가 존재하지 않거나 비활성 상태인 경우
+   */
   @Get('places/:placeId')
   @UseGuards(AccessTokenGuard)
   async getPlace(
@@ -59,6 +89,17 @@ export class PlacesController {
     return createSuccessResponse('장소 상세 조회 성공', result);
   }
 
+  /**
+   * 특정 장소의 정보를 수정한다.
+   *
+   * @param {AuthenticatedRequest} request - 인증된 요청 객체 (request.user.id 사용)
+   * @param {string} placeId - 수정할 장소 ID
+   * @param {UpdatePlaceBodyDto} input - 장소 수정에 필요한 본문 데이터
+   * @returns {Promise<ApiSuccessResponse<UpdatePlaceResult>>} 수정된 장소 정보
+   * @throws {ForbiddenException} 요청 사용자가 해당 장소의 밴드 멤버가 아닌 경우
+   * @throws {NotFoundException} 장소가 존재하지 않는 경우
+   * @throws {BadRequestException} 입력 데이터 유효성 검사 실패
+   */
   @Patch('places/:placeId')
   @UseGuards(AccessTokenGuard)
   async updatePlace(
@@ -71,6 +112,15 @@ export class PlacesController {
     return createSuccessResponse('장소 수정 성공', result);
   }
 
+  /**
+   * 특정 장소를 삭제(소프트 삭제)한다.
+   *
+   * @param {AuthenticatedRequest} request - 인증된 요청 객체 (request.user.id 사용)
+   * @param {string} placeId - 삭제할 장소 ID
+   * @returns {Promise<ApiSuccessResponse<DeletePlaceResult>>} 삭제된 장소 정보
+   * @throws {ForbiddenException} 요청 사용자가 해당 장소의 밴드 멤버가 아닌 경우
+   * @throws {NotFoundException} 장소가 존재하지 않는 경우
+   */
   @Delete('places/:placeId')
   @UseGuards(AccessTokenGuard)
   async deletePlace(@Req() request: AuthenticatedRequest, @Param('placeId') placeId: string): Promise<ApiSuccessResponse<DeletePlaceResult>> {

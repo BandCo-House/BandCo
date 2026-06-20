@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-import { normalizeOptionalStringValue, trimStringValue } from '../../../common/validation/transform.util';
+import { trimStringValue } from '../../../common/validation/transform.util';
 import { lengthValidationMessage } from '../../../common/validation-message/length-validation.message';
 import { notemptyValidationMessage } from '../../../common/validation-message/notempty-validation.message';
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
@@ -22,13 +22,11 @@ export class CreatePlaceBodyDto {
   @MaxLength(255, { message: lengthValidationMessage })
   address!: string;
 
-  @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({ message: stringValidationMessage })
   @MaxLength(255, { message: lengthValidationMessage })
   detailAddress?: string;
 
-  @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({ message: stringValidationMessage })
   @MaxLength(255, { message: lengthValidationMessage })

@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 import {
   normalizeOptionalStringValue,
@@ -9,6 +9,7 @@ import {
 import { booleanValidationMessage } from '../../../common/validation-message/boolean-validation.message';
 import { enumValidationMessage } from '../../../common/validation-message/enum-validation.message';
 import { intValidationMessage } from '../../../common/validation-message/int-validation.message';
+import { iso8601ValidationMessage } from '../../../common/validation-message/iso8601-validation.message';
 import { minValidationMessage } from '../../../common/validation-message/min-validation.message';
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
 import { uuidValidationMessage } from '../../../common/validation-message/uuid-validation.message';
@@ -41,6 +42,7 @@ export class GetBandPlacesQueryDto {
   @Transform(normalizeOptionalStringValue)
   @IsOptional()
   @IsString({ message: stringValidationMessage })
+  @IsISO8601({ strict: true, strictSeparator: true }, { message: iso8601ValidationMessage })
   cursor__created_at?: string;
 
   @Transform(normalizeOptionalStringValue)
