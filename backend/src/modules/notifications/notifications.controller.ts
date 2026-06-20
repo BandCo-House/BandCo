@@ -27,7 +27,10 @@ export class NotificationsController {
   @ApiOperation({ summary: '알림 목록 조회' })
   @ApiResponse({ status: 200, description: '알림 목록 조회 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async getNotifications(@Req() req: { user: AuthUser }, @Query() query: GetNotificationsQueryDto): Promise<ApiSuccessResponse<GetNotificationsResult>> {
+  async getNotifications(
+    @Req() req: { user: AuthUser },
+    @Query() query: GetNotificationsQueryDto,
+  ): Promise<ApiSuccessResponse<GetNotificationsResult>> {
     const result = await this.notificationsService.getNotifications(req.user.id, query);
     return createSuccessResponse('알림 목록 조회 성공', result);
   }
