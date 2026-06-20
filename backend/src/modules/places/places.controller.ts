@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -37,7 +37,7 @@ export class PlacesController {
   @UseGuards(AccessTokenGuard)
   async createPlace(
     @Req() request: AuthenticatedRequest,
-    @Param('bandId') bandId: string,
+    @Param('bandId', new ParseUUIDPipe()) bandId: string,
     @Body() input: CreatePlaceBodyDto,
   ): Promise<ApiSuccessResponse<CreatePlaceResult>> {
     const result = await this.placesService.createPlace(request.user.id, bandId, input);
@@ -59,7 +59,7 @@ export class PlacesController {
   @UseGuards(AccessTokenGuard)
   async getBandPlaces(
     @Req() request: AuthenticatedRequest,
-    @Param('bandId') bandId: string,
+    @Param('bandId', new ParseUUIDPipe()) bandId: string,
     @Query() query: GetBandPlacesQueryDto,
   ): Promise<ApiSuccessResponse<GetBandPlacesResult>> {
     const result = await this.placesService.getBandPlaces(request.user.id, bandId, query);
@@ -81,7 +81,7 @@ export class PlacesController {
   @UseGuards(AccessTokenGuard)
   async getPlace(
     @Req() request: AuthenticatedRequest,
-    @Param('placeId') placeId: string,
+    @Param('placeId', new ParseUUIDPipe()) placeId: string,
     @Query() query: GetPlaceDetailQueryDto,
   ): Promise<ApiSuccessResponse<PlaceDetail>> {
     const result = await this.placesService.getPlace(request.user.id, placeId, query.where__is_active);
@@ -104,7 +104,7 @@ export class PlacesController {
   @UseGuards(AccessTokenGuard)
   async updatePlace(
     @Req() request: AuthenticatedRequest,
-    @Param('placeId') placeId: string,
+    @Param('placeId', new ParseUUIDPipe()) placeId: string,
     @Body() input: UpdatePlaceBodyDto,
   ): Promise<ApiSuccessResponse<UpdatePlaceResult>> {
     const result = await this.placesService.updatePlace(request.user.id, placeId, input);
@@ -123,7 +123,7 @@ export class PlacesController {
    */
   @Delete('places/:placeId')
   @UseGuards(AccessTokenGuard)
-  async deletePlace(@Req() request: AuthenticatedRequest, @Param('placeId') placeId: string): Promise<ApiSuccessResponse<DeletePlaceResult>> {
+  async deletePlace(@Req() request: AuthenticatedRequest, @Param('placeId', new ParseUUIDPipe()) placeId: string): Promise<ApiSuccessResponse<DeletePlaceResult>> {
     const result = await this.placesService.deletePlace(request.user.id, placeId);
 
     return createSuccessResponse('장소 삭제 성공', result);
