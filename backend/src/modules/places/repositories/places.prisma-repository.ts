@@ -136,6 +136,7 @@ export class PlacesPrismaRepository implements PlacesRepository {
           take: query.take,
           order__created_at: query.order__created_at,
           order__id: query.order__id,
+          where__is_active: query.where__is_active,
         })
       : null;
 
