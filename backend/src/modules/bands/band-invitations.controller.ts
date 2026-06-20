@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
-import type { User } from '../../generated/prisma';
+import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { GetReceivedBandInvitationsQueryDto } from './dto/get-received-band-invitations-query.dto';
 import { GetSentBandInvitationsQueryDto } from './dto/get-sent-band-invitations-query.dto';
@@ -15,7 +15,7 @@ import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
-  user: User;
+  user: AuthUser;
 }
 
 @ApiTags('초대')

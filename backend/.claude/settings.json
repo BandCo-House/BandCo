@@ -47,11 +47,7 @@
         "hooks": [
           {
             "type": "command",
-<<<<<<< HEAD
-            "command": "node scripts/hooks/codex-stop-verify.js"
-=======
             "command": "bash ./scripts/verify.sh"
->>>>>>> 46b75dd (🐛 fix: sh에서 bash로 스크립트 실행 변경)
           }
         ]
       }

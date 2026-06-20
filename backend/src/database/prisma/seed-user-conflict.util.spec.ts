@@ -17,10 +17,6 @@ describe('getConflictingSeedUserIds', () => {
     expect(conflictingUserIds).toEqual(['legacy-user-1']);
   });
 
-<<<<<<< HEAD
-  expect(conflictingUserIds).toStrictEqual(['legacy-user-1']);
-});
-=======
   it('이메일이 없거나 시드 대상이 아닌 사용자는 충돌 대상에서 제외한다', () => {
     const conflictingUserIds = getConflictingSeedUserIds({
       seedUsers: [{ id: 'seed-user-1', email: 'minjun@jamplay.local', status: 'ACTIVE' }],
@@ -30,13 +26,7 @@ describe('getConflictingSeedUserIds', () => {
         { id: 'seed-user-1', email: 'minjun@jamplay.local' },
       ],
     });
->>>>>>> 9abaf73 (🔧 fix: node:test → Jest 문법으로 테스트 변환)
 
     expect(conflictingUserIds).toEqual([]);
   });
-<<<<<<< HEAD
-
-  expect(conflictingUserIds).toStrictEqual([]);
-=======
->>>>>>> 9abaf73 (🔧 fix: node:test → Jest 문법으로 테스트 변환)
 });

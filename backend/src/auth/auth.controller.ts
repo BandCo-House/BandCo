@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBasicAuth, ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { type ApiSuccessResponse, createSuccessResponse } from '../common/api-response';
@@ -6,7 +6,7 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../common/api-re
 import { CheckEmailDto } from './dto/check-email.dto';
 import { RegisterEmailDto } from './dto/register-email.dto';
 import { BasicTokenGuard } from './guard/basic-token.guard';
-import { AccessTokenGuard, RefreshTokenGuard } from './guard/bearer-token.guard';
+import { RefreshTokenGuard } from './guard/bearer-token.guard';
 import { AuthService } from './auth.service';
 
 @ApiTags('인증')
@@ -15,15 +15,15 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('token/access')
-  @UseGuards(AccessTokenGuard)
-  @ApiBearerAuth('access-token')
+  @UseGuards(RefreshTokenGuard)
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: '액세스 토큰 재발급' })
   @ApiResponse({ status: 201, description: '액세스 토큰 재발급 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  TokenAccess(@Headers('authorization') authHeader: string) {
-    const token = this.authService.extractTokenFromHeader(authHeader, true);
-    const newToken = this.authService.rotateToken(token, false);
-    return { accessToken: newToken };
+  TokenAccess(@Req() req: { user: { id: string; email: string } }) {
+    const { email, id } = req.user;
+    const accessToken = this.authService.signToken(email, id, false);
+    return { accessToken };
   }
 
   @Post('token/refresh')
@@ -32,10 +32,10 @@ export class AuthController {
   @ApiOperation({ summary: '리프레시 토큰 재발급' })
   @ApiResponse({ status: 201, description: '리프레시 토큰 재발급 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  TokenRefresh(@Headers('authorization') authHeader: string) {
-    const token = this.authService.extractTokenFromHeader(authHeader, true);
-    const newToken = this.authService.rotateToken(token, true);
-    return { refreshToken: newToken };
+  TokenRefresh(@Req() req: { user: { id: string; email: string } }) {
+    const { email, id } = req.user;
+    const refreshToken = this.authService.signToken(email, id, true);
+    return { refreshToken };
   }
 
   @Post('login/email')
@@ -44,11 +44,10 @@ export class AuthController {
   @ApiOperation({ summary: '이메일 로그인' })
   @ApiResponse({ status: 201, description: '로그인 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  async loginEmail(@Headers('authorization') authHeader: string) {
-    const token = this.authService.extractTokenFromHeader(authHeader, false);
-    const { email, password } = this.authService.decodeBasicToken(token);
-
-    return this.authService.loginUser(email, password);
+  async loginEmail(@Req() req: { user: { id: string; email: string } }) {
+    // BasicTokenGuard가 인증을 마치고 req.user에 담은 유저로 토큰을 발급한다.
+    const { email, id } = req.user;
+    return this.authService.loginUser(email, id);
   }
 
   @Post('register/email')

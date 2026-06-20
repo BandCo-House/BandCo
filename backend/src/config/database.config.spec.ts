@@ -9,19 +9,9 @@ describe('getDatabaseConfig', () => {
     expect(config.databaseUrl).toBe('postgresql://postgres:postgres@localhost:5432/jamplay?schema=public');
   });
 
-<<<<<<< HEAD
-  expect(config.databaseUrl).toBe('postgresql://postgres:postgres@localhost:5432/jamplay?schema=public');
-});
-
-test('DB 설정은 DATABASE_URL이 없으면 즉시 에러를 던진다', () => {
-  expect(() => {
-    getDatabaseConfig({});
-  }).toThrow(/DATABASE_URL 환경 변수가 필요합니다\./);
-=======
   it('DATABASE_URL이 없으면 즉시 에러를 던진다', () => {
     expect(() => {
       getDatabaseConfig({});
     }).toThrow(/DATABASE_URL 환경 변수가 필요합니다\./);
   });
->>>>>>> 9abaf73 (🔧 fix: node:test → Jest 문법으로 테스트 변환)
 });

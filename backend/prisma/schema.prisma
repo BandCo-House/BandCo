@@ -129,7 +129,7 @@ model Band {
   inviteLinks      BandInviteLink[]
   joinRequests     BandJoinRequest[]
   members          BandMember[]
-  spaces           BandSpace[]
+  bandSpaces       BandSpace[]
   bandMasterUser   User              @relation("BandManager", fields: [bandMasterUserId], references: [id])
   places           Place[]
   songs            Song[]

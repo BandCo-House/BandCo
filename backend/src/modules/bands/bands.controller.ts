@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
-import type { User } from '../../generated/prisma';
+import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { CreateBandBodyDto } from './dto/create-band.dto';
 import { CreateBandInvitationBodyDto } from './dto/create-band-invitation.dto';
@@ -28,7 +28,7 @@ import type { UpdateBandResult } from './types/update-band-result.type';
 import { BandsService } from './bands.service';
 
 interface AuthenticatedRequest {
-  user: User;
+  user: AuthUser;
 }
 
 @ApiTags('밴드')
