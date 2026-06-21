@@ -13,7 +13,7 @@ export interface SpaceDetail {
   updatedAt: string;
 }
 
-export interface SpaceMemberDetail {
+export interface BandSpaceMemberDetail {
   bandMemberId: string;
   nickname: string;
   role: BandSpaceMembership['role'];
@@ -21,9 +21,9 @@ export interface SpaceMemberDetail {
   joinedAt: string;
 }
 
-export interface GetSpaceDetailResult {
+export interface GetBandSpaceDetailResult {
   space: SpaceDetail;
-  members: SpaceMemberDetail[];
+  members: BandSpaceMemberDetail[];
   songCount: number;
   scheduleCount: number;
 }

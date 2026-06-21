@@ -18,13 +18,13 @@ export class BearerTokenGuard implements CanActivate {
     }
     const token = this.authService.extractTokenFromHeader(rawToken, true);
     const result = await this.authService.verifyToken(token);
-    const user = await this.userService.getUserByEmail(result.email);
+    const user = await this.userService.getAuthUserById(result.id);
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 유저입니다.');
     }
     req.token = token;
     req.tokenType = result.type;
-    req.user = user;
+    req.user = { id: user.id, email: user.email };
     return true;
   }
 }

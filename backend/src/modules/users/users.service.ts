@@ -16,6 +16,14 @@ export class UsersService {
     return this.usersRepository.findByEmail(email, tx);
   }
 
+  async getAuthUserById(id: string, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.findAuthUserById(id, tx);
+  }
+
+  async getUserForPasswordAuth(email: string, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.findUserForPasswordAuth(email, tx);
+  }
+
   async createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient) {
     const existingUser = await this.usersRepository.findByEmail(email, tx);
     if (existingUser) {

@@ -8,7 +8,7 @@ import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 import { generateRandomNickname } from '../util/nickname_maker';
 
-import type { UsersRepository } from './user.repository';
+import type { AuthUser, PasswordAuthUser, UsersRepository } from './user.repository';
 
 type UserListRecord = Prisma.UserGetPayload<{
   include: {
@@ -29,15 +29,49 @@ function mapUserListItem(user: UserListRecord): UserListItem {
   };
 }
 
+function mapAuthUser(user: { id: string; email: string | null } | null): AuthUser | null {
+  if (!user?.email) return null;
+  return { id: user.id, email: user.email };
+}
+
 @Injectable()
 export class UsersPrismaRepository implements UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByEmail(email: string, tx?: Prisma.TransactionClient): Promise<User | null> {
+  async findByEmail(email: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null> {
     const client = tx ?? this.prisma;
-    return client.user.findUnique({
+    const user = await client.user.findUnique({
       where: { email },
+      select: { id: true, email: true },
     });
+
+    return mapAuthUser(user);
+  }
+
+  async findAuthUserById(id: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null> {
+    const client = tx ?? this.prisma;
+    const user = await client.user.findFirst({
+      where: { id, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true, email: true },
+    });
+
+    return mapAuthUser(user);
+  }
+
+  async findUserForPasswordAuth(email: string, tx?: Prisma.TransactionClient): Promise<PasswordAuthUser | null> {
+    const client = tx ?? this.prisma;
+    const user = await client.user.findFirst({
+      where: { email, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true, email: true, passwordHash: true },
+    });
+
+    if (!user?.email) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      passwordHash: user.passwordHash,
+    };
   }
 
   async createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient): Promise<User> {
