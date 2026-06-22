@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from 'src/modules/users/users.service';
@@ -7,10 +8,17 @@ import { JwtPayload } from './types/auth.types';
 
 @Injectable()
 export class AuthService {
+  private readonly jwtSecret: string;
+  private readonly bcryptSaltRounds: number;
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
+    this.bcryptSaltRounds = parseInt(this.configService.getOrThrow<string>('BCRYPT_SALT_ROUNDS'), 10);
+  }
 
   async loginWithEmail(email: string, password: string) {
     const user = await this.authenticateWithEmailAndPassword(email, password);
@@ -21,7 +29,7 @@ export class AuthService {
     const payload: JwtPayload = { email, id, type: isRefreshToken ? 'refresh' : 'access' };
 
     return this.jwtService.sign(payload, {
-      secret: 'jamplay',
+      secret: this.jwtSecret,
       expiresIn: isRefreshToken ? '1h' : '5m',
     });
   }
@@ -64,7 +72,7 @@ export class AuthService {
   }
 
   async registerWithEmail(email: string, password: string) {
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, this.bcryptSaltRounds);
     const newUser = await this.usersService.createUserWithEmail(email, hash);
     return this.loginUser(newUser.email!, newUser.id);
   }
@@ -82,7 +90,7 @@ export class AuthService {
 
   verifyToken(token: string) {
     return this.jwtService.verify(token, {
-      secret: 'jamplay',
+      secret: this.jwtSecret,
     });
   }
 

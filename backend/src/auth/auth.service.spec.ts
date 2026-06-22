@@ -1,10 +1,14 @@
 import { UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from 'src/modules/users/users.service';
 
 import { AuthService } from './auth.service';
+
+const TEST_JWT_SECRET = 'test-secret';
+const TEST_BCRYPT_SALT_ROUNDS = 10;
 
 const mockJwtService = {
   sign: jest.fn(),
@@ -17,12 +21,25 @@ const mockUsersService = {
   createUserWithEmail: jest.fn(),
 };
 
+const mockConfigService = {
+  getOrThrow: jest.fn((key: string) => {
+    if (key === 'JWT_SECRET') return TEST_JWT_SECRET;
+    if (key === 'BCRYPT_SALT_ROUNDS') return String(TEST_BCRYPT_SALT_ROUNDS);
+    throw new Error(`Unknown config key: ${key}`);
+  }),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService, { provide: JwtService, useValue: mockJwtService }, { provide: UsersService, useValue: mockUsersService }],
+      providers: [
+        AuthService,
+        { provide: JwtService, useValue: mockJwtService },
+        { provide: UsersService, useValue: mockUsersService },
+        { provide: ConfigService, useValue: mockConfigService },
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
@@ -63,14 +80,17 @@ describe('AuthService', () => {
     it('access 타입으로 서명 시 5m 만료로 호출된다', () => {
       mockJwtService.sign.mockReturnValue('signed-access');
       const result = service.signToken('u@u.com', 'uid', false);
-      expect(mockJwtService.sign).toHaveBeenCalledWith({ email: 'u@u.com', id: 'uid', type: 'access' }, { secret: 'jamplay', expiresIn: '5m' });
+      expect(mockJwtService.sign).toHaveBeenCalledWith({ email: 'u@u.com', id: 'uid', type: 'access' }, { secret: TEST_JWT_SECRET, expiresIn: '5m' });
       expect(result).toBe('signed-access');
     });
 
     it('refresh 타입으로 서명 시 1h 만료로 호출된다', () => {
       mockJwtService.sign.mockReturnValue('signed-refresh');
       const result = service.signToken('u@u.com', 'uid', true);
-      expect(mockJwtService.sign).toHaveBeenCalledWith({ email: 'u@u.com', id: 'uid', type: 'refresh' }, { secret: 'jamplay', expiresIn: '1h' });
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        { email: 'u@u.com', id: 'uid', type: 'refresh' },
+        { secret: TEST_JWT_SECRET, expiresIn: '1h' },
+      );
       expect(result).toBe('signed-refresh');
     });
   });
@@ -87,7 +107,7 @@ describe('AuthService', () => {
       const payload = { email: 'u@u.com', id: 'uid', type: 'access' };
       mockJwtService.verify.mockReturnValue(payload);
       expect(service.verifyToken('some.token')).toEqual(payload);
-      expect(mockJwtService.verify).toHaveBeenCalledWith('some.token', { secret: 'jamplay' });
+      expect(mockJwtService.verify).toHaveBeenCalledWith('some.token', { secret: TEST_JWT_SECRET });
     });
   });
 
