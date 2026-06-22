@@ -29,21 +29,43 @@ const mockConfigService = {
   }),
 };
 
+const buildModule = (configOverride?: Partial<typeof mockConfigService>) =>
+  Test.createTestingModule({
+    providers: [
+      AuthService,
+      { provide: JwtService, useValue: mockJwtService },
+      { provide: UsersService, useValue: mockUsersService },
+      { provide: ConfigService, useValue: { ...mockConfigService, ...configOverride } },
+    ],
+  }).compile();
+
 describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        { provide: JwtService, useValue: mockJwtService },
-        { provide: UsersService, useValue: mockUsersService },
-        { provide: ConfigService, useValue: mockConfigService },
-      ],
-    }).compile();
-
+    const module: TestingModule = await buildModule();
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+  });
+
+  describe('생성자 설정 검증', () => {
+    it('JWT_SECRET이 빈 문자열이면 초기화 시 에러를 던진다', async () => {
+      await expect(
+        buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? '' : String(TEST_BCRYPT_SALT_ROUNDS))) }),
+      ).rejects.toThrow('JWT_SECRET must not be empty');
+    });
+
+    it('BCRYPT_SALT_ROUNDS가 숫자가 아니면 초기화 시 에러를 던진다', async () => {
+      await expect(
+        buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? TEST_JWT_SECRET : 'abc')) }),
+      ).rejects.toThrow('BCRYPT_SALT_ROUNDS must be a number between 4 and 15');
+    });
+
+    it('BCRYPT_SALT_ROUNDS가 허용 범위(4~15)를 벗어나면 초기화 시 에러를 던진다', async () => {
+      await expect(
+        buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? TEST_JWT_SECRET : '3')) }),
+      ).rejects.toThrow('BCRYPT_SALT_ROUNDS must be a number between 4 and 15');
+    });
   });
 
   describe('extractTokenFromHeader', () => {

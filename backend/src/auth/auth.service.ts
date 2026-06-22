@@ -17,7 +17,12 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {
     this.jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
+    if (!this.jwtSecret) throw new Error('JWT_SECRET must not be empty');
+
     this.bcryptSaltRounds = parseInt(this.configService.getOrThrow<string>('BCRYPT_SALT_ROUNDS'), 10);
+    if (isNaN(this.bcryptSaltRounds) || this.bcryptSaltRounds < 4 || this.bcryptSaltRounds > 15) {
+      throw new Error('BCRYPT_SALT_ROUNDS must be a number between 4 and 15');
+    }
   }
 
   async loginWithEmail(email: string, password: string) {
