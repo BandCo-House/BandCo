@@ -173,7 +173,7 @@ export class BandsService {
           userId: input.inviteeUserId,
           title: '밴드 초대가 도착했습니다.',
           description: '새 밴드 초대가 도착했습니다.',
-          targetPath: '/invitations/received',
+          targetPath: `/invitations/received?invitationId=${result.invitationId}`,
         },
         client,
       );
