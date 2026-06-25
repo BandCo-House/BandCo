@@ -49,10 +49,10 @@ export class UsersService {
   }
 
   async deleteUser(userId: string, tx?: Prisma.TransactionClient) {
-    const user = await this.usersRepository.findAuthUserById(userId, tx);
-    if (!user) {
+    const result = await this.usersRepository.softDeleteUser(userId, tx);
+    if (!result) {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
-    return this.usersRepository.softDeleteUser(userId, tx);
+    return result;
   }
 }

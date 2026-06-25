@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { parseToPrismaQuery } from 'src/common/query';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import type { Prisma, User } from 'src/generated/prisma';
+import { Prisma, type User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
@@ -238,17 +238,20 @@ export class UsersPrismaRepository implements UsersRepository {
     return result;
   }
 
-  async softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult> {
+  async softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null> {
     const client = tx ?? this.prisma;
-    const user = await client.user.update({
-      where: { id: userId, deletedAt: null },
-      data: { deletedAt: new Date(), status: 'INACTIVE' },
-      select: { id: true, deletedAt: true },
-    });
-
-    return {
-      userId: user.id,
-      deletedAt: user.deletedAt!.toISOString(),
-    };
+    try {
+      const user = await client.user.update({
+        where: { id: userId, deletedAt: null },
+        data: { deletedAt: new Date(), status: 'INACTIVE' },
+        select: { id: true, deletedAt: true },
+      });
+      return { userId: user.id, deletedAt: user.deletedAt!.toISOString() };
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        return null;
+      }
+      throw e;
+    }
   }
 }

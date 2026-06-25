@@ -50,8 +50,7 @@ const repositoryStub: UsersRepository = {
     return mockProfile;
   },
   async softDeleteUser(userId) {
-    if (userId !== 'user-001') throw new Error('not found');
-    return mockDeleteResult;
+    return userId === 'user-001' ? mockDeleteResult : null;
   },
 };
 
@@ -152,17 +151,13 @@ describe('UsersService', () => {
       await expect(service.deleteUser('unknown-id')).rejects.toThrow(NotFoundException);
     });
 
-    it('tx가 전달되면 findAuthUserById와 softDeleteUser에 동일한 tx를 전달한다', async () => {
+    it('tx가 전달되면 softDeleteUser에 동일한 tx를 전달한다', async () => {
       const txClient = {} as Prisma.TransactionClient;
-      const findSpy = jest.spyOn(repositoryStub, 'findAuthUserById');
       const deleteSpy = jest.spyOn(repositoryStub, 'softDeleteUser');
 
       await service.deleteUser('user-001', txClient);
 
-      expect(findSpy).toHaveBeenCalledWith('user-001', txClient);
       expect(deleteSpy).toHaveBeenCalledWith('user-001', txClient);
-
-      findSpy.mockRestore();
       deleteSpy.mockRestore();
     });
   });

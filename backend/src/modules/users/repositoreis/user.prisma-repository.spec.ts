@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import type { Prisma } from 'src/generated/prisma';
+import { Prisma } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 
@@ -230,8 +230,8 @@ describe('UsersPrismaRepository', () => {
         data: { deletedAt: expect.any(Date), status: 'INACTIVE' },
         select: { id: true, deletedAt: true },
       });
-      expect(result.userId).toBe('user-001');
-      expect(result.deletedAt).toBe(now.toISOString());
+      expect(result?.userId).toBe('user-001');
+      expect(result?.deletedAt).toBe(now.toISOString());
     });
 
     it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
@@ -240,6 +240,18 @@ describe('UsersPrismaRepository', () => {
       await repository.softDeleteUser('user-001', txClient as unknown as Prisma.TransactionClient);
       expect(txClient.user.update).toHaveBeenCalled();
       expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('존재하지 않거나 이미 삭제된 유저면 null을 반환한다 (P2025)', async () => {
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '0' });
+      mockPrisma.user.update.mockRejectedValue(p2025);
+      const result = await repository.softDeleteUser('unknown-id');
+      expect(result).toBeNull();
+    });
+
+    it('P2025 외 에러는 그대로 전파한다', async () => {
+      mockPrisma.user.update.mockRejectedValue(new Error('db connection error'));
+      await expect(repository.softDeleteUser('user-001')).rejects.toThrow('db connection error');
     });
   });
 

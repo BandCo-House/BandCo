@@ -29,5 +29,5 @@ export interface UsersRepository {
   findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult>;
   findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null>;
   updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult>;
-  softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult>;
+  softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null>;
 }
