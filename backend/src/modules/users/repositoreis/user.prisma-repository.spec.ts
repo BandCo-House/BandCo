@@ -9,6 +9,7 @@ import { UsersPrismaRepository } from './user.prisma-repository';
 const mockPrisma = {
   user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
   userProfile: { create: jest.fn(), update: jest.fn() },
+  profileMusic: { findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
   userSkill: { deleteMany: jest.fn(), createMany: jest.fn() },
   favoriteGenre: { deleteMany: jest.fn(), createMany: jest.fn() },
   $transaction: jest.fn().mockImplementation(fn => fn(mockPrisma)),
@@ -21,7 +22,8 @@ const userRecord = {
   email: 'test@example.com',
   status: 'ACTIVE',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  profile: { nickname: 'testuser', selfDescription: '안녕', profileMusicUrl: null, avatarUrl: null },
+  profile: { nickname: 'testuser', selfDescription: '안녕', avatarUrl: null },
+  profileMusic: null,
   userSkills: [{ skillTypeId: 'skill-001', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: 'GUITAR' } }],
   favoriteGenres: [{ genreId: 'genre-001', genre: { name: 'ROCK' } }],
 };
@@ -311,6 +313,23 @@ describe('UsersPrismaRepository', () => {
       await repository.updateUserProfile('user-001', { favoriteGenres: ['genre-002'] });
       expect(mockPrisma.favoriteGenre.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
       expect(mockPrisma.favoriteGenre.createMany).toHaveBeenCalledWith({ data: [{ userId: 'user-001', genreId: 'genre-002' }] });
+    });
+
+    it('profile.profileMusic이 있으면 profileMusic.upsert를 호출한다', async () => {
+      mockPrisma.profileMusic.upsert.mockResolvedValue({});
+      const trackData = {
+        externalTrackId: '12345',
+        sourceType: 'DEEZER' as const,
+        title: 'Blinding Lights',
+        artistName: 'The Weeknd',
+        albumName: 'After Hours',
+        albumImageUrl: null,
+        durationMs: 200000,
+        previewUrl: null,
+        sourceUrl: 'https://www.deezer.com/track/12345',
+      };
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } });
+      expect(mockPrisma.profileMusic.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'user-001' } }));
     });
 
     it('모든 변경 후 최신 프로필을 반환한다', async () => {
