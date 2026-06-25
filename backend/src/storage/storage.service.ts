@@ -1,4 +1,6 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { randomUUID } from 'node:crypto';
+
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -41,5 +43,31 @@ export class StorageService {
     const objectUrl = `${this.endpoint}/${this.bucket}/${key}`;
 
     return { presignedUrl, objectUrl };
+  }
+
+  /**
+   * 유저별 폴더를 격리해 Presigned URL을 생성한다.
+   * key는 `users/{userId}/{folder}/{uuid}.{ext}` 형태로 구성된다.
+   *
+   * @param userId 인증된 유저 ID
+   * @param folder 업로드 대상 폴더 (예: profiles)
+   * @param contentType 파일 MIME 타입 (예: image/jpeg)
+   */
+  async generateUploadUrl(userId: string, folder: string, contentType: string): Promise<{ presignedUrl: string; objectUrl: string }> {
+    const ext = contentType.split('/').pop() ?? 'bin';
+    const key = `users/${userId}/${folder}/${randomUUID()}.${ext}`;
+    return this.getPresignedUploadUrl(key, contentType);
+  }
+
+  /**
+   * 지정된 key의 오브젝트를 다운로드할 Presigned URL을 생성한다.
+   *
+   * @param key 오브젝트 키 (예: users/{userId}/profiles/{uuid}.jpeg)
+   * @param expiresIn URL 만료 시간(초), 기본값 300
+   */
+  async generateDownloadUrl(key: string, expiresIn = 300): Promise<{ presignedUrl: string }> {
+    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+    const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn });
+    return { presignedUrl };
   }
 }
