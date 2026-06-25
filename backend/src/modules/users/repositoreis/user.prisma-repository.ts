@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { parseToPrismaQuery } from 'src/common/query';
+import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import type { Prisma, User } from 'src/generated/prisma';
+import { Prisma, type User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
@@ -8,7 +10,7 @@ import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 import { generateRandomNickname } from '../util/nickname_maker';
 
-import type { AuthUser, PasswordAuthUser, UsersRepository } from './user.repository';
+import type { AuthUser, DeleteUserResult, PasswordAuthUser, UsersRepository } from './user.repository';
 
 type UserListRecord = Prisma.UserGetPayload<{
   include: {
@@ -95,15 +97,25 @@ export class UsersPrismaRepository implements UsersRepository {
 
   async findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult> {
     const client = tx ?? this.prisma;
+    const { where, orderBy, take } = parseToPrismaQuery<Prisma.UserWhereInput>(query);
 
-    const where: Prisma.UserWhereInput = { deletedAt: null };
+    // 삭제되지 않은 유저만 조회
+    where.deletedAt = null;
 
-    if (query.where__email__contain) {
-      where.email = { contains: query.where__email__contain, mode: 'insensitive' };
+    // nickname은 profile 관계 필드이므로 파서 결과를 보정한다
+    if (where.nickname) {
+      where.profile = { nickname: where.nickname };
+      delete where.nickname;
     }
 
-    if (query.where__nickname__contain) {
-      where.profile = { nickname: { contains: query.where__nickname__contain, mode: 'insensitive' } };
+    // cursor__created_at + cursor__id 두 필드를 복합 keyset 조건으로 변환한다.
+    // Prisma cursor + skip 방식은 cursor 레코드 위치를 내부적으로 조회하므로
+    // soft-delete된 레코드가 커서가 될 경우 WHERE 필터와 충돌할 수 있다.
+    if (query.cursor__created_at && query.cursor__id) {
+      const cursorDate = new Date(query.cursor__created_at);
+      const dateOp = query.order__created_at === 'asc' ? 'gt' : 'lt';
+      const idOp = query.order__id === 'asc' ? 'gt' : 'lt';
+      where.AND = [{ OR: [{ createdAt: { [dateOp]: cursorDate } }, { createdAt: { equals: cursorDate }, id: { [idOp]: query.cursor__id } }] }];
     }
 
     const users = await client.user.findMany({
@@ -113,17 +125,29 @@ export class UsersPrismaRepository implements UsersRepository {
           select: { nickname: true, avatarUrl: true },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
-      ...(query.cursor__id ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
-      take: query.take,
+      orderBy,
+      take: take ?? query.take,
     });
 
     const items = users.map(mapUserListItem);
     const count = items.length;
-    const cursor = count > 0 ? { createdAt: items[0].createdAt, id: items[0].id } : null;
-    const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].id } : null;
+    const cursorMeta = count > 0 ? { createdAt: items[0].createdAt, id: items[0].id } : null;
+    const resolvedTake = take ?? query.take;
+    const lastItem = items[count - 1];
+    const next =
+      count === resolvedTake && lastItem
+        ? buildNextPath('/users', {
+            cursor__created_at: lastItem.createdAt,
+            cursor__id: lastItem.id,
+            take: resolvedTake,
+            order__created_at: query.order__created_at,
+            order__id: query.order__id,
+            where__nickname__contain: query.where__nickname__contain,
+            where__email__contain: query.where__email__contain,
+          })
+        : null;
 
-    return { items, meta: { count, take: query.take, cursor, next } };
+    return { items, meta: { count, take: resolvedTake, cursor: cursorMeta, next } };
   }
 
   async findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null> {
@@ -212,5 +236,22 @@ export class UsersPrismaRepository implements UsersRepository {
       throw new Error('업데이트된 유저 프로필을 불러오는 데 실패했습니다.');
     }
     return result;
+  }
+
+  async softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null> {
+    const client = tx ?? this.prisma;
+    try {
+      const user = await client.user.update({
+        where: { id: userId, deletedAt: null },
+        data: { deletedAt: new Date(), status: 'INACTIVE' },
+        select: { id: true, deletedAt: true },
+      });
+      return { userId: user.id, deletedAt: user.deletedAt!.toISOString() };
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        return null;
+      }
+      throw e;
+    }
   }
 }

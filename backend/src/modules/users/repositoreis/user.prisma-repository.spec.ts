@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import type { Prisma } from 'src/generated/prisma';
+import { Prisma } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 
@@ -177,20 +177,23 @@ describe('UsersPrismaRepository', () => {
       expect(callArgs.where.profile).toEqual({ nickname: { contains: 'nick', mode: 'insensitive' } });
     });
 
-    it('cursor__id가 있으면 cursor와 skip:1이 전달된다', async () => {
+    it('cursor__id와 cursor__created_at이 있으면 keyset WHERE 조건이 추가된다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers({ ...defaultQuery, cursor__id: 'cursor-uuid', cursor__created_at: '2026-01-01T00:00:00.000Z' });
       const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
-      expect(callArgs.cursor).toEqual({ id: 'cursor-uuid' });
-      expect(callArgs.skip).toBe(1);
+      expect(callArgs.cursor).toBeUndefined();
+      expect(callArgs.skip).toBeUndefined();
+      expect(callArgs.where.AND).toBeDefined();
+      expect(callArgs.where.AND[0].OR).toHaveLength(2);
     });
 
-    it('cursor__id가 없으면 cursor와 skip이 전달되지 않는다', async () => {
+    it('cursor가 없으면 AND 조건이 추가되지 않는다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers(defaultQuery);
       const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
       expect(callArgs.cursor).toBeUndefined();
       expect(callArgs.skip).toBeUndefined();
+      expect(callArgs.where.AND).toBeUndefined();
     });
 
     it('결과가 없으면 cursor와 next가 모두 null이다', async () => {
@@ -207,12 +210,48 @@ describe('UsersPrismaRepository', () => {
       expect(result.meta.next).toBeNull();
     });
 
-    it('결과가 take와 같으면 next에 마지막 항목의 커서가 설정된다', async () => {
+    it('결과가 take와 같으면 next에 다음 페이지 URL이 설정된다', async () => {
       const second = { ...listRecord, id: 'user-002', createdAt: new Date('2025-12-01T00:00:00.000Z') };
       mockPrisma.user.findMany.mockResolvedValue([listRecord, second]);
       const result = await repository.findUsers({ ...defaultQuery, take: 2 });
-      expect(result.meta.next?.id).toBe('user-002');
-      expect(result.meta.next?.createdAt).toBe('2025-12-01T00:00:00.000Z');
+      expect(typeof result.meta.next).toBe('string');
+      expect(result.meta.next).toContain('cursor__id=user-002');
+      expect(result.meta.next).toContain('cursor__created_at=');
+    });
+  });
+
+  describe('softDeleteUser', () => {
+    it('deletedAt과 status를 업데이트하고 결과를 반환한다', async () => {
+      const now = new Date();
+      mockPrisma.user.update.mockResolvedValue({ id: 'user-001', deletedAt: now });
+      const result = await repository.softDeleteUser('user-001');
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-001', deletedAt: null },
+        data: { deletedAt: expect.any(Date), status: 'INACTIVE' },
+        select: { id: true, deletedAt: true },
+      });
+      expect(result?.userId).toBe('user-001');
+      expect(result?.deletedAt).toBe(now.toISOString());
+    });
+
+    it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
+      const now = new Date();
+      const txClient = { user: { update: jest.fn().mockResolvedValue({ id: 'user-001', deletedAt: now }) } };
+      await repository.softDeleteUser('user-001', txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.user.update).toHaveBeenCalled();
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('존재하지 않거나 이미 삭제된 유저면 null을 반환한다 (P2025)', async () => {
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '0' });
+      mockPrisma.user.update.mockRejectedValue(p2025);
+      const result = await repository.softDeleteUser('unknown-id');
+      expect(result).toBeNull();
+    });
+
+    it('P2025 외 에러는 그대로 전파한다', async () => {
+      mockPrisma.user.update.mockRejectedValue(new Error('db connection error'));
+      await expect(repository.softDeleteUser('user-001')).rejects.toThrow('db connection error');
     });
   });
 

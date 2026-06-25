@@ -18,7 +18,7 @@ export interface UserListMeta {
   count: number;
   take: number;
   cursor: UserListCursor | null;
-  next: UserListCursor | null;
+  next: string | null;
 }
 
 export interface GetUsersResult {

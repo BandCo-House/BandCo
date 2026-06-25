@@ -47,4 +47,12 @@ export class UsersService {
   async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient) {
     return this.usersRepository.updateUserProfile(userId, data, tx);
   }
+
+  async deleteUser(userId: string, tx?: Prisma.TransactionClient) {
+    const result = await this.usersRepository.softDeleteUser(userId, tx);
+    if (!result) {
+      throw new NotFoundException('존재하지 않는 유저입니다.');
+    }
+    return result;
+  }
 }

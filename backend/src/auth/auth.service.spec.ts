@@ -56,15 +56,15 @@ describe('AuthService', () => {
     });
 
     it('BCRYPT_SALT_ROUNDS가 숫자가 아니면 초기화 시 에러를 던진다', async () => {
-      await expect(
-        buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? TEST_JWT_SECRET : 'abc')) }),
-      ).rejects.toThrow('BCRYPT_SALT_ROUNDS must be a number between 4 and 15');
+      await expect(buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? TEST_JWT_SECRET : 'abc')) })).rejects.toThrow(
+        'BCRYPT_SALT_ROUNDS must be a number between 4 and 15',
+      );
     });
 
     it('BCRYPT_SALT_ROUNDS가 허용 범위(4~15)를 벗어나면 초기화 시 에러를 던진다', async () => {
-      await expect(
-        buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? TEST_JWT_SECRET : '3')) }),
-      ).rejects.toThrow('BCRYPT_SALT_ROUNDS must be a number between 4 and 15');
+      await expect(buildModule({ getOrThrow: jest.fn((key: string) => (key === 'JWT_SECRET' ? TEST_JWT_SECRET : '3')) })).rejects.toThrow(
+        'BCRYPT_SALT_ROUNDS must be a number between 4 and 15',
+      );
     });
   });
 
