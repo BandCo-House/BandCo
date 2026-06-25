@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsEmail, IsEnum, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
@@ -31,7 +32,7 @@ class UpdateProfileDto {
 class UpdatePersonalInfoDto {
   @ApiPropertyOptional({ description: '이메일 주소', example: 'user@example.com' })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: emailValidationMessage })
   email?: string;
 }
 
