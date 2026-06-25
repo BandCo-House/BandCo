@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import type { User } from 'src/generated/prisma';
+import type { Prisma, User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from './dto/get-users-query.dto';
 import type { UsersRepository } from './repositoreis/user.repository';
@@ -150,6 +150,20 @@ describe('UsersService', () => {
 
     it('유저가 존재하지 않으면 NotFoundException을 던진다', async () => {
       await expect(service.deleteUser('unknown-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('tx가 전달되면 findAuthUserById와 softDeleteUser에 동일한 tx를 전달한다', async () => {
+      const txClient = {} as Prisma.TransactionClient;
+      const findSpy = jest.spyOn(repositoryStub, 'findAuthUserById');
+      const deleteSpy = jest.spyOn(repositoryStub, 'softDeleteUser');
+
+      await service.deleteUser('user-001', txClient);
+
+      expect(findSpy).toHaveBeenCalledWith('user-001', txClient);
+      expect(deleteSpy).toHaveBeenCalledWith('user-001', txClient);
+
+      findSpy.mockRestore();
+      deleteSpy.mockRestore();
     });
   });
 });
