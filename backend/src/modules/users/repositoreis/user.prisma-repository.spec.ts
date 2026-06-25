@@ -177,20 +177,23 @@ describe('UsersPrismaRepository', () => {
       expect(callArgs.where.profile).toEqual({ nickname: { contains: 'nick', mode: 'insensitive' } });
     });
 
-    it('cursor__id가 있으면 cursor와 skip:1이 전달된다', async () => {
+    it('cursor__id와 cursor__created_at이 있으면 keyset WHERE 조건이 추가된다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers({ ...defaultQuery, cursor__id: 'cursor-uuid', cursor__created_at: '2026-01-01T00:00:00.000Z' });
       const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
-      expect(callArgs.cursor).toEqual({ id: 'cursor-uuid' });
-      expect(callArgs.skip).toBe(1);
+      expect(callArgs.cursor).toBeUndefined();
+      expect(callArgs.skip).toBeUndefined();
+      expect(callArgs.where.AND).toBeDefined();
+      expect(callArgs.where.AND[0].OR).toHaveLength(2);
     });
 
-    it('cursor__id가 없으면 cursor와 skip이 전달되지 않는다', async () => {
+    it('cursor가 없으면 AND 조건이 추가되지 않는다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers(defaultQuery);
       const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
       expect(callArgs.cursor).toBeUndefined();
       expect(callArgs.skip).toBeUndefined();
+      expect(callArgs.where.AND).toBeUndefined();
     });
 
     it('결과가 없으면 cursor와 next가 모두 null이다', async () => {

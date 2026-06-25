@@ -108,6 +108,16 @@ export class UsersPrismaRepository implements UsersRepository {
       delete where.nickname;
     }
 
+    // cursor__created_at + cursor__id 두 필드를 복합 keyset 조건으로 변환한다.
+    // Prisma cursor + skip 방식은 cursor 레코드 위치를 내부적으로 조회하므로
+    // soft-delete된 레코드가 커서가 될 경우 WHERE 필터와 충돌할 수 있다.
+    if (query.cursor__created_at && query.cursor__id) {
+      const cursorDate = new Date(query.cursor__created_at);
+      const dateOp = query.order__created_at === 'asc' ? 'gt' : 'lt';
+      const idOp = query.order__id === 'asc' ? 'gt' : 'lt';
+      where.AND = [{ OR: [{ createdAt: { [dateOp]: cursorDate } }, { createdAt: { equals: cursorDate }, id: { [idOp]: query.cursor__id } }] }];
+    }
+
     const users = await client.user.findMany({
       where,
       include: {
@@ -117,7 +127,6 @@ export class UsersPrismaRepository implements UsersRepository {
       },
       orderBy,
       take: take ?? query.take,
-      ...(query.cursor__id ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
 
     const items = users.map(mapUserListItem);
