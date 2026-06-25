@@ -1,5 +1,79 @@
 import { BadRequestException } from '@nestjs/common';
 
+type OrderDirection = 'asc' | 'desc';
+
+export interface ParsedPrismaQuery<TWhere extends object = Record<string, unknown>> {
+  where: TWhere & Record<string, unknown>;
+  orderBy: Record<string, OrderDirection>[];
+  take?: number;
+}
+
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
+function buildWhereValue(operator: string, value: unknown): unknown {
+  switch (operator) {
+    case 'contain':
+      return { contains: value, mode: 'insensitive' };
+    case 'equal':
+      return value;
+    case 'greater_than_equal':
+      return { gte: value };
+    case 'less_than_equal':
+      return { lte: value };
+    case 'greater_than':
+      return { gt: value };
+    case 'less_than':
+      return { lt: value };
+    default:
+      return value;
+  }
+}
+
+/**
+ * '__' 구분자 기반 쿼리 DTO를 Prisma findMany 공통 인자로 변환한다.
+ *
+ * 지원 패턴:
+ *   where__<field>__<operator>  → where 필터 (연산자 적용)
+ *   where__<field>              → where 필터 (직접 동등 비교)
+ *   order__<field>              → orderBy 배열
+ *   take                        → 조회 개수 제한
+ *
+ * 지원 연산자: contain | equal | greater_than_equal | less_than_equal | greater_than | less_than
+ * 필드명은 snake_case → camelCase 자동 변환된다.
+ * cursor 처리는 모델별 고유키에 의존하므로 Repository에서 직접 처리한다.
+ *
+ * @param dto 쿼리 DTO 객체
+ * @returns Prisma findMany에 바로 spread할 수 있는 공통 인자
+ */
+export function parseToPrismaQuery<TWhere extends object = Record<string, unknown>>(dto: object): ParsedPrismaQuery<TWhere> {
+  const where: Record<string, unknown> = {};
+  const orderBy: Record<string, OrderDirection>[] = [];
+  let take: number | undefined;
+
+  for (const [key, value] of Object.entries(dto)) {
+    if (value === undefined || value === null) continue;
+
+    const parts = key.split('__');
+    const prefix = parts[0];
+
+    if (prefix === 'where') {
+      if (parts.length === 2) {
+        where[toCamelCase(parts[1])] = value;
+      } else if (parts.length === 3) {
+        where[toCamelCase(parts[1])] = buildWhereValue(parts[2], value);
+      }
+    } else if (prefix === 'order' && parts.length === 2) {
+      orderBy.push({ [toCamelCase(parts[1])]: value as OrderDirection });
+    } else if (key === 'take') {
+      take = value as number;
+    }
+  }
+
+  return { where: where as unknown as TWhere & Record<string, unknown>, orderBy, ...(take !== undefined ? { take } : {}) };
+}
+
 /**
  * 빈 문자열을 의미 없는 입력으로 보고 undefined 로 정리한다.
  *
