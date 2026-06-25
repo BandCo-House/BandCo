@@ -16,6 +16,11 @@ export type PasswordAuthUser = AuthUser & {
   passwordHash: string | null;
 };
 
+export type DeleteUserResult = {
+  userId: string;
+  deletedAt: string;
+};
+
 export interface UsersRepository {
   findByEmail(email: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
   findAuthUserById(id: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
@@ -24,4 +29,5 @@ export interface UsersRepository {
   findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult>;
   findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null>;
   updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult>;
+  softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult>;
 }

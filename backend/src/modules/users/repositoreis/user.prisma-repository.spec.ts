@@ -207,12 +207,36 @@ describe('UsersPrismaRepository', () => {
       expect(result.meta.next).toBeNull();
     });
 
-    it('결과가 take와 같으면 next에 마지막 항목의 커서가 설정된다', async () => {
+    it('결과가 take와 같으면 next에 다음 페이지 URL이 설정된다', async () => {
       const second = { ...listRecord, id: 'user-002', createdAt: new Date('2025-12-01T00:00:00.000Z') };
       mockPrisma.user.findMany.mockResolvedValue([listRecord, second]);
       const result = await repository.findUsers({ ...defaultQuery, take: 2 });
-      expect(result.meta.next?.id).toBe('user-002');
-      expect(result.meta.next?.createdAt).toBe('2025-12-01T00:00:00.000Z');
+      expect(typeof result.meta.next).toBe('string');
+      expect(result.meta.next).toContain('cursor__id=user-002');
+      expect(result.meta.next).toContain('cursor__created_at=');
+    });
+  });
+
+  describe('softDeleteUser', () => {
+    it('deletedAt과 status를 업데이트하고 결과를 반환한다', async () => {
+      const now = new Date();
+      mockPrisma.user.update.mockResolvedValue({ id: 'user-001', deletedAt: now });
+      const result = await repository.softDeleteUser('user-001');
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-001', deletedAt: null },
+        data: { deletedAt: expect.any(Date), status: 'INACTIVE' },
+        select: { id: true, deletedAt: true },
+      });
+      expect(result.userId).toBe('user-001');
+      expect(result.deletedAt).toBe(now.toISOString());
+    });
+
+    it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
+      const now = new Date();
+      const txClient = { user: { update: jest.fn().mockResolvedValue({ id: 'user-001', deletedAt: now }) } };
+      await repository.softDeleteUser('user-001', txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.user.update).toHaveBeenCalled();
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
     });
   });
 

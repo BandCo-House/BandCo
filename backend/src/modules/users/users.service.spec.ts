@@ -25,6 +25,8 @@ const mockListResult: GetUsersResult = {
   meta: { count: 1, take: 20, cursor: { createdAt: '2026-01-01T00:00:00.000Z', id: 'user-001' }, next: null },
 };
 
+const mockDeleteResult = { userId: 'user-001', deletedAt: '2026-06-25T00:00:00.000Z' };
+
 const repositoryStub: UsersRepository = {
   async findByEmail(email) {
     return email === 'test@example.com' ? mockUser : null;
@@ -46,6 +48,10 @@ const repositoryStub: UsersRepository = {
   },
   async updateUserProfile() {
     return mockProfile;
+  },
+  async softDeleteUser(userId) {
+    if (userId !== 'user-001') throw new Error('not found');
+    return mockDeleteResult;
   },
 };
 
@@ -132,6 +138,18 @@ describe('UsersService', () => {
     it('repository 결과를 그대로 반환한다', async () => {
       const result = await service.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
       expect(result.user.id).toBe('user-001');
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('유저가 존재하면 탈퇴 결과를 반환한다', async () => {
+      const result = await service.deleteUser('user-001');
+      expect(result.userId).toBe('user-001');
+      expect(result.deletedAt).toBeDefined();
+    });
+
+    it('유저가 존재하지 않으면 NotFoundException을 던진다', async () => {
+      await expect(service.deleteUser('unknown-id')).rejects.toThrow(NotFoundException);
     });
   });
 });
