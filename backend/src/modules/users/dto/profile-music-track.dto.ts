@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsInt, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsIn, IsInt, IsString, ValidateIf } from 'class-validator';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 
 import type { ProfileMusicTrack } from '../types/profile-music.type';
@@ -25,8 +25,8 @@ export class ProfileMusicTrackDto implements ProfileMusicTrack {
   @IsString({ message: stringValidationMessage })
   albumName!: string;
 
-  @ApiPropertyOptional({ description: '앨범 이미지 URL', example: 'https://example.com/album.jpg', nullable: true })
-  @IsOptional()
+  @ApiProperty({ description: '앨범 이미지 URL', example: 'https://example.com/album.jpg', nullable: true })
+  @ValidateIf(o => o.albumImageUrl !== null)
   @IsString({ message: stringValidationMessage })
   albumImageUrl!: string | null;
 
@@ -34,8 +34,8 @@ export class ProfileMusicTrackDto implements ProfileMusicTrack {
   @IsInt()
   durationMs!: number;
 
-  @ApiPropertyOptional({ description: '미리 듣기 URL', example: 'https://cdns-preview.dzcdn.net/...', nullable: true })
-  @IsOptional()
+  @ApiProperty({ description: '미리 듣기 URL', example: 'https://cdns-preview.dzcdn.net/...', nullable: true })
+  @ValidateIf(o => o.previewUrl !== null)
   @IsString({ message: stringValidationMessage })
   previewUrl!: string | null;
 

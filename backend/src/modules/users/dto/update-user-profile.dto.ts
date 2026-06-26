@@ -20,7 +20,7 @@ class UpdateProfileDto {
   @IsString({ message: stringValidationMessage })
   selfDescription?: string;
 
-  @ApiPropertyOptional({ description: '프로필 음악 정보. 전달 시 upsert, 미전달/null 시 변경 없음.', type: ProfileMusicTrackDto })
+  @ApiPropertyOptional({ description: '프로필 음악 정보. 전달 시 upsert, 미전달/null 시 변경 없음.', type: ProfileMusicTrackDto, nullable: true })
   @IsOptional()
   @ValidateNested()
   @Type(() => ProfileMusicTrackDto)
