@@ -11,7 +11,6 @@ import { UpdateSongBodyDto } from './dto/update-song.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
-import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
 import { SongsService } from './songs.service';
 
@@ -96,16 +95,5 @@ export class SongsController {
     const result = await this.songsService.deleteSong(req.user.id, songId);
 
     return createSuccessResponse('곡이 삭제되었습니다.', result);
-  }
-
-  @Get('songs/spotify/tracks/:trackId')
-  @ApiOperation({ summary: 'Spotify 곡 미리보기 조회' })
-  @ApiParam({ name: 'trackId', description: 'Spotify 트랙 ID', type: String })
-  @ApiResponse({ status: 200, description: 'Spotify 곡 미리보기 조회 성공' })
-  @ApiResponse({ status: 404, description: '트랙을 찾을 수 없음' })
-  async getSpotifyTrackPreview(@Param('trackId') trackId: string): Promise<ApiSuccessResponse<SongPreview>> {
-    const songPreview = await this.songsService.previewSpotifyTrack(trackId);
-
-    return createSuccessResponse('Spotify 곡 미리보기 조회 성공', songPreview);
   }
 }

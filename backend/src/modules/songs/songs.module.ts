@@ -9,7 +9,6 @@ import { SongsPrismaRepository } from './repositories/songs.prisma-repository';
 import { SONGS_REPOSITORY } from './repositories/songs.repository';
 import { SongsController } from './songs.controller';
 import { SongsService } from './songs.service';
-import { SpotifyTrackClient } from './spotify-track.client';
 
 @Module({
   imports: [AuthModule, UsersModule, SkillsModule],
@@ -17,7 +16,6 @@ import { SpotifyTrackClient } from './spotify-track.client';
   providers: [
     AccessTokenGuard,
     SongsService,
-    SpotifyTrackClient,
     SongsPrismaRepository,
     {
       provide: SONGS_REPOSITORY,

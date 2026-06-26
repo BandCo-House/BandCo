@@ -11,10 +11,7 @@ import { SONGS_REPOSITORY, type SongsRepository } from './repositories/songs.rep
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
-import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
-import { SpotifyTrackClient, type SpotifyTrackReader } from './spotify-track.client';
-import { parseSpotifyTrackToSongPreview } from './spotify-track.parser';
 
 @Injectable()
 export class SongsService {
@@ -23,21 +20,7 @@ export class SongsService {
     private readonly songsRepository: SongsRepository,
     private readonly prisma: PrismaService,
     private readonly skillsService: SkillsService,
-    @Inject(SpotifyTrackClient)
-    private readonly spotifyTrackReader: SpotifyTrackReader,
   ) {}
-
-  /**
-   * Spotify track을 곡 등록 미리보기 데이터로 변환한다.
-   *
-   * @param {string} trackId - 조회할 Spotify track ID
-   * @returns {Promise<SongPreview>} 곡 등록 미리보기 데이터
-   */
-  async previewSpotifyTrack(trackId: string): Promise<SongPreview> {
-    const spotifyTrack = await this.spotifyTrackReader.findTrack(trackId);
-
-    return parseSpotifyTrackToSongPreview(spotifyTrack);
-  }
 
   /**
    * 밴드 멤버만 곡을 생성할 수 있으므로 멤버십과 세션 타입을 검증한 뒤 저장한다.

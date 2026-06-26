@@ -5,7 +5,6 @@ import type { SkillsService } from '../skills/skills.service';
 
 import type { SongsRepository } from './repositories/songs.repository';
 import { SongsService } from './songs.service';
-import type { SpotifyTrackReader } from './spotify-track.client';
 
 describe('SongsService', () => {
   const createService = (repositoryOverrides: Partial<SongsRepository> = {}) => {
@@ -24,14 +23,11 @@ describe('SongsService', () => {
       ...repositoryOverrides,
     } as jest.Mocked<SongsRepository>;
 
-    const spotifyTrackReader: jest.Mocked<SpotifyTrackReader> = {
-      findTrack: jest.fn(),
-    };
     const skillsService: jest.Mocked<SkillsService> = {
       findExistingSkillTypeIds: jest.fn(),
     } as unknown as jest.Mocked<SkillsService>;
 
-    const service = new SongsService(repository, prisma, skillsService, spotifyTrackReader);
+    const service = new SongsService(repository, prisma, skillsService);
 
     return {
       service,
@@ -39,45 +35,8 @@ describe('SongsService', () => {
       prisma,
       transactionClient,
       skillsService,
-      spotifyTrackReader,
     };
   };
-
-  it('Spotify 곡 미리보기 서비스는 Spotify track 조회를 위임한다', async () => {
-    const { service, spotifyTrackReader } = createService();
-
-    spotifyTrackReader.findTrack.mockResolvedValue({
-      id: '11dFghVXANMlKmJXsNCbNl',
-      name: 'Cut To The Feeling',
-      duration_ms: 207959,
-      preview_url: null,
-      artists: [
-        {
-          name: 'Carly Rae Jepsen',
-        },
-      ],
-      album: {
-        name: 'Cut To The Feeling',
-        release_date: '2017-05-26',
-        images: [],
-      },
-      external_urls: {
-        spotify: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
-      },
-    });
-
-    const result = await service.previewSpotifyTrack('11dFghVXANMlKmJXsNCbNl');
-
-    expect(spotifyTrackReader.findTrack).toHaveBeenCalledWith('11dFghVXANMlKmJXsNCbNl');
-    expect(result).toMatchObject({
-      externalTrackId: '11dFghVXANMlKmJXsNCbNl',
-      title: 'Cut To The Feeling',
-      artistName: 'Carly Rae Jepsen',
-      albumName: 'Cut To The Feeling',
-      sourceUrl: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
-      sourceType: 'SPOTIFY',
-    });
-  });
 
   it('밴드 멤버가 곡을 생성하면 세션 타입을 검증하고 곡을 저장한다', async () => {
     const { service, repository, transactionClient, skillsService } = createService();
