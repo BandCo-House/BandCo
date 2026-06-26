@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { parseToPrismaQuery } from 'src/common/query';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
@@ -206,11 +206,18 @@ export class UsersPrismaRepository implements UsersRepository {
           await client.userProfile.update({ where: { userId }, data: profileFields });
         }
         if (profileMusic) {
-          await client.profileMusic.upsert({
-            where: { userId },
-            create: { userId, trackData: profileMusic as unknown as Prisma.InputJsonValue },
-            update: { trackData: profileMusic as unknown as Prisma.InputJsonValue },
-          });
+          try {
+            await client.profileMusic.upsert({
+              where: { userId },
+              create: { userId, trackData: profileMusic as unknown as Prisma.InputJsonValue },
+              update: { trackData: profileMusic as unknown as Prisma.InputJsonValue },
+            });
+          } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError && (e.code === 'P2003' || e.code === 'P2025')) {
+              throw new NotFoundException('존재하지 않는 유저입니다.');
+            }
+            throw e;
+          }
         }
       }
 

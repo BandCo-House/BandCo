@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from 'src/database/prisma/prisma.service';
 import { Prisma } from 'src/generated/prisma';
@@ -315,7 +316,7 @@ describe('UsersPrismaRepository', () => {
       expect(mockPrisma.favoriteGenre.createMany).toHaveBeenCalledWith({ data: [{ userId: 'user-001', genreId: 'genre-002' }] });
     });
 
-    it('profile.profileMusic이 있으면 profileMusic.upsert를 호출한다', async () => {
+    it('profile.profileMusic이 있으면 create/update trackData 페이로드를 포함해 profileMusic.upsert를 호출한다', async () => {
       mockPrisma.profileMusic.upsert.mockResolvedValue({});
       const trackData = {
         externalTrackId: '12345',
@@ -329,7 +330,64 @@ describe('UsersPrismaRepository', () => {
         sourceUrl: 'https://www.deezer.com/track/12345',
       };
       await repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } });
-      expect(mockPrisma.profileMusic.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'user-001' } }));
+      expect(mockPrisma.profileMusic.upsert).toHaveBeenCalledWith({
+        where: { userId: 'user-001' },
+        create: { userId: 'user-001', trackData },
+        update: { trackData },
+      });
+    });
+
+    it('profile.profileMusic이 null이면 profileMusic.upsert를 호출하지 않는다', async () => {
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: null } });
+      expect(mockPrisma.profileMusic.upsert).not.toHaveBeenCalled();
+    });
+
+    it('profile.profileMusic이 없으면 profileMusic.upsert를 호출하지 않는다', async () => {
+      await repository.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
+      expect(mockPrisma.profileMusic.upsert).not.toHaveBeenCalled();
+    });
+
+    it('profileMusic.upsert가 P2003을 던지면 NotFoundException으로 변환한다', async () => {
+      const p2003 = new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', { code: 'P2003', clientVersion: '0' });
+      mockPrisma.profileMusic.upsert.mockRejectedValue(p2003);
+      const trackData = {
+        externalTrackId: '12345',
+        sourceType: 'DEEZER' as const,
+        title: 'Blinding Lights',
+        artistName: 'The Weeknd',
+        albumName: 'After Hours',
+        albumImageUrl: null,
+        durationMs: 200000,
+        previewUrl: null,
+        sourceUrl: 'https://www.deezer.com/track/12345',
+      };
+      await expect(repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('tx가 전달되면 tx 클라이언트로 profileMusic.upsert를 호출한다', async () => {
+      const txClient = {
+        userProfile: { update: jest.fn().mockResolvedValue({}) },
+        profileMusic: { upsert: jest.fn().mockResolvedValue({}) },
+        user: { findUnique: jest.fn().mockResolvedValue(userRecord) },
+      };
+      const trackData = {
+        externalTrackId: '999',
+        sourceType: 'DEEZER' as const,
+        title: 'Test',
+        artistName: 'Artist',
+        albumName: 'Album',
+        albumImageUrl: null,
+        durationMs: 100000,
+        previewUrl: null,
+        sourceUrl: 'https://www.deezer.com/track/999',
+      };
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } }, txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.profileMusic.upsert).toHaveBeenCalledWith({
+        where: { userId: 'user-001' },
+        create: { userId: 'user-001', trackData },
+        update: { trackData },
+      });
+      expect(mockPrisma.profileMusic.upsert).not.toHaveBeenCalled();
     });
 
     it('모든 변경 후 최신 프로필을 반환한다', async () => {
