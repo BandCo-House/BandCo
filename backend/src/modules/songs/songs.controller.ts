@@ -108,4 +108,15 @@ export class SongsController {
 
     return createSuccessResponse('곡 검색 성공', songPreviews);
   }
+
+  @Get('songs/tracks/:trackId')
+  @ApiOperation({ summary: '외부 음원 곡 미리듣기' })
+  @ApiParam({ name: 'trackId', description: '외부 음원 트랙 ID', type: String })
+  @ApiResponse({ status: 200, description: '곡 미리듣기 조회 성공' })
+  @ApiResponse({ status: 404, description: '트랙을 찾을 수 없음' })
+  async getTrackPreview(@Param('trackId') trackId: string): Promise<ApiSuccessResponse<SongPreview>> {
+    const songPreview = await this.songsService.getTrackPreview(trackId);
+
+    return createSuccessResponse('곡 미리듣기 조회 성공', songPreview);
+  }
 }

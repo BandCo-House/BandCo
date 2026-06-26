@@ -13,7 +13,7 @@ import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
 import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
-import { DeezerTrackClient, type DeezerTrackSearcher } from './deezer-track.client';
+import { DeezerTrackClient, type DeezerTrackReader, type DeezerTrackSearcher } from './deezer-track.client';
 import { parseDeezerTrackToSongPreview } from './deezer-track.parser';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class SongsService {
     private readonly prisma: PrismaService,
     private readonly skillsService: SkillsService,
     @Inject(DeezerTrackClient)
-    private readonly deezerTrackClient: DeezerTrackSearcher,
+    private readonly deezerTrackClient: DeezerTrackSearcher & DeezerTrackReader,
   ) {}
 
   /**
@@ -37,6 +37,18 @@ export class SongsService {
     const tracks = await this.deezerTrackClient.searchTracks(query);
 
     return tracks.map(track => parseDeezerTrackToSongPreview(track));
+  }
+
+  /**
+   * 외부 음원 트랙 ID로 단일 곡 미리듣기 데이터를 조회한다.
+   *
+   * @param {string} trackId - 외부 음원 트랙 ID
+   * @returns {Promise<SongPreview>} 곡 등록 미리듣기 데이터
+   */
+  async getTrackPreview(trackId: string): Promise<SongPreview> {
+    const track = await this.deezerTrackClient.findTrack(trackId);
+
+    return parseDeezerTrackToSongPreview(track);
   }
 
   /**
