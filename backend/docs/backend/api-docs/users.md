@@ -103,18 +103,18 @@
     "profile": {
       "nickname": "홍길동",
       "selfDescription": "기타를 사랑합니다.",
-      "avatarUrl": "https://example.com/avatar.jpg",
-      "profileMusic": {
-        "externalTrackId": "12345",
-        "sourceType": "DEEZER",
-        "title": "Blinding Lights",
-        "artistName": "The Weeknd",
-        "albumName": "After Hours",
-        "albumImageUrl": "https://example.com/album.jpg",
-        "durationMs": 200000,
-        "previewUrl": "https://cdns-preview.dzcdn.net/...",
-        "sourceUrl": "https://www.deezer.com/track/12345"
-      }
+      "avatarUrl": "https://example.com/avatar.jpg"
+    },
+    "profileMusic": {
+      "externalTrackId": "12345",
+      "sourceType": "DEEZER",
+      "title": "Blinding Lights",
+      "artistName": "The Weeknd",
+      "albumName": "After Hours",
+      "albumImageUrl": "https://example.com/album.jpg",
+      "durationMs": 200000,
+      "previewUrl": "https://cdns-preview.dzcdn.net/...",
+      "sourceUrl": "https://www.deezer.com/track/12345"
     },
     "skills": [
       {

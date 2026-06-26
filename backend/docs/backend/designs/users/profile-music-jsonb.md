@@ -15,7 +15,7 @@
 
 ### 스키마 변경 (prisma/schema.prisma)
 
-```
+```text
 수정: prisma/schema.prisma
   - UserProfile.profileMusicUrl 필드 제거
   - User 모델에 `profileMusic ProfileMusic?` 관계 추가
@@ -24,7 +24,7 @@
 
 ### 신규 파일
 
-```
+```text
 신규: src/modules/users/repositories/profile-music.repository.ts
       src/modules/users/repositories/profile-music.prisma-repository.ts
       src/modules/users/dto/search-profile-music-query.dto.ts
@@ -34,7 +34,7 @@
 
 ### 수정 파일
 
-```
+```text
 수정: src/modules/users/types/user-profile.type.ts
         UserProfileDetail.profileMusicUrl 제거
         UserProfileDetail에 profileMusic: ProfileMusicTrack | null 추가
@@ -266,7 +266,7 @@ class UpdateProfileDto {
 
 ### searchProfileMusic(query: string, tx?: Prisma.TransactionClient): Promise<{ items: ProfileMusicTrack[] }>
 
-```
+```text
 1. DeezerTrackClient.searchTracks(query) 호출
 2. 결과를 parseDeezerTrackToProfileMusicTrack 헬퍼(또는 인라인 매핑)로 변환
    - SongPreview.releaseDate 필드는 ProfileMusicTrack에 없으므로 제외
@@ -280,7 +280,7 @@ class UpdateProfileDto {
 
 ### deleteProfileMusic(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteProfileMusicResult>
 
-```
+```text
 1. profileMusicRepository.deleteByUserId(userId, tx) 호출
 2. 반환값이 null → NotFoundException('프로필 음악이 존재하지 않습니다.')
 3. 결과 반환
@@ -290,7 +290,7 @@ class UpdateProfileDto {
 
 기존 `updateUserProfile`에서 `data.profile.profileMusic` 처리를 추가한다.
 
-```
+```text
 기존 흐름에서 profile 업데이트 단계:
   - userProfile.update()에 profileMusicUrl 포함 → 제거
   - data.profile.profileMusic이 truthy(null이 아니고 undefined가 아님)이면:
