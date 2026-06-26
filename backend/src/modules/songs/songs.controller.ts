@@ -7,10 +7,12 @@ import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { CreateSongBodyDto } from './dto/create-song.dto';
 import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
+import { SearchTrackPreviewsQueryDto } from './dto/search-track-previews-query.dto';
 import { UpdateSongBodyDto } from './dto/update-song.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
+import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
 import { SongsService } from './songs.service';
 
@@ -95,5 +97,15 @@ export class SongsController {
     const result = await this.songsService.deleteSong(req.user.id, songId);
 
     return createSuccessResponse('곡이 삭제되었습니다.', result);
+  }
+
+  @Get('songs/tracks/search')
+  @ApiOperation({ summary: '외부 음원 곡 검색' })
+  @ApiResponse({ status: 200, description: '곡 검색 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  async searchTracks(@Query() query: SearchTrackPreviewsQueryDto): Promise<ApiSuccessResponse<SongPreview[]>> {
+    const songPreviews = await this.songsService.searchTrackPreviews(query.query);
+
+    return createSuccessResponse('곡 검색 성공', songPreviews);
   }
 }

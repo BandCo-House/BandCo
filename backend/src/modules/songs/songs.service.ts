@@ -11,7 +11,10 @@ import { SONGS_REPOSITORY, type SongsRepository } from './repositories/songs.rep
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { DeleteSongResult } from './types/delete-song-result.type';
 import type { GetBandSongsResult } from './types/song-list.type';
+import type { SongPreview } from './types/song-preview.type';
 import type { UpdateSongResult } from './types/update-song-result.type';
+import { DeezerTrackClient, type DeezerTrackSearcher } from './deezer-track.client';
+import { parseDeezerTrackToSongPreview } from './deezer-track.parser';
 
 @Injectable()
 export class SongsService {
@@ -20,7 +23,21 @@ export class SongsService {
     private readonly songsRepository: SongsRepository,
     private readonly prisma: PrismaService,
     private readonly skillsService: SkillsService,
+    @Inject(DeezerTrackClient)
+    private readonly deezerTrackClient: DeezerTrackSearcher,
   ) {}
+
+  /**
+   * 외부 음원 검색 결과를 곡 등록 미리보기 데이터 목록으로 변환한다.
+   *
+   * @param {string} query - 곡명과 아티스트명을 포함한 검색어
+   * @returns {Promise<SongPreview[]>} 곡 등록 미리보기 데이터 목록
+   */
+  async searchTrackPreviews(query: string): Promise<SongPreview[]> {
+    const tracks = await this.deezerTrackClient.searchTracks(query);
+
+    return tracks.map(track => parseDeezerTrackToSongPreview(track));
+  }
 
   /**
    * 밴드 멤버만 곡을 생성할 수 있으므로 멤버십과 세션 타입을 검증한 뒤 저장한다.

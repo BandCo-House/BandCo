@@ -7,10 +7,10 @@ import { notemptyValidationMessage } from '../../../common/validation-message/no
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
 
 /**
- * Deezer 검색어는 외부 API 호출 전에 빈 문자열을 차단한다.
+ * 외부 음원 검색어는 외부 API 호출 전에 빈 문자열을 차단한다.
  */
-export class SearchDeezerTrackPreviewsQueryDto {
-  @ApiProperty({ description: 'Deezer 곡 검색어', example: 'Bohemian Rhapsody Queen' })
+export class SearchTrackPreviewsQueryDto {
+  @ApiProperty({ description: '곡 검색어', example: 'Bohemian Rhapsody Queen' })
   @Transform(trimStringValue)
   @IsString({
     message: stringValidationMessage,

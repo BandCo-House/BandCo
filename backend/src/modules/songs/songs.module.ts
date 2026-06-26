@@ -7,6 +7,7 @@ import { UsersModule } from '../users/users.module';
 
 import { SongsPrismaRepository } from './repositories/songs.prisma-repository';
 import { SONGS_REPOSITORY } from './repositories/songs.repository';
+import { DeezerTrackClient } from './deezer-track.client';
 import { SongsController } from './songs.controller';
 import { SongsService } from './songs.service';
 
@@ -16,6 +17,7 @@ import { SongsService } from './songs.service';
   providers: [
     AccessTokenGuard,
     SongsService,
+    DeezerTrackClient,
     SongsPrismaRepository,
     {
       provide: SONGS_REPOSITORY,

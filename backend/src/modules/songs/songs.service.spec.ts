@@ -4,6 +4,7 @@ import type { PrismaService } from '../../database/prisma';
 import type { SkillsService } from '../skills/skills.service';
 
 import type { SongsRepository } from './repositories/songs.repository';
+import type { DeezerTrackSearcher } from './deezer-track.client';
 import { SongsService } from './songs.service';
 
 describe('SongsService', () => {
@@ -23,11 +24,14 @@ describe('SongsService', () => {
       ...repositoryOverrides,
     } as jest.Mocked<SongsRepository>;
 
+    const deezerTrackSearcher: jest.Mocked<DeezerTrackSearcher> = {
+      searchTracks: jest.fn(),
+    };
     const skillsService: jest.Mocked<SkillsService> = {
       findExistingSkillTypeIds: jest.fn(),
     } as unknown as jest.Mocked<SkillsService>;
 
-    const service = new SongsService(repository, prisma, skillsService);
+    const service = new SongsService(repository, prisma, skillsService, deezerTrackSearcher);
 
     return {
       service,
@@ -35,8 +39,47 @@ describe('SongsService', () => {
       prisma,
       transactionClient,
       skillsService,
+      deezerTrackSearcher,
     };
   };
+
+  it('외부 음원 검색 서비스는 검색 결과를 곡 미리보기 목록으로 변환한다', async () => {
+    const { service, deezerTrackSearcher } = createService();
+
+    deezerTrackSearcher.searchTracks.mockResolvedValue([
+      {
+        id: 3135556,
+        title: 'Harder, Better, Faster, Stronger',
+        duration: 224,
+        link: 'https://www.deezer.com/track/3135556',
+        preview: 'https://cdns-preview.dzcdn.net/stream/demo.mp3',
+        artist: {
+          name: 'Daft Punk',
+        },
+        album: {
+          title: 'Discovery',
+          cover: 'https://api.deezer.com/album/302127/image',
+          cover_medium: 'https://e-cdns-images.dzcdn.net/images/cover/medium.jpg',
+          cover_big: 'https://e-cdns-images.dzcdn.net/images/cover/big.jpg',
+          cover_xl: 'https://e-cdns-images.dzcdn.net/images/cover/xl.jpg',
+        },
+      },
+    ]);
+
+    const result = await service.searchTrackPreviews('Daft Punk Harder Better Faster Stronger');
+
+    expect(deezerTrackSearcher.searchTracks).toHaveBeenCalledWith('Daft Punk Harder Better Faster Stronger');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      externalTrackId: '3135556',
+      title: 'Harder, Better, Faster, Stronger',
+      artistName: 'Daft Punk',
+      albumName: 'Discovery',
+      durationMs: 224000,
+      sourceUrl: 'https://www.deezer.com/track/3135556',
+      sourceType: 'DEEZER',
+    });
+  });
 
   it('밴드 멤버가 곡을 생성하면 세션 타입을 검증하고 곡을 저장한다', async () => {
     const { service, repository, transactionClient, skillsService } = createService();
