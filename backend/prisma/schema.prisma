@@ -25,6 +25,7 @@ model User {
   favoriteGenres      FavoriteGenre[]
   notifications       Notification[]
   profile             UserProfile?
+  profileMusic        ProfileMusic?
   userSkills          UserSkill[]
 
   @@map("users")
@@ -52,12 +53,22 @@ model UserProfile {
   userId          String    @id @map("user_id") @db.Uuid
   nickname        String    @db.VarChar(255)
   selfDescription String?   @map("self_description")
-  profileMusicUrl String?   @map("profile_music_url")
   avatarUrl       String?   @map("avatar_url")
   updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
+}
+
+model ProfileMusic {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  trackData Json     @map("track_data") @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profile_music")
 }
 
 model Notification {

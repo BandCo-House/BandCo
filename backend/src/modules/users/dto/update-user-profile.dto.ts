@@ -7,6 +7,8 @@ import { stringValidationMessage } from 'src/common/validation-message/string-va
 import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
 import { SkillLevelType } from 'src/generated/prisma';
 
+import { ProfileMusicTrackDto } from './profile-music-track.dto';
+
 class UpdateProfileDto {
   @ApiPropertyOptional({ description: '닉네임', example: '홍길동' })
   @IsOptional()
@@ -18,10 +20,11 @@ class UpdateProfileDto {
   @IsString({ message: stringValidationMessage })
   selfDescription?: string;
 
-  @ApiPropertyOptional({ description: '프로필 음악 URL', example: 'https://example.com/music.mp3' })
+  @ApiPropertyOptional({ description: '프로필 음악 정보. 전달 시 upsert, 미전달/null 시 변경 없음.', type: ProfileMusicTrackDto, nullable: true })
   @IsOptional()
-  @IsString({ message: stringValidationMessage })
-  profileMusicUrl?: string;
+  @ValidateNested()
+  @Type(() => ProfileMusicTrackDto)
+  profileMusic?: ProfileMusicTrackDto | null;
 
   @ApiPropertyOptional({ description: '프로필 이미지 URL', example: 'https://example.com/avatar.jpg' })
   @IsOptional()

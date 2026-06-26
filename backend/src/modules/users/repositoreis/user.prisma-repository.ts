@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { parseToPrismaQuery } from 'src/common/query';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
@@ -6,6 +6,7 @@ import { Prisma, type User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
+import type { ProfileMusicTrack } from '../types/profile-music.type';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 import { generateRandomNickname } from '../util/nickname_maker';
@@ -157,6 +158,7 @@ export class UsersPrismaRepository implements UsersRepository {
       where: { id: userId, deletedAt: null },
       include: {
         profile: true,
+        profileMusic: true,
         userSkills: {
           include: { skillType: true },
         },
@@ -179,10 +181,10 @@ export class UsersPrismaRepository implements UsersRepository {
         ? {
             nickname: user.profile.nickname,
             selfDescription: user.profile.selfDescription,
-            profileMusicUrl: user.profile.profileMusicUrl,
             avatarUrl: user.profile.avatarUrl,
           }
         : null,
+      profileMusic: user.profileMusic ? (user.profileMusic.trackData as unknown as ProfileMusicTrack) : null,
       skills: user.userSkills.map(s => ({
         skillTypeId: s.skillTypeId,
         skillName: s.skillType.name,
@@ -199,7 +201,24 @@ export class UsersPrismaRepository implements UsersRepository {
   async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult> {
     const run = async (client: Prisma.TransactionClient) => {
       if (data.profile) {
-        await client.userProfile.update({ where: { userId }, data: data.profile });
+        const { profileMusic, ...profileFields } = data.profile;
+        if (Object.keys(profileFields).length > 0) {
+          await client.userProfile.update({ where: { userId }, data: profileFields });
+        }
+        if (profileMusic) {
+          try {
+            await client.profileMusic.upsert({
+              where: { userId },
+              create: { userId, trackData: profileMusic as unknown as Prisma.InputJsonValue },
+              update: { trackData: profileMusic as unknown as Prisma.InputJsonValue },
+            });
+          } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError && (e.code === 'P2003' || e.code === 'P2025')) {
+              throw new NotFoundException('존재하지 않는 유저입니다.');
+            }
+            throw e;
+          }
+        }
       }
 
       if (data.personalInfo?.email) {
