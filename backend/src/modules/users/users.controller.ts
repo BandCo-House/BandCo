@@ -70,6 +70,7 @@ export class UsersController {
   @ApiOperation({ summary: '프로필 음악 삭제 (#69)' })
   @ApiParam({ name: 'userId', description: '유저 ID (UUID)', type: String })
   @ApiResponse({ status: 200, description: '프로필 음악 삭제 성공' })
+  @ApiResponse({ status: 400, description: 'userId가 UUID 형식이 아님' })
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 403, description: '본인 프로필 음악만 삭제 가능' })
   @ApiResponse({ status: 404, description: '프로필 음악이 존재하지 않음' })

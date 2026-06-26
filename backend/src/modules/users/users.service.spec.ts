@@ -1,13 +1,11 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import type { Prisma, User } from 'src/generated/prisma';
-import { DeezerTrackClient } from 'src/modules/songs/deezer-track.client';
+import type { DeezerTrackClient } from 'src/modules/songs/deezer-track.client';
 import type { DeezerTrackApiResponse } from 'src/modules/songs/types/deezer-track-api-response.type';
 
 import type { GetUsersQuery } from './dto/get-users-query.dto';
-import { PROFILE_MUSIC_REPOSITORY, type ProfileMusicRepository } from './repositoreis/profile-music.repository';
+import type { ProfileMusicRepository } from './repositoreis/profile-music.repository';
 import type { UsersRepository } from './repositoreis/user.repository';
-import { USERS_REPOSITORY } from './repositoreis/user.repository';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { GetUsersResult } from './types/user-list.type';
 import type { GetUserProfileResult } from './types/user-profile.type';
@@ -103,17 +101,8 @@ const deezerTrackClientStub = {
 describe('UsersService', () => {
   let service: UsersService;
 
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        { provide: USERS_REPOSITORY, useValue: repositoryStub },
-        { provide: PROFILE_MUSIC_REPOSITORY, useValue: profileMusicRepositoryStub },
-        { provide: DeezerTrackClient, useValue: deezerTrackClientStub },
-      ],
-    }).compile();
-
-    service = module.get(UsersService);
+  beforeEach(() => {
+    service = new UsersService(repositoryStub, profileMusicRepositoryStub, deezerTrackClientStub as unknown as DeezerTrackClient);
   });
 
   describe('getUserByEmail', () => {
