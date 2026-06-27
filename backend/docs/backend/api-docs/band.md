@@ -186,8 +186,8 @@
 | 파라미터 | 타입 | 필수 | 기본값 | 설명 |
 |---------|------|:----:|:-----:|------|
 | take | number | 선택 | 20 | 가져올 밴드 개수 |
-| order__created_at | string | 선택 | DESC | 생성일 정렬 방향 |
-| order__id | string | 선택 | DESC | ID 정렬 방향 |
+| cursor__created_at | string | 선택 | — | 커서: 생성일 |
+| cursor__id | string | 선택 | — | 커서: 밴드 ID |
 
 > 커서 값은 응답의 `meta.next`에 포함된 URL을 그대로 사용한다. `next`가 `null`이면 다음 페이지 없음.
 
@@ -225,7 +225,7 @@
         "createdAt": "2026-02-10T09:00:00.000+09:00",
         "id": "e2f9a1c1-3d4b-4f2a-9d1f-8a7c1f2d3e4a"
       },
-      "next": "/bands/me?cursor__created_at=2026-02-10T09%3A00%3A00.000%2B09%3A00&cursor__id=e2f9a1c1-3d4b-4f2a-9d1f-8a7c1f2d3e4a&take=20&order__created_at=DESC&order__id=DESC"
+      "next": "/bands/me?cursor__created_at=2026-02-10T09%3A00%3A00.000%2B09%3A00&cursor__id=e2f9a1c1-3d4b-4f2a-9d1f-8a7c1f2d3e4a&take=20"
     }
   },
   "success": true
@@ -259,8 +259,8 @@
 | 파라미터 | 타입 | 필수 | 기본값 | 설명 |
 |---------|------|:----:|:-----:|------|
 | take | number | 선택 | 20 | 가져올 멤버 수 |
-| order__joined_at | string | 선택 | — | 가입일 정렬 방향 |
-| order__id | string | 선택 | — | ID 정렬 방향 |
+| order__joined_at | string | 선택 | `desc` | 가입일 정렬 방향 (`asc` / `desc`) |
+| order__id | string | 선택 | `desc` | ID 정렬 방향 (`asc` / `desc`) |
 | cursor__joined_at | string | 선택 | — | 커서: 가입일 |
 | cursor__id | string | 선택 | — | 커서: 멤버 ID |
 
@@ -331,14 +331,14 @@
 
 | 파라미터 | 타입 | 필수 | 기본값 | 설명 |
 |---------|------|:----:|:-----:|------|
-| where__name__contains | string | 선택 | — | 밴드 이름 검색 키워드 |
+| where__name__contain | string | 선택 | — | 밴드 이름 검색 키워드 |
 | take | number | 선택 | 20 | 가져올 밴드 수 |
-| order__created_at | string | 선택 | — | 생성일 정렬 방향 |
-| order__id | string | 선택 | — | ID 정렬 방향 |
+| order__created_at | string | 선택 | `desc` | 생성일 정렬 방향 (`asc` / `desc`) |
+| order__id | string | 선택 | `desc` | ID 정렬 방향 (`asc` / `desc`) |
 | cursor__created_at | string | 선택 | — | 커서: 생성일 |
 | cursor__id | string | 선택 | — | 커서: 밴드 ID |
 
-> 요청 예시: `GET /bands/search?where__name__contains=rock&take=20`
+> 요청 예시: `GET /bands/search?where__name__contain=rock&take=20`
 
 ### Response 200
 
