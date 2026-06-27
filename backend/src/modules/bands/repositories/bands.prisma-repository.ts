@@ -857,13 +857,25 @@ export class BandsPrismaRepository implements BandsRepository {
     const items = rows.map(invitation => this.mapReceivedBandInvitationListItem(invitation));
     const count = items.length;
     const cursor = count > 0 ? { id: items[0].invitationId } : null;
-    const next = hasNext && count > 0 ? { id: items[count - 1].invitationId } : null;
+    const next = hasNext && count > 0 ? this.buildNextReceivedUrl(query, items[count - 1].invitationId) : null;
+    const totalCount =
+      query.count === true
+        ? await client.bandInvitation.count({
+            where: {
+              inviteeUserId: userId,
+              status: query.where__invitation_status,
+              band: { deletedAt: null },
+              inviterBandMember: { user: { deletedAt: null } },
+            },
+          })
+        : null;
 
     return {
       items,
       meta: {
         count,
         take: query.take,
+        totalCount,
         cursor,
         next,
       },
@@ -929,13 +941,25 @@ export class BandsPrismaRepository implements BandsRepository {
     const items = rows.map(invitation => this.mapSentBandInvitationListItem(invitation));
     const count = items.length;
     const cursor = count > 0 ? { id: items[0].invitationId } : null;
-    const next = hasNext && count > 0 ? { id: items[count - 1].invitationId } : null;
+    const next = hasNext && count > 0 ? this.buildNextSentUrl(query, items[count - 1].invitationId) : null;
+    const totalCount =
+      query.count === true
+        ? await client.bandInvitation.count({
+            where: {
+              status: query.where__invitation_status,
+              band: { deletedAt: null },
+              inviterBandMember: { userId },
+              inviteeUser: { deletedAt: null },
+            },
+          })
+        : null;
 
     return {
       items,
       meta: {
         count,
         take: query.take,
+        totalCount,
         cursor,
         next,
       },
@@ -1654,6 +1678,32 @@ export class BandsPrismaRepository implements BandsRepository {
         memberCount: band._count.members,
       },
     ];
+  }
+
+  /**
+   * 받은 초대 목록 다음 페이지 URL을 생성한다.
+   */
+  private buildNextReceivedUrl(query: GetReceivedBandInvitationsQuery, lastId: string): string {
+    return buildNextPath('/invitations/received', {
+      where__invitation_status: query.where__invitation_status,
+      order__created_at: query.order__created_at,
+      order__id: query.order__id,
+      take: query.take,
+      cursor__id: lastId,
+    });
+  }
+
+  /**
+   * 보낸 초대 목록 다음 페이지 URL을 생성한다.
+   */
+  private buildNextSentUrl(query: GetSentBandInvitationsQuery, lastId: string): string {
+    return buildNextPath('/invitations/sent', {
+      where__invitation_status: query.where__invitation_status,
+      order__created_at: query.order__created_at,
+      order__id: query.order__id,
+      take: query.take,
+      cursor__id: lastId,
+    });
   }
 
   private mapReceivedBandInvitationListItem(

@@ -347,6 +347,7 @@ function createBandsRepositoryStub(options?: {
         meta: {
           count: 1,
           take: query.take,
+          totalCount: null,
           cursor: {
             id: 'invitation-001',
           },
@@ -381,6 +382,7 @@ function createBandsRepositoryStub(options?: {
         meta: {
           count: 1,
           take: query.take,
+          totalCount: null,
           cursor: {
             id: 'invitation-001',
           },

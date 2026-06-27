@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsUUID, Min } from 'class-validator';
-import { normalizeOptionalStringValue, parseOptionalPositiveIntegerValue } from 'src/common/validation/transform.util';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsUUID, Min } from 'class-validator';
+import { normalizeOptionalStringValue, parseOptionalBooleanValue, parseOptionalPositiveIntegerValue } from 'src/common/validation/transform.util';
+import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
 import { minValidationMessage } from 'src/common/validation-message/min-validation.message';
@@ -43,6 +44,12 @@ export class GetSentBandInvitationsQueryDto {
   @IsOptional()
   @IsUUID(undefined, { message: uuidValidationMessage })
   cursor__id?: string;
+
+  @ApiPropertyOptional({ description: '전체 개수 포함 여부. true이면 meta.totalCount에 전체 건수 포함', default: false })
+  @Transform(parseOptionalBooleanValue)
+  @IsOptional()
+  @IsBoolean({ message: booleanValidationMessage })
+  count?: boolean;
 }
 
 export type GetSentBandInvitationsQuery = GetSentBandInvitationsQueryDto;

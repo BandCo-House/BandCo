@@ -8,6 +8,7 @@ function createPrismaMock() {
   return {
     bandInvitation: {
       create: jest.fn(),
+      count: jest.fn(),
       delete: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -131,6 +132,7 @@ describe('BandsPrismaRepository', () => {
       expect(result.meta).toEqual({
         count: 1,
         take: 20,
+        totalCount: null,
         cursor: {
           id: 'invitation-001',
         },
@@ -188,9 +190,34 @@ describe('BandsPrismaRepository', () => {
       });
 
       expect(result.items).toHaveLength(1);
-      expect(result.meta.next).toEqual({
-        id: 'invitation-001',
+      expect(result.meta.next).toBe(
+        '/invitations/sent?where__invitation_status=PENDING&order__created_at=desc&order__id=desc&take=1&cursor__id=invitation-001',
+      );
+    });
+
+    it('count=true이면 totalCount에 COUNT 쿼리 결과를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([]);
+      prisma.bandInvitation.count.mockResolvedValue(42);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findSentBandInvitations('user-001', {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        count: true,
       });
+
+      expect(prisma.bandInvitation.count).toHaveBeenCalledWith({
+        where: {
+          status: 'PENDING',
+          band: { deletedAt: null },
+          inviterBandMember: { userId: 'user-001' },
+          inviteeUser: { deletedAt: null },
+        },
+      });
+      expect(result.meta.totalCount).toBe(42);
     });
   });
 
@@ -534,6 +561,7 @@ describe('BandsPrismaRepository', () => {
       expect(result.meta).toEqual({
         count: 1,
         take: 20,
+        totalCount: null,
         cursor: {
           id: 'invitation-001',
         },
@@ -587,9 +615,34 @@ describe('BandsPrismaRepository', () => {
       });
 
       expect(result.items).toHaveLength(1);
-      expect(result.meta.next).toEqual({
-        id: 'invitation-001',
+      expect(result.meta.next).toBe(
+        '/invitations/received?where__invitation_status=PENDING&order__created_at=desc&order__id=desc&take=1&cursor__id=invitation-001',
+      );
+    });
+
+    it('count=true이면 totalCount에 COUNT 쿼리 결과를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([]);
+      prisma.bandInvitation.count.mockResolvedValue(7);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findReceivedBandInvitations('user-002', {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        count: true,
       });
+
+      expect(prisma.bandInvitation.count).toHaveBeenCalledWith({
+        where: {
+          inviteeUserId: 'user-002',
+          status: 'PENDING',
+          band: { deletedAt: null },
+          inviterBandMember: { user: { deletedAt: null } },
+        },
+      });
+      expect(result.meta.totalCount).toBe(7);
     });
   });
 
