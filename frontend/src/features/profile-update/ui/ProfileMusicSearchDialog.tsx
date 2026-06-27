@@ -10,13 +10,13 @@ import {
 } from '@/shared/ui/dialog';
 import {
   searchProfileMusic,
-  type ProfileMusicSearchResult,
-} from '../api/profile-music-api';
+  type ProfileMusicPreview,
+} from '@/entities/profile/api/profile-music-api';
 
 type ProfileMusicSearchDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (song: ProfileMusicSearchResult) => void;
+  onSelect: (song: ProfileMusicPreview) => void;
 };
 
 const formatDuration = (durationMs: number) => {
@@ -33,7 +33,7 @@ export function ProfileMusicSearchDialog({
 }: ProfileMusicSearchDialogProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [results, setResults] = useState<ProfileMusicSearchResult[]>([]);
+  const [results, setResults] = useState<ProfileMusicPreview[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const hasQuery = useMemo(() => query.trim().length > 0, [query]);

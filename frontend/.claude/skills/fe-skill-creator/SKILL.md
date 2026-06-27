@@ -76,7 +76,7 @@ description: {한 줄 역할}. "{트리거 문구1}", "{트리거 문구2}", "{�
 
 ## Step 4: 일관성 점검
 
-새 스킬을 기존 fe- 스킬(`fe-figma`, `fe-test`, `fe-api`, `fe-qa`)과 비교해 형식이 어긋나지 않는지 확인한다.
+새 스킬을 기존 fe- 스킬(`fe-publish`, `fe-test`, `fe-api`, `fe-qa`)과 비교해 형식이 어긋나지 않는지 확인한다.
 
 ## Step 5: 하네스 등록
 

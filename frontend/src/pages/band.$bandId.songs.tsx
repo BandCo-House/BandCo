@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ComingSoon } from '@/shared/ui/coming-soon';
 import {
   getSpaceIdFromLocationSearch,
   parseSongsSearch,
@@ -32,5 +33,10 @@ export const Route = createFileRoute('/band/$bandId/songs')({
 
 // 밴드 공용 곡 라이브러리 라우트 전용 화면
 function BandSongsRoutePage() {
-  return <div>SongsPage</div>;
+  return (
+    <>
+      <span className="sr-only">SongsPage</span>
+      <ComingSoon />
+    </>
+  );
 }

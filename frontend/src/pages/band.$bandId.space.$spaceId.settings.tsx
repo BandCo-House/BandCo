@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ComingSoon } from '@/shared/ui/coming-soon';
 
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/settings')({
   component: PerformanceSettingsRoutePage,
@@ -16,5 +17,10 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/settings')({
 
 // 공연 설정 라우트 전용 화면
 function PerformanceSettingsRoutePage() {
-  return <div>PerformanceSettingsPage</div>;
+  return (
+    <>
+      <span className="sr-only">PerformanceSettingsPage</span>
+      <ComingSoon />
+    </>
+  );
 }

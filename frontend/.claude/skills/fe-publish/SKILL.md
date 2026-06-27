@@ -92,6 +92,7 @@ Figma의 raw hex/px를 직접 쓰지 않는다. 토큰 체계로 매핑한다.
 - Step 3 트리 메모를 근거로 배치한다 (`AGENTS.md` "레이어 구조"): 화면 블록 → `widgets/`, 사용자 행위 → `features/`, 도메인 UI → `entities/*/ui`, 공용 primitive → `shared/ui`.
 - 긴 상대경로 대신 `@/...` alias를 쓴다.
 - 접근성은 `AGENTS.md` "접근성" 표를 적용한다: 아이콘 전용 버튼 `aria-label`, 장식 아이콘 숨김, clickable은 실제 `button`/`a`, 색만으로 상태 전달 금지, 모바일 overflow 처리.
+- **아이콘 버튼은 반드시** (1) `aria-label`로 글자 접근성을 챙기고, (2) 아이콘이 작아도 `padding`(필요하면 `-margin`으로 레이아웃 보정)으로 **충분한 클릭 가능 범위**(최소 터치 타깃)를 확보한다. 아이콘 크기만큼만 클릭되게 두지 않는다.
 
 ## 자가 확인
 
@@ -102,3 +103,4 @@ Figma의 raw hex/px를 직접 쓰지 않는다. 토큰 체계로 매핑한다.
 - [ ] `generated-tokens.css`를 직접 편집하지 않았는가?
 - [ ] 구현 위치가 레이어 구조와 의존 방향에 맞는가?
 - [ ] 아이콘 버튼 `aria-label` 등 접근성을 적용하고 모바일 overflow를 처리했는가?
+- [ ] 아이콘 버튼에 `aria-label` + 패딩(+필요시 -마진)으로 클릭 가능 범위를 확보했는가?

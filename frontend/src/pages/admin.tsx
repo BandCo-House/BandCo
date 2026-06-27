@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { requireAdmin } from '@/app/router-guards';
+import { ComingSoon } from '@/shared/ui/coming-soon';
 
 export const Route = createFileRoute('/admin')({
   beforeLoad: requireAdmin,
@@ -13,5 +14,10 @@ export const Route = createFileRoute('/admin')({
 
 // 관리자 라우트 전용 화면
 function AdminRoutePage() {
-  return <div>AdminPage</div>;
+  return (
+    <>
+      <span className="sr-only">AdminPage</span>
+      <ComingSoon />
+    </>
+  );
 }
