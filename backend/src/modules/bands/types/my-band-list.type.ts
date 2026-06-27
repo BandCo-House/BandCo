@@ -22,6 +22,6 @@ export interface GetMyBandsResult {
     count: number;
     take: number;
     cursor: MyBandListCursor | null;
-    next: MyBandListCursor | null;
+    next: string | null;
   };
 }
