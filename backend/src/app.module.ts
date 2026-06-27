@@ -11,11 +11,13 @@ import { PlacesModule } from './modules/places/places.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SongsModule } from './modules/songs/songs.module';
 import { UsersModule } from './modules/users/users.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    StorageModule,
     BandSpacesModule,
     AuthModule,
     NotificationsModule,
