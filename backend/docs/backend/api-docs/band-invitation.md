@@ -36,7 +36,7 @@
 | inviteeUserId | string (UUID) | ✅ | 초대 대상 사용자 ID |
 | message | string | ❌ | 초대 메시지 (optional) |
 
-### Response 200
+### Response 201
 
 ```json
 {
@@ -77,7 +77,7 @@
 |---------|------|:----:|------|
 | inviteId | string (UUID) | ✅ | 수락할 초대 ID |
 
-### Response 200
+### Response 201
 
 ```json
 {
@@ -116,7 +116,7 @@
 |---------|------|:----:|------|
 | inviteId | string (UUID) | ✅ | 거절할 초대 ID |
 
-### Response 200
+### Response 201
 
 ```json
 {
