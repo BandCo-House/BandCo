@@ -4,8 +4,8 @@ import type { PrismaService } from '../../database/prisma';
 import type { SkillsService } from '../skills/skills.service';
 
 import type { SongsRepository } from './repositories/songs.repository';
+import type { DeezerTrackReader, DeezerTrackSearcher } from './deezer-track.client';
 import { SongsService } from './songs.service';
-import type { SpotifyTrackReader } from './spotify-track.client';
 
 describe('SongsService', () => {
   const createService = (repositoryOverrides: Partial<SongsRepository> = {}) => {
@@ -24,14 +24,15 @@ describe('SongsService', () => {
       ...repositoryOverrides,
     } as jest.Mocked<SongsRepository>;
 
-    const spotifyTrackReader: jest.Mocked<SpotifyTrackReader> = {
+    const deezerTrackSearcher: jest.Mocked<DeezerTrackSearcher & DeezerTrackReader> = {
+      searchTracks: jest.fn(),
       findTrack: jest.fn(),
     };
     const skillsService: jest.Mocked<SkillsService> = {
       findExistingSkillTypeIds: jest.fn(),
     } as unknown as jest.Mocked<SkillsService>;
 
-    const service = new SongsService(repository, prisma, skillsService, spotifyTrackReader);
+    const service = new SongsService(repository, prisma, skillsService, deezerTrackSearcher);
 
     return {
       service,
@@ -39,43 +40,80 @@ describe('SongsService', () => {
       prisma,
       transactionClient,
       skillsService,
-      spotifyTrackReader,
+      deezerTrackSearcher,
     };
   };
 
-  it('Spotify 곡 미리보기 서비스는 Spotify track 조회를 위임한다', async () => {
-    const { service, spotifyTrackReader } = createService();
+  it('외부 음원 검색 서비스는 검색 결과를 곡 미리보기 목록으로 변환한다', async () => {
+    const { service, deezerTrackSearcher } = createService();
 
-    spotifyTrackReader.findTrack.mockResolvedValue({
-      id: '11dFghVXANMlKmJXsNCbNl',
-      name: 'Cut To The Feeling',
-      duration_ms: 207959,
-      preview_url: null,
-      artists: [
-        {
-          name: 'Carly Rae Jepsen',
+    deezerTrackSearcher.searchTracks.mockResolvedValue([
+      {
+        id: 3135556,
+        title: 'Harder, Better, Faster, Stronger',
+        duration: 224,
+        link: 'https://www.deezer.com/track/3135556',
+        preview: 'https://cdns-preview.dzcdn.net/stream/demo.mp3',
+        artist: {
+          name: 'Daft Punk',
         },
-      ],
-      album: {
-        name: 'Cut To The Feeling',
-        release_date: '2017-05-26',
-        images: [],
+        album: {
+          title: 'Discovery',
+          cover: 'https://api.deezer.com/album/302127/image',
+          cover_medium: 'https://e-cdns-images.dzcdn.net/images/cover/medium.jpg',
+          cover_big: 'https://e-cdns-images.dzcdn.net/images/cover/big.jpg',
+          cover_xl: 'https://e-cdns-images.dzcdn.net/images/cover/xl.jpg',
+        },
       },
-      external_urls: {
-        spotify: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
+    ]);
+
+    const result = await service.searchTrackPreviews('Daft Punk Harder Better Faster Stronger');
+
+    expect(deezerTrackSearcher.searchTracks).toHaveBeenCalledWith('Daft Punk Harder Better Faster Stronger');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      externalTrackId: '3135556',
+      title: 'Harder, Better, Faster, Stronger',
+      artistName: 'Daft Punk',
+      albumName: 'Discovery',
+      durationMs: 224000,
+      sourceUrl: 'https://www.deezer.com/track/3135556',
+      sourceType: 'DEEZER',
+    });
+  });
+
+  it('외부 음원 곡 미리듣기 서비스는 트랙 ID로 단일 트랙을 변환한다', async () => {
+    const { service, deezerTrackSearcher } = createService();
+
+    deezerTrackSearcher.findTrack.mockResolvedValue({
+      id: 3135556,
+      title: 'Harder, Better, Faster, Stronger',
+      duration: 224,
+      link: 'https://www.deezer.com/track/3135556',
+      preview: 'https://cdns-preview.dzcdn.net/stream/demo.mp3',
+      artist: {
+        name: 'Daft Punk',
+      },
+      album: {
+        title: 'Discovery',
+        cover: 'https://api.deezer.com/album/302127/image',
+        cover_medium: 'https://e-cdns-images.dzcdn.net/images/cover/medium.jpg',
+        cover_big: 'https://e-cdns-images.dzcdn.net/images/cover/big.jpg',
+        cover_xl: 'https://e-cdns-images.dzcdn.net/images/cover/xl.jpg',
       },
     });
 
-    const result = await service.previewSpotifyTrack('11dFghVXANMlKmJXsNCbNl');
+    const result = await service.getTrackPreview('3135556');
 
-    expect(spotifyTrackReader.findTrack).toHaveBeenCalledWith('11dFghVXANMlKmJXsNCbNl');
+    expect(deezerTrackSearcher.findTrack).toHaveBeenCalledWith('3135556');
     expect(result).toMatchObject({
-      externalTrackId: '11dFghVXANMlKmJXsNCbNl',
-      title: 'Cut To The Feeling',
-      artistName: 'Carly Rae Jepsen',
-      albumName: 'Cut To The Feeling',
-      sourceUrl: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
-      sourceType: 'SPOTIFY',
+      externalTrackId: '3135556',
+      title: 'Harder, Better, Faster, Stronger',
+      artistName: 'Daft Punk',
+      durationMs: 224000,
+      previewUrl: 'https://cdns-preview.dzcdn.net/stream/demo.mp3',
+      sourceUrl: 'https://www.deezer.com/track/3135556',
+      sourceType: 'DEEZER',
     });
   });
 

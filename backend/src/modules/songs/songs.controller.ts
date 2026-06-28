@@ -7,6 +7,7 @@ import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { CreateSongBodyDto } from './dto/create-song.dto';
 import { GetBandSongsQueryDto } from './dto/get-band-songs-query.dto';
+import { SearchTrackPreviewsQueryDto } from './dto/search-track-previews-query.dto';
 import { UpdateSongBodyDto } from './dto/update-song.dto';
 import type { CreateSongResult } from './types/create-song-result.type';
 import type { DeleteSongResult } from './types/delete-song-result.type';
@@ -98,14 +99,24 @@ export class SongsController {
     return createSuccessResponse('곡이 삭제되었습니다.', result);
   }
 
-  @Get('songs/spotify/tracks/:trackId')
-  @ApiOperation({ summary: 'Spotify 곡 미리보기 조회' })
-  @ApiParam({ name: 'trackId', description: 'Spotify 트랙 ID', type: String })
-  @ApiResponse({ status: 200, description: 'Spotify 곡 미리보기 조회 성공' })
-  @ApiResponse({ status: 404, description: '트랙을 찾을 수 없음' })
-  async getSpotifyTrackPreview(@Param('trackId') trackId: string): Promise<ApiSuccessResponse<SongPreview>> {
-    const songPreview = await this.songsService.previewSpotifyTrack(trackId);
+  @Get('songs/tracks/search')
+  @ApiOperation({ summary: '외부 음원 곡 검색' })
+  @ApiResponse({ status: 200, description: '곡 검색 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  async searchTracks(@Query() query: SearchTrackPreviewsQueryDto): Promise<ApiSuccessResponse<SongPreview[]>> {
+    const songPreviews = await this.songsService.searchTrackPreviews(query.query);
 
-    return createSuccessResponse('Spotify 곡 미리보기 조회 성공', songPreview);
+    return createSuccessResponse('곡 검색 성공', songPreviews);
+  }
+
+  @Get('songs/tracks/:trackId')
+  @ApiOperation({ summary: '외부 음원 곡 미리듣기' })
+  @ApiParam({ name: 'trackId', description: '외부 음원 트랙 ID', type: String })
+  @ApiResponse({ status: 200, description: '곡 미리듣기 조회 성공' })
+  @ApiResponse({ status: 404, description: '트랙을 찾을 수 없음' })
+  async getTrackPreview(@Param('trackId') trackId: string): Promise<ApiSuccessResponse<SongPreview>> {
+    const songPreview = await this.songsService.getTrackPreview(trackId);
+
+    return createSuccessResponse('곡 미리듣기 조회 성공', songPreview);
   }
 }
