@@ -125,20 +125,14 @@ describe('SongsPrismaRepository', () => {
       expect(prisma.song.findMany).toHaveBeenCalledWith({
         where: {
           bandId: 'band-id',
-          AND: [
-            {
-              title: {
-                contains: 'Harder',
-                mode: 'insensitive',
-              },
-            },
-            {
-              artistName: {
-                contains: 'Daft',
-                mode: 'insensitive',
-              },
-            },
-          ],
+          title: {
+            contains: 'Harder',
+            mode: 'insensitive',
+          },
+          artistName: {
+            contains: 'Daft',
+            mode: 'insensitive',
+          },
         },
         include: {
           songSkills: {
