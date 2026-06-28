@@ -811,6 +811,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const invitations = await client.bandInvitation.findMany({
       where: {
@@ -847,7 +848,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -896,6 +897,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandInvitationsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const invitations = await client.bandInvitation.findMany({
       where: {
@@ -931,7 +933,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -980,6 +982,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandJoinRequestsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const joinRequests = await client.bandJoinRequest.findMany({
       where: {
@@ -999,7 +1002,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -1032,6 +1035,7 @@ export class BandsPrismaRepository implements BandsRepository {
    */
   async findBandJoinRequests(bandId: string, query: GetBandJoinRequestsQuery, tx?: Prisma.TransactionClient): Promise<GetBandJoinRequestsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const joinRequests = await client.bandJoinRequest.findMany({
       where: {
@@ -1056,7 +1060,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
