@@ -63,7 +63,17 @@ const scheduleDetailResult: GetScheduleDetailResult = {
     status: 'PLANNED',
     place: null,
     songs: [{ songId: SONG_ID, title: '좋은 날', artistName: 'IU' }],
-    participants: [{ participantId: 'p-001', bandMemberId: BAND_MEMBER_ID, attendanceStatus: 'PENDING', note: null }],
+    participants: [
+      {
+        participantId: 'p-001',
+        bandMemberId: BAND_MEMBER_ID,
+        userId: USER_ID,
+        nickname: '준혁',
+        avatarUrl: null,
+        attendanceStatus: 'PENDING',
+        note: null,
+      },
+    ],
     memo: null,
     createdByBandMemberId: BAND_MEMBER_ID,
     isMine: true,

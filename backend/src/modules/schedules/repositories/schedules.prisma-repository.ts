@@ -117,7 +117,12 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
             bandMemberId: true,
             attendanceStatus: true,
             note: true,
-            bandMember: { select: { userId: true } },
+            bandMember: {
+              select: {
+                userId: true,
+                user: { select: { profile: { select: { nickname: true, avatarUrl: true } } } },
+              },
+            },
           },
         },
       },
@@ -142,6 +147,9 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         participants: row.participants.map(p => ({
           participantId: p.id,
           bandMemberId: p.bandMemberId,
+          userId: p.bandMember.userId,
+          nickname: p.bandMember.user.profile?.nickname ?? '',
+          avatarUrl: p.bandMember.user.profile?.avatarUrl ?? null,
           attendanceStatus: p.attendanceStatus ?? null,
           note: p.note ?? null,
         })),
