@@ -70,7 +70,7 @@ export class SchedulesService {
   /** 일정을 수정한다. 기존 값과 합산하여 시간 범위를 검증한다. */
   async updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult> {
     const run = async (client: Prisma.TransactionClient): Promise<UpdateScheduleResult> => {
-      const existing = await this.schedulesRepository.findScheduleById(scheduleId, client);
+      const existing = await this.schedulesRepository.findScheduleById(scheduleId, undefined, client);
       if (!existing) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
 
       const startAt = input.startAt ? new Date(input.startAt) : existing.schedule.startAt ? new Date(existing.schedule.startAt) : null;
@@ -88,7 +88,7 @@ export class SchedulesService {
 
   /** 일정을 삭제한다. hard delete이며 deletedAt은 서비스 레이어에서 생성한다. */
   async deleteSchedule(scheduleId: string, tx?: Prisma.TransactionClient): Promise<DeleteScheduleResult> {
-    const existing = await this.schedulesRepository.findScheduleById(scheduleId, tx);
+    const existing = await this.schedulesRepository.findScheduleById(scheduleId, undefined, tx);
     if (!existing) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
 
     const { spaceId, title } = existing.schedule;
@@ -115,26 +115,31 @@ export class SchedulesService {
   }
 
   /** 밴드 공간 기준 일정 목록을 cursor pagination으로 조회한다. */
-  async getSpaceSchedules(bandSpaceId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetSpaceSchedulesResult> {
+  async getSpaceSchedules(
+    bandSpaceId: string,
+    userId: string,
+    query: GetSchedulesQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSpaceSchedulesResult> {
     const space = await this.schedulesRepository.findBandSpaceById(bandSpaceId, tx);
     if (!space) throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
 
-    return this.schedulesRepository.findSchedulesBySpaceId(bandSpaceId, query, tx);
+    return this.schedulesRepository.findSchedulesBySpaceId(bandSpaceId, query, userId, tx);
   }
 
   /** 일정 상세 정보를 조회한다. */
-  async getScheduleDetail(scheduleId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult> {
-    const result = await this.schedulesRepository.findScheduleById(scheduleId, tx);
+  async getScheduleDetail(scheduleId: string, userId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult> {
+    const result = await this.schedulesRepository.findScheduleById(scheduleId, userId, tx);
     if (!result) throw new NotFoundException('요청한 일정을 찾을 수 없습니다.');
 
     return result;
   }
 
   /** 밴드에 속한 전체 공간의 일정 목록을 조회한다. */
-  async getBandSchedules(bandId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult> {
+  async getBandSchedules(bandId: string, userId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult> {
     const band = await this.schedulesRepository.findBandById(bandId, tx);
     if (!band) throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
 
-    return this.schedulesRepository.findSchedulesByBandId(bandId, query, tx);
+    return this.schedulesRepository.findSchedulesByBandId(bandId, query, userId, tx);
   }
 }

@@ -102,7 +102,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     return members.map(m => m.bandMember.userId);
   }
 
-  async findScheduleById(scheduleId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult | undefined> {
+  async findScheduleById(scheduleId: string, userId?: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult | undefined> {
     const client = tx ?? this.prisma;
 
     const row = await client.schedule.findUnique({
@@ -110,11 +110,23 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       include: {
         place: { select: { id: true, name: true, address: true } },
         scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
-        participants: { select: { id: true, bandMemberId: true, attendanceStatus: true, note: true } },
+        createdByBandMember: { select: { userId: true } },
+        participants: {
+          select: {
+            id: true,
+            bandMemberId: true,
+            attendanceStatus: true,
+            note: true,
+            bandMember: { select: { userId: true } },
+          },
+        },
       },
     });
 
     if (!row) return undefined;
+
+    // 로그인 사용자가 생성자이거나 참여자이면 본인과 연관된 일정으로 본다.
+    const isMine = userId !== undefined && (row.createdByBandMember.userId === userId || row.participants.some(p => p.bandMember.userId === userId));
 
     return {
       schedule: {
@@ -135,6 +147,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         })),
         memo: row.memo,
         createdByBandMemberId: row.createdByBandMemberId,
+        isMine,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
       },
@@ -222,7 +235,12 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     });
   }
 
-  async findSchedulesByBandId(bandId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult> {
+  async findSchedulesByBandId(
+    bandId: string,
+    query: GetSchedulesQuery,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetBandSchedulesResult> {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
 
@@ -250,6 +268,8 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       take: take + 1,
       include: {
         bandSpace: { select: { id: true, name: true } },
+        createdByBandMember: { select: { userId: true } },
+        participants: { where: { bandMember: { userId } }, select: { id: true }, take: 1 },
       },
     });
 
@@ -275,13 +295,19 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
           startAt: row.startAt?.toISOString() ?? null,
           endAt: row.endAt?.toISOString() ?? null,
           status: row.status,
+          isMine: row.createdByBandMember.userId === userId || row.participants.length > 0,
         }),
       ),
       meta,
     };
   }
 
-  async findSchedulesBySpaceId(bandSpaceId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetSpaceSchedulesResult> {
+  async findSchedulesBySpaceId(
+    bandSpaceId: string,
+    query: GetSchedulesQuery,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSpaceSchedulesResult> {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
 
@@ -310,6 +336,8 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       include: {
         place: { select: { id: true, name: true } },
         scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
+        createdByBandMember: { select: { userId: true } },
+        participants: { where: { bandMember: { userId } }, select: { id: true }, take: 1 },
         _count: { select: { participants: true } },
       },
     });
@@ -338,6 +366,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         participantCount: row._count.participants,
         memo: row.memo,
         status: row.status,
+        isMine: row.createdByBandMember.userId === userId || row.participants.length > 0,
       })),
       meta,
     };

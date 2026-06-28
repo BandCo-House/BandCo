@@ -12,6 +12,7 @@ export interface SpaceScheduleListItem {
   participantCount: number;
   memo: string | null;
   status: string;
+  isMine: boolean;
 }
 
 export interface ScheduleListCursor {

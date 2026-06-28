@@ -27,6 +27,7 @@ export interface GetScheduleDetailResult {
     participants: ScheduleParticipantDetail[];
     memo: string | null;
     createdByBandMemberId: string;
+    isMine: boolean;
     createdAt: string;
     updatedAt: string;
   };

@@ -9,6 +9,7 @@ export interface BandScheduleListItem {
   startAt: string | null;
   endAt: string | null;
   status: string;
+  isMine: boolean;
 }
 
 export interface GetBandSchedulesResult {
