@@ -55,10 +55,11 @@ export class BandsController {
   @ApiOperation({ summary: '밴드 초대 전송' })
   @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
   @ApiResponse({ status: 201, description: '밴드 초대 전송 성공' })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 400, description: '잘못된 요청 / 자기 자신 초대 불가' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 403, description: '권한 없음 (BM/ADMIN만 초대 가능) / 차단된 사용자' })
   @ApiResponse({ status: 404, description: '밴드 또는 초대 대상 유저를 찾을 수 없음' })
+  @ApiResponse({ status: 409, description: '이미 밴드 멤버 / 이미 초대가 존재함' })
   async createBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,

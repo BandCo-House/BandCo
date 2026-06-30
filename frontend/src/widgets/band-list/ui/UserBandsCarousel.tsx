@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { Band } from '@/entities/band/model/types';
 import { Link } from '@tanstack/react-router';
+import { horizontalFadeMask } from '@/shared/lib/scroll-fade';
 
 export interface UserBandsCarouselProps {
   bands: Band[];
@@ -46,9 +47,11 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
         소속 밴드
       </h2>
 
-      <div className="relative w-full">
+      <div className="w-full">
         <div
           ref={emblaRef}
+          // 양 끝을 색으로 덮지 않고 mask로 콘텐츠를 투명화해 카드 배경에 자연스럽게 녹인다.
+          style={horizontalFadeMask(canScrollPrev, canScrollNext)}
           className="w-full cursor-grab overflow-hidden active:cursor-grabbing"
         >
           <div className="flex gap-2 pb-1">
@@ -85,12 +88,6 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
             </div>
           )}
         </div>
-        {canScrollPrev && (
-          <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-14 bg-linear-to-l from-transparent to-[#393951]" />
-        )}
-        {canScrollNext && (
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-14 bg-linear-to-r from-transparent to-[#393951]" />
-        )}
       </div>
     </section>
   );

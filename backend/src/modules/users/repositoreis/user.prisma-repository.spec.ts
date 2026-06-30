@@ -1,6 +1,7 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import type { Prisma } from 'src/generated/prisma';
+import { Prisma } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 
@@ -9,6 +10,7 @@ import { UsersPrismaRepository } from './user.prisma-repository';
 const mockPrisma = {
   user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
   userProfile: { create: jest.fn(), update: jest.fn() },
+  profileMusic: { findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
   userSkill: { deleteMany: jest.fn(), createMany: jest.fn() },
   favoriteGenre: { deleteMany: jest.fn(), createMany: jest.fn() },
   $transaction: jest.fn().mockImplementation(fn => fn(mockPrisma)),
@@ -21,7 +23,8 @@ const userRecord = {
   email: 'test@example.com',
   status: 'ACTIVE',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  profile: { nickname: 'testuser', selfDescription: '안녕', profileMusicUrl: null, avatarUrl: null },
+  profile: { nickname: 'testuser', selfDescription: '안녕', avatarUrl: null },
+  profileMusic: null,
   userSkills: [{ skillTypeId: 'skill-001', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: 'GUITAR' } }],
   favoriteGenres: [{ genreId: 'genre-001', genre: { name: 'ROCK' } }],
 };
@@ -177,20 +180,23 @@ describe('UsersPrismaRepository', () => {
       expect(callArgs.where.profile).toEqual({ nickname: { contains: 'nick', mode: 'insensitive' } });
     });
 
-    it('cursor__id가 있으면 cursor와 skip:1이 전달된다', async () => {
+    it('cursor__id와 cursor__created_at이 있으면 keyset WHERE 조건이 추가된다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers({ ...defaultQuery, cursor__id: 'cursor-uuid', cursor__created_at: '2026-01-01T00:00:00.000Z' });
       const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
-      expect(callArgs.cursor).toEqual({ id: 'cursor-uuid' });
-      expect(callArgs.skip).toBe(1);
+      expect(callArgs.cursor).toBeUndefined();
+      expect(callArgs.skip).toBeUndefined();
+      expect(callArgs.where.AND).toBeDefined();
+      expect(callArgs.where.AND[0].OR).toHaveLength(2);
     });
 
-    it('cursor__id가 없으면 cursor와 skip이 전달되지 않는다', async () => {
+    it('cursor가 없으면 AND 조건이 추가되지 않는다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers(defaultQuery);
       const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
       expect(callArgs.cursor).toBeUndefined();
       expect(callArgs.skip).toBeUndefined();
+      expect(callArgs.where.AND).toBeUndefined();
     });
 
     it('결과가 없으면 cursor와 next가 모두 null이다', async () => {
@@ -207,12 +213,48 @@ describe('UsersPrismaRepository', () => {
       expect(result.meta.next).toBeNull();
     });
 
-    it('결과가 take와 같으면 next에 마지막 항목의 커서가 설정된다', async () => {
+    it('결과가 take와 같으면 next에 다음 페이지 URL이 설정된다', async () => {
       const second = { ...listRecord, id: 'user-002', createdAt: new Date('2025-12-01T00:00:00.000Z') };
       mockPrisma.user.findMany.mockResolvedValue([listRecord, second]);
       const result = await repository.findUsers({ ...defaultQuery, take: 2 });
-      expect(result.meta.next?.id).toBe('user-002');
-      expect(result.meta.next?.createdAt).toBe('2025-12-01T00:00:00.000Z');
+      expect(typeof result.meta.next).toBe('string');
+      expect(result.meta.next).toContain('cursor__id=user-002');
+      expect(result.meta.next).toContain('cursor__created_at=');
+    });
+  });
+
+  describe('softDeleteUser', () => {
+    it('deletedAt과 status를 업데이트하고 결과를 반환한다', async () => {
+      const now = new Date();
+      mockPrisma.user.update.mockResolvedValue({ id: 'user-001', deletedAt: now });
+      const result = await repository.softDeleteUser('user-001');
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-001', deletedAt: null },
+        data: { deletedAt: expect.any(Date), status: 'INACTIVE' },
+        select: { id: true, deletedAt: true },
+      });
+      expect(result?.userId).toBe('user-001');
+      expect(result?.deletedAt).toBe(now.toISOString());
+    });
+
+    it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
+      const now = new Date();
+      const txClient = { user: { update: jest.fn().mockResolvedValue({ id: 'user-001', deletedAt: now }) } };
+      await repository.softDeleteUser('user-001', txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.user.update).toHaveBeenCalled();
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('존재하지 않거나 이미 삭제된 유저면 null을 반환한다 (P2025)', async () => {
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '0' });
+      mockPrisma.user.update.mockRejectedValue(p2025);
+      const result = await repository.softDeleteUser('unknown-id');
+      expect(result).toBeNull();
+    });
+
+    it('P2025 외 에러는 그대로 전파한다', async () => {
+      mockPrisma.user.update.mockRejectedValue(new Error('db connection error'));
+      await expect(repository.softDeleteUser('user-001')).rejects.toThrow('db connection error');
     });
   });
 
@@ -272,6 +314,80 @@ describe('UsersPrismaRepository', () => {
       await repository.updateUserProfile('user-001', { favoriteGenres: ['genre-002'] });
       expect(mockPrisma.favoriteGenre.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
       expect(mockPrisma.favoriteGenre.createMany).toHaveBeenCalledWith({ data: [{ userId: 'user-001', genreId: 'genre-002' }] });
+    });
+
+    it('profile.profileMusic이 있으면 create/update trackData 페이로드를 포함해 profileMusic.upsert를 호출한다', async () => {
+      mockPrisma.profileMusic.upsert.mockResolvedValue({});
+      const trackData = {
+        externalTrackId: '12345',
+        sourceType: 'DEEZER' as const,
+        title: 'Blinding Lights',
+        artistName: 'The Weeknd',
+        albumName: 'After Hours',
+        albumImageUrl: null,
+        durationMs: 200000,
+        previewUrl: null,
+        sourceUrl: 'https://www.deezer.com/track/12345',
+      };
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } });
+      expect(mockPrisma.profileMusic.upsert).toHaveBeenCalledWith({
+        where: { userId: 'user-001' },
+        create: { userId: 'user-001', trackData },
+        update: { trackData },
+      });
+    });
+
+    it('profile.profileMusic이 null이면 profileMusic.upsert를 호출하지 않는다', async () => {
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: null } });
+      expect(mockPrisma.profileMusic.upsert).not.toHaveBeenCalled();
+    });
+
+    it('profile.profileMusic이 없으면 profileMusic.upsert를 호출하지 않는다', async () => {
+      await repository.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
+      expect(mockPrisma.profileMusic.upsert).not.toHaveBeenCalled();
+    });
+
+    it('profileMusic.upsert가 P2003을 던지면 NotFoundException으로 변환한다', async () => {
+      const p2003 = new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', { code: 'P2003', clientVersion: '0' });
+      mockPrisma.profileMusic.upsert.mockRejectedValue(p2003);
+      const trackData = {
+        externalTrackId: '12345',
+        sourceType: 'DEEZER' as const,
+        title: 'Blinding Lights',
+        artistName: 'The Weeknd',
+        albumName: 'After Hours',
+        albumImageUrl: null,
+        durationMs: 200000,
+        previewUrl: null,
+        sourceUrl: 'https://www.deezer.com/track/12345',
+      };
+      await expect(repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('tx가 전달되면 tx 클라이언트로 profileMusic.upsert를 호출한다', async () => {
+      const txClient = {
+        userProfile: { update: jest.fn().mockResolvedValue({}) },
+        profileMusic: { upsert: jest.fn().mockResolvedValue({}) },
+        user: { findUnique: jest.fn().mockResolvedValue(userRecord) },
+      };
+      const trackData = {
+        externalTrackId: '999',
+        sourceType: 'DEEZER' as const,
+        title: 'Test',
+        artistName: 'Artist',
+        albumName: 'Album',
+        albumImageUrl: null,
+        durationMs: 100000,
+        previewUrl: null,
+        sourceUrl: 'https://www.deezer.com/track/999',
+      };
+      await repository.updateUserProfile('user-001', { profile: { profileMusic: trackData } }, txClient as unknown as Prisma.TransactionClient);
+      expect(txClient.profileMusic.upsert).toHaveBeenCalledWith({
+        where: { userId: 'user-001' },
+        create: { userId: 'user-001', trackData },
+        update: { trackData },
+      });
+      expect(mockPrisma.profileMusic.upsert).not.toHaveBeenCalled();
     });
 
     it('모든 변경 후 최신 프로필을 반환한다', async () => {

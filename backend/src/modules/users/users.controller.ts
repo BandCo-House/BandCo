@@ -1,12 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { SearchProfileMusicQueryDto } from './dto/search-profile-music-query.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { SelfUserGuard } from './guard/self-user.guard';
+import type { DeleteUserResult } from './repositoreis/user.repository';
+import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { GetUsersResult } from './types/user-list.type';
 import type { GetUserProfileResult } from './types/user-profile.type';
 import { UsersService } from './users.service';
@@ -19,19 +22,61 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: '유저 목록 조회' })
   @ApiResponse({ status: 200, description: '유저 목록 조회 성공' })
+  @ApiResponse({ status: 400, description: '유효성 검사 실패 (take 범위, order 값, cursor__id UUID 형식)' })
   async getUsers(@Query() query: GetUsersQueryDto): Promise<ApiSuccessResponse<GetUsersResult>> {
     const result = await this.usersService.getUsers(query);
     return createSuccessResponse('유저 목록 조회 성공', result);
+  }
+
+  // profile-music/search는 :userId 라우트보다 위에 선언해야 NestJS가 profile-music을 userId로 오인하지 않는다
+  @Get('profile-music/search')
+  @ApiOperation({ summary: '프로필 음악 검색 (#68)' })
+  @ApiResponse({ status: 200, description: '프로필 음악 검색 성공' })
+  @ApiResponse({ status: 400, description: '검색어(q) 누락' })
+  async searchProfileMusic(@Query() query: SearchProfileMusicQueryDto): Promise<ApiSuccessResponse<{ items: ProfileMusicTrack[] }>> {
+    const result = await this.usersService.searchProfileMusic(query.q);
+    return createSuccessResponse('프로필 음악 검색 성공', result);
   }
 
   @Get(':userId/profiles')
   @ApiOperation({ summary: '유저 프로필 조회' })
   @ApiParam({ name: 'userId', description: '유저 ID (UUID)', type: String })
   @ApiResponse({ status: 200, description: '유저 프로필 조회 성공' })
-  @ApiResponse({ status: 404, description: '유저를 찾을 수 없음' })
-  async getUserProfile(@Param('userId') userId: string): Promise<ApiSuccessResponse<GetUserProfileResult>> {
+  @ApiResponse({ status: 400, description: 'userId가 UUID 형식이 아님' })
+  @ApiResponse({ status: 404, description: '존재하지 않는 유저' })
+  async getUserProfile(@Param('userId', ParseUUIDPipe) userId: string): Promise<ApiSuccessResponse<GetUserProfileResult>> {
     const result = await this.usersService.getUserProfile(userId);
     return createSuccessResponse('유저 프로필 조회 성공', result);
+  }
+
+  @Delete(':userId')
+  @UseGuards(AccessTokenGuard, SelfUserGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '회원 탈퇴' })
+  @ApiParam({ name: 'userId', description: '유저 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '회원 탈퇴 성공' })
+  @ApiResponse({ status: 400, description: 'userId가 UUID 형식이 아님' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '본인 계정만 탈퇴 가능' })
+  @ApiResponse({ status: 404, description: '존재하지 않는 유저' })
+  async deleteUser(@Param('userId', ParseUUIDPipe) userId: string): Promise<ApiSuccessResponse<DeleteUserResult>> {
+    const result = await this.usersService.deleteUser(userId);
+    return createSuccessResponse('회원 탈퇴가 완료되었습니다.', result);
+  }
+
+  @Delete(':userId/profile-music')
+  @UseGuards(AccessTokenGuard, SelfUserGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '프로필 음악 삭제 (#69)' })
+  @ApiParam({ name: 'userId', description: '유저 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '프로필 음악 삭제 성공' })
+  @ApiResponse({ status: 400, description: 'userId가 UUID 형식이 아님' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '본인 프로필 음악만 삭제 가능' })
+  @ApiResponse({ status: 404, description: '프로필 음악이 존재하지 않음' })
+  async deleteProfileMusic(@Param('userId', ParseUUIDPipe) userId: string): Promise<ApiSuccessResponse<DeleteProfileMusicResult>> {
+    const result = await this.usersService.deleteProfileMusic(userId);
+    return createSuccessResponse('프로필 음악 삭제 성공', result);
   }
 
   @Patch(':userId/profiles')

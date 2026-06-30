@@ -120,6 +120,16 @@
   }
 }
 
+/* ===== Utilities ===== */
+
+/* 가로 스크롤 영역의 스크롤바를 숨긴다 (스크롤 자체는 유지). */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ===== Typography ===== */
 
 @utility typo-3xl-b {

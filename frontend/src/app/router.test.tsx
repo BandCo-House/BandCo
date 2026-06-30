@@ -1,5 +1,5 @@
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthContext, type UserAccess } from '@/app/providers/auth-context';
@@ -301,7 +301,7 @@ describe('앱 라우터', () => {
     unmount();
   });
 
-  it('밴드 상세의 뒤로가기는 루트(MyBands)로 이동한다', async () => {
+  it('밴드 상세의 뒤로가기는 내 밴드 페이지로 이동한다', async () => {
     const router = createRouterForTest('/band/1', {
       isLoggedIn: true,
       isAdmin: false,
@@ -312,7 +312,9 @@ describe('앱 라우터', () => {
     await screen.findByText('BandDetailPage');
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('my-bands-route-page'),
+    ).toBeInTheDocument();
   });
 
   it.skip('프로필의 뒤로가기는 브라우저 history back 동작을 사용한다', async () => {
@@ -372,5 +374,63 @@ describe('앱 라우터', () => {
     expect(
       await screen.findByText('PerformanceSettingsPage'),
     ).toBeInTheDocument();
+  });
+
+  it('밴드 라이브러리 경로에서는 라이브러리 탭이 active 상태다', async () => {
+    const router = createRouterForTest('/band/1/library', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    await screen.findByText('BandLibraryPage');
+
+    const tabs = within(
+      screen.getByRole('navigation', { name: '밴드 메인 탭' }),
+    );
+    expect(tabs.getByRole('link', { name: '라이브러리' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(tabs.getByRole('link', { name: '홈' })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  it('밴드 아카이브 경로에서는 아카이브 탭이 active 상태다', async () => {
+    const router = createRouterForTest('/band/1/archive', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    await screen.findByText('BandArchivePage');
+
+    const tabs = within(
+      screen.getByRole('navigation', { name: '밴드 메인 탭' }),
+    );
+    expect(tabs.getByRole('link', { name: '아카이브' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('밴드 홈에서 라이브러리 탭을 누르면 라이브러리로 이동한다', async () => {
+    const router = createRouterForTest('/band/1', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    await screen.findByText('BandDetailPage');
+    const tabs = within(
+      screen.getByRole('navigation', { name: '밴드 메인 탭' }),
+    );
+    fireEvent.click(tabs.getByRole('link', { name: '라이브러리' }));
+
+    expect(await screen.findByText('BandLibraryPage')).toBeInTheDocument();
   });
 });

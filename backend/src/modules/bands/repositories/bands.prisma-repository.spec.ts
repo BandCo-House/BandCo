@@ -8,6 +8,7 @@ function createPrismaMock() {
   return {
     bandInvitation: {
       create: jest.fn(),
+      count: jest.fn(),
       delete: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -21,6 +22,7 @@ function createPrismaMock() {
     },
     band: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     bandBlacklist: {
       findFirst: jest.fn(),
@@ -130,6 +132,7 @@ describe('BandsPrismaRepository', () => {
       expect(result.meta).toEqual({
         count: 1,
         take: 20,
+        totalCount: null,
         cursor: {
           id: 'invitation-001',
         },
@@ -187,9 +190,34 @@ describe('BandsPrismaRepository', () => {
       });
 
       expect(result.items).toHaveLength(1);
-      expect(result.meta.next).toEqual({
-        id: 'invitation-001',
+      expect(result.meta.next).toBe(
+        '/invitations/sent?where__invitation_status=PENDING&order__created_at=desc&order__id=desc&take=1&cursor__id=invitation-001',
+      );
+    });
+
+    it('count=true이면 totalCount에 COUNT 쿼리 결과를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([]);
+      prisma.bandInvitation.count.mockResolvedValue(42);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findSentBandInvitations('user-001', {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        count: true,
       });
+
+      expect(prisma.bandInvitation.count).toHaveBeenCalledWith({
+        where: {
+          status: 'PENDING',
+          band: { deletedAt: null },
+          inviterBandMember: { userId: 'user-001' },
+          inviteeUser: { deletedAt: null },
+        },
+      });
+      expect(result.meta.totalCount).toBe(42);
     });
   });
 
@@ -533,6 +561,7 @@ describe('BandsPrismaRepository', () => {
       expect(result.meta).toEqual({
         count: 1,
         take: 20,
+        totalCount: null,
         cursor: {
           id: 'invitation-001',
         },
@@ -586,9 +615,34 @@ describe('BandsPrismaRepository', () => {
       });
 
       expect(result.items).toHaveLength(1);
-      expect(result.meta.next).toEqual({
-        id: 'invitation-001',
+      expect(result.meta.next).toBe(
+        '/invitations/received?where__invitation_status=PENDING&order__created_at=desc&order__id=desc&take=1&cursor__id=invitation-001',
+      );
+    });
+
+    it('count=true이면 totalCount에 COUNT 쿼리 결과를 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findMany.mockResolvedValue([]);
+      prisma.bandInvitation.count.mockResolvedValue(7);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findReceivedBandInvitations('user-002', {
+        where__invitation_status: 'PENDING',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        count: true,
       });
+
+      expect(prisma.bandInvitation.count).toHaveBeenCalledWith({
+        where: {
+          inviteeUserId: 'user-002',
+          status: 'PENDING',
+          band: { deletedAt: null },
+          inviterBandMember: { user: { deletedAt: null } },
+        },
+      });
+      expect(result.meta.totalCount).toBe(7);
     });
   });
 
@@ -1280,6 +1334,165 @@ describe('BandsPrismaRepository', () => {
         userId: 'user-001',
         role: 'BM',
       });
+    });
+  });
+
+  describe('findBandMembers', () => {
+    const makeMemberRow = (id: string, joinedAt: Date) => ({
+      id,
+      userId: `user-${id}`,
+      role: 'MEMBER',
+      joinedAt,
+      user: {
+        profile: { nickname: `Nick-${id}`, avatarUrl: null },
+        userSkills: [],
+      },
+    });
+
+    it('조회 수가 take보다 적으면 next가 null이다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandMember.findMany.mockResolvedValue([makeMemberRow('m1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandMembers('band-001', {
+        order__joined_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(result.meta.next).toBeNull();
+    });
+
+    it('조회 수가 take와 같으면 next URL을 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandMember.findMany.mockResolvedValue([makeMemberRow('m1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandMembers('band-001', {
+        order__joined_at: 'desc',
+        order__id: 'desc',
+        take: 1,
+      });
+
+      expect(typeof result.meta.next).toBe('string');
+      expect(result.meta.next).toContain('/bands/band-001/users');
+      expect(result.meta.next).toContain('cursor__joined_at=');
+      expect(result.meta.next).toContain('cursor__id=m1');
+    });
+
+    it('cursor 조건이 있으면 cursor where가 추가된다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandMember.findMany.mockResolvedValue([]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      await repository.findBandMembers('band-001', {
+        order__joined_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+        cursor__joined_at: mockCreatedAt.toISOString(),
+        cursor__id: 'm0',
+      });
+
+      expect(prisma.bandMember.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ OR: expect.any(Array) }),
+        }),
+      );
+    });
+  });
+
+  describe('searchBands', () => {
+    const makeBandRow = (id: string, createdAt: Date) => ({
+      id,
+      name: `Band-${id}`,
+      description: null,
+      visibility: true,
+      createdAt,
+      bandMasterUserId: 'user-bm',
+      bandMasterUser: { profile: { nickname: 'BM' } },
+      _count: { members: 3 },
+    });
+
+    it('조회 수가 take보다 적으면 next가 null이다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.searchBands({
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(result.meta.next).toBeNull();
+    });
+
+    it('조회 수가 take와 같으면 next URL을 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.searchBands({
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 1,
+      });
+
+      expect(typeof result.meta.next).toBe('string');
+      expect(result.meta.next).toContain('/bands/search');
+      expect(result.meta.next).toContain('cursor__created_at=');
+      expect(result.meta.next).toContain('cursor__id=b1');
+    });
+
+    it('where__name__contain이 있으면 next URL에 포함된다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.searchBands({
+        where__name__contain: 'rock',
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 1,
+      });
+
+      expect(result.meta.next).toContain('where__name__contain=rock');
+    });
+  });
+
+  describe('findMyBands', () => {
+    const makeBandRow = (id: string, createdAt: Date) => ({
+      id,
+      name: `Band-${id}`,
+      description: null,
+      visibility: true,
+      createdAt,
+      bandMasterUserId: 'user-bm',
+      members: [{ role: 'MEMBER', joinedAt: mockCreatedAt }],
+      _count: { members: 2 },
+    });
+
+    it('조회 수가 take보다 적으면 next가 null이다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findMyBands('user-001', { take: 20 });
+
+      expect(result.meta.next).toBeNull();
+    });
+
+    it('조회 수가 take와 같으면 next URL을 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findMyBands('user-001', { take: 1 });
+
+      expect(typeof result.meta.next).toBe('string');
+      expect(result.meta.next).toContain('/bands/me');
+      expect(result.meta.next).toContain('cursor__created_at=');
+      expect(result.meta.next).toContain('cursor__id=b1');
     });
   });
 });

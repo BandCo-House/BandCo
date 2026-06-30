@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
 import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import GalleryIcon from '@/assets/icons/gallery.svg?react';
-import { toast } from 'sonner';
+import { useAudioPreview } from '@/shared/lib/use-audio-preview';
 
 export interface ProfileCardProps {
   profile: Profile;
@@ -47,39 +47,26 @@ export function ProfileCard({
     ? editForm.profileMusic
     : profile.profile?.profileMusic;
   const musicUrl = profileMusic?.previewUrl ?? null;
-  const canPlayProfileMusic = Boolean(musicUrl);
   const profileMusicTitle = profileMusic?.title ?? '음악 없음';
   const profileMusicArtist = profileMusic?.artistName ?? '';
 
-  const [isPlaying, setIsPlaying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const hasShownAudioErrorRef = useRef(false);
-
-  const showAudioErrorToast = () => {
-    if (hasShownAudioErrorRef.current) return;
-    hasShownAudioErrorRef.current = true;
-    toast.error('프로필 음악을 재생할 수 없습니다.');
-  };
+  const {
+    isPlaying,
+    canPlay: canPlayProfileMusic,
+    toggle: togglePreview,
+    audioRef,
+    audioEventProps,
+  } = useAudioPreview(musicUrl, {
+    errorMessage: '프로필 음악을 재생할 수 없습니다.',
+  });
 
   const handleLpClick = () => {
     if (isEditing) {
       onOpenMusicSearch();
       return;
     }
-
-    const audio = audioRef.current;
-    if (!canPlayProfileMusic || !audio) return;
-
-    if (isPlaying) {
-      audio.pause();
-      return;
-    }
-
-    void audio.play().catch(() => {
-      setIsPlaying(false);
-      showAudioErrorToast();
-    });
+    togglePreview();
   };
 
   return (
@@ -235,16 +222,7 @@ export function ProfileCard({
                 ref={audioRef}
                 src={musicUrl || undefined}
                 preload="none"
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => {
-                  setIsPlaying(false);
-                  hasShownAudioErrorRef.current = false;
-                }}
-                onEnded={() => setIsPlaying(false)}
-                onError={() => {
-                  setIsPlaying(false);
-                  showAudioErrorToast();
-                }}
+                {...audioEventProps}
               />
               <button
                 onClick={handleLpClick}

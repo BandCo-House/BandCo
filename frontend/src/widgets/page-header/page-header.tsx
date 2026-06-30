@@ -10,6 +10,8 @@ export type PageHeaderProps = {
   rightContent?: ReactNode;
   heightVariant?: 'xs' | 'sm' | 'md' | 'lg';
   renderRight?: () => ReactNode;
+  renderBottom?: () => ReactNode;
+  bottomBlur?: boolean;
 };
 
 const HEIGHT_CLASSES = {
@@ -30,6 +32,8 @@ export const PageHeader = ({
   rightContent,
   heightVariant = 'lg',
   renderRight,
+  renderBottom,
+  bottomBlur = false,
 }: PageHeaderProps) => {
   const renderTitleArea = () => {
     if (!title) return null;
@@ -50,12 +54,12 @@ export const PageHeader = ({
 
   return (
     <header
-      className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 backdrop-blur-sm"
-      style={{
-        background:
-          'linear-gradient(135deg, var(--gradient-top) 0%, var(--gradient-bottom) 100%)',
-        backgroundAttachment: 'fixed',
-      }}
+      className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 bg-gradient-top/60 backdrop-blur-sm"
+      style={
+        bottomBlur
+          ? { boxShadow: '0px 8px 40px 0px rgba(221, 254, 85, 0.12)' }
+          : undefined
+      }
     >
       <div
         className={cn(
@@ -69,7 +73,7 @@ export const PageHeader = ({
             <button
               type="button"
               aria-label="뒤로 가기"
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-key"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-2 focus-visible:outline-key"
               onClick={onBack}
             >
               <ArrowRightIcon
@@ -89,6 +93,8 @@ export const PageHeader = ({
           </div>
         ) : null}
       </div>
+
+      {renderBottom ? <div className="w-full">{renderBottom()}</div> : null}
     </header>
   );
 };

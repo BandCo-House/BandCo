@@ -23,6 +23,6 @@ export interface SearchBandsResult {
     count: number;
     take: number;
     cursor: BandSearchCursor | null;
-    next: BandSearchCursor | null;
+    next: string | null;
   };
 }

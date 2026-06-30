@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { parseToPrismaQuery } from '../../../common/query';
+import { buildNextPath } from '../../../common/url';
 import { PrismaService } from '../../../database/prisma';
 import type { BandInvitationStatus, BandMemberRole, JoinRequestStatus, Prisma } from '../../../generated/prisma';
 import type { GetBandJoinRequestsQuery } from '../dto/get-band-join-requests-query.dto';
@@ -506,6 +508,8 @@ export class BandsPrismaRepository implements BandsRepository {
    */
   async findBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult> {
     const client = tx ?? this.prisma;
+    const { orderBy, take } = parseToPrismaQuery(query);
+    const resolvedTake = take ?? query.take;
 
     const bandMembers = await client.bandMember.findMany({
       where: {
@@ -537,21 +541,31 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ joinedAt: query.order__joined_at }, { id: query.order__id }],
-      take: query.take,
+      orderBy,
+      take: resolvedTake,
     });
 
     const members = bandMembers.map(member => this.mapBandMemberListItem(member));
     const count = members.length;
     const cursor = count > 0 ? { joinedAt: members[0].joinedAt, id: members[0].bandMemberId } : null;
-    const next = count === query.take ? { joinedAt: members[count - 1].joinedAt, id: members[count - 1].bandMemberId } : null;
+    const lastMember = members[count - 1];
+    const next =
+      count === resolvedTake && lastMember
+        ? buildNextPath(`/bands/${bandId}/users`, {
+            cursor__joined_at: lastMember.joinedAt,
+            cursor__id: lastMember.bandMemberId,
+            take: resolvedTake,
+            order__joined_at: query.order__joined_at,
+            order__id: query.order__id,
+          })
+        : null;
 
     return {
       bandId,
       members,
       meta: {
         count,
-        take: query.take,
+        take: resolvedTake,
         cursor,
         next,
       },
@@ -567,12 +581,14 @@ export class BandsPrismaRepository implements BandsRepository {
    */
   async searchBands(query: SearchBandsQuery, tx?: Prisma.TransactionClient): Promise<SearchBandsResult> {
     const client = tx ?? this.prisma;
+    const { where, orderBy, take } = parseToPrismaQuery<Prisma.BandWhereInput>(query);
+    const resolvedTake = take ?? query.take;
 
     const bands = await client.band.findMany({
       where: {
         deletedAt: null,
         visibility: true,
-        ...this.createBandSearchKeywordWhere(query),
+        ...where,
         ...this.createBandSearchCursorWhere(query),
       },
       include: {
@@ -591,21 +607,32 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
-      take: query.take,
+      orderBy,
+      take: resolvedTake,
     });
 
     const items = bands.map(band => this.mapBandSearchListItem(band));
     const count = items.length;
     const cursor = count > 0 ? { createdAt: items[0].createdAt, id: items[0].bandId } : null;
-    const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].bandId } : null;
+    const lastItem = items[count - 1];
+    const next =
+      count === resolvedTake && lastItem
+        ? buildNextPath('/bands/search', {
+            cursor__created_at: lastItem.createdAt,
+            cursor__id: lastItem.bandId,
+            take: resolvedTake,
+            order__created_at: query.order__created_at,
+            order__id: query.order__id,
+            where__name__contain: query.where__name__contain,
+          })
+        : null;
 
     return {
       keyword: query.where__name__contain ?? null,
       items,
       meta: {
         count,
-        take: query.take,
+        take: resolvedTake,
         cursor,
         next,
       },
@@ -749,7 +776,15 @@ export class BandsPrismaRepository implements BandsRepository {
     const items = bands.flatMap(band => this.mapMyBandListItem(band));
     const count = items.length;
     const cursor = count > 0 ? { createdAt: items[0].createdAt, id: items[0].id } : null;
-    const next = count === query.take ? { createdAt: items[count - 1].createdAt, id: items[count - 1].id } : null;
+    const lastBand = items[count - 1];
+    const next =
+      count === query.take && lastBand
+        ? buildNextPath('/bands/me', {
+            cursor__created_at: lastBand.createdAt,
+            cursor__id: lastBand.id,
+            take: query.take,
+          })
+        : null;
 
     return {
       items,
@@ -822,13 +857,25 @@ export class BandsPrismaRepository implements BandsRepository {
     const items = rows.map(invitation => this.mapReceivedBandInvitationListItem(invitation));
     const count = items.length;
     const cursor = count > 0 ? { id: items[0].invitationId } : null;
-    const next = hasNext && count > 0 ? { id: items[count - 1].invitationId } : null;
+    const next = hasNext && count > 0 ? this.buildNextReceivedUrl(query, items[count - 1].invitationId) : null;
+    const totalCount =
+      query.count === true
+        ? await client.bandInvitation.count({
+            where: {
+              inviteeUserId: userId,
+              status: query.where__invitation_status,
+              band: { deletedAt: null },
+              inviterBandMember: { user: { deletedAt: null } },
+            },
+          })
+        : null;
 
     return {
       items,
       meta: {
         count,
         take: query.take,
+        totalCount,
         cursor,
         next,
       },
@@ -894,13 +941,25 @@ export class BandsPrismaRepository implements BandsRepository {
     const items = rows.map(invitation => this.mapSentBandInvitationListItem(invitation));
     const count = items.length;
     const cursor = count > 0 ? { id: items[0].invitationId } : null;
-    const next = hasNext && count > 0 ? { id: items[count - 1].invitationId } : null;
+    const next = hasNext && count > 0 ? this.buildNextSentUrl(query, items[count - 1].invitationId) : null;
+    const totalCount =
+      query.count === true
+        ? await client.bandInvitation.count({
+            where: {
+              status: query.where__invitation_status,
+              band: { deletedAt: null },
+              inviterBandMember: { userId },
+              inviteeUser: { deletedAt: null },
+            },
+          })
+        : null;
 
     return {
       items,
       meta: {
         count,
         take: query.take,
+        totalCount,
         cursor,
         next,
       },
@@ -1446,19 +1505,6 @@ export class BandsPrismaRepository implements BandsRepository {
     };
   }
 
-  private createBandSearchKeywordWhere(query: SearchBandsQuery): Prisma.BandWhereInput {
-    if (query.where__name__contain === undefined) {
-      return {};
-    }
-
-    return {
-      name: {
-        contains: query.where__name__contain,
-        mode: 'insensitive',
-      },
-    };
-  }
-
   private createBandSearchCursorWhere(query: SearchBandsQuery): Prisma.BandWhereInput {
     if (query.cursor__created_at === undefined || query.cursor__id === undefined) {
       return {};
@@ -1632,6 +1678,32 @@ export class BandsPrismaRepository implements BandsRepository {
         memberCount: band._count.members,
       },
     ];
+  }
+
+  /**
+   * 받은 초대 목록 다음 페이지 URL을 생성한다.
+   */
+  private buildNextReceivedUrl(query: GetReceivedBandInvitationsQuery, lastId: string): string {
+    return buildNextPath('/invitations/received', {
+      where__invitation_status: query.where__invitation_status,
+      order__created_at: query.order__created_at,
+      order__id: query.order__id,
+      take: query.take,
+      cursor__id: lastId,
+    });
+  }
+
+  /**
+   * 보낸 초대 목록 다음 페이지 URL을 생성한다.
+   */
+  private buildNextSentUrl(query: GetSentBandInvitationsQuery, lastId: string): string {
+    return buildNextPath('/invitations/sent', {
+      where__invitation_status: query.where__invitation_status,
+      order__created_at: query.order__created_at,
+      order__id: query.order__id,
+      take: query.take,
+      cursor__id: lastId,
+    });
   }
 
   private mapReceivedBandInvitationListItem(

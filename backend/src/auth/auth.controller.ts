@@ -20,10 +20,10 @@ export class AuthController {
   @ApiOperation({ summary: '액세스 토큰 재발급' })
   @ApiResponse({ status: 201, description: '액세스 토큰 재발급 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  TokenAccess(@Req() req: { user: { id: string; email: string } }) {
+  TokenAccess(@Req() req: { user: { id: string; email: string } }): ApiSuccessResponse<{ accessToken: string }> {
     const { email, id } = req.user;
     const accessToken = this.authService.signToken(email, id, false);
-    return { accessToken };
+    return createSuccessResponse('액세스 토큰 재발급 성공', { accessToken });
   }
 
   @Post('token/refresh')
@@ -32,10 +32,10 @@ export class AuthController {
   @ApiOperation({ summary: '리프레시 토큰 재발급' })
   @ApiResponse({ status: 201, description: '리프레시 토큰 재발급 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  TokenRefresh(@Req() req: { user: { id: string; email: string } }) {
+  TokenRefresh(@Req() req: { user: { id: string; email: string } }): ApiSuccessResponse<{ refreshToken: string }> {
     const { email, id } = req.user;
     const refreshToken = this.authService.signToken(email, id, true);
-    return { refreshToken };
+    return createSuccessResponse('리프레시 토큰 재발급 성공', { refreshToken });
   }
 
   @Post('login/email')
@@ -43,19 +43,21 @@ export class AuthController {
   @ApiBasicAuth()
   @ApiOperation({ summary: '이메일 로그인' })
   @ApiResponse({ status: 201, description: '로그인 성공' })
-  @ApiResponse({ status: 401, description: '인증 실패' })
-  async loginEmail(@Req() req: { user: { id: string; email: string } }) {
+  @ApiResponse({ status: 401, description: 'Authorization 헤더 없음 | 잘못된 Basic 토큰 형식 | 존재하지 않는 유저 | 비밀번호 불일치' })
+  loginEmail(@Req() req: { user: { id: string; email: string } }): ApiSuccessResponse<{ accessToken: string; refreshToken: string }> {
     // BasicTokenGuard가 인증을 마치고 req.user에 담은 유저로 토큰을 발급한다.
     const { email, id } = req.user;
-    return this.authService.loginUser(email, id);
+    const tokens = this.authService.loginUser(email, id);
+    return createSuccessResponse('로그인 성공', tokens);
   }
 
   @Post('register/email')
   @ApiOperation({ summary: '이메일 회원가입' })
   @ApiResponse({ status: 201, description: '회원가입 성공' })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async registerEmail(@Body() { email, password }: RegisterEmailDto) {
-    return this.authService.registerWithEmail(email, password);
+  @ApiResponse({ status: 400, description: '유효성 검사 실패 (이메일 형식 불일치, 비밀번호 패턴 불일치) | 이미 존재하는 이메일' })
+  async registerEmail(@Body() { email, password }: RegisterEmailDto): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
+    const tokens = await this.authService.registerWithEmail(email, password);
+    return createSuccessResponse('회원가입 성공', tokens);
   }
 
   @Post('email')

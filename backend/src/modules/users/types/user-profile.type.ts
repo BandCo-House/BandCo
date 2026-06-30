@@ -1,5 +1,7 @@
 import type { SkillLevelType, UserStatus } from 'src/generated/prisma';
 
+import type { ProfileMusicTrack } from './profile-music.type';
+
 export interface UserProfileUserDetail {
   id: string;
   email: string | null;
@@ -10,9 +12,10 @@ export interface UserProfileUserDetail {
 export interface UserProfileDetail {
   nickname: string;
   selfDescription: string | null;
-  profileMusicUrl: string | null;
   avatarUrl: string | null;
 }
+
+export type { ProfileMusicTrack };
 
 export interface UserSkillDetail {
   skillTypeId: string;
@@ -29,6 +32,7 @@ export interface UserFavoriteGenreDetail {
 export interface GetUserProfileResult {
   user: UserProfileUserDetail;
   profile: UserProfileDetail | null;
+  profileMusic: ProfileMusicTrack | null;
   skills: UserSkillDetail[];
   favoriteGenres: UserFavoriteGenreDetail[];
 }

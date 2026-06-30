@@ -25,7 +25,8 @@ export interface GetReceivedBandInvitationsResult {
   meta: {
     count: number;
     take: number;
+    totalCount: number | null;
     cursor: ReceivedBandInvitationCursor | null;
-    next: ReceivedBandInvitationCursor | null;
+    next: string | null;
   };
 }

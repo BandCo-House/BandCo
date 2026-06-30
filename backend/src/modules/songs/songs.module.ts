@@ -10,7 +10,6 @@ import { SONGS_REPOSITORY } from './repositories/songs.repository';
 import { DeezerTrackClient } from './deezer-track.client';
 import { SongsController } from './songs.controller';
 import { SongsService } from './songs.service';
-import { SpotifyTrackClient } from './spotify-track.client';
 
 @Module({
   imports: [AuthModule, UsersModule, SkillsModule],
@@ -18,7 +17,6 @@ import { SpotifyTrackClient } from './spotify-track.client';
   providers: [
     AccessTokenGuard,
     SongsService,
-    SpotifyTrackClient,
     DeezerTrackClient,
     SongsPrismaRepository,
     {

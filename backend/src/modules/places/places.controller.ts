@@ -123,7 +123,10 @@ export class PlacesController {
    */
   @Delete('places/:placeId')
   @UseGuards(AccessTokenGuard)
-  async deletePlace(@Req() request: AuthenticatedRequest, @Param('placeId', new ParseUUIDPipe()) placeId: string): Promise<ApiSuccessResponse<DeletePlaceResult>> {
+  async deletePlace(
+    @Req() request: AuthenticatedRequest,
+    @Param('placeId', new ParseUUIDPipe()) placeId: string,
+  ): Promise<ApiSuccessResponse<DeletePlaceResult>> {
     const result = await this.placesService.deletePlace(request.user.id, placeId);
 
     return createSuccessResponse('장소 삭제 성공', result);

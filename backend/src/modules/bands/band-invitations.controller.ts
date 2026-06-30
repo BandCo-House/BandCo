@@ -60,6 +60,7 @@ export class BandInvitationsController {
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 403, description: '권한 없음' })
   @ApiResponse({ status: 404, description: '초대를 찾을 수 없음' })
+  @ApiResponse({ status: 409, description: '이미 처리된 초대 / 이미 밴드 멤버' })
   async acceptBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') invitationId: string,
@@ -77,6 +78,7 @@ export class BandInvitationsController {
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 403, description: '권한 없음' })
   @ApiResponse({ status: 404, description: '초대를 찾을 수 없음' })
+  @ApiResponse({ status: 409, description: '이미 처리된 초대' })
   async declineBandInvitation(
     @Req() request: AuthenticatedRequest,
     @Param('invitationId') invitationId: string,

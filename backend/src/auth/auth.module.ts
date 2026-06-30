@@ -9,6 +9,6 @@ import { AuthService } from './auth.service';
   imports: [JwtModule.register({}), forwardRef(() => UsersModule)],
   controllers: [AuthController],
   providers: [AuthService],
-  exports: [AuthService],
+  exports: [AuthService, UsersModule],
 })
 export class AuthModule {}
