@@ -1,174 +1,228 @@
 import { http, HttpResponse } from 'msw';
-import { type ScheduleItem } from '@/entities/schedule/model/types';
+import {
+  type ScheduleItem,
+  type ScheduleParticipantPreview,
+} from '@/entities/schedule/model/types';
 import { API_URL } from '../config';
 
-const schedules: ScheduleItem[] = [
-  // 1. 자정 넘김 + 연결성 테스트
+const AVATAR =
+  'https://www.figma.com/api/mcp/asset/e0d7fd40-4d78-4dd1-83de-f619c2d803a9';
+
+const MAX_PREVIEW = 4;
+
+/**
+ * 참가자 미리보기(앞쪽 일부)를 만든다. withNull이면 일부는 프로필 이미지가 없어
+ * 검정 배경 + 흰 글자(B/이니셜) 폴백을 확인할 수 있다.
+ */
+const makeParticipants = (
+  count: number,
+  options: { withNull?: boolean } = {},
+): ScheduleParticipantPreview[] =>
+  Array.from({ length: Math.min(count, MAX_PREVIEW) }, (_, i) => ({
+    bandMemberId: `member-${i + 1}`,
+    nickname: `멤버${i + 1}`,
+    profileImageUrl: options.withNull && i % 2 === 1 ? null : AVATAR,
+  }));
+
+// 오늘 날짜 기준으로 시간만 고정해 단일 일 타임라인을 확인하기 쉽게 둔다.
+const atOffsetDay = (offsetDay: number, hour: number, minute = 0): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDay);
+  date.setHours(hour, minute, 0, 0);
+  return date.toISOString();
+};
+
+interface ScheduleSeed {
+  id: string;
+  type: ScheduleItem['scheduleType'];
+  title: string;
+  start: [number, number?];
+  end: [number, number?];
+  /** 종료가 다음 날이면 true(자정 넘김 확인용). */
+  endNextDay?: boolean;
+  place: string | null;
+  participantCount: number;
+  isMine: boolean;
+  withNull?: boolean;
+}
+
+// 가로 스크롤(3개 겹침)·빈 프사·5분 일정·다인원(+N)·새벽 wrap·단독/겹침을 골고루 섞었다.
+const SEEDS: ScheduleSeed[] = [
+  // 06시 경계를 가로지르는 일정(05:00~08:00) → 06:00~08:00로 잘려 상단에 표시.
   {
-    scheduleId: '1',
-    spaceId: 'space-1',
-    scheduleType: 'PRACTICE',
-    title: '좋은 날 합주',
-    startAt: '2026-03-17T22:00:00',
-    endAt: '2026-03-18T00:00:00',
-    place: { name: '연습실 A' },
-    practice: {
-      title: '좋은 날',
-      artistName: 'IU',
-      team: { name: '듀엣 기타 편성' },
-    },
-    meeting: null,
-    ui: {
-      cardTitle: '좋은 날',
-      cardSubTitle: '2026-03-17',
-      colorToken: 'gray-500',
-    },
-    status: 'SCHEDULED',
+    id: 'sch-0',
+    type: 'PRACTICE',
+    title: '아침 리허설',
+    start: [5],
+    end: [8],
+    place: '신촌 연습실 A',
+    participantCount: 4,
+    isMine: true,
   },
-  // 2. 동일 시간 완전 겹침 (17일 14:00 ~ 16:00)
+  // 09:00~10:30대에 3개가 겹쳐 가로 스크롤을 유발한다.
   {
-    scheduleId: 'overlap-1',
-    spaceId: 'space-1',
-    scheduleType: 'MEETING',
-    title: '기획 회의 A',
-    startAt: '2026-03-17T14:00:00',
-    endAt: '2026-03-17T16:00:00',
-    place: { name: '회의실 1' },
-    practice: null,
-    meeting: { participantCount: 3 },
-    ui: {
-      cardTitle: '기획 회의 A',
-      cardSubTitle: '회의',
-      colorToken: 'blue-400',
-    },
-    status: 'SCHEDULED',
-  },
-  {
-    scheduleId: 'overlap-2',
-    spaceId: 'space-1',
-    scheduleType: 'MEETING',
-    title: '디자인 리뷰',
-    startAt: '2026-03-17T14:00:00',
-    endAt: '2026-03-17T16:00:00',
-    place: { name: '회의실 2' },
-    practice: null,
-    meeting: { participantCount: 4 },
-    ui: {
-      cardTitle: '디자인 리뷰',
-      cardSubTitle: '리뷰',
-      colorToken: 'pink-400',
-    },
-    status: 'SCHEDULED',
-  },
-  // 3. 계단식 겹침 (18일 10:00 ~ 12:00, 11:00 ~ 13:00, 12:00 ~ 14:00)
-  {
-    scheduleId: 'cascade-1',
-    spaceId: 'space-1',
-    scheduleType: 'PRACTICE',
-    title: '파트 연습 1',
-    startAt: '2026-03-18T10:00:00',
-    endAt: '2026-03-18T12:00:00',
-    place: { name: '연습실 B' },
-    practice: { title: '연습 1', artistName: 'A', team: { name: '팀 A' } },
-    meeting: null,
-    ui: {
-      cardTitle: '파트 연습 1',
-      cardSubTitle: '연습',
-      colorToken: 'green-400',
-    },
-    status: 'SCHEDULED',
+    id: 'sch-1',
+    type: 'PRACTICE',
+    title: '합주 A',
+    start: [9],
+    end: [11],
+    place: '신촌 연습실 A',
+    participantCount: 6,
+    isMine: true,
   },
   {
-    scheduleId: 'cascade-2',
-    spaceId: 'space-1',
-    scheduleType: 'PRACTICE',
-    title: '파트 연습 2',
-    startAt: '2026-03-18T11:00:00',
-    endAt: '2026-03-18T13:00:00',
-    place: { name: '연습실 C' },
-    practice: { title: '연습 2', artistName: 'B', team: { name: '팀 B' } },
-    meeting: null,
-    ui: {
-      cardTitle: '파트 연습 2',
-      cardSubTitle: '연습',
-      colorToken: 'yellow-400',
-    },
-    status: 'SCHEDULED',
+    id: 'sch-2',
+    type: 'MEETING',
+    title: '의상 회의',
+    start: [9],
+    end: [11],
+    place: '신촌 연습실 B',
+    participantCount: 6,
+    isMine: false,
   },
   {
-    scheduleId: 'cascade-3',
-    spaceId: 'space-1',
-    scheduleType: 'PRACTICE',
-    title: '파트 연습 3',
-    startAt: '2026-03-18T12:00:00',
-    endAt: '2026-03-18T14:00:00',
-    place: { name: '연습실 D' },
-    practice: { title: '연습 3', artistName: 'C', team: { name: '팀 C' } },
-    meeting: null,
-    ui: {
-      cardTitle: '파트 연습 3',
-      cardSubTitle: '연습',
-      colorToken: 'orange-400',
-    },
-    status: 'SCHEDULED',
+    id: 'sch-3',
+    type: 'PRACTICE',
+    title: '보컬 연습',
+    start: [9, 30],
+    end: [10, 30],
+    place: '신촌 연습실 C',
+    participantCount: 3,
+    isMine: true,
+    withNull: true,
   },
-  // 4. 부분 겹침 (19일 긴 일정 사이에 짧은 일정)
+  // 단독(전체 폭) + 8명(+4)
   {
-    scheduleId: 'partial-1',
-    spaceId: 'space-1',
-    scheduleType: 'MEETING',
-    title: '종일 워크숍',
-    startAt: '2026-03-19T09:00:00',
-    endAt: '2026-03-19T18:00:00',
-    place: { name: '대강당' },
-    practice: null,
-    meeting: { participantCount: 20 },
-    ui: { cardTitle: '워크숍', cardSubTitle: '종일', colorToken: 'indigo-500' },
-    status: 'SCHEDULED',
+    id: 'sch-4',
+    type: 'PRACTICE',
+    title: '합주 B',
+    start: [11],
+    end: [13],
+    place: '신촌 연습실 A',
+    participantCount: 8,
+    isMine: false,
+  },
+  // 5분 일정(끝 트림 확인)
+  {
+    id: 'sch-5',
+    type: 'MEETING',
+    title: '점심 정산',
+    start: [13],
+    end: [13, 5],
+    place: '회의실',
+    participantCount: 2,
+    isMine: true,
+  },
+  // 12명(+8) + 겹침 2개
+  {
+    id: 'sch-6',
+    type: 'MEETING',
+    title: '전체 회의',
+    start: [14],
+    end: [15, 30],
+    place: '대강당',
+    participantCount: 12,
+    isMine: true,
+    withNull: true,
   },
   {
-    scheduleId: 'partial-2',
-    spaceId: 'space-1',
-    scheduleType: 'MEETING',
-    title: '중간 점검',
-    startAt: '2026-03-19T13:30:00',
-    endAt: '2026-03-19T14:15:00', // 45분간
-    place: { name: '소회의실' },
-    practice: null,
-    meeting: { participantCount: 3 },
-    ui: { cardTitle: '점검', cardSubTitle: '짧은', colorToken: 'red-400' },
-    status: 'SCHEDULED',
+    id: 'sch-7',
+    type: 'PRACTICE',
+    title: '사운드 체크',
+    start: [14, 30],
+    end: [16],
+    place: '무대',
+    participantCount: 4,
+    isMine: false,
   },
-  // 5. 다일 일정 (20일 ~ 22일)
+  // 혼자(나만, +N 없음) + 빈 프사
   {
-    scheduleId: '3',
-    spaceId: 'space-1',
-    scheduleType: 'PRACTICE',
-    title: '다일 합주 캠프',
-    startAt: '2026-03-20T10:00:00',
-    endAt: '2026-03-22T18:00:00',
-    place: { name: '강원도 펜션' },
-    practice: {
-      title: '합주 캠프',
-      artistName: 'Various',
-      team: { name: '전체 밴드' },
-    },
-    meeting: null,
-    ui: {
-      cardTitle: '합주 캠프',
-      cardSubTitle: '캠프',
-      colorToken: 'blue-500',
-    },
-    status: 'SCHEDULED',
+    id: 'sch-8',
+    type: 'PRACTICE',
+    title: '개인 연습',
+    start: [20],
+    end: [21, 30],
+    place: '신촌 연습실 A',
+    participantCount: 1,
+    isMine: true,
+    withNull: true,
+  },
+  // 자정을 넘겨 다음 날 새벽까지 이어지는 일정(하단으로 연결되는지 확인)
+  {
+    id: 'sch-9',
+    type: 'MEETING',
+    title: '뒤풀이 회의',
+    start: [22],
+    end: [1, 30],
+    endNextDay: true,
+    place: '펜션',
+    participantCount: 9,
+    isMine: false,
+  },
+  // 새벽(06시 이전) → 타임라인 하단으로 wrap
+  {
+    id: 'sch-10',
+    type: 'PRACTICE',
+    title: '새벽 합주',
+    start: [2],
+    end: [4],
+    place: '신촌 연습실 D',
+    participantCount: 5,
+    isMine: true,
+  },
+  // 참가자 0명(아바타 영역 없음)
+  {
+    id: 'sch-11',
+    type: 'MEETING',
+    title: '온라인 정산',
+    start: [0, 30],
+    end: [1],
+    place: null,
+    participantCount: 0,
+    isMine: false,
   },
 ];
 
+const buildSchedules = (): ScheduleItem[] =>
+  SEEDS.map((seed) => ({
+    scheduleId: seed.id,
+    spaceId: 'space-1',
+    scheduleType: seed.type,
+    title: seed.title,
+    startAt: atOffsetDay(0, seed.start[0], seed.start[1]),
+    endAt: atOffsetDay(seed.endNextDay ? 1 : 0, seed.end[0], seed.end[1]),
+    place: seed.place
+      ? { placeId: `place-${seed.id}`, name: seed.place }
+      : null,
+    songs: [],
+    participantCount: seed.participantCount,
+    participants: makeParticipants(seed.participantCount, {
+      withNull: seed.withNull,
+    }),
+    isMine: seed.isMine,
+    memo: null,
+    status: 'PLANNED',
+  }));
+
 export const scheduleHandlers = [
-  http.get(`${API_URL}/spaces/:spaceId/schedules`, () => {
+  http.get(`${API_URL}/bandspaces/:spaceId/schedules`, ({ request }) => {
+    const url = new URL(request.url);
+    const from = url.searchParams.get('where__start_at__greater_than_equal');
+    const to = url.searchParams.get('where__start_at__less_than_equal');
+    const scheduleType = url.searchParams.get('where__schedule_type');
+
+    const items = buildSchedules().filter((item) => {
+      if (scheduleType && item.scheduleType !== scheduleType) return false;
+      if (from && item.startAt < from) return false;
+      if (to && item.startAt > to) return false;
+      return true;
+    });
+
     return HttpResponse.json({
       success: true,
       data: {
-        items: schedules,
+        items,
+        meta: { count: items.length, take: 50, cursor: null, next: null },
       },
     });
   }),

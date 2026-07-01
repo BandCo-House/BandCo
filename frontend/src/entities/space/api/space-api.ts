@@ -43,6 +43,35 @@ export const getSpace = async (spaceId: string): Promise<Space> => {
   return bandSpaceSchema.parse(data.space);
 };
 
+export interface SpaceDetailView {
+  space: Space;
+  memberCount: number;
+  songCount: number;
+}
+
+// 상세 응답 `{ space, members[], songCount, scheduleCount }`에서 헤더에 필요한 값만 추린다.
+const spaceDetailResultSchema = z.object({
+  space: bandSpaceSchema,
+  members: z.array(z.unknown()).default([]),
+  songCount: z.number().int().nonnegative().default(0),
+});
+
+/**
+ * 공간 상세를 조회해 헤더용 요약(이름/설명 + 멤버 수/곡 수)을 반환한다.
+ * 멤버 수는 members 배열 길이, 곡 수는 응답의 songCount를 사용한다.
+ */
+export const getSpaceDetail = async (
+  spaceId: string,
+): Promise<SpaceDetailView> => {
+  const data = await apiGet<unknown>(`/bandspaces/${spaceId}`);
+  const parsed = spaceDetailResultSchema.parse(data);
+  return {
+    space: parsed.space,
+    memberCount: parsed.members.length,
+    songCount: parsed.songCount,
+  };
+};
+
 export interface CreateSpaceRequest {
   name: string;
   description?: string;

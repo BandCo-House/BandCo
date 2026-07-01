@@ -1,37 +1,63 @@
 import { useQuery } from '@tanstack/react-query';
+import { addDays, endOfDay, startOfDay } from '@/shared/lib/date';
 import { getSchedules } from '../api';
-import { splitSchedule, type SchedulePart } from '../lib/split-schedule';
+import { clipToDayWindow, type DayScheduleBlock } from '../lib/day-window';
 import { calculateOverlaps } from '../lib/calculate-overlaps';
+import { type ScheduleType } from './types';
+
+// 타임라인이 6시에 시작하므로 "하루"는 당일 06:00 ~ 다음 날 06:00이다.
+// (widgets/space-calendar의 START_HOUR과 일치시켜야 한다.)
+const DAY_ORIGIN_HOUR = 6;
+
+export interface DayScheduleFilter {
+  date: Date;
+  scheduleType?: ScheduleType;
+  onlyMine?: boolean;
+}
 
 export const scheduleQueries = {
   all: ['schedules'] as const,
-  list: (spaceId: string, from: string, to: string) =>
-    [...scheduleQueries.all, 'list', spaceId, { from, to }] as const,
+  day: (
+    spaceId: string,
+    range: { from: string; to: string },
+    scheduleType: ScheduleType | undefined,
+  ) =>
+    [
+      ...scheduleQueries.all,
+      'day',
+      spaceId,
+      { ...range, scheduleType: scheduleType ?? null },
+    ] as const,
 };
 
-export const useSchedules = (
-  spaceId: string,
-  from: string,
-  to: string,
-) => {
+/**
+ * 특정 하루(당일 06:00 ~ 다음 날 06:00)의 일정을 조회한다.
+ * 백엔드는 일정을 통째로(startAt/endAt) 주므로, 윈도를 덮는 범위(전날~다음 날)를 받아
+ * 각 일정을 윈도 경계에 맞게 잘라(clip) 표시한다. 06시 경계를 넘나드는 일정도 정확히 처리된다.
+ * "내가 포함된 일정만 보기"(onlyMine)는 응답의 isMine으로 프론트에서 필터한다(재요청 없음).
+ */
+export const useDaySchedules = (spaceId: string, filter: DayScheduleFilter) => {
+  const { date, scheduleType, onlyMine = false } = filter;
+
+  const windowStart = startOfDay(date);
+  windowStart.setHours(DAY_ORIGIN_HOUR, 0, 0, 0);
+  const windowEnd = addDays(windowStart, 1);
+
+  // 윈도(06:00~다음 날 06:00)를 모두 덮도록 넉넉히 받아 온다.
+  const from = startOfDay(addDays(date, -1)).toISOString();
+  const to = endOfDay(addDays(date, 1)).toISOString();
+
   return useQuery({
-    queryKey: scheduleQueries.list(spaceId, from, to),
-    queryFn: () => getSchedules(spaceId, { from, to }),
-    select: (data): SchedulePart[] => {
-      // 1. 일정을 자정 기준으로 분리
-      const allParts = data.items.flatMap((item) => splitSchedule(item));
+    queryKey: scheduleQueries.day(spaceId, { from, to }, scheduleType),
+    queryFn: () => getSchedules(spaceId, { from, to, scheduleType }),
+    select: (data): DayScheduleBlock[] => {
+      const blocks = data.items
+        .map((item) => clipToDayWindow(item, windowStart, windowEnd))
+        .filter((block): block is DayScheduleBlock => block !== null)
+        .filter((block) => !onlyMine || block.schedule.isMine);
 
-      // 2. 날짜별로 그룹화하여 겹침 계산 적용
-      const partsByDate: Record<string, SchedulePart[]> = {};
-      allParts.forEach((part) => {
-        if (!partsByDate[part.date]) partsByDate[part.date] = [];
-        partsByDate[part.date].push(part);
-      });
-
-      return Object.values(partsByDate).flatMap((parts) =>
-        calculateOverlaps(parts),
-      );
+      return calculateOverlaps(blocks);
     },
-    enabled: !!spaceId && !!from && !!to,
+    enabled: !!spaceId,
   });
 };

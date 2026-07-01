@@ -94,7 +94,7 @@ describe('ScheduleCreateModal', () => {
         placeId: 'place-3',
         songId: 'song-1',
         teamId: 'team-1',
-        status: 'SCHEDULED'
+        status: 'PLANNED'
       }));
     });
   });
@@ -133,7 +133,7 @@ describe('ScheduleCreateModal', () => {
         startAt: '2026-03-20T19:00:00Z',
         endAt: '2026-03-20T21:00:00Z',
         memo: '회의 안건 1',
-        status: 'SCHEDULED'
+        status: 'PLANNED'
       }));
     });
   });

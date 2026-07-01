@@ -1,0 +1,140 @@
+import { useEffect, useRef, useState } from 'react';
+import { useParams } from '@tanstack/react-router';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
+import { addDays } from '@/shared/lib/date';
+import { cn } from '@/shared/lib/utils';
+import { useSpace } from '@/entities/space/api/useSpace';
+import { useDaySchedules } from '@/entities/schedule/model/queries';
+import { SpaceSummaryHeader } from '@/entities/space/ui/SpaceSummaryHeader';
+import { ScheduleFilterBar } from '@/features/schedule-filter/ui/ScheduleFilterBar';
+import { type ScheduleTypeFilter } from '@/features/schedule-filter/model/types';
+import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreateModal';
+import { WeekDatePicker } from '@/shared/ui/week-date-picker';
+import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
+import { DayTimeline } from './DayTimeline';
+
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+const formatCompactDate = (date: Date): string =>
+  `${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAY_LABELS[date.getDay()]})`;
+
+const APP_HEADER_PX = 64;
+
+/** 합주 공간 메인(단일 일 타임라인). */
+export const SpaceCalendar = () => {
+  const { spaceId } = useParams({ strict: false });
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [scheduleType, setScheduleType] =
+    useState<ScheduleTypeFilter>(undefined);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // 필터가 헤더에 고정되는 순간에만 collapsed로 전환(고정 후 배경이 떠 겹침 방지).
+  const stickSentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = stickSentinelRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCollapsed(!entry.isIntersecting),
+      { rootMargin: `-${APP_HEADER_PX}px 0px 0px 0px`, threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const { data: spaceDetail } = useSpace(spaceId ?? '');
+  const { data: blocks = [] } = useDaySchedules(spaceId ?? '', {
+    date: selectedDate,
+    scheduleType,
+    onlyMine,
+  });
+
+  const fabActions: SpeedDialAction[] = [
+    { label: '새 일정', onClick: () => setIsModalOpen(true) },
+  ];
+
+  return (
+    <div className="flex w-full flex-col pb-[calc(5rem_+_env(safe-area-inset-bottom))]">
+      {/* 헤더 하단 글로우: 미고정 땐 헤더 아래, 고정 땐 아래 sticky 바가 이어받는다
+          (헤더↔필터 사이엔 안 생기게). */}
+      {!collapsed && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-x-0 z-40 mx-auto h-px w-full max-w-[648px] shadow-[0px_8px_40px_0px_rgba(221,254,85,0.12)]"
+          style={{ top: APP_HEADER_PX }}
+        />
+      )}
+
+      <div className="flex flex-col gap-6 px-5 pt-5">
+        {spaceDetail && (
+          <SpaceSummaryHeader
+            name={spaceDetail.space.name}
+            description={spaceDetail.space.description}
+            memberCount={spaceDetail.memberCount}
+            songCount={spaceDetail.songCount}
+          />
+        )}
+        <WeekDatePicker value={selectedDate} onChange={setSelectedDate} />
+      </div>
+
+      <div ref={stickSentinelRef} className="h-0" />
+
+      {/* 고정 시 헤더와 같은 프로스트 + 1px 겹침으로 한 덩어리처럼 이어진다. */}
+      <div
+        className={cn(
+          'sticky z-20 flex flex-col gap-3 px-5 py-3',
+          collapsed &&
+            'bg-gradient-top/65 shadow-[0px_8px_40px_0px_rgba(221,254,85,0.12)] backdrop-blur-sm',
+        )}
+        style={{ top: APP_HEADER_PX - 1 }}
+      >
+        {collapsed && (
+          <div className="flex items-center justify-between">
+            <p className="typo-lg-sb text-grey-50">
+              {formatCompactDate(selectedDate)}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="이전 날"
+                onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+                className="inline-flex size-7 items-center justify-center rounded-full text-grey-300 focus-visible:outline-2 focus-visible:outline-key"
+              >
+                <ArrowRightIcon
+                  aria-hidden="true"
+                  className="size-4 rotate-180"
+                />
+              </button>
+              <button
+                type="button"
+                aria-label="다음 날"
+                onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                className="inline-flex size-7 items-center justify-center rounded-full text-grey-300 focus-visible:outline-2 focus-visible:outline-key"
+              >
+                <ArrowRightIcon aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <ScheduleFilterBar
+          scheduleType={scheduleType}
+          onScheduleTypeChange={setScheduleType}
+          onlyMine={onlyMine}
+          onOnlyMineChange={setOnlyMine}
+        />
+      </div>
+
+      <DayTimeline className="mt-2" blocks={blocks} />
+
+      <SpeedDialFab className="bottom-24" actions={fabActions} />
+
+      <ScheduleCreateModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialDate={selectedDate}
+      />
+    </div>
+  );
+};

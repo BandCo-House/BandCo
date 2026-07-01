@@ -224,41 +224,6 @@ describe('앱 라우터', () => {
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });
 
-  it('공연 상세에서 곡 라이브러리 탭으로 이동 후 캘린더 탭을 누르면 동일 공연으로 돌아온다', async () => {
-    const router = createRouterForTest('/band/1/space/1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(router);
-
-    await screen.findByText('BandPerformancePage');
-    fireEvent.click(screen.getByRole('button', { name: '곡 라이브러리' }));
-    await screen.findByText('SongsPage');
-    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
-
-    expect(await screen.findByText('BandPerformancePage')).toBeInTheDocument();
-  });
-
-  it('공연 상세 경로에서는 캘린더 탭이 active 상태다', async () => {
-    const router = createRouterForTest('/band/1/space/1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(router);
-
-    await screen.findByText('BandPerformancePage');
-
-    expect(screen.getByRole('button', { name: '캘린더' })).toHaveAttribute(
-      'data-variant',
-      'default',
-    );
-    expect(
-      screen.getByRole('button', { name: '곡 라이브러리' }),
-    ).toHaveAttribute('data-variant', 'outline');
-  });
-
   it('루트 경로에서는 단순 헤더 제목을 렌더링해야 한다', async () => {
     const rootRouter = createRouterForTest('/', {
       isLoggedIn: true,
@@ -358,22 +323,6 @@ describe('앱 라우터', () => {
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
-  });
-
-  it('공연 상세의 우측 설정 버튼은 공연 설정 페이지로 이동한다', async () => {
-    const router = createRouterForTest('/band/1/space/1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(router);
-
-    await screen.findByText('BandPerformancePage');
-    fireEvent.click(screen.getByRole('button', { name: '설정' }));
-
-    expect(
-      await screen.findByText('PerformanceSettingsPage'),
-    ).toBeInTheDocument();
   });
 
   it('밴드 라이브러리 경로에서는 라이브러리 탭이 active 상태다', async () => {

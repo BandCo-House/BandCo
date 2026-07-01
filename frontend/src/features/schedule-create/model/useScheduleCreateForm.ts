@@ -61,7 +61,7 @@ export const useScheduleCreateForm = (onClose: () => void, initialDate?: Date) =
           placeId: formData.placeId,
           songId: formData.songId,
           teamId: formData.teamId,
-          status: 'SCHEDULED',
+          status: 'PLANNED',
         });
       } else if (scheduleType === 'MEETING') {
         await createSchedule({
@@ -71,7 +71,7 @@ export const useScheduleCreateForm = (onClose: () => void, initialDate?: Date) =
           endAt,
           participantUserIds: formData.participantUserIds,
           memo: formData.memo,
-          status: 'SCHEDULED',
+          status: 'PLANNED',
         });
       }
       
