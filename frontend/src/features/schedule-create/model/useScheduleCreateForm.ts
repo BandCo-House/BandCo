@@ -3,7 +3,10 @@ import { useCreateSchedule } from '../api/useCreateSchedule';
 import type { ScheduleType } from '@/entities/schedule/model/types';
 import type { ScheduleCreateFormState } from './types';
 
-export const useScheduleCreateForm = (onClose: () => void, initialDate?: Date) => {
+export const useScheduleCreateForm = (
+  onClose: () => void,
+  initialDate?: Date,
+) => {
   const [scheduleType, setScheduleType] = useState<ScheduleType | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -74,7 +77,7 @@ export const useScheduleCreateForm = (onClose: () => void, initialDate?: Date) =
           status: 'PLANNED',
         });
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Schedule creation failed:', error);
