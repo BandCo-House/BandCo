@@ -21,6 +21,7 @@ import type { CreateBandInvitationResult } from './types/create-band-invitation-
 import type { CreateBandJoinRequestResult } from './types/create-band-join-request-result.type';
 import type { CreateBandResult } from './types/create-band-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { GetBandResult } from './types/get-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
@@ -177,6 +178,18 @@ export class BandsController {
     const updatedBand = await this.bandsService.updateBand(request.user.id, bandId, input);
 
     return createSuccessResponse('밴드 정보 수정 완료', updatedBand);
+  }
+
+  @Get(':bandId')
+  @ApiOperation({ summary: '밴드 단건 조회' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 조회 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 bandId 형식' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
+  async getBand(@Param('bandId') bandId: string): Promise<ApiSuccessResponse<GetBandResult>> {
+    const band = await this.bandsService.getBand(bandId);
+
+    return createSuccessResponse('밴드 조회 성공', band);
   }
 
   @Get(':bandId/users')
