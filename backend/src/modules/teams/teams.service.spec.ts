@@ -303,6 +303,26 @@ describe('TeamsService', () => {
 
       await expect(service.getBandTeams(BAND_ID, BASE_BAND_TEAMS_QUERY)).rejects.toThrow(NotFoundException);
     });
+
+    it('외부 tx를 findBandById와 findBandTeams에 전달한다', async () => {
+      const externalTx = { transactionClient: true };
+      const capturedTransactions: unknown[] = [];
+      const repository = createTeamsRepositoryStub();
+      repository.findBandById = async (_bandId, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_BAND;
+      };
+      repository.findBandTeams = async (_bandId, _query, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_BAND_TEAMS_RESULT;
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.getBandTeams(BAND_ID, BASE_BAND_TEAMS_QUERY, externalTx as never);
+
+      expect(capturedTransactions.length).toBeGreaterThan(0);
+      capturedTransactions.forEach(tx => expect(tx).toBe(externalTx));
+    });
   });
 
   describe('getTeam', () => {
@@ -317,6 +337,21 @@ describe('TeamsService', () => {
       const service = new TeamsService(createTeamsRepositoryStub({ teamById: null }), createPrismaServiceStub());
 
       await expect(service.getTeam(TEAM_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('외부 tx를 findTeamById에 전달한다', async () => {
+      const externalTx = { transactionClient: true };
+      let capturedTx: unknown;
+      const repository = createTeamsRepositoryStub();
+      repository.findTeamById = async (_teamId, tx) => {
+        capturedTx = tx;
+        return DEFAULT_GET_TEAM_RESULT;
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.getTeam(TEAM_ID, externalTx as never);
+
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
@@ -392,6 +427,26 @@ describe('TeamsService', () => {
       const service = new TeamsService(createTeamsRepositoryStub({ teamForUpdate: null }), createPrismaServiceStub());
 
       await expect(service.getTeamMembers(TEAM_ID, BASE_TEAM_MEMBERS_QUERY)).rejects.toThrow(NotFoundException);
+    });
+
+    it('외부 tx를 findTeamForUpdate와 findTeamMembers에 전달한다', async () => {
+      const externalTx = { transactionClient: true };
+      const capturedTransactions: unknown[] = [];
+      const repository = createTeamsRepositoryStub();
+      repository.findTeamForUpdate = async (_teamId, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_TEAM_FOR_UPDATE;
+      };
+      repository.findTeamMembers = async (_teamId, _query, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_TEAM_MEMBERS_RESULT;
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.getTeamMembers(TEAM_ID, BASE_TEAM_MEMBERS_QUERY, externalTx as never);
+
+      expect(capturedTransactions.length).toBeGreaterThan(0);
+      capturedTransactions.forEach(tx => expect(tx).toBe(externalTx));
     });
   });
 
@@ -575,6 +630,21 @@ describe('TeamsService', () => {
       const result = await service.getMyTeams(USER_ID, BASE_MY_TEAMS_QUERY);
 
       expect(result.meta.count).toBe(0);
+    });
+
+    it('외부 tx를 findMyTeams에 전달한다', async () => {
+      const externalTx = { transactionClient: true };
+      let capturedTx: unknown;
+      const repository = createTeamsRepositoryStub();
+      repository.findMyTeams = async (_userId, _query, tx) => {
+        capturedTx = tx;
+        return DEFAULT_MY_TEAMS_RESULT;
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.getMyTeams(USER_ID, BASE_MY_TEAMS_QUERY, externalTx as never);
+
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
