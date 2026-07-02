@@ -631,14 +631,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     }
 
     const cursorCreatedAt = new Date(query.cursor__created_at);
-    const cursorOperator = query.order__created_at === 'asc' ? 'gt' : 'lt';
+    const tsOp = query.order__created_at === 'asc' ? 'gt' : 'lt';
+    const idOp = query.order__id === 'asc' ? 'gt' : 'lt';
 
     return {
       OR: [
-        { createdAt: { [cursorOperator]: cursorCreatedAt } },
+        { createdAt: { [tsOp]: cursorCreatedAt } },
         {
           createdAt: cursorCreatedAt,
-          id: { [cursorOperator]: query.cursor__id },
+          id: { [idOp]: query.cursor__id },
         },
       ],
     };
@@ -650,14 +651,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     }
 
     const cursorJoinedAt = new Date(query.cursor__joined_at);
-    const cursorOperator = query.order__joined_at === 'asc' ? 'gt' : 'lt';
+    const tsOp = query.order__joined_at === 'asc' ? 'gt' : 'lt';
+    const idOp = query.order__id === 'asc' ? 'gt' : 'lt';
 
     return {
       OR: [
-        { joinedAt: { [cursorOperator]: cursorJoinedAt } },
+        { joinedAt: { [tsOp]: cursorJoinedAt } },
         {
           joinedAt: cursorJoinedAt,
-          id: { [cursorOperator]: query.cursor__id },
+          id: { [idOp]: query.cursor__id },
         },
       ],
     };
@@ -669,14 +671,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     }
 
     const cursorJoinedAt = new Date(query.cursor__joined_at);
-    const cursorOperator = query.order__joined_at === 'asc' ? 'gt' : 'lt';
+    const tsOp = query.order__joined_at === 'asc' ? 'gt' : 'lt';
+    const idOp = query.order__id === 'asc' ? 'gt' : 'lt';
 
     return {
       OR: [
-        { joinedAt: { [cursorOperator]: cursorJoinedAt } },
+        { joinedAt: { [tsOp]: cursorJoinedAt } },
         {
           joinedAt: cursorJoinedAt,
-          id: { [cursorOperator]: query.cursor__id },
+          id: { [idOp]: query.cursor__id },
         },
       ],
     };
