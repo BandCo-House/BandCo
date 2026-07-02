@@ -143,10 +143,12 @@ export class TeamsPrismaRepository implements TeamsRepository {
         },
       },
       orderBy,
-      take: query.take,
+      take: query.take + 1,
     });
 
-    const items: BandTeamListItem[] = teams.map(team => ({
+    const hasNext = teams.length > query.take;
+    const rows = hasNext ? teams.slice(0, query.take) : teams;
+    const items: BandTeamListItem[] = rows.map(team => ({
       teamId: team.id,
       name: team.name,
       description: team.description,
@@ -163,13 +165,13 @@ export class TeamsPrismaRepository implements TeamsRepository {
     }));
 
     const count = items.length;
-    const cursor = count > 0 ? { createdAt: items[0].createdAt, id: teams[0].id } : null;
+    const cursor = count > 0 ? { createdAt: items[0].createdAt, id: rows[0].id } : null;
     const lastItem = items[count - 1];
     const next =
-      count === query.take && lastItem
+      hasNext && lastItem
         ? buildNextPath(`/bands/${bandId}/teams`, {
             cursor__created_at: lastItem.createdAt,
-            cursor__id: teams[count - 1].id,
+            cursor__id: rows[count - 1].id,
             take: query.take,
             order__created_at: query.order__created_at,
             order__id: query.order__id,
@@ -369,10 +371,12 @@ export class TeamsPrismaRepository implements TeamsRepository {
         },
       },
       orderBy,
-      take: query.take,
+      take: query.take + 1,
     });
 
-    const items: TeamMemberListItem[] = teamMembers.map(member => ({
+    const hasNext = teamMembers.length > query.take;
+    const rows = hasNext ? teamMembers.slice(0, query.take) : teamMembers;
+    const items: TeamMemberListItem[] = rows.map(member => ({
       teamMemberId: member.id,
       bandMemberId: member.bandMemberId,
       user: {
@@ -385,13 +389,13 @@ export class TeamsPrismaRepository implements TeamsRepository {
     }));
 
     const count = items.length;
-    const cursor = count > 0 ? { joinedAt: items[0].joinedAt, id: teamMembers[0].id } : null;
+    const cursor = count > 0 ? { joinedAt: items[0].joinedAt, id: rows[0].id } : null;
     const lastItem = items[count - 1];
     const next =
-      count === query.take && lastItem
+      hasNext && lastItem
         ? buildNextPath(`/teams/${teamId}/members`, {
             cursor__joined_at: lastItem.joinedAt,
-            cursor__id: teamMembers[count - 1].id,
+            cursor__id: rows[count - 1].id,
             take: query.take,
             order__joined_at: query.order__joined_at,
             order__id: query.order__id,
@@ -521,10 +525,12 @@ export class TeamsPrismaRepository implements TeamsRepository {
         },
       },
       orderBy,
-      take: query.take,
+      take: query.take + 1,
     });
 
-    const items: MyTeamListItem[] = myTeamMembers.map(member => ({
+    const hasNext = myTeamMembers.length > query.take;
+    const rows = hasNext ? myTeamMembers.slice(0, query.take) : myTeamMembers;
+    const items: MyTeamListItem[] = rows.map(member => ({
       teamId: member.team.id,
       bandId: member.team.bandId,
       bandName: member.team.band.name ?? '',
@@ -545,13 +551,13 @@ export class TeamsPrismaRepository implements TeamsRepository {
     }));
 
     const count = items.length;
-    const cursor = count > 0 ? { joinedAt: items[0].joinedAt, id: myTeamMembers[0].id } : null;
+    const cursor = count > 0 ? { joinedAt: items[0].joinedAt, id: rows[0].id } : null;
     const lastItem = items[count - 1];
     const next =
-      count === query.take && lastItem
+      hasNext && lastItem
         ? buildNextPath(`/teams/me`, {
             cursor__joined_at: lastItem.joinedAt,
-            cursor__id: myTeamMembers[count - 1].id,
+            cursor__id: rows[count - 1].id,
             take: query.take,
             order__joined_at: query.order__joined_at,
             order__id: query.order__id,
