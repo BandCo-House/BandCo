@@ -273,11 +273,20 @@ describe('TeamsService', () => {
       capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
     });
 
-    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+    it('외부 tx가 있으면 새 $transaction을 열지 않고 mutation에 externalTx를 전달한다', async () => {
       const externalTx = { transactionClient: true };
-      const service = new TeamsService(createTeamsRepositoryStub(), createPrismaServiceFailingTransactionStub());
+      let capturedTx: unknown;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          onCreateTeam: (_input, tx) => {
+            capturedTx = tx;
+          },
+        }),
+        createPrismaServiceFailingTransactionStub(),
+      );
 
       await expect(service.createTeam(USER_ID, BAND_ID, { name: '보컬팀' }, externalTx as never)).resolves.toBeDefined();
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
@@ -354,11 +363,20 @@ describe('TeamsService', () => {
       capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
     });
 
-    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+    it('외부 tx가 있으면 새 $transaction을 열지 않고 mutation에 externalTx를 전달한다', async () => {
       const externalTx = { transactionClient: true };
-      const service = new TeamsService(createTeamsRepositoryStub(), createPrismaServiceFailingTransactionStub());
+      let capturedTx: unknown;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          onUpdateTeam: (_teamId, _input, tx) => {
+            capturedTx = tx;
+          },
+        }),
+        createPrismaServiceFailingTransactionStub(),
+      );
 
       await expect(service.updateTeam(USER_ID, TEAM_ID, { name: '새 이름' }, externalTx as never)).resolves.toBeDefined();
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
@@ -446,14 +464,21 @@ describe('TeamsService', () => {
       capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
     });
 
-    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+    it('외부 tx가 있으면 새 $transaction을 열지 않고 mutation에 externalTx를 전달한다', async () => {
       const externalTx = { transactionClient: true };
+      let capturedTx: unknown;
       const service = new TeamsService(
-        createTeamsRepositoryStub({ teamMemberById: newLeaderTeamMember }),
+        createTeamsRepositoryStub({
+          teamMemberById: newLeaderTeamMember,
+          onChangeTeamLeader: (_teamId, _newLeaderId, tx) => {
+            capturedTx = tx;
+          },
+        }),
         createPrismaServiceFailingTransactionStub(),
       );
 
       await expect(service.changeTeamLeader(USER_ID, TEAM_ID, { teamMemberId: OTHER_TEAM_MEMBER_ID }, externalTx as never)).resolves.toBeDefined();
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
@@ -526,11 +551,21 @@ describe('TeamsService', () => {
       capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
     });
 
-    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+    it('외부 tx가 있으면 새 $transaction을 열지 않고 mutation에 externalTx를 전달한다', async () => {
       const externalTx = { transactionClient: true };
-      const service = new TeamsService(createTeamsRepositoryStub({ teamMemberById: targetMember }), createPrismaServiceFailingTransactionStub());
+      let capturedTx: unknown;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: targetMember,
+          onRemoveTeamMember: (_teamMemberId, _teamId, tx) => {
+            capturedTx = tx;
+          },
+        }),
+        createPrismaServiceFailingTransactionStub(),
+      );
 
       await expect(service.removeTeamMember(USER_ID, TEAM_ID, OTHER_TEAM_MEMBER_ID, externalTx as never)).resolves.toBeDefined();
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
@@ -623,14 +658,21 @@ describe('TeamsService', () => {
       capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
     });
 
-    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+    it('외부 tx가 있으면 새 $transaction을 열지 않고 mutation에 externalTx를 전달한다', async () => {
       const externalTx = { transactionClient: true };
+      let capturedTx: unknown;
       const service = new TeamsService(
-        createTeamsRepositoryStub({ bandMemberById: otherBandMemberRecord }),
+        createTeamsRepositoryStub({
+          bandMemberById: otherBandMemberRecord,
+          onAddTeamMember: (_teamId, _bandMemberId, tx) => {
+            capturedTx = tx;
+          },
+        }),
         createPrismaServiceFailingTransactionStub(),
       );
 
       await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, externalTx as never)).resolves.toBeDefined();
+      expect(capturedTx).toBe(externalTx);
     });
   });
 
@@ -677,11 +719,20 @@ describe('TeamsService', () => {
       capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
     });
 
-    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+    it('외부 tx가 있으면 새 $transaction을 열지 않고 mutation에 externalTx를 전달한다', async () => {
       const externalTx = { transactionClient: true };
-      const service = new TeamsService(createTeamsRepositoryStub(), createPrismaServiceFailingTransactionStub());
+      let capturedTx: unknown;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          onDeleteTeam: (_teamId, tx) => {
+            capturedTx = tx;
+          },
+        }),
+        createPrismaServiceFailingTransactionStub(),
+      );
 
       await expect(service.deleteTeam(USER_ID, TEAM_ID, externalTx as never)).resolves.toBeDefined();
+      expect(capturedTx).toBe(externalTx);
     });
   });
 });
