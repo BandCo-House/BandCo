@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
+import { Prisma } from 'src/generated/prisma';
 
 import type { GetBandTeamsQuery } from './dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from './dto/get-my-teams-query.dto';
@@ -692,6 +693,20 @@ describe('TeamsService', () => {
         }),
         createPrismaServiceStub(),
       );
+
+      await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID)).rejects.toThrow(ConflictException);
+    });
+
+    it('동시 요청으로 P2002가 발생하면 ConflictException으로 변환한다', async () => {
+      const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: '0' });
+      const repository = createTeamsRepositoryStub({
+        bandMemberById: otherBandMemberRecord,
+        onAddTeamMember: () => {
+          throw p2002;
+        },
+      });
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
 
       await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID)).rejects.toThrow(ConflictException);
     });

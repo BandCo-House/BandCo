@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import type { Prisma } from '../../generated/prisma';
+import { Prisma } from '../../generated/prisma';
 
 import type { ChangeTeamLeaderBodyDto } from './dto/change-team-leader.dto';
 import type { CreateTeamInput } from './dto/create-team.dto';
@@ -250,7 +250,14 @@ export class TeamsService {
         throw new ConflictException('이미 팀 멤버입니다.');
       }
 
-      return this.teamsRepository.addTeamMember(teamId, bandMemberId, client);
+      try {
+        return await this.teamsRepository.addTeamMember(teamId, bandMemberId, client);
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+          throw new ConflictException('이미 팀 멤버입니다.');
+        }
+        throw e;
+      }
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);
