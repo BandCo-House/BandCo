@@ -42,6 +42,7 @@ export class BandTeamsController {
   @ApiResponse({ status: 400, description: '잘못된 요청' })
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 403, description: '밴드 멤버가 아님' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async createTeam(
     @Req() request: AuthenticatedRequest,
     @Param('bandId') bandId: string,
