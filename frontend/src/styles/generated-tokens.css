@@ -1,5 +1,9 @@
 /* This file is generated from tokens/tokens.json. Do not edit manually. */
 :root {
+  --Round-xs: 8px;
+  --Round-sm: 16px;
+  --Round-md: 20px;
+  --Round-lg: 999px;
   --Round-full: 999px;
   --background: var(--gradient-top);
   --foreground: var(--greyScale-500);
@@ -38,6 +42,10 @@
 }
 
 .dark {
+  --Round-xs: 8px;
+  --Round-sm: 16px;
+  --Round-md: 20px;
+  --Round-lg: 999px;
   --Round-full: 999px;
   --background: var(--primary-main);
   --foreground: var(--greyScale-200);

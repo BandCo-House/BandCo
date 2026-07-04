@@ -9,8 +9,22 @@ const defaultOutputPath = resolve(
   frontendRoot,
   'src/styles/generated-tokens.css',
 );
-// Token Studio export에 radius token set이 포함되어 있지 않아 앱 기본 pill radius를 명명 상수로 고정한다.
-export const DEFAULT_ROUND_FULL = '999px';
+// tokens.json의 MOB/MOB.Round(반경) 세트를 --Round-* CSS 변수(px)로 방출한다.
+const ROUND_NAMES = ['xs', 'sm', 'md', 'lg', 'full'];
+
+const buildRoundVariables = (tokens) => {
+  const round = tokens['MOB/MOB']?.Round;
+  if (!round) {
+    throw new Error('Missing token set: MOB/MOB.Round');
+  }
+  return ROUND_NAMES.map((name) => {
+    const value = round[name]?.value;
+    if (typeof value !== 'number') {
+      throw new Error(`Missing radius token: Round.${name}`);
+    }
+    return [`--Round-${name}`, `${value}px`];
+  });
+};
 
 const getValue = (source, path) => {
   const token = path.reduce((target, key) => target?.[key], source);
@@ -32,12 +46,13 @@ const buildThemeVariables = ({
   primarySet,
   secondaryPath,
   mode = 'light',
+  roundVariables = [],
 }) => {
   const greyScale999 = requireValue(colorSet, ['greyScale', '999']);
   const isDarkMode = mode === 'dark';
 
   return [
-    ['--Round-full', DEFAULT_ROUND_FULL],
+    ...roundVariables,
     [
       '--background',
       isDarkMode ? 'var(--primary-main)' : 'var(--gradient-top)',
@@ -133,11 +148,14 @@ export const buildGeneratedTokenCss = (tokens) => {
     throw new Error('Missing token set: ColorSystem/Light');
   }
 
+  const roundVariables = buildRoundVariables(tokens);
+
   const lightVariables = buildThemeVariables({
     colorSet: lightColorSet,
     primarySet: lightColorSet.primary,
     secondaryPath: ['secondary', 'main'],
     mode: 'light',
+    roundVariables,
   });
 
   const darkVariables = darkColorSet
@@ -146,6 +164,7 @@ export const buildGeneratedTokenCss = (tokens) => {
         primarySet: darkColorSet.primary ?? darkColorSet.main,
         secondaryPath: ['secondary', 'main'],
         mode: 'dark',
+        roundVariables,
       })
     : lightVariables;
 
