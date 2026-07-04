@@ -43,7 +43,7 @@ export const PracticeBasicStep = ({
       <Button
         onClick={onNext}
         disabled={isNextDisabled}
-        className="typo-lg-b mt-4 h-12 rounded-2xl"
+        className="typo-lg-b mt-4 h-12 rounded-md"
       >
         다음 단계로
       </Button>

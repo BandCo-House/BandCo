@@ -127,7 +127,7 @@ export const DayScheduleCard = ({
       onClick={() => onClick?.(schedule.scheduleId)}
       style={{ top: `${top}px`, minHeight: `${height}px`, ...horizontalStyle }}
       className={cn(
-        'absolute z-[1] flex flex-col gap-1 overflow-hidden rounded-2xl text-left',
+        'absolute z-[1] flex flex-col gap-1 overflow-hidden rounded-md text-left',
         isCompact ? 'px-3 py-1' : 'p-3',
         CARD_THEME[schedule.scheduleType],
       )}

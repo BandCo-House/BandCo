@@ -25,7 +25,7 @@ export const DateInput = ({ value, onChange, label }: DateInputProps) => {
           type="date"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-12 rounded-2xl pl-10 focus:ring-ring/50"
+          className="h-12 rounded-md pl-10 focus:ring-ring/50"
         />
       </div>
     </div>

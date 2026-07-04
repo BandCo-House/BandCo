@@ -107,7 +107,7 @@ function OnboardingPage() {
         <div
           role="status"
           aria-live="polite"
-          className="mx-auto mb-6 w-full max-w-2xl rounded-2xl bg-destructive/10 px-5 py-4 text-center typo-sm-m text-destructive"
+          className="mx-auto mb-6 w-full max-w-2xl rounded-md bg-destructive/10 px-5 py-4 text-center typo-sm-m text-destructive"
         >
           회원가입은 완료됐지만 프로필 저장에 실패했습니다. 온보딩에서 이어서
           설정해주세요.

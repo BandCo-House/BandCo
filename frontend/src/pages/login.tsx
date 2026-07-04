@@ -52,7 +52,7 @@ export function LoginPage() {
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col justify-center">
       {error && (
-        <div className="mb-6 rounded-2xl bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
+        <div className="mb-6 rounded-md bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
           {error}
         </div>
       )}

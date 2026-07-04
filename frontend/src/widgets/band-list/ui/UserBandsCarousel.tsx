@@ -41,7 +41,7 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
   return (
     <section
       aria-labelledby="profile-bands-title"
-      className="flex flex-col items-start gap-2.5 self-stretch rounded-xl bg-surface-3 p-4 text-grey-50"
+      className="flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 p-4 text-grey-50"
     >
       <h2 id="profile-bands-title" className="typo-base-b">
         소속 밴드
@@ -63,13 +63,13 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
                   to="/band/$bandId"
                   params={{ bandId: band.id }}
                   key={band.id}
-                  className="flex-none rounded-xl bg-surface-1/40 px-1 pt-1 pb-5 shadow-[0_2px_3px_1px_rgba(0,0,0,0.10)] outline-[0.5px] -outline-offset-1 outline-grey-50"
+                  className="flex-none rounded-md bg-surface-1/40 px-1 pt-1 pb-5 shadow-[0_2px_3px_1px_rgba(0,0,0,0.10)] outline-[0.5px] -outline-offset-1 outline-grey-50"
                 >
-                  <div className="flex size-32 items-center justify-center overflow-hidden rounded-xl bg-grey-200">
+                  <div className="flex size-32 items-center justify-center overflow-hidden rounded-md bg-grey-200">
                     <img
                       src={bandCoverUrl}
                       alt={band.name}
-                      className="size-full rounded-xl object-cover"
+                      className="size-full rounded-md object-cover"
                     />
                   </div>
                   <div className="mt-4 text-center">
@@ -83,7 +83,7 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
           </div>
 
           {bands.length === 0 && (
-            <div className="flex w-full items-center justify-center rounded-2xl border border-dashed border-grey-50/24 bg-white/8 py-10 text-center typo-sm-r text-grey-300">
+            <div className="flex w-full items-center justify-center rounded-md border border-dashed border-grey-50/24 bg-white/8 py-10 text-center typo-sm-r text-grey-300">
               소속된 밴드가 없습니다.
             </div>
           )}

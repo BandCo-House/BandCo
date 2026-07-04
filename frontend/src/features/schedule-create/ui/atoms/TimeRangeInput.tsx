@@ -35,7 +35,7 @@ export const TimeRangeInput = ({
               id={startId}
               value={startTime}
               onChange={(e) => onStartTimeChange(e.target.value)}
-              className="typo-sm-r h-12 w-full rounded-2xl border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
+              className="typo-sm-r h-12 w-full rounded-md border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
             >
               {timeOptions.map((time) => (
                 <option key={`start-${time}`} value={time}>
@@ -54,7 +54,7 @@ export const TimeRangeInput = ({
               id={endId}
               value={endTime}
               onChange={(e) => onEndTimeChange(e.target.value)}
-              className="typo-sm-r h-12 w-full rounded-2xl border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
+              className="typo-sm-r h-12 w-full rounded-md border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
             >
               {timeOptions.map((time) => (
                 <option key={`end-${time}`} value={time}>

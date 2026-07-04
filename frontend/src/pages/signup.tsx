@@ -74,7 +74,7 @@ export function SignupPage() {
   return (
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full flex-col">
       {error && (
-        <div className="mb-6 rounded-2xl bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
+        <div className="mb-6 rounded-md bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
           {error}
         </div>
       )}

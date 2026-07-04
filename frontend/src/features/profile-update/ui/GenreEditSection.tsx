@@ -82,7 +82,7 @@ export function GenreEditSection({
   return (
     <section
       aria-labelledby="profile-genre-title"
-      className="relative flex flex-col items-start gap-2.5 self-stretch rounded-xl bg-surface-3 p-4 text-grey-50"
+      className="relative flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 p-4 text-grey-50"
     >
       <h2 id="profile-genre-title" className="typo-base-b">
         선호 장르
@@ -125,7 +125,7 @@ export function GenreEditSection({
       </div>
 
       {isAdding && isMe && (
-        <div className="absolute top-full right-4 left-4 z-40 -mt-2 flex flex-col gap-2 rounded-2xl border border-grey-50/20 bg-surface-3 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="absolute top-full right-4 left-4 z-40 -mt-2 flex flex-col gap-2 rounded-md border border-grey-50/20 bg-surface-3 p-3 shadow-2xl backdrop-blur-xl">
           {genresQuery.isLoading ? (
             <div className="flex items-center justify-center gap-2 py-4 typo-xs-m text-grey-200">
               <Loader2 className="size-4 animate-spin text-primary" />

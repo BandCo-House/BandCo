@@ -42,7 +42,7 @@ function SelectContent({
         data-slot="select-content"
         position={position}
         className={cn(
-          'relative z-50 max-h-72 min-w-32 overflow-hidden rounded-2xl border border-grey-50/20 bg-surface-3 text-grey-50 shadow-xl backdrop-blur-xl data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+          'relative z-50 max-h-72 min-w-32 overflow-hidden rounded-md border border-grey-50/20 bg-surface-3 text-grey-50 shadow-xl backdrop-blur-xl data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
           className,
@@ -74,7 +74,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        'relative flex w-full cursor-default items-center gap-2 rounded-xl py-2 pr-8 pl-3 typo-sm-m text-grey-50 outline-none select-none focus:bg-white/16 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex w-full cursor-default items-center gap-2 rounded-md py-2 pr-8 pl-3 typo-sm-m text-grey-50 outline-none select-none focus:bg-white/16 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}
