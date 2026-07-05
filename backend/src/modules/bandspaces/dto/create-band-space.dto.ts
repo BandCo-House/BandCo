@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsISO8601, IsNotEmpty, IsString, Matches, Validate } from 'class-validator';
+import { IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, Validate } from 'class-validator';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
 import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
@@ -28,15 +28,13 @@ export class CreateBandSpaceBodyDto {
   })
   name!: string;
 
-  @ApiProperty({ description: '합주 공간 설명', example: '드럼 세트 완비, 주차 가능' })
+  @ApiPropertyOptional({ description: '합주 공간 설명(선택)', example: '드럼 세트 완비, 주차 가능' })
   @Transform(trimStringValue)
+  @IsOptional()
   @IsString({
     message: stringValidationMessage,
   })
-  @IsNotEmpty({
-    message: notemptyValidationMessage,
-  })
-  description!: string;
+  description?: string;
 
   @ApiProperty({ enum: BandSpaceType, description: '합주 공간 유형', example: 'PRACTICE' })
   @IsString({

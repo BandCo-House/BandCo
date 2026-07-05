@@ -25,9 +25,9 @@ interface SpaceCreateModalProps {
   bandId: string;
 }
 
-// 종료 없음(상시)일 때 백엔드가 endDate를 필수로 받으므로 임시 sentinel을 보낸다.
-// (백엔드가 endDate optional로 바뀌면 제거하고 생략한다.)
-const ONGOING_END_DATE = '2999-12-31';
+// 종료 없음(상시)일 때 백엔드가 endDate를 필수로 받으므로 먼 미래(9999) sentinel을 보낸다.
+// 뱃지는 spaceType(PRACTICE)로 상시 처리하므로 이 날짜 자체는 표시에 쓰이지 않는다.
+const ONGOING_END_DATE = '9999-12-31';
 
 const FieldLabel = ({
   children,

@@ -265,6 +265,8 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
 }
 ```
 
+- `description`은 선택 항목이며 생략할 수 있다.
+
 ### Response
 
 ```json
