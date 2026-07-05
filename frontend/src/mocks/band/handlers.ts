@@ -253,6 +253,35 @@ export const bandHandlers = [
     });
   }),
 
+  // 밴드 상세 조회 Mock (GET /bands/:bandId)
+  // '/bands/me' 뒤에 둬야 :bandId가 me를 가로채지 않는다.
+  http.get(`${API_URL}/bands/:bandId`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+    const found = mockBands.find((band) => band.id === bandId) ?? mockBands[0];
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 상세 조회 성공',
+      data: {
+        band: {
+          id: found.id,
+          name: found.name,
+          description: found.description,
+          visibility: found.visibility,
+          coverImgUrl: null,
+          bandMasterUserId: '11111111-1111-1111-1111-111111111111',
+          genres: [
+            { id: 'genre-rock', name: '록' },
+            { id: 'genre-indie', name: '인디' },
+          ],
+          memberCount: found.memberCount ?? 0,
+          createdAt: found.createdAt,
+        },
+      },
+    });
+  }),
+
   // 밴드 생성 Mock
   http.post(`${API_URL}/bands`, async ({ request }) => {
     const body = (await request.json()) as {
