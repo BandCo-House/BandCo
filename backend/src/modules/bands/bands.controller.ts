@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
@@ -186,7 +186,7 @@ export class BandsController {
   @ApiResponse({ status: 200, description: '밴드 조회 성공' })
   @ApiResponse({ status: 400, description: '잘못된 bandId 형식' })
   @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
-  async getBand(@Param('bandId') bandId: string): Promise<ApiSuccessResponse<GetBandResult>> {
+  async getBand(@Param('bandId', ParseUUIDPipe) bandId: string): Promise<ApiSuccessResponse<GetBandResult>> {
     const band = await this.bandsService.getBand(bandId);
 
     return createSuccessResponse('밴드 조회 성공', band);
