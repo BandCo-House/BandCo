@@ -1,0 +1,231 @@
+import { useState, type ReactNode } from 'react';
+import { Upload } from 'lucide-react';
+import { toast } from 'sonner';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
+import { uploadImage } from '@/shared/api';
+import { useCreatePlace } from '@/entities/place/api/useCreatePlace';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '@/shared/ui/sheet';
+import { Input } from '@/shared/ui/input';
+import { Button } from '@/shared/ui/button';
+
+interface PlaceCreateModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  bandId: string;
+}
+
+const FieldLabel = ({
+  children,
+  required,
+}: {
+  children: ReactNode;
+  required?: boolean;
+}) => (
+  <span className="flex items-center gap-1 typo-lg-sb text-grey-50">
+    {children}
+    {required && (
+      <span aria-hidden="true" className="size-1 rounded-full bg-destructive" />
+    )}
+  </span>
+);
+
+/**
+ * 연습 장소 추가(풀스크린). 이름·주소(필수)와 커버 이미지(선택)를 입력한다.
+ * 커버는 presigned 업로드로 objectUrl을 받아 imageUrl로 전송한다.
+ */
+export const PlaceCreateModal = ({
+  open,
+  onOpenChange,
+  bandId,
+}: PlaceCreateModalProps) => {
+  const { mutate, isPending } = useCreatePlace(bandId);
+
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // 열릴 때 폼을 초기화한다(effect 대신 렌더 중 파생).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setName('');
+      setAddress('');
+      setCoverFile(null);
+      setCoverPreview(null);
+      setIsUploading(false);
+    }
+  }
+
+  const clearCover = () => {
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    setCoverFile(null);
+    setCoverPreview(null);
+  };
+
+  const handleCoverSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  };
+
+  const canSubmit =
+    name.trim().length > 0 &&
+    address.trim().length > 0 &&
+    !isPending &&
+    !isUploading;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    let imageUrl: string | undefined;
+    if (coverFile) {
+      setIsUploading(true);
+      try {
+        imageUrl = await uploadImage(coverFile, 'places');
+      } catch {
+        toast.error(
+          '커버 이미지를 업로드하지 못했어요. 잠시 후 다시 시도해주세요.',
+        );
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
+    mutate(
+      { name: name.trim(), address: address.trim(), imageUrl },
+      {
+        onSuccess: () => {
+          toast.success('연습 장소를 추가했어요.');
+          onOpenChange(false);
+        },
+        onError: () => {
+          toast.error(
+            '연습 장소를 추가하지 못했어요. 잠시 후 다시 시도해주세요.',
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        showCloseButton={false}
+        className="inset-0 mx-auto flex h-full w-full max-w-[648px] flex-col gap-0 border-0 bg-gradient-to-b from-gradient-top to-gradient-bottom p-0 sm:max-w-[648px]"
+      >
+        <SheetDescription className="sr-only">
+          연습 장소의 이름·주소·커버를 입력해 추가합니다.
+        </SheetDescription>
+
+        <header className="flex items-center py-3 pr-5 pl-2.5">
+          <button
+            type="button"
+            aria-label="뒤로 가기"
+            onClick={() => onOpenChange(false)}
+            className="inline-flex size-10 items-center justify-center rounded-full text-grey-50 focus-visible:outline-2 focus-visible:outline-key"
+          >
+            <ArrowRightIcon aria-hidden="true" className="size-6 rotate-180" />
+          </button>
+        </header>
+
+        <div className="flex flex-1 flex-col gap-9 overflow-y-auto px-5 pt-2 pb-6">
+          <div className="flex flex-col gap-2">
+            <SheetTitle className="typo-xl-sb text-grey-50">
+              장소 추가
+            </SheetTitle>
+            <p className="typo-base-r text-grey-300">
+              연습이 진행될 장소를 추가해보세요
+            </p>
+          </div>
+
+          <label className="flex flex-col gap-1">
+            <FieldLabel required>장소 이름</FieldLabel>
+            <Input
+              variant="underline"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="장소 이름을 입력해주세요"
+              maxLength={120}
+              aria-required
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <FieldLabel required>주소</FieldLabel>
+            <Input
+              variant="underline"
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              placeholder="주소를 입력해주세요(상세주소 포함)"
+              maxLength={255}
+              aria-required
+            />
+          </label>
+
+          <div className="flex flex-col gap-2">
+            <FieldLabel>장소 커버</FieldLabel>
+            {coverPreview ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={coverPreview}
+                  alt="선택한 커버 미리보기"
+                  className="size-16 rounded-md object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={clearCover}
+                  className="typo-sm-m text-grey-300 underline focus-visible:outline-2 focus-visible:outline-key"
+                >
+                  제거
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-3 rounded-full border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300">
+                <Upload aria-hidden="true" className="size-6" />
+                <span className="typo-base-sb">파일을 선택하세요</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverSelect}
+                  className="sr-only"
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 px-5 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="border-grey-200 text-grey-100"
+            onClick={() => onOpenChange(false)}
+          >
+            취소
+          </Button>
+          <Button
+            type="button"
+            variant="shining"
+            size="lg"
+            disabled={!canSubmit}
+            onClick={() => void handleSubmit()}
+          >
+            추가
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+};

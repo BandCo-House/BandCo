@@ -7,6 +7,8 @@ export {
   apiDelete,
 } from './client';
 
+export { uploadImage } from './upload';
+
 export type { ApiResponse, ApiError, TokenResponse } from './types';
 
 export {

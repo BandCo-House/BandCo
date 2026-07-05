@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apiGet } from '@/shared/api';
+import { apiGet, apiPost } from '@/shared/api';
 import { placeSchema } from '../model/schema';
 import type { Place } from '../model/types';
 
@@ -32,4 +32,20 @@ export const getBandPlaces = async (
     params,
   });
   return placeListSchema.parse(data.items);
+};
+
+export interface CreatePlaceRequest {
+  name: string;
+  address: string;
+  detailAddress?: string;
+  imageUrl?: string;
+}
+
+/** 밴드 연습 장소 생성(POST /bands/:bandId/places). */
+export const createPlace = async (
+  bandId: string,
+  data: CreatePlaceRequest,
+): Promise<Place> => {
+  const created = await apiPost<unknown>(`/bands/${bandId}/places`, data);
+  return placeSchema.parse(created);
 };
