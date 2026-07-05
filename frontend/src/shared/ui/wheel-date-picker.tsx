@@ -34,6 +34,13 @@ const WheelColumn = ({
 }: WheelColumnProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const settleTimer = useRef<number | undefined>(undefined);
+  // 마우스 드래그 상태(네이티브 스크롤은 드래그로 안 움직여서 직접 처리한다).
+  const drag = useRef<{
+    startY: number;
+    startTop: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressClick = useRef(false);
 
   // 외부 값이 바뀌면(스냅 위치와 다를 때만) 해당 항목이 가운데 오도록 맞춘다.
   useEffect(() => {
@@ -44,28 +51,72 @@ const WheelColumn = ({
     if (Math.abs(el.scrollTop - target) > 1) el.scrollTop = target;
   }, [value, items]);
 
-  const handleScroll = () => {
+  // 현재 스크롤 위치에서 가장 가까운 항목으로 스냅하고 값 반영.
+  const settleToNearest = () => {
     const el = ref.current;
     if (!el) return;
+    const index = Math.min(
+      items.length - 1,
+      Math.max(0, Math.round(el.scrollTop / ITEM_HEIGHT)),
+    );
+    const next = items[index];
+    if (next !== value) onChange(next);
+  };
+
+  // 터치·트랙패드·휠 네이티브 스크롤: 멈춘 뒤 스냅 값 확정(드래그 중엔 pointerup이 처리).
+  const handleScroll = () => {
+    if (drag.current) return;
     window.clearTimeout(settleTimer.current);
-    settleTimer.current = window.setTimeout(() => {
-      const index = Math.min(
-        items.length - 1,
-        Math.max(0, Math.round(el.scrollTop / ITEM_HEIGHT)),
-      );
-      const next = items[index];
-      // 같은 값이면 호출하지 않아 외부 sync effect와의 루프를 막는다.
-      if (next !== value) onChange(next);
-    }, 90);
+    settleTimer.current = window.setTimeout(settleToNearest, 90);
+  };
+
+  // 마우스 드래그로 잡아끌기(터치/펜은 네이티브 스크롤에 맡긴다).
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el || event.pointerType !== 'mouse') return;
+    drag.current = {
+      startY: event.clientY,
+      startTop: el.scrollTop,
+      moved: false,
+    };
+  };
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el || !drag.current) return;
+    const dy = event.clientY - drag.current.startY;
+    if (Math.abs(dy) > 3) drag.current.moved = true;
+    el.scrollTop = drag.current.startTop - dy;
+  };
+  const handlePointerEnd = () => {
+    if (!drag.current) return;
+    const moved = drag.current.moved;
+    drag.current = null;
+    if (moved) {
+      // 드래그 직후 발생하는 클릭 선택을 무시하고, 가까운 항목으로 부드럽게 스냅.
+      suppressClick.current = true;
+      const el = ref.current;
+      if (el) {
+        const index = Math.min(
+          items.length - 1,
+          Math.max(0, Math.round(el.scrollTop / ITEM_HEIGHT)),
+        );
+        el.scrollTo({ top: index * ITEM_HEIGHT, behavior: 'smooth' });
+        if (items[index] !== value) onChange(items[index]);
+      }
+    }
   };
 
   return (
     <div
       ref={ref}
       onScroll={handleScroll}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerLeave={handlePointerEnd}
       role="listbox"
       aria-label={label}
-      className="w-14 snap-y snap-mandatory overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="w-14 cursor-grab snap-y snap-mandatory overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
       style={{ height: VISIBLE_COUNT * ITEM_HEIGHT }}
     >
       <div style={{ height: PADDING }} aria-hidden="true" />
@@ -77,7 +128,14 @@ const WheelColumn = ({
             type="button"
             role="option"
             aria-selected={selected}
-            onClick={() => onChange(item)}
+            onClick={() => {
+              // 드래그 종료 직후의 클릭은 무시(선택은 스냅이 처리).
+              if (suppressClick.current) {
+                suppressClick.current = false;
+                return;
+              }
+              onChange(item);
+            }}
             className={cn(
               'flex w-full snap-center items-center justify-center typo-base-sb transition-colors',
               selected ? 'text-grey-50' : 'text-grey-300',
