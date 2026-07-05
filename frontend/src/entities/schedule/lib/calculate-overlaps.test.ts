@@ -68,4 +68,13 @@ describe('calculateOverlaps', () => {
 
     expect(result.map((b) => b.column)).toEqual([0, 0]);
   });
+
+  it('0분(시작=종료) 블록도 totalColumns가 최소 1이다', () => {
+    const result = calculateOverlaps([
+      makeBlock('zero', 600, 600), // 자기 자신과도 겹치지 않는 0분 블록
+    ]);
+
+    expect(result[0]?.column).toBe(0);
+    expect(result[0]?.totalColumns).toBe(1);
+  });
 });

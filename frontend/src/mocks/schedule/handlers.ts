@@ -5,8 +5,9 @@ import {
 } from '@/entities/schedule/model/types';
 import { API_URL } from '../config';
 
+// Figma MCP 자산 URL은 인증 세션에 묶여 커밋 mock에 부적합해, 자체 완결된 data URL로 둔다.
 const AVATAR =
-  'https://www.figma.com/api/mcp/asset/e0d7fd40-4d78-4dd1-83de-f619c2d803a9';
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23bcbcbc'/%3E%3C/svg%3E";
 
 const MAX_PREVIEW = 4;
 

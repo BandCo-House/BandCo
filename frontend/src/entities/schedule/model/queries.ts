@@ -52,7 +52,8 @@ export const useDaySchedules = (spaceId: string, filter: DayScheduleFilter) => {
   windowStart.setHours(DAY_ORIGIN_HOUR, 0, 0, 0);
   const windowEnd = addDays(windowStart, 1);
 
-  // 윈도(06:00~다음 날 06:00)를 모두 덮도록 넉넉히 받아 온다.
+  // 백엔드 필터가 start_at만 지원하므로, 윈도 시작 이전에 시작해도 윈도로 넘어오는
+  // (자정을 넘긴) 일정까지 잡도록 앞뒤 하루씩 넉넉히 받아 clipToDayWindow로 자른다.
   const from = startOfDay(addDays(date, -1)).toISOString();
   const to = endOfDay(addDays(date, 1)).toISOString();
 
@@ -63,7 +64,7 @@ export const useDaySchedules = (spaceId: string, filter: DayScheduleFilter) => {
       const blocks = data.items
         .map((item) => clipToDayWindow(item, windowStart, windowEnd))
         .filter((block): block is DayScheduleBlock => block !== null)
-        .filter((block) => !onlyMine || block.schedule.isMine)
+        .filter((block) => !onlyMine || (block.schedule.isMine ?? false))
         .filter(
           (block) =>
             songIds.length === 0 ||

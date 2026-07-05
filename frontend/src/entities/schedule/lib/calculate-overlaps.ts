@@ -34,6 +34,8 @@ export const calculateOverlaps = (
       .filter((other) => isOverlapping(other, block))
       .map((other) => other.column ?? 0);
 
-    return { ...block, totalColumns: Math.max(...columns) + 1 };
+    // 0분 블록은 자기 자신과도 겹치지 않아 columns가 비는데,
+    // Math.max()가 -Infinity가 되지 않도록 0을 시드로 넣어 최소 1컬럼을 보장한다.
+    return { ...block, totalColumns: Math.max(0, ...columns) + 1 };
   });
 };

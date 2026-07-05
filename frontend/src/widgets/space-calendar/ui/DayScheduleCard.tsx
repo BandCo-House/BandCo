@@ -170,7 +170,7 @@ export const DayScheduleCard = ({
                     />
                   )}
                   <AvatarFallback className="bg-grey-600 text-grey-50">
-                    B
+                    {participant.nickname.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
               ))}
