@@ -58,6 +58,12 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       });
     }
 
+    if (input.teamId) {
+      await client.scheduleTeam.create({
+        data: { scheduleId: schedule.id, teamId: input.teamId },
+      });
+    }
+
     const songs =
       songIds.length > 0
         ? await client.song.findMany({
@@ -80,9 +86,18 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       status: schedule.status,
       songs: songs.map(s => ({ songId: s.id, title: s.title, artistName: s.artistName })),
       participantCount,
+      teamId: input.teamId ?? null,
       memo: schedule.memo,
       createdAt: schedule.createdAt.toISOString(),
     };
+  }
+
+  async findTeamInSameBandAsSpace(teamId: string, bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    return client.team.findFirst({
+      where: { id: teamId, band: { bandSpaces: { some: { id: bandSpaceId } } } },
+      select: { id: true },
+    });
   }
 
   async findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
@@ -329,6 +344,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         },
       }),
       ...(query.where__place_id && { placeId: query.where__place_id }),
+      ...(query.where__team_id && { scheduleTeams: { some: { teamId: query.where__team_id } } }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
       ...(query.cursor__start_at &&
@@ -343,6 +359,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       take: take + 1,
       include: {
         place: { select: { id: true, name: true } },
+        scheduleTeams: { select: { team: { select: { id: true, name: true } } }, take: 1 },
         scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
         createdByBandMember: { select: { userId: true } },
         participants: {
@@ -378,6 +395,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         startAt: row.startAt?.toISOString() ?? null,
         endAt: row.endAt?.toISOString() ?? null,
         place: row.place ? { placeId: row.place.id, name: row.place.name } : null,
+        team: row.scheduleTeams[0] ? { teamId: row.scheduleTeams[0].team.id, name: row.scheduleTeams[0].team.name } : null,
         songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName })),
         participantCount: row.participants.length,
         participants: row.participants.map(p => ({

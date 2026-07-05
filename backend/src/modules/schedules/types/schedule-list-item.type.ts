@@ -8,6 +8,7 @@ export interface SpaceScheduleListItem {
   startAt: string | null;
   endAt: string | null;
   place: { placeId: string; name: string } | null;
+  team: { teamId: string; name: string } | null;
   songs: ScheduleSongItem[];
   participantCount: number;
   participants: ScheduleParticipantAvatar[];

@@ -60,4 +60,7 @@ export interface SchedulesRepository {
 
   /** 밴드 공간 기준으로 특정 사용자의 밴드 멤버 정보를 조회한다. 공간 멤버 여부 검증에 사용한다. */
   findBandMemberByBandSpaceIdAndUserId(bandSpaceId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
+
+  /** 팀이 해당 공간과 같은 밴드 소속인지 확인한다. 일정 생성 시 teamId 검증에 사용한다. */
+  findTeamInSameBandAsSpace(teamId: string, bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
 }

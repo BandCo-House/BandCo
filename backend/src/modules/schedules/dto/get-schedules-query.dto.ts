@@ -48,6 +48,11 @@ export class GetSchedulesQueryDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
+  @IsUUID('4', { message: uuidValidationMessage })
+  where__team_id?: string;
+
+  @IsOptional()
+  @IsString({ message: stringValidationMessage })
   @IsEnum(ScheduleType, { message: enumValidationMessage })
   where__schedule_type?: ScheduleType;
 

@@ -42,6 +42,11 @@ export class SchedulesService {
         throw new BadRequestException('종료 시간은 시작 시간보다 이후여야 합니다.');
       }
 
+      if (input.teamId) {
+        const team = await this.schedulesRepository.findTeamInSameBandAsSpace(input.teamId, bandSpaceId, client);
+        if (!team) throw new BadRequestException('해당 밴드에 속한 팀이 아닙니다.');
+      }
+
       return this.schedulesRepository.createSchedule(bandSpaceId, bandMember.id, input, client);
     };
 
