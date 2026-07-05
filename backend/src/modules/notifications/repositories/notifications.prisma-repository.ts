@@ -118,7 +118,8 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
 
   /**
    * BAND_INVITATION 참조를 가진 알림에 대해 초대의 발신자와 현재 상태를 한 번에 조회한다.
-   * 수락된 초대는 삭제되므로 조회되지 않으며, 해당 알림의 reference는 null이 된다.
+   * 초대 응답은 상태 변경으로 처리되므로 PENDING·ACCEPTED·DECLINED 모두 상태를 반환한다.
+   * 초대가 삭제된 경우에만 reference가 null이 된다.
    */
   private async resolveInvitationReferences(
     notifications: NotificationRow[],

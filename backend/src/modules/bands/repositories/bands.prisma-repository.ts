@@ -52,7 +52,7 @@ export class BandsPrismaRepository implements BandsRepository {
    * @param {string} invitationId - 수락할 초대 ID
    * @param {string} bandId - 가입할 밴드 ID
    * @param {string} userId - 가입할 사용자 ID
-   * @param {Date} _respondedAt - 기존 인터페이스 호환을 위해 받지만 초대 삭제 정책에서는 저장하지 않는 응답 시각
+   * @param {Date} respondedAt - 초대 응답 시각
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<AcceptBandInvitationResult>} 수락 처리 결과
    */
@@ -60,7 +60,7 @@ export class BandsPrismaRepository implements BandsRepository {
     invitationId: string,
     bandId: string,
     userId: string,
-    _respondedAt: Date,
+    respondedAt: Date,
     tx?: Prisma.TransactionClient,
   ): Promise<AcceptBandInvitationResult> {
     const client = tx ?? this.prisma;
@@ -76,9 +76,17 @@ export class BandsPrismaRepository implements BandsRepository {
       },
     });
 
-    await client.bandInvitation.delete({
+    const invitation = await client.bandInvitation.update({
       where: {
         id: invitationId,
+      },
+      data: {
+        status: 'ACCEPTED',
+        respondedAt,
+      },
+      select: {
+        status: true,
+        respondedAt: true,
       },
     });
 
@@ -86,7 +94,7 @@ export class BandsPrismaRepository implements BandsRepository {
       invitationId,
       bandId,
       userId,
-      invitationStatus: 'ACCEPTED',
+      invitationStatus: invitation.status,
       joinedAt: member.joinedAt.toISOString(),
     };
   }

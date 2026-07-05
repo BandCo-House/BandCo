@@ -647,14 +647,14 @@ describe('BandsPrismaRepository', () => {
   });
 
   describe('acceptBandInvitation', () => {
-    it('밴드 멤버를 생성하고 수락한 초대 row를 삭제한다', async () => {
+    it('밴드 멤버를 생성하고 초대 상태를 ACCEPTED로 변경한다', async () => {
       const prisma = createPrismaMock();
       prisma.bandMember.create.mockResolvedValue({
         joinedAt: new Date('2026-04-30T10:00:00.000Z'),
       });
-      prisma.bandInvitation.delete.mockResolvedValue(undefined);
-      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
       const respondedAt = new Date('2026-04-30T09:59:00.000Z');
+      prisma.bandInvitation.update.mockResolvedValue({ status: 'ACCEPTED', respondedAt });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
 
       const result = await repository.acceptBandInvitation('invitation-001', 'band-001', 'user-002', respondedAt);
 
@@ -668,12 +668,20 @@ describe('BandsPrismaRepository', () => {
           joinedAt: true,
         },
       });
-      expect(prisma.bandInvitation.delete).toHaveBeenCalledWith({
+      expect(prisma.bandInvitation.update).toHaveBeenCalledWith({
         where: {
           id: 'invitation-001',
         },
+        data: {
+          status: 'ACCEPTED',
+          respondedAt,
+        },
+        select: {
+          status: true,
+          respondedAt: true,
+        },
       });
-      expect(prisma.bandInvitation.update).not.toHaveBeenCalled();
+      expect(prisma.bandInvitation.delete).not.toHaveBeenCalled();
       expect(result).toEqual({
         invitationId: 'invitation-001',
         bandId: 'band-001',
@@ -689,15 +697,15 @@ describe('BandsPrismaRepository', () => {
       tx.bandMember.create.mockResolvedValue({
         joinedAt: new Date('2026-04-30T10:00:00.000Z'),
       });
-      tx.bandInvitation.delete.mockResolvedValue(undefined);
+      tx.bandInvitation.update.mockResolvedValue({ status: 'ACCEPTED', respondedAt: new Date('2026-04-30T09:59:00.000Z') });
       const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
 
       await repository.acceptBandInvitation('invitation-001', 'band-001', 'user-002', new Date('2026-04-30T09:59:00.000Z'), tx as never);
 
       expect(tx.bandMember.create).toHaveBeenCalled();
-      expect(tx.bandInvitation.delete).toHaveBeenCalled();
+      expect(tx.bandInvitation.update).toHaveBeenCalled();
       expect(prisma.bandMember.create).not.toHaveBeenCalled();
-      expect(prisma.bandInvitation.delete).not.toHaveBeenCalled();
+      expect(prisma.bandInvitation.update).not.toHaveBeenCalled();
     });
   });
 
