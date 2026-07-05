@@ -97,7 +97,7 @@ const spaceSchedulesResult: GetSpaceSchedulesResult = {
       team: null,
       songs: [],
       participantCount: 1,
-      participants: [{ userId: USER_ID, avatarUrl: null }],
+      participants: [{ bandMemberId: BAND_MEMBER_ID, nickname: '준혁', profileImageUrl: null }],
       memo: null,
       status: 'PLANNED',
       isMine: true,

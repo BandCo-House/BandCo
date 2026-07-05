@@ -258,6 +258,30 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     });
   }
 
+  /**
+   * 일정 목록 조회의 AND 결합 조건을 만든다.
+   * cursor 기반 keyset 조건과 "내가 포함된 일정만"(where__is_mine) 조건을 함께 담아
+   * 최상위 OR 키 충돌 없이 결합한다.
+   */
+  private buildScheduleListAndConditions(query: GetSchedulesQuery, userId: string): Prisma.ScheduleWhereInput[] {
+    const and: Prisma.ScheduleWhereInput[] = [];
+
+    if (query.cursor__start_at && query.cursor__id) {
+      and.push({
+        OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
+      });
+    }
+
+    // 생성자이거나 참여자이면 본인과 연관된 일정으로 본다. isMine 플래그와 판정 기준이 같다.
+    if (query.where__is_mine) {
+      and.push({
+        OR: [{ createdByBandMember: { userId } }, { participants: { some: { bandMember: { userId } } } }],
+      });
+    }
+
+    return and;
+  }
+
   async findSchedulesByBandId(
     bandId: string,
     query: GetSchedulesQuery,
@@ -266,6 +290,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
   ): Promise<GetBandSchedulesResult> {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
+    const and = this.buildScheduleListAndConditions(query, userId);
 
     const where: Prisma.ScheduleWhereInput = {
       bandSpace: { bandId, deletedAt: null },
@@ -279,10 +304,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       ...(query.where__place_id && { placeId: query.where__place_id }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
-      ...(query.cursor__start_at &&
-        query.cursor__id && {
-          OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
-        }),
+      ...(and.length > 0 ? { AND: and } : {}),
     };
 
     const rows = await client.schedule.findMany({
@@ -333,6 +355,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
   ): Promise<GetSpaceSchedulesResult> {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
+    const and = this.buildScheduleListAndConditions(query, userId);
 
     const where: Prisma.ScheduleWhereInput = {
       bandSpaceId,
@@ -347,10 +370,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       ...(query.where__team_id && { scheduleTeams: { some: { teamId: query.where__team_id } } }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
-      ...(query.cursor__start_at &&
-        query.cursor__id && {
-          OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
-        }),
+      ...(and.length > 0 ? { AND: and } : {}),
     };
 
     const rows = await client.schedule.findMany({
@@ -364,10 +384,11 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         createdByBandMember: { select: { userId: true } },
         participants: {
           select: {
+            bandMemberId: true,
             bandMember: {
               select: {
                 userId: true,
-                user: { select: { profile: { select: { avatarUrl: true } } } },
+                user: { select: { profile: { select: { nickname: true, avatarUrl: true } } } },
               },
             },
           },
@@ -399,8 +420,9 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName })),
         participantCount: row.participants.length,
         participants: row.participants.map(p => ({
-          userId: p.bandMember.userId,
-          avatarUrl: p.bandMember.user.profile?.avatarUrl ?? null,
+          bandMemberId: p.bandMemberId,
+          nickname: p.bandMember.user.profile?.nickname ?? '',
+          profileImageUrl: p.bandMember.user.profile?.avatarUrl ?? null,
         })),
         memo: row.memo,
         status: row.status,

@@ -11,15 +11,16 @@ export interface SpaceScheduleListItem {
   team: { teamId: string; name: string } | null;
   songs: ScheduleSongItem[];
   participantCount: number;
-  participants: ScheduleParticipantAvatar[];
+  participants: ScheduleParticipantPreview[];
   memo: string | null;
   status: string;
   isMine: boolean;
 }
 
-export interface ScheduleParticipantAvatar {
-  userId: string;
-  avatarUrl: string | null;
+export interface ScheduleParticipantPreview {
+  bandMemberId: string;
+  nickname: string;
+  profileImageUrl: string | null;
 }
 
 export interface ScheduleListCursor {
