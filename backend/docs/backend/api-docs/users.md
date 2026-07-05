@@ -24,8 +24,8 @@ Notion "유저 api" 데이터베이스는 `src/auth`(인증)와 `src/modules/use
 | #65 | POST | `/auth/email` | 이메일 중복 확인 |
 | #68 | GET | `/users/profile-music/search` | 프로필 음악 검색 (Deezer) |
 | #69 | DELETE | `/users/:userId/profile-music` | 프로필 음악 삭제 |
-| - | GET | `/users/:userId/profiles` | 유저 프로필 조회 |
-| - | PATCH | `/users/:userId/profiles` | 유저 프로필 수정 |
+| #3 | GET | `/users/:userId/profiles` | 유저 프로필 조회 |
+| #5 | PATCH | `/users/:userId/profiles` | 유저 프로필 수정 |
 
 ---
 
@@ -357,7 +357,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 ---
 
-## 유저 프로필 조회
+## #3 유저 프로필 조회
 
 - Method: `GET`
 - Path: `/users/:userId/profiles`
@@ -427,7 +427,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 ---
 
-## 유저 프로필 수정
+## #5 유저 프로필 수정
 
 - Method: `PATCH`
 - Path: `/users/:userId/profiles`
@@ -477,7 +477,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 ### Response 200
 
-`유저 프로필 조회`와 동일한 구조의 `GetUserProfileResult`.
+`#3 유저 프로필 조회`와 동일한 구조의 `GetUserProfileResult`.
 
 ### Error
 
