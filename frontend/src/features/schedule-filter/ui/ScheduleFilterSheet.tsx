@@ -10,6 +10,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/shared/ui/sheet';
+import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { type ScheduleDetailFilter } from '../model/types';
 
@@ -202,28 +203,33 @@ export const ScheduleFilterSheet = ({
         </div>
 
         <div className="flex items-center gap-3 px-5 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="lg"
+            width="flex"
+            className="border-grey-50 text-grey-50"
             onClick={() => {
               setSongIds([]);
               setPlaceIds([]);
               setTeamIds([]);
             }}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-grey-200 px-4 py-3 typo-sm-b text-grey-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
           >
             <RotateCcw aria-hidden="true" className="size-5" />
             초기화
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="shining"
+            size="lg"
+            width="flex"
             onClick={() => {
               onApply({ songIds, placeIds, teamIds });
               onOpenChange(false);
             }}
-            className="flex flex-1 items-center justify-center rounded-full bg-primary px-4 py-3 typo-sm-b text-gradient-top focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
           >
             완료
-          </button>
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
