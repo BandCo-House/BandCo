@@ -32,7 +32,7 @@ export const Switch = ({
     disabled={disabled}
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full bg-white/24 p-1 transition-colors',
+      'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full bg-surface-1 p-1 transition-colors',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className,
@@ -42,7 +42,7 @@ export const Switch = ({
       aria-hidden="true"
       className={cn(
         'size-6 rounded-full transition-transform',
-        checked ? 'translate-x-6 bg-primary' : 'translate-x-0 bg-grey-300',
+        checked ? 'translate-x-6 bg-primary' : 'translate-x-0 bg-grey-400',
       )}
     />
   </button>

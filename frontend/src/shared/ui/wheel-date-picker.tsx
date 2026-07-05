@@ -4,7 +4,7 @@ import { pad2, type WheelDate } from './wheel-date';
 
 export type { WheelDate } from './wheel-date';
 
-const ITEM_HEIGHT = 36;
+const ITEM_HEIGHT = 32;
 // 가운데를 선택값으로 두고 위아래 1칸씩 노출한다(총 3칸).
 const VISIBLE_COUNT = 3;
 const PADDING = ((VISIBLE_COUNT - 1) / 2) * ITEM_HEIGHT;

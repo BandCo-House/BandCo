@@ -158,7 +158,8 @@ export const SpaceCreateModal = ({
               </span>
             </div>
 
-            <div className="flex flex-col gap-8 rounded-md border-[0.5px] border-surface-1/40 bg-white/24 px-2.5 py-6 backdrop-blur-md">
+            {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
+            <div className="flex h-[232px] flex-col justify-center gap-6 rounded-md border border-surface-1 bg-grey-600/20 px-2.5 backdrop-blur-md">
               <WheelDatePicker value={startDate} onChange={setStartDate} />
               {hasEnd ? (
                 <WheelDatePicker value={endDate} onChange={setEndDate} />
@@ -182,6 +183,7 @@ export const SpaceCreateModal = ({
               size="lg"
               disabled={!canSubmit}
               onClick={handleSubmit}
+              className="border border-white/56"
             >
               만들기
             </Button>
