@@ -24,6 +24,7 @@ import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/cr
 import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from '../types/delete-band-invitation-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { GetBandResult } from '../types/get-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from '../types/received-band-invitation-list.type';
@@ -1848,6 +1849,52 @@ export class BandsPrismaRepository implements BandsRepository {
       message: joinRequest.message,
       joinRequestStatus: joinRequest.status,
       createdAt: joinRequest.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * bandId로 삭제되지 않은 밴드 상세 정보를 장르·멤버 수와 함께 조회한다.
+   *
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandResult['band'] | null>} 밴드 상세 정보, 없으면 null
+   */
+  async findBandDetail(bandId: string, tx?: Prisma.TransactionClient): Promise<GetBandResult['band'] | null> {
+    const client = tx ?? this.prisma;
+
+    const band = await client.band.findFirst({
+      where: { id: bandId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        visibility: true,
+        coverImgUrl: true,
+        bandMasterUserId: true,
+        createdAt: true,
+        bandGenres: {
+          select: {
+            genre: { select: { id: true, name: true } },
+          },
+        },
+        _count: { select: { members: true } },
+      },
+    });
+
+    if (band === null) {
+      return null;
+    }
+
+    return {
+      id: band.id,
+      name: band.name,
+      description: band.description,
+      visibility: band.visibility,
+      coverImgUrl: band.coverImgUrl,
+      bandMasterUserId: band.bandMasterUserId,
+      genres: band.bandGenres.map(bg => bg.genre),
+      memberCount: band._count.members,
+      createdAt: band.createdAt.toISOString(),
     };
   }
 

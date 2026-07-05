@@ -28,6 +28,7 @@ import type { CreateBandInvitationFailedItem, CreateBandResult } from './types/c
 import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from './types/delete-band-invitation-result.type';
 import type { DeleteBandResult } from './types/delete-band-result.type';
+import type { GetBandResult } from './types/get-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
@@ -680,6 +681,23 @@ export class BandsService {
     }
 
     return this.bandsRepository.findBandMembers(bandId, query, tx);
+  }
+
+  /**
+   * 삭제되지 않은 밴드를 ID로 단건 조회한다.
+   *
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandResult>} 밴드 상세 정보
+   */
+  async getBand(bandId: string, tx?: Prisma.TransactionClient): Promise<GetBandResult> {
+    const band = await this.bandsRepository.findBandDetail(bandId, tx);
+
+    if (band === null) {
+      throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+    }
+
+    return { band };
   }
 
   /**
