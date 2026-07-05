@@ -97,7 +97,7 @@ const WheelColumn = ({
 interface WheelDatePickerProps {
   value: WheelDate;
   onChange: (value: WheelDate) => void;
-  /** 선택 가능한 연도 범위. 기본: 올해 ~ 올해+5. */
+  /** 선택 가능한 연도 범위. 기본: 올해-10 ~ 올해+10. */
   minYear?: number;
   maxYear?: number;
   className?: string;
@@ -115,7 +115,7 @@ export const WheelDatePicker = ({
   className,
 }: WheelDatePickerProps) => {
   const thisYear = new Date().getFullYear();
-  const years = range(minYear ?? thisYear, maxYear ?? thisYear + 5);
+  const years = range(minYear ?? thisYear - 10, maxYear ?? thisYear + 10);
   const months = range(1, 12);
   const days = range(1, lastDayOf(value.year, value.month));
 
