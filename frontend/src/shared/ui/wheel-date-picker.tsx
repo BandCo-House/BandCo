@@ -65,7 +65,7 @@ const WheelColumn = ({
       onScroll={handleScroll}
       role="listbox"
       aria-label={label}
-      className="snap-y snap-mandatory overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="w-14 snap-y snap-mandatory overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={{ height: VISIBLE_COUNT * ITEM_HEIGHT }}
     >
       <div style={{ height: PADDING }} aria-hidden="true" />
@@ -126,7 +126,7 @@ export const WheelDatePicker = ({
 
   return (
     <div
-      className={cn('flex items-center justify-center gap-1', className)}
+      className={cn('flex items-center justify-center', className)}
       // 가운데 선택 줄을 은은하게 강조하는 마스크(위아래 페이드).
       style={{
         maskImage:

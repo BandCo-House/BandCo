@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from 'react';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
 import {
   AppDialogBody,
-  AppDialogClose,
   AppDialogContent,
-  AppDialogHeader,
   Dialog,
+  DialogClose,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
@@ -114,12 +114,18 @@ export const SpaceCreateModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AppDialogContent className="flex max-h-[85vh] flex-col gap-10 p-5 text-grey-50">
-        <AppDialogHeader className="mb-0">
-          <DialogTitle className="typo-lg-sb text-grey-100">
+        <div className="flex items-start gap-8">
+          <DialogTitle className="flex-1 text-xl leading-[1.4] font-semibold text-grey-100">
             합주 공간 만들기
           </DialogTitle>
-        </AppDialogHeader>
-        <AppDialogClose aria-label="합주 공간 만들기 닫기" />
+          <DialogClose
+            type="button"
+            aria-label="합주 공간 만들기 닫기"
+            className="-m-1 flex shrink-0 items-center justify-center rounded-full p-1 text-grey-100 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
+          >
+            <X className="size-6" />
+          </DialogClose>
+        </div>
 
         <AppDialogBody className="gap-9 overflow-y-auto">
           <label className="flex flex-col gap-2">
@@ -145,7 +151,7 @@ export const SpaceCreateModal = ({
             />
           </label>
 
-          <div className="flex flex-col gap-2">
+          <div className="relative flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <FieldLabel required>합주 기간</FieldLabel>
               <span className="flex items-center gap-2.5">
@@ -164,13 +170,14 @@ export const SpaceCreateModal = ({
               {hasEnd ? (
                 <WheelDatePicker value={endDate} onChange={setEndDate} />
               ) : (
-                <p className="text-center typo-sm-r text-grey-200">
+                <p className="text-center typo-xs-sb text-grey-50">
                   정해진 기간이 없는 합주 공간
                 </p>
               )}
             </div>
+            {/* 주변에 다른 요소가 없어 absolute로 띄워 레이아웃을 밀지 않는다. */}
             {endBeforeStart && (
-              <p className="typo-xs-m text-destructive">
+              <p className="absolute top-full mt-1 typo-xs-m text-destructive">
                 종료 날짜는 시작 날짜 이후여야 해요.
               </p>
             )}
