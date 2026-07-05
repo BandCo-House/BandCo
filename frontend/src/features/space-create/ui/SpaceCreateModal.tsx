@@ -125,7 +125,7 @@ export const SpaceCreateModal = ({
           </DialogClose>
         </div>
 
-        <AppDialogBody className="gap-9 overflow-y-auto">
+        <AppDialogBody className="gap-9">
           <label className="flex flex-col gap-2">
             <FieldLabel required>합주 공간 이름</FieldLabel>
             <Input
