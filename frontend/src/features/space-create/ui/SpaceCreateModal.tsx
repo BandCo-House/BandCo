@@ -125,7 +125,7 @@ export const SpaceCreateModal = ({
           </DialogClose>
         </div>
 
-        <AppDialogBody className="gap-9">
+        <AppDialogBody className="gap-9 overflow-y-auto">
           <label className="flex flex-col gap-2">
             <FieldLabel required>합주 공간 이름</FieldLabel>
             <Input
@@ -180,19 +180,20 @@ export const SpaceCreateModal = ({
               </p>
             )}
           </div>
-
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="shining"
-              size="lg"
-              disabled={!canSubmit}
-              onClick={handleSubmit}
-            >
-              만들기
-            </Button>
-          </div>
         </AppDialogBody>
+
+        {/* 버튼은 스크롤 본문 밖(푸터)에 둔다: 본문 overflow가 shining 글로우를 자르지 않도록. */}
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="shining"
+            size="lg"
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+          >
+            만들기
+          </Button>
+        </div>
       </AppDialogContent>
     </Dialog>
   );
