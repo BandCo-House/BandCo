@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { uploadImage } from '@/shared/api';
@@ -176,18 +176,19 @@ export const PlaceCreateModal = ({
           <div className="flex flex-col gap-2">
             <FieldLabel>장소 커버</FieldLabel>
             {coverPreview ? (
-              <div className="flex items-center gap-3">
+              <div className="relative size-20">
                 <img
                   src={coverPreview}
                   alt="선택한 커버 미리보기"
-                  className="size-16 rounded-md object-cover"
+                  className="size-full rounded-md border border-grey-50 object-cover opacity-80"
                 />
                 <button
                   type="button"
+                  aria-label="커버 제거"
                   onClick={clearCover}
-                  className="typo-sm-m text-grey-300 underline focus-visible:outline-2 focus-visible:outline-key"
+                  className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full border border-grey-50 bg-grey-400 text-grey-50 focus-visible:outline-2 focus-visible:outline-key"
                 >
-                  제거
+                  <X aria-hidden="true" className="size-3" />
                 </button>
               </div>
             ) : (
@@ -205,7 +206,7 @@ export const PlaceCreateModal = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-5 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-end gap-9 px-5 py-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
           <Button
             type="button"
             variant="outline"
