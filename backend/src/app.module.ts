@@ -10,6 +10,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PlacesModule } from './modules/places/places.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SongsModule } from './modules/songs/songs.module';
+import { TeamsModule } from './modules/teams/teams.module';
 import { UsersModule } from './modules/users/users.module';
 import { StorageModule } from './storage/storage.module';
 
@@ -27,6 +28,7 @@ import { StorageModule } from './storage/storage.module';
     SchedulesModule,
     CommonModule,
     PlacesModule,
+    TeamsModule,
   ],
 })
 export class AppModule {}

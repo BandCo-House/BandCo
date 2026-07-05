@@ -1,16 +1,18 @@
 # Band API
 
-> 최종 동기화: 2026-05-20
+> 최종 동기화: 2026-07-02
 >
 > ⚠️ 변환 노트:
 > - Notion 원본의 응답 형식은 `{ "status": "success", "error": null, "message": "...", "data": { ... } }` 구조이나, 하네스 컨벤션인 `{ "data": ..., "success": true }` 형태로 변환하였다.
-> - #12 밴드 검색하기: Notion 원본에서 `req` 블록에 응답 JSON이 기재되어 있어, 실제 응답으로 간주하여 변환하였다. 요청 바디는 없음(Query Parameter로 처리).
+> - #12 밴드 검색하기: Notion 원본에서 `req` 블록에 응답 JSON이 기재되어 있어, 실제 응답으로 간주하여 변환하였다. 요청 바디는 없음(Query Parameter로 처리). 검색 파라미터 이름은 Notion 원본 예시 URL 기준 `where__name__contains`로 수정.
 > - [설계자 보완 2026-06-26] #8 DELETE /bands/{bandId}: 코드(`bands.controller.ts`)에 `@UseGuards(AccessTokenGuard)` 데코레이터 확인 → 인증 필요로 확정.
 > - [설계자 보완 2026-06-26] #12 GET /bands/search: 코드(`bands.controller.ts`)에 Guards 없음 → 비인증 공개 확정.
 > - [설계자 보완 2026-06-26] #13 PATCH /bands/{bandId}: 코드(`bands.controller.ts`)에 `@UseGuards(AccessTokenGuard)` 확인 → 인증 필요 확정. Body 필드(name, description, visibility, coverImgUrl) 모두 선택이며 하나라도 입력해야 함(코드 `validateUpdateBandInput` 기준). `bmId` 필드는 MVP에서 지원하지 않으므로 명세에서 제거.
 > - [설계자 보완 2026-06-26] #10, #11, #12 응답 `meta.next`: 현재 코드는 커서 객체(`{ createdAt, id }` 등)를 반환하나, User 모듈 패턴(`buildNextPath`) 적용 후 `string | null`(URL 경로)로 변환 예정.
 > - [코드 기반 보완 2026-06-26] 에러 코드 전체 갱신: 서비스/컨트롤러 코드 기준으로 실제 throw 조건 명시. #11 인증 요구사항 수정(컨트롤러 Guard 없음 → 공개 API).
 > - [코드 기반 보완 2026-06-26] `Error Responses` → `Error`, 헤더 `조건` → `사유`로 User API 형식 통일.
+> - [설계자 보완 2026-07-02] #70 GET /bands/{bandId}: Notion 원본에 없는 신규 API. 전체 api-docs 최대 번호 #69 기준으로 #70 부여.
+> - [코드 기반 보완 2026-07-05] #52 DELETE /bands/{bandId}/me: 코드에는 구현되어 있으나 로컬 문서에 누락되어 추가. Notion 원본 페이지는 내용 없는 빈 스텁.
 
 ---
 
@@ -331,14 +333,14 @@
 
 | 파라미터 | 타입 | 필수 | 기본값 | 설명 |
 |---------|------|:----:|:-----:|------|
-| where__name__contain | string | 선택 | — | 밴드 이름 검색 키워드 |
+| where__name__contains | string | 선택 | — | 밴드 이름 검색 키워드 |
 | take | number | 선택 | 20 | 가져올 밴드 수 |
 | order__created_at | string | 선택 | `desc` | 생성일 정렬 방향 (`asc` / `desc`) |
 | order__id | string | 선택 | `desc` | ID 정렬 방향 (`asc` / `desc`) |
 | cursor__created_at | string | 선택 | — | 커서: 생성일 |
 | cursor__id | string | 선택 | — | 커서: 밴드 ID |
 
-> 요청 예시: `GET /bands/search?where__name__contain=rock&take=20`
+> 요청 예시: `GET /bands/search?where__name__contains=rock&take=20`
 
 ### Response 200
 
@@ -367,7 +369,7 @@
         "createdAt": "2026-04-10T00:00:00.000Z",
         "id": "a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1"
       },
-      "next": "/bands/search?cursor__created_at=2026-04-10T00%3A00%3A00.000Z&cursor__id=a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1&take=20&order__created_at=desc&order__id=desc&where__name__contain=rock"
+      "next": "/bands/search?cursor__created_at=2026-04-10T00%3A00%3A00.000Z&cursor__id=a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1&take=20&order__created_at=desc&order__id=desc&where__name__contains=rock"
     }
   },
   "success": true
@@ -432,3 +434,84 @@
 | 401 | 인증 실패 |
 | 403 | 밴드 마스터 아님 |
 | 404 | 밴드 없음 |
+
+---
+
+## #52 DELETE /bands/{bandId}/me
+
+**설명:** 인증된 유저가 밴드에서 나간다. 밴드장(BM)은 이 API로 나갈 수 없다.
+**인증:** 필요 (JWT Bearer)
+
+### Request
+
+**Path Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|:----:|------|
+| bandId | string (UUID) | ✅ | 나갈 밴드 ID |
+
+### Response 200
+
+```json
+{
+  "data": {
+    "bandId": "uuid",
+    "userId": "uuid"
+  },
+  "success": true
+}
+```
+
+### Error
+
+| 코드 | 사유 |
+|------|------|
+| 401 | 인증 실패 |
+| 403 | 밴드 멤버가 아님, 밴드장은 이 API로 나갈 수 없음 |
+| 404 | 밴드를 찾을 수 없음 |
+
+---
+
+## #70 GET /bands/{bandId}
+
+**설명:** 밴드 ID로 삭제되지 않은 밴드의 상세 정보를 조회한다.
+**인증:** 불필요 (공개 API)
+
+### Request
+
+**Path Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|:----:|------|
+| bandId | string (UUID) | ✅ | 조회할 밴드 ID |
+
+### Response 200
+
+```json
+{
+  "data": {
+    "band": {
+      "id": "a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1",
+      "name": "합주하자",
+      "description": "주 1회 합주하는 밴드입니다.",
+      "visibility": true,
+      "coverImgUrl": "https://cdn.example.com/bands/cover.png",
+      "bandMasterUserId": "11111111-1111-1111-1111-111111111111",
+      "genres": [
+        { "id": "0f0a4e3a-8a0c-4f6e-9d2d-9c1a8c6b7b1a", "name": "rock" },
+        { "id": "3f2a4e3a-8a0c-4f6e-9d2d-9c1a8c6b7b2b", "name": "jazz" }
+      ],
+      "memberCount": 5,
+      "createdAt": "2026-03-03T18:20:10.123Z"
+    }
+  },
+  "success": true
+}
+```
+
+### Error
+
+| 코드 | 사유 |
+|------|------|
+| 400 | `bandId`가 UUID 형식이 아님 |
+| 404 | 밴드 없음 (삭제된 밴드 포함) |

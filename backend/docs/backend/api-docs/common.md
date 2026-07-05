@@ -1,13 +1,14 @@
 # Common API
 
-> 최종 동기화: 2026-05-29
+> 최종 동기화: 2026-07-05
 >
 > ⚠️ 변환 노트:
 > - 두 API 모두 인증 불필요 (Notion 명세에 Authorization 언급 없음).
+> - [코드 기반 보완 2026-07-05] Notion "기타api" DB 번호(#66, #67) 표기 추가 (하네스 API 넘버링 보존 규칙 반영).
 
 ---
 
-## GET /common/genres
+## #66 GET /common/genres
 
 **설명:** 장르 전체 목록 조회
 **인증:** 불필요
@@ -64,7 +65,7 @@ GET /common/genres
 
 ---
 
-## GET /common/skills
+## #67 GET /common/skills
 
 **설명:** 스킬 타입 전체 목록 조회
 **인증:** 불필요
