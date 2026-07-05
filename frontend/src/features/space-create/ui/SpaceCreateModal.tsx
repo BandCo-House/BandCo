@@ -115,9 +115,7 @@ export const SpaceCreateModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AppDialogContent className="flex max-h-[85vh] flex-col gap-10 p-5 text-grey-50">
         <div className="flex items-start gap-8">
-          <DialogTitle className="flex-1 text-xl leading-[1.4] font-semibold text-grey-100">
-            합주 공간 만들기
-          </DialogTitle>
+          <DialogTitle className="flex-1">합주 공간 만들기</DialogTitle>
           <DialogClose
             type="button"
             aria-label="합주 공간 만들기 닫기"
@@ -190,7 +188,6 @@ export const SpaceCreateModal = ({
               size="lg"
               disabled={!canSubmit}
               onClick={handleSubmit}
-              className="border border-white/56"
             >
               만들기
             </Button>

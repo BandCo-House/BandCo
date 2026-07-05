@@ -78,7 +78,7 @@ export function BandInviteModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm rounded-md border-slate-800 bg-slate-900 text-slate-100">
         <DialogHeader>
-          <DialogTitle className="typo-xl-b flex items-center gap-2 text-white">
+          <DialogTitle className="flex items-center gap-2">
             <UserPlus className="size-5 text-violet-400" />
             밴드 초대하기
           </DialogTitle>
