@@ -94,6 +94,7 @@ const spaceSchedulesResult: GetSpaceSchedulesResult = {
       place: null,
       songs: [],
       participantCount: 1,
+      participants: [{ userId: USER_ID, avatarUrl: null }],
       memo: null,
       status: 'PLANNED',
       isMine: true,

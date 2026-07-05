@@ -10,9 +10,15 @@ export interface SpaceScheduleListItem {
   place: { placeId: string; name: string } | null;
   songs: ScheduleSongItem[];
   participantCount: number;
+  participants: ScheduleParticipantAvatar[];
   memo: string | null;
   status: string;
   isMine: boolean;
+}
+
+export interface ScheduleParticipantAvatar {
+  userId: string;
+  avatarUrl: string | null;
 }
 
 export interface ScheduleListCursor {

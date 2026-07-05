@@ -345,8 +345,16 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         place: { select: { id: true, name: true } },
         scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
         createdByBandMember: { select: { userId: true } },
-        participants: { where: { bandMember: { userId } }, select: { id: true }, take: 1 },
-        _count: { select: { participants: true } },
+        participants: {
+          select: {
+            bandMember: {
+              select: {
+                userId: true,
+                user: { select: { profile: { select: { avatarUrl: true } } } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -371,10 +379,14 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         endAt: row.endAt?.toISOString() ?? null,
         place: row.place ? { placeId: row.place.id, name: row.place.name } : null,
         songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName })),
-        participantCount: row._count.participants,
+        participantCount: row.participants.length,
+        participants: row.participants.map(p => ({
+          userId: p.bandMember.userId,
+          avatarUrl: p.bandMember.user.profile?.avatarUrl ?? null,
+        })),
         memo: row.memo,
         status: row.status,
-        isMine: row.createdByBandMember.userId === userId || row.participants.length > 0,
+        isMine: row.createdByBandMember.userId === userId || row.participants.some(p => p.bandMember.userId === userId),
       })),
       meta,
     };
