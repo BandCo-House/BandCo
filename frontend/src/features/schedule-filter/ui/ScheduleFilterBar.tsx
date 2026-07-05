@@ -1,5 +1,4 @@
 import { SlidersHorizontal } from 'lucide-react';
-import { toast } from 'sonner';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { cn } from '@/shared/lib/utils';
 import { SCHEDULE_TYPE_OPTIONS, type ScheduleTypeFilter } from '../model/types';
@@ -9,6 +8,10 @@ interface ScheduleFilterBarProps {
   onScheduleTypeChange: (value: ScheduleTypeFilter) => void;
   onlyMine: boolean;
   onOnlyMineChange: (value: boolean) => void;
+  /** 상세 필터(곡·장소) 화면 열기. */
+  onDetailFilterOpen?: () => void;
+  /** 상세 필터에 선택이 있으면 아이콘에 표시한다. */
+  detailFilterActive?: boolean;
   className?: string;
 }
 
@@ -23,6 +26,8 @@ export const ScheduleFilterBar = ({
   onScheduleTypeChange,
   onlyMine,
   onOnlyMineChange,
+  onDetailFilterOpen,
+  detailFilterActive = false,
   className,
 }: ScheduleFilterBarProps) => {
   return (
@@ -49,14 +54,23 @@ export const ScheduleFilterBar = ({
           );
         })}
 
-        {/* 상세 필터: 백엔드/사양 미정 → 준비 중 안내만 노출 */}
+        {/* 상세 필터(곡·장소) 화면 열기 */}
         <button
           type="button"
           aria-label="상세 필터"
-          onClick={() => toast('준비 중인 기능이에요.')}
-          className="flex h-9 items-center justify-center rounded-full bg-primary px-4 text-gradient-top focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
+          onClick={onDetailFilterOpen}
+          className={cn(
+            'relative flex h-9 items-center justify-center rounded-full bg-primary px-4 text-gradient-top',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
+          )}
         >
           <SlidersHorizontal aria-hidden="true" className="size-4" />
+          {detailFilterActive && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive"
+            />
+          )}
         </button>
       </div>
 

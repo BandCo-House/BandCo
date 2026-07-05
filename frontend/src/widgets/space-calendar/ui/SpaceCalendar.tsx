@@ -7,7 +7,13 @@ import { useSpace } from '@/entities/space/api/useSpace';
 import { useDaySchedules } from '@/entities/schedule/model/queries';
 import { SpaceSummaryHeader } from '@/entities/space/ui/SpaceSummaryHeader';
 import { ScheduleFilterBar } from '@/features/schedule-filter/ui/ScheduleFilterBar';
-import { type ScheduleTypeFilter } from '@/features/schedule-filter/model/types';
+import { ScheduleFilterSheet } from '@/features/schedule-filter/ui/ScheduleFilterSheet';
+import {
+  countDetailFilter,
+  EMPTY_DETAIL_FILTER,
+  type ScheduleDetailFilter,
+  type ScheduleTypeFilter,
+} from '@/features/schedule-filter/model/types';
 import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreateModal';
 import { WeekDatePicker } from '@/shared/ui/week-date-picker';
 import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
@@ -22,11 +28,14 @@ const APP_HEADER_PX = 64;
 
 /** 합주 공간 메인(단일 일 타임라인). */
 export const SpaceCalendar = () => {
-  const { spaceId } = useParams({ strict: false });
+  const { spaceId, bandId } = useParams({ strict: false });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [scheduleType, setScheduleType] =
     useState<ScheduleTypeFilter>(undefined);
   const [onlyMine, setOnlyMine] = useState(false);
+  const [detailFilter, setDetailFilter] =
+    useState<ScheduleDetailFilter>(EMPTY_DETAIL_FILTER);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -48,6 +57,8 @@ export const SpaceCalendar = () => {
     date: selectedDate,
     scheduleType,
     onlyMine,
+    songIds: detailFilter.songIds,
+    placeIds: detailFilter.placeIds,
   });
 
   const fabActions: SpeedDialAction[] = [
@@ -123,12 +134,22 @@ export const SpaceCalendar = () => {
           onScheduleTypeChange={setScheduleType}
           onlyMine={onlyMine}
           onOnlyMineChange={setOnlyMine}
+          onDetailFilterOpen={() => setIsFilterSheetOpen(true)}
+          detailFilterActive={countDetailFilter(detailFilter) > 0}
         />
       </div>
 
       <DayTimeline className="mt-2" blocks={blocks} />
 
       <SpeedDialFab className="bottom-24" actions={fabActions} />
+
+      <ScheduleFilterSheet
+        open={isFilterSheetOpen}
+        onOpenChange={setIsFilterSheetOpen}
+        bandId={bandId ?? ''}
+        value={detailFilter}
+        onApply={setDetailFilter}
+      />
 
       <ScheduleCreateModal
         isOpen={isModalOpen}

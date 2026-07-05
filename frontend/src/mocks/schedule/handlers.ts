@@ -183,18 +183,37 @@ const SEEDS: ScheduleSeed[] = [
   },
 ];
 
+// 밴드 곡/장소 목업(song·place handlers)과 같은 id로 순환 배정해 상세 필터가 동작하게 한다.
+const BAND_PLACES = [
+  { placeId: 'place-1', name: '신촌 연습실 A' },
+  { placeId: 'place-2', name: '합정 사운드룸' },
+  { placeId: 'place-3', name: '홍대 드럼스튜디오' },
+  { placeId: 'place-4', name: '강남 밴드연습실' },
+  { placeId: 'place-5', name: '이태원 자유합주실' },
+];
+
+const BAND_SONGS = [
+  { songId: 'band-song-1', title: '좋은 날', artistName: '아이유' },
+  { songId: 'band-song-2', title: '봄날', artistName: '방탄소년단' },
+  { songId: 'band-song-3', title: 'Dynamite', artistName: '방탄소년단' },
+  { songId: 'band-song-4', title: '밤편지', artistName: '아이유' },
+  { songId: 'band-song-5', title: '건널목', artistName: 'Whiteusedsocks' },
+  { songId: 'band-song-6', title: 'Attention', artistName: '뉴진스' },
+];
+
 const buildSchedules = (): ScheduleItem[] =>
-  SEEDS.map((seed) => ({
+  SEEDS.map((seed, index) => ({
     scheduleId: seed.id,
     spaceId: 'space-1',
     scheduleType: seed.type,
     title: seed.title,
     startAt: atOffsetDay(0, seed.start[0], seed.start[1]),
     endAt: atOffsetDay(seed.endNextDay ? 1 : 0, seed.end[0], seed.end[1]),
-    place: seed.place
-      ? { placeId: `place-${seed.id}`, name: seed.place }
-      : null,
-    songs: [],
+    // place=null 시드는 장소 없음 유지, 나머지는 밴드 장소를 순환 배정.
+    place: seed.place === null ? null : BAND_PLACES[index % BAND_PLACES.length],
+    // 합주(PRACTICE)에만 밴드 곡을 순환 배정.
+    songs:
+      seed.type === 'PRACTICE' ? [BAND_SONGS[index % BAND_SONGS.length]] : [],
     participantCount: seed.participantCount,
     participants: makeParticipants(seed.participantCount, {
       withNull: seed.withNull,
