@@ -3,6 +3,9 @@ import type { ScheduleSongItem } from './create-schedule-result.type';
 export interface ScheduleParticipantDetail {
   participantId: string;
   bandMemberId: string;
+  userId: string;
+  nickname: string;
+  avatarUrl: string | null;
   attendanceStatus: string | null;
   note: string | null;
 }
@@ -27,6 +30,7 @@ export interface GetScheduleDetailResult {
     participants: ScheduleParticipantDetail[];
     memo: string | null;
     createdByBandMemberId: string;
+    isMine: boolean;
     createdAt: string;
     updatedAt: string;
   };

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import { BandMemberRole, NotificationType, type Prisma } from '../../generated/prisma';
+import { BandMemberRole, NotificationReferenceType, NotificationType, type Prisma } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
 import type { CreateBandInput } from './dto/create-band.dto';
@@ -175,6 +175,8 @@ export class BandsService {
           title: '밴드 초대가 도착했습니다.',
           description: '새 밴드 초대가 도착했습니다.',
           targetPath: `/invitations/received?invitationId=${result.invitationId}`,
+          referenceType: NotificationReferenceType.BAND_INVITATION,
+          referenceId: result.invitationId,
         },
         client,
       );
@@ -818,6 +820,8 @@ export class BandsService {
       title: string;
       description: string;
       targetPath: string;
+      referenceType?: NotificationReferenceType;
+      referenceId?: string;
     },
     tx: Prisma.TransactionClient,
   ): Promise<void> {
@@ -832,6 +836,8 @@ export class BandsService {
         title: input.title,
         description: input.description,
         targetPath: input.targetPath,
+        referenceType: input.referenceType,
+        referenceId: input.referenceId,
       },
       tx,
     );

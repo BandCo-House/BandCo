@@ -1,4 +1,4 @@
-import type { NotificationType, Prisma } from '../../../generated/prisma';
+import type { NotificationReferenceType, NotificationType, Prisma } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
@@ -16,6 +16,8 @@ export interface CreateNotificationRepositoryInput {
   description?: string | null;
   targetPath?: string | null;
   remindsAt?: Date | null;
+  referenceType?: NotificationReferenceType | null;
+  referenceId?: string | null;
 }
 
 export interface NotificationsRepository {

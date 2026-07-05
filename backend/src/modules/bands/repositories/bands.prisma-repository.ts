@@ -52,7 +52,7 @@ export class BandsPrismaRepository implements BandsRepository {
    * @param {string} invitationId - 수락할 초대 ID
    * @param {string} bandId - 가입할 밴드 ID
    * @param {string} userId - 가입할 사용자 ID
-   * @param {Date} _respondedAt - 기존 인터페이스 호환을 위해 받지만 초대 삭제 정책에서는 저장하지 않는 응답 시각
+   * @param {Date} respondedAt - 초대 응답 시각
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<AcceptBandInvitationResult>} 수락 처리 결과
    */
@@ -60,7 +60,7 @@ export class BandsPrismaRepository implements BandsRepository {
     invitationId: string,
     bandId: string,
     userId: string,
-    _respondedAt: Date,
+    respondedAt: Date,
     tx?: Prisma.TransactionClient,
   ): Promise<AcceptBandInvitationResult> {
     const client = tx ?? this.prisma;
@@ -76,9 +76,17 @@ export class BandsPrismaRepository implements BandsRepository {
       },
     });
 
-    await client.bandInvitation.delete({
+    const invitation = await client.bandInvitation.update({
       where: {
         id: invitationId,
+      },
+      data: {
+        status: 'ACCEPTED',
+        respondedAt,
+      },
+      select: {
+        status: true,
+        respondedAt: true,
       },
     });
 
@@ -86,7 +94,7 @@ export class BandsPrismaRepository implements BandsRepository {
       invitationId,
       bandId,
       userId,
-      invitationStatus: 'ACCEPTED',
+      invitationStatus: invitation.status,
       joinedAt: member.joinedAt.toISOString(),
     };
   }
@@ -812,6 +820,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const invitations = await client.bandInvitation.findMany({
       where: {
@@ -848,7 +857,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -897,6 +906,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandInvitationsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const invitations = await client.bandInvitation.findMany({
       where: {
@@ -932,7 +942,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -981,6 +991,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandJoinRequestsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const joinRequests = await client.bandJoinRequest.findMany({
       where: {
@@ -1000,7 +1011,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -1033,6 +1044,7 @@ export class BandsPrismaRepository implements BandsRepository {
    */
   async findBandJoinRequests(bandId: string, query: GetBandJoinRequestsQuery, tx?: Prisma.TransactionClient): Promise<GetBandJoinRequestsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const joinRequests = await client.bandJoinRequest.findMany({
       where: {
@@ -1057,7 +1069,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });

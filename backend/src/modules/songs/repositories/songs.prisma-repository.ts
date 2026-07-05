@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { parseToPrismaQuery } from '../../../common/query';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { GetBandSongsQuery } from '../dto/get-band-songs-query.dto';
@@ -72,12 +73,11 @@ export class SongsPrismaRepository implements SongsRepository {
    */
   async findBandSongs(bandId: string, query: GetBandSongsQuery, tx?: Prisma.TransactionClient): Promise<GetBandSongsResult> {
     const client = tx ?? this.prisma;
+    const { where, orderBy } = parseToPrismaQuery<Prisma.SongWhereInput>(query);
+    where.bandId = bandId;
 
     const songs = await client.song.findMany({
-      where: {
-        bandId,
-        ...this.createSongListSearchWhere(query),
-      },
+      where,
       include: {
         songSkills: {
           include: {
@@ -92,7 +92,7 @@ export class SongsPrismaRepository implements SongsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       ...(query.cursor__id ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
       take: query.take,
     });
@@ -353,36 +353,6 @@ export class SongsPrismaRepository implements SongsRepository {
     return skillTypeIds
       .map(skillTypeId => skillTypes.find(skillType => skillType.id === skillTypeId))
       .filter((skillType): skillType is CreatedSongSkillType => skillType !== undefined);
-  }
-
-  private createSongListSearchWhere(query: GetBandSongsQuery): Prisma.SongWhereInput {
-    const searchWhere: Prisma.SongWhereInput[] = [];
-
-    if (query.where__title__contain !== undefined) {
-      searchWhere.push({
-        title: {
-          contains: query.where__title__contain,
-          mode: 'insensitive',
-        },
-      });
-    }
-
-    if (query.where__artist_name__contain !== undefined) {
-      searchWhere.push({
-        artistName: {
-          contains: query.where__artist_name__contain,
-          mode: 'insensitive',
-        },
-      });
-    }
-
-    if (searchWhere.length === 0) {
-      return {};
-    }
-
-    return {
-      AND: searchWhere,
-    };
   }
 
   private createUpdateSongData(input: UpdateSongInput): Prisma.SongUpdateInput {
