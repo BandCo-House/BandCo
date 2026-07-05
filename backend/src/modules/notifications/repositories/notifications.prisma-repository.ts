@@ -3,14 +3,14 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 
 import { parseToPrismaQuery } from '../../../common/query';
 import { buildNextPath } from '../../../common/url';
-import type { NotificationType, Prisma } from '../../../generated/prisma';
+import type { NotificationReferenceType, NotificationType, Prisma } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
-import type { GetNotificationsResult, NotificationListItem } from '../types/notification-list-item.type';
+import type { GetNotificationsResult, NotificationListItem, NotificationReference } from '../types/notification-list-item.type';
 
 import type { CreateNotificationRepositoryInput, NotificationsRepository } from './notifications.repository';
 
@@ -21,6 +21,8 @@ type NotificationRow = {
   description: string | null;
   isRead: boolean;
   targetPath: string | null;
+  referenceType: NotificationReferenceType | null;
+  referenceId: string | null;
   createdAt: Date | null;
 };
 
@@ -38,6 +40,8 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
         title: input.title,
         description: input.description,
         targetPath: input.targetPath,
+        referenceType: input.referenceType,
+        referenceId: input.referenceId,
         remindsAt: input.remindsAt,
       },
     });
@@ -57,6 +61,8 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
         title: input.title,
         description: input.description,
         targetPath: input.targetPath,
+        referenceType: input.referenceType,
+        referenceId: input.referenceId,
         remindsAt: input.remindsAt,
       })),
     });
@@ -81,6 +87,8 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
         description: true,
         isRead: true,
         targetPath: true,
+        referenceType: true,
+        referenceId: true,
         createdAt: true,
       },
     });
@@ -100,10 +108,63 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
           })
         : null;
 
+    const references = await this.resolveInvitationReferences(notifications, client);
+
     return {
-      items: notifications.map(n => this.mapNotification(n)),
+      items: notifications.map(n => this.mapNotification(n, references)),
       meta: { count, take: query.take, next },
     };
+  }
+
+  /**
+   * BAND_INVITATION 참조를 가진 알림에 대해 초대의 발신자와 현재 상태를 한 번에 조회한다.
+   * 수락된 초대는 삭제되므로 조회되지 않으며, 해당 알림의 reference는 null이 된다.
+   */
+  private async resolveInvitationReferences(
+    notifications: NotificationRow[],
+    client: Prisma.TransactionClient,
+  ): Promise<Map<string, NotificationReference>> {
+    const invitationIds = notifications
+      .filter(n => n.referenceType === 'BAND_INVITATION' && n.referenceId !== null)
+      .map(n => n.referenceId as string);
+
+    if (invitationIds.length === 0) {
+      return new Map();
+    }
+
+    const invitations = await client.bandInvitation.findMany({
+      where: { id: { in: invitationIds } },
+      select: {
+        id: true,
+        status: true,
+        inviterBandMember: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                profile: { select: { nickname: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return new Map(
+      invitations.map(invitation => [
+        invitation.id,
+        {
+          type: 'BAND_INVITATION' as NotificationReferenceType,
+          id: invitation.id,
+          status: invitation.status,
+          sender: {
+            userId: invitation.inviterBandMember.user.id,
+            nickname: invitation.inviterBandMember.user.profile?.nickname ?? '',
+            avatarUrl: invitation.inviterBandMember.user.profile?.avatarUrl ?? null,
+          },
+        },
+      ]),
+    );
   }
 
   async markNotificationAsRead(
@@ -204,7 +265,9 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
     return tx ?? (this.prisma as unknown as Prisma.TransactionClient);
   }
 
-  private mapNotification(notification: NotificationRow): NotificationListItem {
+  private mapNotification(notification: NotificationRow, references: Map<string, NotificationReference>): NotificationListItem {
+    const reference = notification.referenceId !== null ? (references.get(notification.referenceId) ?? null) : null;
+
     return {
       notificationId: notification.id,
       type: notification.type,
@@ -212,6 +275,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
       description: notification.description ?? '',
       isRead: notification.isRead,
       targetPath: notification.targetPath ?? '',
+      reference,
       createdAt: notification.createdAt?.toISOString() ?? '',
     };
   }

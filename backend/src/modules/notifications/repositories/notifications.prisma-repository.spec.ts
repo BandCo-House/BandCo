@@ -10,6 +10,8 @@ const mockNotification = {
   description: '초대가 도착했습니다.',
   isRead: false,
   targetPath: '/invites/noti-001',
+  referenceType: null,
+  referenceId: null,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
 };
 
@@ -23,6 +25,9 @@ const mockPrisma = {
     updateMany: jest.fn(),
     delete: jest.fn(),
     deleteMany: jest.fn(),
+  },
+  bandInvitation: {
+    findMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -51,6 +56,35 @@ describe('NotificationsPrismaRepository', () => {
       );
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.notificationId).toBe('noti-001');
+    });
+
+    it('BAND_INVITATION 참조 알림에 발신자와 현재 상태를 채운다', async () => {
+      mockPrisma.notification.findMany.mockResolvedValue([{ ...mockNotification, referenceType: 'BAND_INVITATION', referenceId: 'inv-001' }]);
+      mockPrisma.bandInvitation.findMany.mockResolvedValue([
+        {
+          id: 'inv-001',
+          status: 'PENDING',
+          inviterBandMember: { user: { id: 'user-inviter', profile: { nickname: '준혁', avatarUrl: null } } },
+        },
+      ]);
+
+      const result = await repository.findNotifications('user-001', { order__created_at: 'desc', order__id: 'desc', take: 20 });
+
+      expect(result.items[0]?.reference).toEqual({
+        type: 'BAND_INVITATION',
+        id: 'inv-001',
+        status: 'PENDING',
+        sender: { userId: 'user-inviter', nickname: '준혁', avatarUrl: null },
+      });
+    });
+
+    it('참조가 없는 알림의 reference는 null이다', async () => {
+      mockPrisma.notification.findMany.mockResolvedValue([mockNotification]);
+
+      const result = await repository.findNotifications('user-001', { order__created_at: 'desc', order__id: 'desc', take: 20 });
+
+      expect(result.items[0]?.reference).toBeNull();
+      expect(mockPrisma.bandInvitation.findMany).not.toHaveBeenCalled();
     });
 
     it('where__is_read 필터를 적용한다', async () => {
