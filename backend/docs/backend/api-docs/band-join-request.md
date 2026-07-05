@@ -6,14 +6,14 @@
 > - Notion 원본 응답 형식이 `{ status, error, message, data }` 구조이나, 하네스 컨벤션(`ApiSuccessResponse<T>`)에 맞게 `{ data, success }` 형식으로 변환.
 > - #20: Notion properties에 `body: false`, `header: false`로 표기되어 있으나, req 섹션에 `message` body 필드가 명시되어 있어 body 있음으로 처리.
 > - #20, #21, #22(조회): 에러 코드 미명시 — 사용자 확인 필요.
-> - #22(승인), #23: 인증 여부 Notion 원본 미명시 (header: false) — BM/ADMIN 권한 필요할 것으로 추정되나 사용자 확인 필요.
+> - #20, #21, #22(GET/승인/거절), #23: Notion 원본 `header: false`이나 코드 기준 전 엔드포인트 `AccessTokenGuard` 확인 → 인증 필요로 정정.
 
 ---
 
 ## #20 POST /bands/{bandId}/join-requests
 
 **설명:** 유저가 특정 밴드에 가입을 요청한다.
-**인증:** 불필요 (Notion 원본 `header: false`) — 사용자 확인 필요
+**인증:** 필요 (JWT Bearer) — 컨트롤러 `AccessTokenGuard` 확인
 
 ### Request
 
@@ -55,7 +55,7 @@
 ## #21 GET /join-requests/sent
 
 **설명:** 내가 보낸 밴드 가입 요청 목록을 조회한다.
-**인증:** 불필요 (Notion 원본 `header: false`) — 사용자 확인 필요
+**인증:** 필요 (JWT Bearer) — 컨트롤러 `AccessTokenGuard` 확인
 
 ### Request
 
@@ -124,7 +124,7 @@
 ## #22 GET /bands/{bandId}/join-requests
 
 **설명:** 밴드에 요청 온 모든 가입 요청 목록을 조회한다.
-**인증:** 불필요 (Notion 원본 `header: false`) — 사용자 확인 필요
+**인증:** 필요 (JWT Bearer) — 컨트롤러 `AccessTokenGuard` 확인
 
 ### Request
 
@@ -186,7 +186,7 @@
 > ⚠️ Notion 원본에 #22 번호가 중복 사용됨 (GET /bands/{bandId}/join-requests와 동일 번호).
 
 **설명:** 밴드 관리자가 가입 요청을 승인한다.
-**인증:** 불필요 (Notion 원본 `header: false`) — BM/ADMIN 권한 필요 여부 사용자 확인 필요
+**인증:** 필요 (JWT Bearer) — 컨트롤러 `AccessTokenGuard` 확인
 
 ### Request
 
@@ -220,7 +220,7 @@
 ## #23 POST /join-requests/{joinRequestId}/reject
 
 **설명:** 밴드 관리자가 가입 요청을 거절한다.
-**인증:** 불필요 (Notion 원본 `header: false`) — BM/ADMIN 권한 필요 여부 사용자 확인 필요
+**인증:** 필요 (JWT Bearer) — 컨트롤러 `AccessTokenGuard` 확인
 
 ### Request
 
