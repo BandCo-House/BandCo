@@ -202,6 +202,13 @@ const BAND_SONGS = [
   { songId: 'band-song-6', title: 'Attention', artistName: '뉴진스' },
 ];
 
+// team/handlers.ts의 팀과 teamId를 맞춰 상세 필터의 "연습 팀" 선택이 실제로 걸리게 한다.
+const BAND_TEAMS = [
+  { teamId: 'team-1', name: '듀얼 기타' },
+  { teamId: 'team-2', name: '듀얼 보컬' },
+  { teamId: 'team-3', name: '리듬 세션' },
+];
+
 const buildSchedules = (): ScheduleItem[] =>
   SEEDS.map((seed, index) => ({
     scheduleId: seed.id,
@@ -212,7 +219,8 @@ const buildSchedules = (): ScheduleItem[] =>
     endAt: atOffsetDay(seed.endNextDay ? 1 : 0, seed.end[0], seed.end[1]),
     // place=null 시드는 장소 없음 유지, 나머지는 밴드 장소를 순환 배정.
     place: seed.place === null ? null : BAND_PLACES[index % BAND_PLACES.length],
-    // 합주(PRACTICE)에만 밴드 곡을 순환 배정.
+    // 합주(PRACTICE)에만 팀·곡을 순환 배정(회의는 team/songs 없음).
+    team: seed.type === 'PRACTICE' ? BAND_TEAMS[index % BAND_TEAMS.length] : null,
     songs:
       seed.type === 'PRACTICE' ? [BAND_SONGS[index % BAND_SONGS.length]] : [],
     participantCount: seed.participantCount,

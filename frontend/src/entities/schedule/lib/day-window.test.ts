@@ -10,6 +10,7 @@ const makeSchedule = (startAt: string, endAt: string): ScheduleItem => ({
   startAt,
   endAt,
   place: null,
+  team: null,
   songs: [],
   participantCount: 0,
   isMine: false,

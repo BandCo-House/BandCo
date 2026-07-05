@@ -70,8 +70,7 @@ const FilterSection = ({
 
 /**
  * 상세 필터(전체 화면): 연주곡·연습 장소·연습 팀을 다중 선택한다.
- * 곡·장소는 응답의 songs/place로 타임라인을 거른다. 팀은 목록만 채우고,
- * 일정 응답에 team이 없어 타임라인 필터에는 아직 반영되지 않는다(백엔드 보강 필요).
+ * 응답의 songs/place/team으로 타임라인을 클라이언트에서 거른다(다중 선택이라 서버 단일값 파라미터 대신).
  */
 export const ScheduleFilterSheet = ({
   open,
@@ -188,8 +187,7 @@ export const ScheduleFilterSheet = ({
             ))}
           </FilterSection>
 
-          {/* 팀 목록은 GET /bands/:bandId/teams로 채운다. 다만 일정 응답에 team이
-              없어 선택은 저장되지만 타임라인 필터에는 아직 반영되지 않는다. */}
+          {/* 팀 목록은 GET /bands/:bandId/teams로 채우고, 일정 응답의 team으로 타임라인을 거른다. */}
           <FilterSection title="연습 팀">
             {teams.map((team) => (
               <FilterChip

@@ -11,6 +11,7 @@ const makeSchedule = (id: string): ScheduleItem => ({
   startAt: '2026-03-17T00:00:00',
   endAt: '2026-03-17T00:00:00',
   place: null,
+  team: null,
   songs: [],
   participantCount: 0,
   isMine: false,

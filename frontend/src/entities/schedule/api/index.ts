@@ -12,9 +12,11 @@ export interface ScheduleListFilter {
 
 /**
  * 백엔드 일정 목록 쿼리 파라미터 키. 백엔드 합의 시 이 한 곳만 수정한다.
+ *
+ * 곡·장소·팀 상세 필터와 "내가 포함된 일정만"은 서버에도 파라미터(where__place_id/team_id/is_mine)가
+ * 있지만, 상세 필터가 다중 선택이고 토글 시 재요청 없이 즉시 반영돼야 해서 응답을 클라이언트에서 거른다.
+ * 여기서는 fetch 범위를 정하는 날짜·유형만 서버로 보낸다.
  */
-// TODO(백엔드): "내가 포함된 일정만 보기"는 현재 응답 isMine으로 클라이언트 필터링한다.
-// 서버 측 필터(예: where__is_mine)를 제공하면 여기 키를 추가하고 buildScheduleParams에 반영한다.
 const SCHEDULE_QUERY_KEYS = {
   from: 'where__start_at__greater_than_equal',
   to: 'where__start_at__less_than_equal',

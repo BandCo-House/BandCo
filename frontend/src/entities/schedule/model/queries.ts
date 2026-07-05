@@ -13,9 +13,10 @@ export interface DayScheduleFilter {
   date: Date;
   scheduleType?: ScheduleType;
   onlyMine?: boolean;
-  /** 상세 필터(곡·장소). 서버 파라미터가 없어 클라이언트에서 거른다. 빈 배열=제약 없음. */
+  /** 상세 필터(곡·장소·팀). 다중 선택이라 단일값 서버 파라미터로 못 맞춰 클라이언트에서 거른다. 빈 배열=제약 없음. */
   songIds?: string[];
   placeIds?: string[];
+  teamIds?: string[];
 }
 
 export const scheduleQueries = {
@@ -46,6 +47,7 @@ export const useDaySchedules = (spaceId: string, filter: DayScheduleFilter) => {
     onlyMine = false,
     songIds = [],
     placeIds = [],
+    teamIds = [],
   } = filter;
 
   const windowStart = startOfDay(date);
@@ -75,6 +77,12 @@ export const useDaySchedules = (spaceId: string, filter: DayScheduleFilter) => {
             placeIds.length === 0 ||
             (block.schedule.place !== null &&
               placeIds.includes(block.schedule.place.placeId)),
+        )
+        .filter(
+          (block) =>
+            teamIds.length === 0 ||
+            (block.schedule.team !== null &&
+              teamIds.includes(block.schedule.team.teamId)),
         );
 
       return calculateOverlaps(blocks);

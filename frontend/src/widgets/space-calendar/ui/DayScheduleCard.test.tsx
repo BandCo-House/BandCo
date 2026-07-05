@@ -13,6 +13,7 @@ const schedule: ScheduleItem = {
   startAt: '2026-03-17T09:00:00',
   endAt: '2026-03-17T15:00:00',
   place: { placeId: 'place-1', name: '신촌 연습실 A' },
+  team: { teamId: 'team-1', name: '듀얼 기타' },
   songs: [],
   participantCount: 5,
   participants: [

@@ -58,6 +58,7 @@ export const SpaceCalendar = () => {
     onlyMine,
     songIds: detailFilter.songIds,
     placeIds: detailFilter.placeIds,
+    teamIds: detailFilter.teamIds,
   });
 
   const fabActions: SpeedDialAction[] = [

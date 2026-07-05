@@ -40,13 +40,13 @@ export interface ScheduleItem {
   startAt: string; // ISO 8601 (e.g., "2026-02-18T14:00:00+09:00")
   endAt: string;
   place: { placeId: string; name: string } | null;
+  team: { teamId: string; name: string } | null;
   songs: ScheduleSong[];
   participantCount: number;
-  // TODO(백엔드): 일정 목록 item에 참가자 아바타 미리보기(participants)를 추가해야 한다.
-  // 미구현 시 아바타 영역은 비고, 카드 +N은 participantCount만으로 동작한다.
+  // 참가자 아바타 미리보기(앞쪽 일부). 전체 수는 participantCount로 "+N" 표기.
   participants?: ScheduleParticipantPreview[];
   // 현재 사용자 참가 여부. "내가 포함된 일정만 보기" 필터가 이 값으로 거른다.
-  // 아직 안 내려주는 응답을 대비해 optional로 두고 사용처에서 false로 정규화한다.
+  // 안 내려주는 응답을 대비해 optional로 두고 사용처에서 false로 정규화한다.
   isMine?: boolean;
   memo: string | null;
   status: ScheduleStatus;
