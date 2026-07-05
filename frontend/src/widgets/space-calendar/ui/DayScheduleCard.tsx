@@ -175,7 +175,7 @@ export const DayScheduleCard = ({
                 </Avatar>
               ))}
               {overflow > 0 && (
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-grey-200 typo-xs-m text-grey-50">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-grey-300 typo-xs-m text-grey-50">
                   {`+${overflow}`}
                 </span>
               )}

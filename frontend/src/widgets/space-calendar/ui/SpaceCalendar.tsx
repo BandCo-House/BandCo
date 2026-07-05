@@ -9,7 +9,6 @@ import { SpaceSummaryHeader } from '@/entities/space/ui/SpaceSummaryHeader';
 import { ScheduleFilterBar } from '@/features/schedule-filter/ui/ScheduleFilterBar';
 import { ScheduleFilterSheet } from '@/features/schedule-filter/ui/ScheduleFilterSheet';
 import {
-  countDetailFilter,
   EMPTY_DETAIL_FILTER,
   type ScheduleDetailFilter,
   type ScheduleTypeFilter,
@@ -135,7 +134,6 @@ export const SpaceCalendar = () => {
           onlyMine={onlyMine}
           onOnlyMineChange={setOnlyMine}
           onDetailFilterOpen={() => setIsFilterSheetOpen(true)}
-          detailFilterActive={countDetailFilter(detailFilter) > 0}
         />
       </div>
 

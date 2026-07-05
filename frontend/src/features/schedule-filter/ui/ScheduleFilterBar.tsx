@@ -10,8 +10,6 @@ interface ScheduleFilterBarProps {
   onOnlyMineChange: (value: boolean) => void;
   /** 상세 필터(곡·장소) 화면 열기. */
   onDetailFilterOpen?: () => void;
-  /** 상세 필터에 선택이 있으면 아이콘에 표시한다. */
-  detailFilterActive?: boolean;
   className?: string;
 }
 
@@ -27,7 +25,6 @@ export const ScheduleFilterBar = ({
   onlyMine,
   onOnlyMineChange,
   onDetailFilterOpen,
-  detailFilterActive = false,
   className,
 }: ScheduleFilterBarProps) => {
   return (
@@ -60,17 +57,11 @@ export const ScheduleFilterBar = ({
           aria-label="상세 필터"
           onClick={onDetailFilterOpen}
           className={cn(
-            'relative flex h-9 items-center justify-center rounded-full bg-primary px-4 text-gradient-top',
+            'flex h-9 items-center justify-center rounded-full bg-primary px-4 text-gradient-top',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
           )}
         >
           <SlidersHorizontal aria-hidden="true" className="size-4" />
-          {detailFilterActive && (
-            <span
-              aria-hidden="true"
-              className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive"
-            />
-          )}
         </button>
       </div>
 

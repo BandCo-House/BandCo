@@ -49,14 +49,21 @@ export const DayTimeline = ({
   } as CSSProperties;
 
   return (
-    <div className={cn('flex', className)} style={{ height: contentHeight }}>
-      <div className="relative w-14 shrink-0">
+    <div
+      className={cn('grid grid-cols-[auto_1fr]', className)}
+      style={{ height: contentHeight }}
+    >
+      {/* 시간축: auto 폭으로 라벨 콘텐츠만큼만 차지(+좌우 패딩 12), 나머지는 트랙이 가져간다.
+          라벨은 흐름상 grid row로 시각 경계에 배치한다(absolute 불필요). */}
+      <div
+        className="grid items-start px-3 text-right"
+        style={{
+          paddingTop: TOP_PADDING - 8,
+          gridTemplateRows: `repeat(${HOUR_COUNT}, ${SLOT_HEIGHT}px)`,
+        }}
+      >
         {HOUR_LABELS.map(({ offset, hour }) => (
-          <span
-            key={offset}
-            style={{ top: TOP_PADDING + offset * SLOT_HEIGHT - 8 }}
-            className="absolute right-2 typo-xs-m text-grey-200"
-          >
+          <span key={offset} className="typo-xs-m text-grey-200">
             {`${String(hour).padStart(2, '0')}:00`}
           </span>
         ))}
@@ -65,7 +72,7 @@ export const DayTimeline = ({
       {/* 가로 스크롤만 담당하는 일정 영역(시간 레이블과 분리) */}
       <div
         className={cn(
-          '[container-type:inline-size] min-w-0 flex-1 overflow-x-auto overflow-y-hidden',
+          '[container-type:inline-size] min-w-0 overflow-x-auto overflow-y-hidden',
           SCROLLBAR_CLASSES,
         )}
       >
