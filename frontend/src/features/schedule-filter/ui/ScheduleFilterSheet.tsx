@@ -3,6 +3,7 @@ import { RotateCcw, XIcon } from 'lucide-react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
+import { useBandTeams } from '@/entities/team/api/useBandTeams';
 import {
   Sheet,
   SheetContent,
@@ -15,7 +16,7 @@ import { type ScheduleDetailFilter } from '../model/types';
 interface ScheduleFilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** 곡·장소 목록은 밴드 단위 API에서 온다. */
+  /** 곡·장소·팀 목록은 밴드 단위 API에서 온다. */
   bandId: string;
   value: ScheduleDetailFilter;
   onApply: (value: ScheduleDetailFilter) => void;
@@ -67,8 +68,9 @@ const FilterSection = ({
 );
 
 /**
- * 상세 필터(전체 화면): 연주곡·연습 장소를 다중 선택해 일정을 거른다.
- * 연습 팀은 공간/밴드 단위 목록 API가 없어 이번 범위에서 제외한다.
+ * 상세 필터(전체 화면): 연주곡·연습 장소·연습 팀을 다중 선택한다.
+ * 곡·장소는 응답의 songs/place로 타임라인을 거른다. 팀은 목록만 채우고,
+ * 일정 응답에 team이 없어 타임라인 필터에는 아직 반영되지 않는다(백엔드 보강 필요).
  */
 export const ScheduleFilterSheet = ({
   open,
@@ -79,16 +81,19 @@ export const ScheduleFilterSheet = ({
 }: ScheduleFilterSheetProps) => {
   const { data: songs = [] } = useBandSongs(bandId);
   const { data: places = [] } = useBandPlaces(bandId);
+  const { data: teams = [] } = useBandTeams(bandId);
 
   // 열리는 순간 상위 확정값으로 draft를 초기화한다(effect 대신 렌더 중 파생).
   const [songIds, setSongIds] = useState<string[]>(value.songIds);
   const [placeIds, setPlaceIds] = useState<string[]>(value.placeIds);
+  const [teamIds, setTeamIds] = useState<string[]>(value.teamIds);
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
       setSongIds(value.songIds);
       setPlaceIds(value.placeIds);
+      setTeamIds(value.teamIds);
     }
   }
 
@@ -102,7 +107,8 @@ export const ScheduleFilterSheet = ({
   const selectedPlaces = places.filter((place) =>
     placeIds.includes(place.placeId),
   );
-  const hasSelection = songIds.length + placeIds.length > 0;
+  const selectedTeams = teams.filter((team) => teamIds.includes(team.teamId));
+  const hasSelection = songIds.length + placeIds.length + teamIds.length > 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -147,6 +153,15 @@ export const ScheduleFilterSheet = ({
                   onClick={() => toggle(placeIds, setPlaceIds, place.placeId)}
                 />
               ))}
+              {selectedTeams.map((team) => (
+                <FilterChip
+                  key={`selected-team-${team.teamId}`}
+                  selected
+                  removable
+                  label={team.name}
+                  onClick={() => toggle(teamIds, setTeamIds, team.teamId)}
+                />
+              ))}
             </div>
           )}
 
@@ -172,7 +187,18 @@ export const ScheduleFilterSheet = ({
             ))}
           </FilterSection>
 
-          {/* TODO(백엔드): 연습 팀 — 공간/밴드 단위 팀 목록 API가 없어 이 섹션은 보류. */}
+          {/* 팀 목록은 GET /bands/:bandId/teams로 채운다. 다만 일정 응답에 team이
+              없어 선택은 저장되지만 타임라인 필터에는 아직 반영되지 않는다. */}
+          <FilterSection title="연습 팀">
+            {teams.map((team) => (
+              <FilterChip
+                key={team.teamId}
+                selected={teamIds.includes(team.teamId)}
+                label={team.name}
+                onClick={() => toggle(teamIds, setTeamIds, team.teamId)}
+              />
+            ))}
+          </FilterSection>
         </div>
 
         <div className="flex items-center gap-3 px-5 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
@@ -181,6 +207,7 @@ export const ScheduleFilterSheet = ({
             onClick={() => {
               setSongIds([]);
               setPlaceIds([]);
+              setTeamIds([]);
             }}
             className="flex flex-1 items-center justify-center gap-2 rounded-full border border-grey-200 px-4 py-3 typo-sm-b text-grey-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
           >
@@ -190,7 +217,7 @@ export const ScheduleFilterSheet = ({
           <button
             type="button"
             onClick={() => {
-              onApply({ songIds, placeIds });
+              onApply({ songIds, placeIds, teamIds });
               onOpenChange(false);
             }}
             className="flex flex-1 items-center justify-center rounded-full bg-primary px-4 py-3 typo-sm-b text-gradient-top focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
