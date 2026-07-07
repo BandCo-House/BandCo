@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
@@ -64,16 +64,21 @@ export const PlaceCreateModal = ({
     }
   }
 
+  // 미리보기 blob URL은 값이 바뀌거나 언마운트될 때 revoke한다.
+  // (재오픈 초기화·재선택·취소 모두 여기서 한 번에 해제)
+  useEffect(() => {
+    if (!coverPreview) return;
+    return () => URL.revokeObjectURL(coverPreview);
+  }, [coverPreview]);
+
   const clearCover = () => {
-    if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverFile(null);
     setCoverPreview(null);
   };
 
-  const handleCoverSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverFile(file);
     setCoverPreview(URL.createObjectURL(file));
   };
