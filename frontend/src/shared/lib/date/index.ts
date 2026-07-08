@@ -42,6 +42,34 @@ export const addDays = (date: Date, days: number): Date => {
 };
 
 /**
+ * 로컬 시간대 기준으로 날짜를 "YYYY-MM-DD" 문자열로 변환합니다.
+ */
+export const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * 해당 날짜의 로컬 자정(00:00:00.000)을 가리키는 새 Date를 반환합니다.
+ */
+export const startOfDay = (date: Date): Date => {
+  const newDate = new Date(date);
+  newDate.setHours(0, 0, 0, 0);
+  return newDate;
+};
+
+/**
+ * 해당 날짜의 로컬 하루 끝(23:59:59.999)을 가리키는 새 Date를 반환합니다.
+ */
+export const endOfDay = (date: Date): Date => {
+  const newDate = new Date(date);
+  newDate.setHours(23, 59, 59, 999);
+  return newDate;
+};
+
+/**
  * 시작일과 종료일을 받아 "YYYY년 M월 D일 ~ [M월] D일" 포맷의 문자열을 반환합니다.
  */
 export const formatWeekRange = (startDate: Date, endDate: Date): string => {

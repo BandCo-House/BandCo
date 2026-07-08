@@ -22,17 +22,31 @@ const renderWithClient = (ui: React.ReactElement) => {
 
 describe('ScheduleCreateModal', () => {
   it('모달을 열면 초기 스텝으로 합주/회의 선택 화면이 보인다', () => {
-    renderWithClient(<ScheduleCreateModal isOpen={true} onClose={vi.fn()} initialDate={new Date('2026-03-19')} />);
+    renderWithClient(
+      <ScheduleCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        initialDate={new Date('2026-03-19')}
+      />,
+    );
 
     expect(screen.getByText('새 일정 추가')).toBeInTheDocument();
     expect(screen.getByText('어떤 일정을 만드시겠어요?')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /합주 연습/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /합주 연습/ }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /회의/ })).toBeInTheDocument();
   });
 
   it('합주 연습(PRACTICE)을 선택하면 합주 1스텝 폼이 보인다', async () => {
     const user = userEvent.setup();
-    renderWithClient(<ScheduleCreateModal isOpen={true} onClose={vi.fn()} initialDate={new Date('2026-03-19')} />);
+    renderWithClient(
+      <ScheduleCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        initialDate={new Date('2026-03-19')}
+      />,
+    );
 
     await user.click(screen.getByRole('button', { name: /합주 연습/ }));
 
@@ -41,7 +55,13 @@ describe('ScheduleCreateModal', () => {
 
   it('[PRACTICE] 모든 필드를 입력하고 다음을 누르면 곡 선택 화면(2스텝)으로 넘어간다', async () => {
     const user = userEvent.setup();
-    renderWithClient(<ScheduleCreateModal isOpen={true} onClose={vi.fn()} initialDate={new Date('2026-03-19')} />);
+    renderWithClient(
+      <ScheduleCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        initialDate={new Date('2026-03-19')}
+      />,
+    );
     await user.click(screen.getByRole('button', { name: /합주 연습/ }));
 
     // 1스텝 입력
@@ -62,12 +82,21 @@ describe('ScheduleCreateModal', () => {
       http.post('/api/schedule', async ({ request }) => {
         const body = await request.json();
         payloadSpy(body);
-        return HttpResponse.json({ status: 'success', data: { scheduleId: 'test-id' } });
+        return HttpResponse.json({
+          status: 'success',
+          data: { scheduleId: 'test-id' },
+        });
       }),
     );
 
     const user = userEvent.setup();
-    renderWithClient(<ScheduleCreateModal isOpen={true} onClose={vi.fn()} initialDate={new Date('2026-03-19')} />);
+    renderWithClient(
+      <ScheduleCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        initialDate={new Date('2026-03-19')}
+      />,
+    );
 
     // 1스텝
     await user.click(screen.getByRole('button', { name: /합주 연습/ }));
@@ -86,16 +115,18 @@ describe('ScheduleCreateModal', () => {
 
     // API 검증
     await waitFor(() => {
-      expect(payloadSpy).toHaveBeenCalledWith(expect.objectContaining({
-        scheduleType: 'PRACTICE',
-        title: expect.stringContaining('2026-03-19'),
-        startAt: '2026-03-19T19:00:00Z',
-        endAt: '2026-03-19T21:00:00Z',
-        placeId: 'place-3',
-        songId: 'song-1',
-        teamId: 'team-1',
-        status: 'SCHEDULED'
-      }));
+      expect(payloadSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scheduleType: 'PRACTICE',
+          title: expect.stringContaining('2026-03-19'),
+          startAt: '2026-03-19T19:00:00Z',
+          endAt: '2026-03-19T21:00:00Z',
+          placeId: 'place-3',
+          songId: 'song-1',
+          teamId: 'team-1',
+          status: 'PLANNED',
+        }),
+      );
     });
   });
 
@@ -105,12 +136,21 @@ describe('ScheduleCreateModal', () => {
       http.post('/api/schedule', async ({ request }) => {
         const body = await request.json();
         payloadSpy(body);
-        return HttpResponse.json({ status: 'success', data: { scheduleId: 'test-id' } });
+        return HttpResponse.json({
+          status: 'success',
+          data: { scheduleId: 'test-id' },
+        });
       }),
     );
 
     const user = userEvent.setup();
-    renderWithClient(<ScheduleCreateModal isOpen={true} onClose={vi.fn()} initialDate={new Date('2026-03-20')} />);
+    renderWithClient(
+      <ScheduleCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        initialDate={new Date('2026-03-20')}
+      />,
+    );
 
     // 타입 선택
     await user.click(screen.getByRole('button', { name: /회의/ }));
@@ -118,7 +158,9 @@ describe('ScheduleCreateModal', () => {
     // 1스텝 입력
     await user.type(screen.getByLabelText(/회의 제목/), '기획 회의');
     await user.type(screen.getByLabelText(/메모/), '회의 안건 1');
-    await user.click(screen.getByRole('button', { name: /참여자 선택하러 가기/ }));
+    await user.click(
+      screen.getByRole('button', { name: /참여자 선택하러 가기/ }),
+    );
 
     // 2스텝 (참여자 선택)
     const toggleAllBtn = screen.getByRole('button', { name: /전원 선택/ });
@@ -127,14 +169,16 @@ describe('ScheduleCreateModal', () => {
 
     // API 검증
     await waitFor(() => {
-      expect(payloadSpy).toHaveBeenCalledWith(expect.objectContaining({
-        scheduleType: 'MEETING',
-        title: '기획 회의',
-        startAt: '2026-03-20T19:00:00Z',
-        endAt: '2026-03-20T21:00:00Z',
-        memo: '회의 안건 1',
-        status: 'SCHEDULED'
-      }));
+      expect(payloadSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scheduleType: 'MEETING',
+          title: '기획 회의',
+          startAt: '2026-03-20T19:00:00Z',
+          endAt: '2026-03-20T21:00:00Z',
+          memo: '회의 안건 1',
+          status: 'PLANNED',
+        }),
+      );
     });
   });
 });

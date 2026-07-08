@@ -21,6 +21,7 @@ const mockListResult: GetNotificationsResult = {
       description: '초대가 도착했습니다.',
       isRead: false,
       targetPath: '/invites/noti-001',
+      reference: null,
       createdAt: '2026-01-01T00:00:00.000Z',
     },
   ],

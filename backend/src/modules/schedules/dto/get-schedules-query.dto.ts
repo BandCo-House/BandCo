@@ -1,5 +1,7 @@
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { parseOptionalBooleanValue } from 'src/common/validation/transform.util';
+import { booleanValidationMessage } from 'src/common/validation-message/boolean-validation.message';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { intValidationMessage } from 'src/common/validation-message/int-validation.message';
 import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
@@ -48,6 +50,11 @@ export class GetSchedulesQueryDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
+  @IsUUID('4', { message: uuidValidationMessage })
+  where__team_id?: string;
+
+  @IsOptional()
+  @IsString({ message: stringValidationMessage })
   @IsEnum(ScheduleType, { message: enumValidationMessage })
   where__schedule_type?: ScheduleType;
 
@@ -55,6 +62,12 @@ export class GetSchedulesQueryDto {
   @IsString({ message: stringValidationMessage })
   @IsEnum(ScheduleStatus, { message: enumValidationMessage })
   where__status?: ScheduleStatus;
+
+  /** 로그인 사용자가 생성자이거나 참여자인 일정만 조회한다("내가 포함된 일정만 보기"). */
+  @IsOptional()
+  @Transform(parseOptionalBooleanValue)
+  @IsBoolean({ message: booleanValidationMessage })
+  where__is_mine?: boolean;
 }
 
 export type GetSchedulesQuery = GetSchedulesQueryDto;

@@ -106,6 +106,18 @@ function createBandsRepositoryStub(options?: {
   onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
   onUpdateBand?: (bandId: string, input: UpdateBandInput, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
+  bandDetail?: {
+    id: string;
+    name: string;
+    description: string | null;
+    visibility: boolean;
+    coverImgUrl: string | null;
+    bandMasterUserId: string;
+    genres: { id: string; name: string }[];
+    memberCount: number;
+    createdAt: string;
+  } | null;
+  onFindBandDetail?: (bandId: string, tx: unknown) => void;
 }): BandsRepository {
   return {
     async acceptBandInvitation(invitationId, bandId, userId, respondedAt, tx) {
@@ -592,6 +604,25 @@ function createBandsRepositoryStub(options?: {
           userId: 'target-user-001',
           role: input.role,
         },
+      };
+    },
+    async findBandDetail(bandId, tx) {
+      options?.onFindBandDetail?.(bandId, tx);
+
+      if (options?.bandDetail !== undefined) {
+        return options.bandDetail;
+      }
+
+      return {
+        id: bandId,
+        name: '합주하자',
+        description: '주 1회 합주하는 밴드입니다.',
+        visibility: true,
+        coverImgUrl: null,
+        bandMasterUserId: BAND_MASTER_USER_ID,
+        genres: [{ id: ROCK_GENRE_ID, name: 'rock' }],
+        memberCount: 5,
+        createdAt: '2026-03-03T09:20:10.123Z',
       };
     },
   };
@@ -2602,6 +2633,41 @@ describe('BandsService', () => {
       expect(capturedTransactions[0]).toBe(externalTx);
       expect(capturedTransactions[1]).toBe(externalTx);
       expect(capturedTransactions[2]).toBe(externalTx);
+    });
+  });
+
+  describe('getBand', () => {
+    it('밴드가 존재하면 상세 정보를 반환한다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.getBand('band-001');
+
+      expect(result.band.id).toBe('band-001');
+      expect(result.band.name).toBe('합주하자');
+      expect(result.band.memberCount).toBe(5);
+    });
+
+    it('밴드가 없으면 NotFoundException을 던진다', async () => {
+      const repository = createBandsRepositoryStub({ bandDetail: null });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.getBand('band-001')).rejects.toThrow(NotFoundException);
+    });
+
+    it('외부 tx가 있으면 findBandDetail에 그대로 전달한다', async () => {
+      const externalTx = { externalTransaction: true };
+      let capturedTx: unknown;
+      const repository = createBandsRepositoryStub({
+        onFindBandDetail(_bandId, tx) {
+          capturedTx = tx;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.getBand('band-001', externalTx as never);
+
+      expect(capturedTx).toBe(externalTx);
     });
   });
 });

@@ -1,9 +1,11 @@
 # band-invitation API
 
-> 최종 동기화: 2026-06-26
+> 최종 동기화: 2026-07-02
 >
 > ⚠️ 변환 노트:
-> - Notion 원본 응답 형식이 `{ status, error, message, data }` 구조이나, 프로젝트 컨벤션(`ApiSuccessResponse<T>`)에 맞게 `{ data, success }` 형식으로 표기함.
+> - Notion 원본 응답 형식이 `{ status, error, message, data }` 또는 `{ data, success }` 혼재하나, 하네스 컨벤션(`ApiSuccessResponse<T>`)에 맞게 `{ data, success }` 형식으로 통일.
+> - #14: Notion properties의 `body: false`와 달리 req 섹션에 body 필드가 명시되어 있어 body 있음으로 처리.
+> - #14: `자기 자신에게 초대 불가` 400 에러 조건 추가 (Notion 원본 명시).
 > - [설계자 보완 2026-06-26] 인증 여부 → "필요 (JWT Bearer)"로 수정; #14 권한 명시, 409 에러 코드 추가; #15/#16 409 에러 코드 추가; `count` 쿼리 파라미터를 boolean 타입으로 보완; `message` 필드 optional 명시; `next` 타입을 `string | null`로 수정; `meta.totalCount` 필드 추가.
 
 ---
@@ -34,9 +36,9 @@
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|:----:|------|
 | inviteeUserId | string (UUID) | ✅ | 초대 대상 사용자 ID |
-| message | string | ❌ | 초대 메시지 (optional) |
+| message | string | ❌ | 초대 메시지 (최대 500자) |
 
-### Response 201
+### Response 200
 
 ```json
 {
@@ -52,21 +54,21 @@
 }
 ```
 
-### Error Responses
+### Error
 
 | 코드 | 조건 |
 |------|------|
-| 400 | 잘못된 입력 |
-| 401 | 인증 실패 |
-| 403 | 권한 없음 (BM 또는 ADMIN 아님) |
-| 404 | 밴드 또는 대상 유저 없음 |
-| 409 | 이미 밴드 멤버인 사용자 / 이미 초대가 존재함 / 차단된 사용자 |
+| 400 | 잘못된 입력 / 자기 자신에게 초대 불가 |
+| 401 | 인증 실패 (JWT 없음 또는 만료) |
+| 403 | 권한 없음 (BM/ADMIN 아님) / 차단된 사용자 초대 불가 |
+| 404 | 밴드 또는 초대 대상 유저 없음 |
+| 409 | 이미 밴드 멤버 / 이미 초대가 존재함 |
 
 ---
 
 ## #15 POST /invitations/{inviteId}/accept
 
-**설명:** 초대를 받은 유저가 초대를 수락한다.
+**설명:** 초대를 받은 유저가 초대를 수락한다. 본인이 받은 초대만 수락 가능.
 **인증:** 필요 (JWT Bearer)
 
 ### Request
@@ -77,7 +79,7 @@
 |---------|------|:----:|------|
 | inviteId | string (UUID) | ✅ | 수락할 초대 ID |
 
-### Response 201
+### Response 200
 
 ```json
 {
@@ -92,20 +94,20 @@
 }
 ```
 
-### Error Responses
+### Error
 
 | 코드 | 조건 |
 |------|------|
-| 401 | 인증 실패 |
+| 401 | 인증 실패 (JWT 없음 또는 만료) |
 | 403 | 권한 없음 (본인 초대가 아님) |
 | 404 | 초대 없음 |
-| 409 | 이미 처리된 초대 (PENDING 상태가 아님) |
+| 409 | 이미 처리된 초대 (PENDING 상태가 아님) / 이미 밴드 멤버 |
 
 ---
 
 ## #16 POST /invitations/{inviteId}/decline
 
-**설명:** 초대를 받은 유저가 초대를 거절한다.
+**설명:** 초대를 받은 유저가 초대를 거절한다. 본인이 받은 초대만 거절 가능.
 **인증:** 필요 (JWT Bearer)
 
 ### Request
@@ -116,7 +118,7 @@
 |---------|------|:----:|------|
 | inviteId | string (UUID) | ✅ | 거절할 초대 ID |
 
-### Response 201
+### Response 200
 
 ```json
 {
@@ -131,11 +133,11 @@
 }
 ```
 
-### Error Responses
+### Error
 
 | 코드 | 조건 |
 |------|------|
-| 401 | 인증 실패 |
+| 401 | 인증 실패 (JWT 없음 또는 만료) |
 | 403 | 권한 없음 (본인 초대가 아님) |
 | 404 | 초대 없음 |
 | 409 | 이미 처리된 초대 (PENDING 상태가 아님) |
@@ -144,7 +146,7 @@
 
 ## #17 DELETE /invitations/{inviteId}
 
-**설명:** 초대를 보낸 사람이 초대를 취소한다.
+**설명:** 초대를 보낸 사람이 초대를 취소한다. 본인이 보낸 PENDING 상태 초대만 취소 가능.
 **인증:** 필요 (JWT Bearer)
 
 ### Request
@@ -167,11 +169,11 @@
 }
 ```
 
-### Error Responses
+### Error
 
 | 코드 | 조건 |
 |------|------|
-| 401 | 인증 실패 |
+| 401 | 인증 실패 (JWT 없음 또는 만료) |
 | 403 | 권한 없음 (본인이 보낸 초대가 아님) |
 | 404 | 초대 없음 |
 
@@ -179,7 +181,7 @@
 
 ## #18 GET /invitations/received
 
-**설명:** 내가 받은 초대 목록을 조회한다. (Notion 원본 경로: `/invitations/recevied` — 오타)
+**설명:** 내가 받은 초대 목록을 커서 기반 페이지네이션으로 조회한다.
 **인증:** 필요 (JWT Bearer)
 
 ### Request
@@ -190,10 +192,10 @@
 |---------|------|:----:|:-----:|------|
 | count | boolean | ❌ | false | true이면 meta.totalCount에 전체 개수 포함 |
 | take | number | ❌ | 20 | 페이지당 항목 수 |
-| order__created_at | string | ❌ | desc | createdAt 정렬 방향 |
-| order__id | string | ❌ | desc | id 정렬 방향 |
-| cursor__id | string (UUID) | ❌ | - | 커서 ID |
-| where__invitation_status | string | ❌ | PENDING | 초대 상태 필터 |
+| order__created_at | string | ❌ | desc | 생성일 정렬 방향 (`asc` / `desc`) |
+| order__id | string | ❌ | desc | ID 정렬 방향 (`asc` / `desc`) |
+| cursor__id | string (UUID) | ❌ | — | 커서 ID (다음 페이지 조회 시 사용) |
+| where__invitation_status | string | ❌ | PENDING | 초대 상태 필터 (`PENDING` / `ACCEPTED` / `DECLINED` / `EXPIRED`) |
 
 ### Response 200
 
@@ -218,32 +220,31 @@
       }
     ],
     "meta": {
-      "count": 10,
+      "count": 1,
       "take": 20,
       "totalCount": 42,
-      "cursor": {
-        "id": "uuid"
-      },
-      "next": "/invitations/received?take=20&cursor__id=uuid&order__created_at=desc&order__id=desc"
+      "cursor": { "id": "uuid" },
+      "next": "/invitations/received?where__invitation_status=PENDING&order__created_at=desc&order__id=desc&take=20&cursor__id=uuid"
     }
   },
   "success": true
 }
 ```
 
-> `meta.totalCount`: `count=true`이면 전체 개수(COUNT 쿼리 결과), `count=false` 또는 미전달이면 `null`.
+> `meta.totalCount`: `count=true`이면 전체 건수(COUNT 쿼리), `count=false` 또는 미전달이면 `null`.
+> `meta.next`: 다음 페이지가 없으면 `null`.
 
-### Error Responses
+### Error
 
 | 코드 | 조건 |
 |------|------|
-| 401 | 인증 실패 |
+| 401 | 인증 실패 (JWT 없음 또는 만료) |
 
 ---
 
 ## #19 GET /invitations/sent
 
-**설명:** 내가 보낸 초대 목록을 조회한다.
+**설명:** 내가 보낸 초대 목록을 커서 기반 페이지네이션으로 조회한다.
 **인증:** 필요 (JWT Bearer)
 
 ### Request
@@ -254,10 +255,10 @@
 |---------|------|:----:|:-----:|------|
 | count | boolean | ❌ | false | true이면 meta.totalCount에 전체 개수 포함 |
 | take | number | ❌ | 20 | 페이지당 항목 수 |
-| order__created_at | string | ❌ | desc | createdAt 정렬 방향 |
-| order__id | string | ❌ | desc | id 정렬 방향 |
-| cursor__id | string (UUID) | ❌ | - | 커서 ID |
-| where__invitation_status | string | ❌ | PENDING | 초대 상태 필터 |
+| order__created_at | string | ❌ | desc | 생성일 정렬 방향 (`asc` / `desc`) |
+| order__id | string | ❌ | desc | ID 정렬 방향 (`asc` / `desc`) |
+| cursor__id | string (UUID) | ❌ | — | 커서 ID (다음 페이지 조회 시 사용) |
+| where__invitation_status | string | ❌ | PENDING | 초대 상태 필터 (`PENDING` / `ACCEPTED` / `DECLINED` / `EXPIRED`) |
 
 ### Response 200
 
@@ -285,12 +286,10 @@
       }
     ],
     "meta": {
-      "count": 2,
+      "count": 1,
       "take": 20,
       "totalCount": null,
-      "cursor": {
-        "id": "c9d2e4f5-..."
-      },
+      "cursor": { "id": "b8f1c3d2-..." },
       "next": null
     }
   },
@@ -298,10 +297,11 @@
 }
 ```
 
-> `meta.totalCount`: `count=true`이면 전체 개수(COUNT 쿼리 결과), `count=false` 또는 미전달이면 `null`.
+> `meta.totalCount`: `count=true`이면 전체 건수(COUNT 쿼리), `count=false` 또는 미전달이면 `null`.
+> `meta.next`: 다음 페이지가 없으면 `null`.
 
-### Error Responses
+### Error
 
 | 코드 | 조건 |
 |------|------|
-| 401 | 인증 실패 |
+| 401 | 인증 실패 (JWT 없음 또는 만료) |

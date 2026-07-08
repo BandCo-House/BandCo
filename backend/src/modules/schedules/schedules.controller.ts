@@ -49,24 +49,35 @@ export class SchedulesController {
     return createSuccessResponse('합주 일정 삭제 성공', result);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Get('bandspaces/:bandspaceId/schedules')
   async getSpaceSchedules(
+    @Req() request: AuthenticatedRequest,
     @Param('bandspaceId') bandspaceId: string,
     @Query() query: GetSchedulesQueryDto,
   ): Promise<ApiSuccessResponse<GetSpaceSchedulesResult>> {
-    const result = await this.schedulesService.getSpaceSchedules(bandspaceId, query);
+    const result = await this.schedulesService.getSpaceSchedules(bandspaceId, request.user.id, query);
     return createSuccessResponse('합주 일정 목록 조회 성공', result);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Get('schedules/:scheduleId')
-  async getScheduleDetail(@Param('scheduleId') scheduleId: string): Promise<ApiSuccessResponse<GetScheduleDetailResult>> {
-    const result = await this.schedulesService.getScheduleDetail(scheduleId);
+  async getScheduleDetail(
+    @Req() request: AuthenticatedRequest,
+    @Param('scheduleId') scheduleId: string,
+  ): Promise<ApiSuccessResponse<GetScheduleDetailResult>> {
+    const result = await this.schedulesService.getScheduleDetail(scheduleId, request.user.id);
     return createSuccessResponse('합주 일정 상세 조회 성공', result);
   }
 
+  @UseGuards(AccessTokenGuard)
   @Get('bands/:bandId/schedules')
-  async getBandSchedules(@Param('bandId') bandId: string, @Query() query: GetSchedulesQueryDto): Promise<ApiSuccessResponse<GetBandSchedulesResult>> {
-    const result = await this.schedulesService.getBandSchedules(bandId, query);
+  async getBandSchedules(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+    @Query() query: GetSchedulesQueryDto,
+  ): Promise<ApiSuccessResponse<GetBandSchedulesResult>> {
+    const result = await this.schedulesService.getBandSchedules(bandId, request.user.id, query);
     return createSuccessResponse('밴드 일정 목록 조회 성공', result);
   }
 }

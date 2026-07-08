@@ -16,6 +16,7 @@ const BAND_SPACE_ID = '11111111-1111-4111-8111-111111111111';
 const SCHEDULE_ID = '22222222-2222-4222-8222-222222222222';
 const BAND_ID = '33333333-3333-4333-8333-333333333333';
 const BAND_MEMBER_ID = '44444444-4444-4444-8444-444444444444';
+const TEAM_ID = '77777777-7777-4777-8777-777777777777';
 const USER_ID = '66666666-6666-4666-8666-666666666666';
 const SONG_ID = '55555555-5555-4555-8555-555555555555';
 const MEMBER_USER_ID_1 = 'aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -33,6 +34,7 @@ const createScheduleResult: CreateScheduleResult = {
   status: 'PLANNED',
   songs: [],
   participantCount: 0,
+  teamId: null,
   memo: null,
   createdAt: '2026-05-29T00:00:00.000Z',
 };
@@ -63,9 +65,20 @@ const scheduleDetailResult: GetScheduleDetailResult = {
     status: 'PLANNED',
     place: null,
     songs: [{ songId: SONG_ID, title: '좋은 날', artistName: 'IU' }],
-    participants: [{ participantId: 'p-001', bandMemberId: BAND_MEMBER_ID, attendanceStatus: 'PENDING', note: null }],
+    participants: [
+      {
+        participantId: 'p-001',
+        bandMemberId: BAND_MEMBER_ID,
+        userId: USER_ID,
+        nickname: '준혁',
+        avatarUrl: null,
+        attendanceStatus: 'PENDING',
+        note: null,
+      },
+    ],
     memo: null,
     createdByBandMemberId: BAND_MEMBER_ID,
+    isMine: true,
     createdAt: '2026-05-29T00:00:00.000Z',
     updatedAt: '2026-05-29T00:00:00.000Z',
   },
@@ -81,10 +94,13 @@ const spaceSchedulesResult: GetSpaceSchedulesResult = {
       startAt: '2026-06-01T14:00:00.000Z',
       endAt: '2026-06-01T16:00:00.000Z',
       place: null,
+      team: null,
       songs: [],
       participantCount: 1,
+      participants: [{ bandMemberId: BAND_MEMBER_ID, nickname: '준혁', profileImageUrl: null }],
       memo: null,
       status: 'PLANNED',
+      isMine: true,
     },
   ],
   meta: { count: 1, take: 50, cursor: { startAt: '2026-06-01T14:00:00.000Z', id: SCHEDULE_ID }, next: null },
@@ -101,6 +117,7 @@ const bandSchedulesResult: GetBandSchedulesResult = {
       startAt: '2026-06-01T14:00:00.000Z',
       endAt: '2026-06-01T16:00:00.000Z',
       status: 'PLANNED',
+      isMine: false,
     },
   ],
   meta: { count: 1, take: 50, cursor: { startAt: '2026-06-01T14:00:00.000Z', id: SCHEDULE_ID }, next: null },
@@ -132,6 +149,9 @@ function createRepositoryStub(overrides?: Partial<SchedulesRepository>): Schedul
     },
     async findBandMemberByBandSpaceIdAndUserId(bandSpaceId, userId) {
       return bandSpaceId === BAND_SPACE_ID && userId === USER_ID ? { id: BAND_MEMBER_ID } : null;
+    },
+    async findTeamInSameBandAsSpace(teamId, bandSpaceId) {
+      return teamId === TEAM_ID && bandSpaceId === BAND_SPACE_ID ? { id: TEAM_ID } : null;
     },
     async findSpaceMemberUserIds() {
       return [MEMBER_USER_ID_1, MEMBER_USER_ID_2];
@@ -228,6 +248,21 @@ describe('SchedulesService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
+    it('teamId가 해당 밴드의 팀이 아니면 BadRequestException을 던진다', async () => {
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.createSchedule(BAND_SPACE_ID, USER_ID, {
+          title: '합주',
+          scheduleType: ScheduleType.PRACTICE,
+          startAt: '2026-06-01T14:00:00+09:00',
+          endAt: '2026-06-01T16:00:00+09:00',
+          status: ScheduleStatus.PLANNED,
+          teamId: '00000000-0000-4000-8000-000000000000',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('endAt이 startAt보다 이전이면 BadRequestException을 던진다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
@@ -319,7 +354,7 @@ describe('SchedulesService', () => {
     it('updateSchedule 내부 호출이 같은 tx로 처리된다', async () => {
       const capturedTransactions: unknown[] = [];
       const stub = createRepositoryStub({
-        async findScheduleById(id, tx) {
+        async findScheduleById(id, _userId, tx) {
           capturedTransactions.push(tx);
           return id === SCHEDULE_ID ? scheduleDetailResult : undefined;
         },
@@ -379,7 +414,7 @@ describe('SchedulesService', () => {
     it('items와 meta를 반환한다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      const result = await service.getSpaceSchedules(BAND_SPACE_ID, {});
+      const result = await service.getSpaceSchedules(BAND_SPACE_ID, USER_ID, {});
 
       expect(result.items).toHaveLength(1);
       expect(result.meta.cursor).toBeDefined();
@@ -388,7 +423,7 @@ describe('SchedulesService', () => {
     it('밴드 공간이 없으면 NotFoundException을 던진다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      await expect(service.getSpaceSchedules('missing-space-id', {})).rejects.toThrow(NotFoundException);
+      await expect(service.getSpaceSchedules('missing-space-id', USER_ID, {})).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -396,7 +431,7 @@ describe('SchedulesService', () => {
     it('items와 meta를 반환한다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      const result = await service.getBandSchedules(BAND_ID, {});
+      const result = await service.getBandSchedules(BAND_ID, USER_ID, {});
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.space).toBeDefined();
@@ -405,7 +440,7 @@ describe('SchedulesService', () => {
     it('밴드가 없으면 NotFoundException을 던진다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      await expect(service.getBandSchedules('missing-band-id', {})).rejects.toThrow(NotFoundException);
+      await expect(service.getBandSchedules('missing-band-id', USER_ID, {})).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -413,7 +448,7 @@ describe('SchedulesService', () => {
     it('schedule 상세를 반환한다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      const result = await service.getScheduleDetail(SCHEDULE_ID);
+      const result = await service.getScheduleDetail(SCHEDULE_ID, USER_ID);
 
       expect(result.schedule.scheduleId).toBe(SCHEDULE_ID);
       expect(result.schedule.participants).toHaveLength(1);
@@ -423,7 +458,7 @@ describe('SchedulesService', () => {
     it('일정이 없으면 NotFoundException을 던진다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
-      await expect(service.getScheduleDetail('missing-schedule-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getScheduleDetail('missing-schedule-id', USER_ID)).rejects.toThrow(NotFoundException);
     });
   });
 });

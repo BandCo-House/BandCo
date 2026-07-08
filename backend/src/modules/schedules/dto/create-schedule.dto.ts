@@ -51,6 +51,11 @@ export class CreateScheduleBodyDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
+  @IsUUID('4', { message: uuidValidationMessage })
+  teamId?: string;
+
+  @IsOptional()
+  @IsString({ message: stringValidationMessage })
   memo?: string;
 }
 
