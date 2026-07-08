@@ -18,13 +18,13 @@ export const BandCard = ({ band }: BandCardProps) => {
         navigate({ to: '/band/$bandId', params: { bandId: band.id } })
       }
     >
-      <div aria-hidden="true" className="relative h-37.5 w-37.5 rounded-[20px]">
+      <div aria-hidden="true" className="relative h-37.5 w-37.5 rounded-md">
         <img
           src={'default-band.png'}
           alt={band.name}
-          className="h-full w-full rounded-[20px] object-cover"
+          className="h-full w-full rounded-md object-cover"
         />
-        <span className="absolute inset-0 rounded-[20px] bg-linear-to-b from-transparent via-black/20 to-black/80"></span>
+        <span className="absolute inset-0 rounded-md bg-linear-to-b from-transparent via-black/20 to-black/80"></span>
       </div>
 
       <div className="absolute right-2.5 bottom-12 z-20 mt-3 flex items-center justify-end gap-1.5 typo-sm-m text-muted">

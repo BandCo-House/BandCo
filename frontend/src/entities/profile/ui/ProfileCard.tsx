@@ -144,8 +144,8 @@ export function ProfileCard({
         </>
       )}
 
-      <div className="relative z-20 mt-72 mb-12 rounded-xl backdrop-blur-lg">
-        <div className="absolute h-full w-full rounded-xl bg-white/40 backdrop-blur-lg" />
+      <div className="relative z-20 mt-72 mb-12 rounded-md backdrop-blur-lg">
+        <div className="absolute h-full w-full rounded-md bg-white/40 backdrop-blur-lg" />
 
         <div className="relative z-20">
           <div className="flex items-start justify-between gap-4">

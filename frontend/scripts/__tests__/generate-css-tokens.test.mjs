@@ -1,13 +1,23 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import {
-  buildGeneratedTokenCss,
-  DEFAULT_ROUND_FULL,
-} from '../generate-css-tokens.mjs';
+import { buildGeneratedTokenCss } from '../generate-css-tokens.mjs';
+
+const roundSet = {
+  'MOB/MOB': {
+    Round: {
+      xs: { value: 8 },
+      sm: { value: 16 },
+      md: { value: 20 },
+      lg: { value: 999 },
+      full: { value: 999 },
+    },
+  },
+};
 
 describe('buildGeneratedTokenCss', () => {
   it('ColorSystem/Light 토큰이 주어지면 루트 CSS 변수는 토큰 값을 반영해야 한다', () => {
     const css = buildGeneratedTokenCss({
+      ...roundSet,
       'ColorSystem/Light': {
         primary: {
           main: { value: '#111111' },
@@ -54,11 +64,13 @@ describe('buildGeneratedTokenCss', () => {
     expect(css).toContain('--surface-2: #020202;');
     expect(css).toContain('--surface-3: #030303;');
     expect(css).toContain('--greyScale-600: #343434;');
-    expect(css).toContain(`--Round-full: ${DEFAULT_ROUND_FULL};`);
+    expect(css).toContain('--Round-md: 20px;');
+    expect(css).toContain('--Round-full: 999px;');
   });
 
   it('ColorSystem Dark/Dark 토큰이 주어지면 다크 CSS 변수는 다크 토큰 값을 반영해야 한다', () => {
     const css = buildGeneratedTokenCss({
+      ...roundSet,
       'ColorSystem/Light': {
         primary: {
           main: { value: '#111111' },
@@ -148,6 +160,7 @@ describe('buildGeneratedTokenCss', () => {
   it('필수 토큰 value가 없으면 누락된 토큰 경로를 포함한 오류를 던져야 한다', () => {
     expect(() =>
       buildGeneratedTokenCss({
+        ...roundSet,
         'ColorSystem/Light': {
           primary: {
             main: { value: '#111111' },

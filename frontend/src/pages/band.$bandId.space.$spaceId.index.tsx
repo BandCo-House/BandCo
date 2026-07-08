@@ -1,27 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  bandPerformanceTabs,
-  resolvePerformanceHeader,
-} from './-band-header-utils';
-import { WeeklyCalendar } from '@/widgets/weekly-calendar/ui/WeeklyCalendar';
+import { SpaceCalendar } from '@/widgets/space-calendar/ui/SpaceCalendar';
 
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
   component: BandPerformanceRoutePage,
   staticData: {
+    // 페이지가 직접 패딩을 관리한다(공통 본문 px-5 py-8 제거).
+    fullBleed: true,
     header: {
-      title: '공연 상세',
+      // 공간 이름/설명은 본문 요약 헤더에서 보여주므로 앱바 제목은 작은 고정 라벨을 쓴다.
+      title: '내 합주',
+      titleSize: 'md',
       backTo: '/band/$bandId',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
       }),
-      tabs: bandPerformanceTabs,
-      rightActionLabel: '설정',
-      rightActionTo: '/band/$bandId/space/$spaceId/settings',
-      getRightActionParams: (params: Record<string, string>) => ({
-        bandId: params.bandId,
-        spaceId: params.spaceId,
-      }),
-      resolve: resolvePerformanceHeader,
     },
   },
 });
@@ -31,7 +23,7 @@ function BandPerformanceRoutePage() {
   return (
     <div>
       <span className="sr-only">BandPerformancePage</span>
-      <WeeklyCalendar />
+      <SpaceCalendar />
     </div>
   );
 }
