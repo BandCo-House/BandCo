@@ -104,6 +104,10 @@ export class CreateSongBodyDto {
     each: true,
     message: stringValidationMessage,
   })
+  @IsNotEmpty({
+    each: true,
+    message: notemptyValidationMessage,
+  })
   externalLinks?: string[];
 
   @ApiPropertyOptional({ description: '참고자료 파일 목록', type: [SongReferenceFileDto] })

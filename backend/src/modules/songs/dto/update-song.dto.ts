@@ -104,6 +104,10 @@ export class UpdateSongBodyDto {
     each: true,
     message: stringValidationMessage,
   })
+  @IsNotEmpty({
+    each: true,
+    message: notemptyValidationMessage,
+  })
   externalLinks?: string[];
 
   @ApiPropertyOptional({ description: '참고자료 파일 목록 (전달 시 전체 교체, 빈 배열 전달 시 전체 삭제)', type: [SongReferenceFileDto] })
