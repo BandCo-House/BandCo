@@ -7,9 +7,13 @@ export const teamKeys = {
     [...teamKeys.all, 'list', bandId, params] as const,
 };
 
-export const useBandTeams = (bandId: string, params: GetBandTeamsParams = {}) =>
+export const useBandTeams = (
+  bandId: string,
+  params: GetBandTeamsParams = {},
+  options: { enabled?: boolean } = {},
+) =>
   useQuery({
     queryKey: teamKeys.list(bandId, params),
     queryFn: () => getBandTeams(bandId, params),
-    enabled: !!bandId,
+    enabled: (options.enabled ?? true) && !!bandId,
   });

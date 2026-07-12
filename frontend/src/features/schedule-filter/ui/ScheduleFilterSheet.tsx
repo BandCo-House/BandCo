@@ -79,9 +79,10 @@ export const ScheduleFilterSheet = ({
   value,
   onApply,
 }: ScheduleFilterSheetProps) => {
-  const { data: songs = [] } = useBandSongs(bandId);
-  const { data: places = [] } = useBandPlaces(bandId);
-  const { data: teams = [] } = useBandTeams(bandId);
+  // 시트가 닫혀 있을 땐 옵션 목록을 미리 불러오지 않는다.
+  const { data: songs = [] } = useBandSongs(bandId, {}, { enabled: open });
+  const { data: places = [] } = useBandPlaces(bandId, {}, { enabled: open });
+  const { data: teams = [] } = useBandTeams(bandId, {}, { enabled: open });
 
   // 열리는 순간 상위 확정값으로 draft를 초기화한다(effect 대신 렌더 중 파생).
   const [songIds, setSongIds] = useState<string[]>(value.songIds);

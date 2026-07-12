@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog';
 import { TypeSelectStep } from './steps/TypeSelectStep';
 import { PracticeBasicStep } from './steps/PracticeBasicStep';
 import { SongSelectStep } from './steps/SongSelectStep';
@@ -20,7 +25,8 @@ export const ScheduleCreateModal = ({
 }: ScheduleCreateModalProps) => {
   const { state, actions } = useScheduleCreateForm(onClose, initialDate);
   const { scheduleType, currentStep, formData } = state;
-  const { handleTypeSelect, updateForm, handleNextStep, handleSubmit } = actions;
+  const { handleTypeSelect, updateForm, handleNextStep, handleSubmit } =
+    actions;
 
   const renderStep = () => {
     if (currentStep === 0) {
@@ -72,7 +78,9 @@ export const ScheduleCreateModal = ({
           return (
             <MemberSelectStep
               selectedIds={formData.participantUserIds}
-              onChange={(participantUserIds) => updateForm({ participantUserIds })}
+              onChange={(participantUserIds) =>
+                updateForm({ participantUserIds })
+              }
               memo={formData.memo}
               onMemoChange={(memo) => updateForm({ memo })}
               onSubmit={handleSubmit}
@@ -90,13 +98,9 @@ export const ScheduleCreateModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="overflow-hidden border-none p-0 shadow-2xl sm:max-w-xl">
         <DialogHeader className="px-8 pt-8 pb-2">
-          <DialogTitle className="typo-2xl-b text-foreground">
-            새 일정 추가
-          </DialogTitle>
+          <DialogTitle>새 일정 추가</DialogTitle>
         </DialogHeader>
-        <div className="px-8 pb-8">
-          {renderStep()}
-        </div>
+        <div className="px-8 pb-8">{renderStep()}</div>
       </DialogContent>
     </Dialog>
   );

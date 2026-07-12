@@ -274,7 +274,11 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('typo-2xl-b', className)}
+      // 모달 제목 공용 스타일(20px/600/140%/grey-100). 20px SemiBold 유틸이 없어 직접 지정.
+      className={cn(
+        'text-xl leading-[1.4] font-semibold text-grey-100',
+        className,
+      )}
       {...props}
     />
   );
