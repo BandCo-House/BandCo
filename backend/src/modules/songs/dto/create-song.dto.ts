@@ -1,14 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min, ValidateNested } from 'class-validator';
 
 import { normalizeOptionalStringValue, trimStringValue } from '../../../common/validation/transform.util';
 import { enumValidationMessage } from '../../../common/validation-message/enum-validation.message';
+import { intValidationMessage } from '../../../common/validation-message/int-validation.message';
 import { lengthValidationMessage } from '../../../common/validation-message/length-validation.message';
+import { minValidationMessage } from '../../../common/validation-message/min-validation.message';
 import { notemptyValidationMessage } from '../../../common/validation-message/notempty-validation.message';
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
 import { uuidValidationMessage } from '../../../common/validation-message/uuid-validation.message';
 import type { SongSourceType } from '../types/song-preview.type';
+
+import { SongReferenceFileDto } from './song-reference-file.dto';
 
 export const SONG_SOURCE_TYPES = ['SPOTIFY', 'DEEZER'] as const satisfies readonly SongSourceType[];
 
@@ -74,6 +78,44 @@ export class CreateSongBodyDto {
     message: uuidValidationMessage,
   })
   skillTypeIds?: string[];
+
+  @ApiPropertyOptional({ description: '곡 커버 이미지 URL', example: 'https://.../song-covers/uuid.jpg' })
+  @Transform(normalizeOptionalStringValue)
+  @IsOptional()
+  @IsString({
+    message: stringValidationMessage,
+  })
+  songCoverUrl?: string;
+
+  @ApiPropertyOptional({ description: '곡 길이 (초 단위)', example: 355 })
+  @IsOptional()
+  @IsInt({
+    message: intValidationMessage,
+  })
+  @Min(1, {
+    message: minValidationMessage,
+  })
+  songLength?: number;
+
+  @ApiPropertyOptional({ description: '외부 링크 URL 목록', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({
+    each: true,
+    message: stringValidationMessage,
+  })
+  @IsNotEmpty({
+    each: true,
+    message: notemptyValidationMessage,
+  })
+  externalLinks?: string[];
+
+  @ApiPropertyOptional({ description: '참고자료 파일 목록', type: [SongReferenceFileDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SongReferenceFileDto)
+  referenceFiles?: SongReferenceFileDto[];
 }
 
 export type CreateSongInput = CreateSongBodyDto;

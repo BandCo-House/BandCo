@@ -10,6 +10,7 @@ import type { DeleteSongResult } from '../types/delete-song-result.type';
 import type { ActiveBandWithMember, SongWithBandMember } from '../types/song-access-context.type';
 import type { GetBandSongsResult, SongListItem } from '../types/song-list.type';
 import type { SongSourceType } from '../types/song-preview.type';
+import type { SongReferenceFileItem } from '../types/song-reference-file.type';
 import type { UpdateSongResult } from '../types/update-song-result.type';
 
 import type { CreateSongRepositoryInput, SongsRepository } from './songs.repository';
@@ -89,6 +90,11 @@ export class SongsPrismaRepository implements SongsRepository {
           },
           orderBy: {
             skillTypeId: 'asc',
+          },
+        },
+        referenceFiles: {
+          orderBy: {
+            createdAt: 'asc',
           },
         },
       },
@@ -180,6 +186,9 @@ export class SongsPrismaRepository implements SongsRepository {
         sourceUrl: input.sourceUrl,
         sourceType: input.sourceType,
         memo: input.memo,
+        songCoverUrl: input.songCoverUrl,
+        songLength: input.songLength,
+        externalLinks: input.externalLinks,
         createdByBandMemberId: input.createdByBandMemberId,
       },
       select: {
@@ -193,6 +202,9 @@ export class SongsPrismaRepository implements SongsRepository {
         key: true,
         bpm: true,
         difficultyLevel: true,
+        songCoverUrl: true,
+        songLength: true,
+        externalLinks: true,
         createdAt: true,
       },
     });
@@ -202,6 +214,16 @@ export class SongsPrismaRepository implements SongsRepository {
         data: input.skillTypeIds.map(skillTypeId => ({
           songId: song.id,
           skillTypeId,
+        })),
+      });
+    }
+
+    if (input.referenceFiles !== undefined && input.referenceFiles.length > 0) {
+      await client.songReferenceFile.createMany({
+        data: input.referenceFiles.map(referenceFile => ({
+          songId: song.id,
+          fileUrl: referenceFile.fileUrl,
+          fileName: referenceFile.fileName,
         })),
       });
     }
@@ -218,6 +240,21 @@ export class SongsPrismaRepository implements SongsRepository {
       },
     });
 
+    const referenceFiles = await client.songReferenceFile.findMany({
+      where: {
+        songId: song.id,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: {
+        id: true,
+        fileUrl: true,
+        fileName: true,
+        createdAt: true,
+      },
+    });
+
     return {
       song: {
         id: song.id,
@@ -230,6 +267,10 @@ export class SongsPrismaRepository implements SongsRepository {
         key: song.key,
         bpm: song.bpm,
         difficultyLevel: song.difficultyLevel,
+        songCoverUrl: song.songCoverUrl,
+        songLength: song.songLength,
+        externalLinks: song.externalLinks,
+        referenceFiles: this.mapReferenceFiles(referenceFiles),
         userId: input.userId,
         createdAt: song.createdAt.toISOString(),
       },
@@ -265,6 +306,24 @@ export class SongsPrismaRepository implements SongsRepository {
       }
     }
 
+    if (input.referenceFiles !== undefined) {
+      await client.songReferenceFile.deleteMany({
+        where: {
+          songId,
+        },
+      });
+
+      if (input.referenceFiles.length > 0) {
+        await client.songReferenceFile.createMany({
+          data: input.referenceFiles.map(referenceFile => ({
+            songId,
+            fileUrl: referenceFile.fileUrl,
+            fileName: referenceFile.fileName,
+          })),
+        });
+      }
+    }
+
     const updatedSong = await client.song.update({
       where: {
         id: songId,
@@ -283,6 +342,11 @@ export class SongsPrismaRepository implements SongsRepository {
             skillTypeId: 'asc',
           },
         },
+        referenceFiles: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
     });
 
@@ -298,6 +362,10 @@ export class SongsPrismaRepository implements SongsRepository {
         key: updatedSong.key,
         bpm: updatedSong.bpm,
         difficultyLevel: updatedSong.difficultyLevel,
+        songCoverUrl: updatedSong.songCoverUrl,
+        songLength: updatedSong.songLength,
+        externalLinks: updatedSong.externalLinks,
+        referenceFiles: this.mapReferenceFiles(updatedSong.referenceFiles),
         updatedAt: updatedSong.updatedAt.toISOString(),
         skills: updatedSong.songSkills.map(songSkill => ({
           skillTypeId: songSkill.skillTypeId,
@@ -378,7 +446,28 @@ export class SongsPrismaRepository implements SongsRepository {
       data.memo = input.memo;
     }
 
+    if (input.songCoverUrl !== undefined) {
+      data.songCoverUrl = input.songCoverUrl;
+    }
+
+    if (input.songLength !== undefined) {
+      data.songLength = input.songLength;
+    }
+
+    if (input.externalLinks !== undefined) {
+      data.externalLinks = { set: input.externalLinks };
+    }
+
     return data;
+  }
+
+  private mapReferenceFiles(referenceFiles: { id: string; fileUrl: string; fileName: string; createdAt: Date }[]): SongReferenceFileItem[] {
+    return referenceFiles.map(referenceFile => ({
+      id: referenceFile.id,
+      fileUrl: referenceFile.fileUrl,
+      fileName: referenceFile.fileName,
+      createdAt: referenceFile.createdAt.toISOString(),
+    }));
   }
 
   private mapSongListItem(
@@ -393,6 +482,7 @@ export class SongsPrismaRepository implements SongsRepository {
             };
           };
         };
+        referenceFiles: true;
       };
     }>,
   ): SongListItem {
@@ -406,6 +496,10 @@ export class SongsPrismaRepository implements SongsRepository {
       difficultyLevel: song.difficultyLevel,
       sourceUrl: song.sourceUrl,
       sourceType: song.sourceType as SongSourceType | null,
+      songCoverUrl: song.songCoverUrl,
+      songLength: song.songLength,
+      externalLinks: song.externalLinks,
+      referenceFiles: this.mapReferenceFiles(song.referenceFiles),
       createdAt: song.createdAt.toISOString(),
       skills: song.songSkills.map(songSkill => ({
         skillTypeId: songSkill.skillTypeId,
