@@ -153,6 +153,8 @@ export const SpaceCalendar = () => {
       <ScheduleCreateModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        spaceId={spaceId ?? ''}
+        bandId={bandId ?? ''}
         initialDate={selectedDate}
       />
     </div>
