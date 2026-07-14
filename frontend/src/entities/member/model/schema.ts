@@ -4,7 +4,10 @@ import { z } from 'zod';
 export const bandMemberSkillSchema = z.object({
   skillTypeId: z.string(),
   skillName: z.string(),
-  skillLevel: z.number().nullable().default(null),
+  // 백엔드 SkillLevelType(문자열 enum)과 일치. 숫자가 아니다.
+  skillLevel: z
+    .enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED'])
+    .default('BEGINNER'),
   isPrimary: z.boolean().default(false),
 });
 

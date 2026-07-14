@@ -17,13 +17,13 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
       {
         skillTypeId: 'vocal-1',
         skillName: '보컬',
-        skillLevel: 3,
+        skillLevel: 'ADVANCED',
         isPrimary: true,
       },
       {
         skillTypeId: 'guitar-1',
         skillName: '기타',
-        skillLevel: 2,
+        skillLevel: 'INTERMEDIATE',
         isPrimary: false,
       },
     ],
@@ -39,7 +39,7 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
       {
         skillTypeId: 'bass-1',
         skillName: '베이스',
-        skillLevel: 3,
+        skillLevel: 'ADVANCED',
         isPrimary: true,
       },
     ],
@@ -55,7 +55,7 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
       {
         skillTypeId: 'drum-1',
         skillName: '드럼',
-        skillLevel: 3,
+        skillLevel: 'ADVANCED',
         isPrimary: true,
       },
     ],
@@ -71,7 +71,7 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
       {
         skillTypeId: 'keyboard-1',
         skillName: '키보드',
-        skillLevel: 2,
+        skillLevel: 'INTERMEDIATE',
         isPrimary: true,
       },
     ],
