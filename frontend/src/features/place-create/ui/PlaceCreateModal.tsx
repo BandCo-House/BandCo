@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
@@ -12,27 +12,13 @@ import {
 } from '@/shared/ui/sheet';
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
+import { Field, FieldLabel } from '@/shared/ui/field';
 
 interface PlaceCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bandId: string;
 }
-
-const FieldLabel = ({
-  children,
-  required,
-}: {
-  children: ReactNode;
-  required?: boolean;
-}) => (
-  <span className="flex items-center gap-1 typo-lg-sb text-grey-50">
-    {children}
-    {required && (
-      <span aria-hidden="true" className="size-1 rounded-full bg-destructive" />
-    )}
-  </span>
-);
 
 /**
  * 연습 장소 추가(풀스크린). 이름·주소(필수)와 커버 이미지(선택)를 입력한다.
@@ -154,9 +140,9 @@ export const PlaceCreateModal = ({
             </p>
           </div>
 
-          <label className="flex flex-col gap-1">
-            <FieldLabel required>장소 이름</FieldLabel>
+          <Field label="장소 이름" required labelSize="lg" htmlFor="place-name">
             <Input
+              id="place-name"
               variant="underline"
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -164,11 +150,11 @@ export const PlaceCreateModal = ({
               maxLength={120}
               aria-required
             />
-          </label>
+          </Field>
 
-          <label className="flex flex-col gap-1">
-            <FieldLabel required>주소</FieldLabel>
+          <Field label="주소" required labelSize="lg" htmlFor="place-address">
             <Input
+              id="place-address"
               variant="underline"
               value={address}
               onChange={(event) => setAddress(event.target.value)}
@@ -176,10 +162,10 @@ export const PlaceCreateModal = ({
               maxLength={255}
               aria-required
             />
-          </label>
+          </Field>
 
           <div className="flex flex-col gap-2">
-            <FieldLabel>장소 커버</FieldLabel>
+            <FieldLabel size="lg">장소 커버</FieldLabel>
             {coverPreview ? (
               <div className="relative size-20">
                 <img
@@ -197,7 +183,7 @@ export const PlaceCreateModal = ({
                 </button>
               </div>
             ) : (
-              <label className="flex cursor-pointer items-center gap-3 rounded-full border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300">
+              <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300">
                 <Upload aria-hidden="true" className="size-6" />
                 <span className="typo-base-sb">파일을 선택하세요</span>
                 <input
