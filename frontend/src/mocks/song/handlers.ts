@@ -4,11 +4,21 @@ import type { SongListItem } from '@/entities/song/model/types';
 import { API_URL } from '../config';
 
 // 밴드 라이브러리 합주곡 목록 mock (GET /bands/:bandId/songs)
-const bandSongs: SongListItem[] = Array.from({ length: 6 }, (_, i) => ({
+// id/title은 스케줄 mock(schedule/handlers.ts)의 songs와 일치시켜 필터가 동작하게 둔다.
+const SONG_FIXTURES = [
+  { title: '좋은 날', artistName: '아이유' },
+  { title: '봄날', artistName: '방탄소년단' },
+  { title: 'Dynamite', artistName: '방탄소년단' },
+  { title: '밤편지', artistName: '아이유' },
+  { title: '건널목', artistName: 'Whiteusedsocks' },
+  { title: 'Attention', artistName: '뉴진스' },
+];
+
+const bandSongs: SongListItem[] = SONG_FIXTURES.map((fixture, i) => ({
   id: `band-song-${i + 1}`,
   bandId: 'band-1',
-  title: '건널목',
-  artistName: 'Whiteusedsocks',
+  title: fixture.title,
+  artistName: fixture.artistName,
   key: null,
   bpm: 128,
   difficultyLevel: 2,

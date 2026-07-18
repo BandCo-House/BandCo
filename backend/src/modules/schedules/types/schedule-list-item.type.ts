@@ -8,10 +8,19 @@ export interface SpaceScheduleListItem {
   startAt: string | null;
   endAt: string | null;
   place: { placeId: string; name: string } | null;
+  team: { teamId: string; name: string } | null;
   songs: ScheduleSongItem[];
   participantCount: number;
+  participants: ScheduleParticipantPreview[];
   memo: string | null;
   status: string;
+  isMine: boolean;
+}
+
+export interface ScheduleParticipantPreview {
+  bandMemberId: string;
+  nickname: string;
+  profileImageUrl: string | null;
 }
 
 export interface ScheduleListCursor {

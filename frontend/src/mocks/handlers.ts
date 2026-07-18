@@ -10,6 +10,8 @@ import { scheduleHandlers } from './schedule/handlers';
 import { songHandlers } from './song/handlers';
 import { songTeamHandlers } from './song-team/handlers';
 import { spaceHandlers } from './space/handlers';
+import { storageHandlers } from './storage/handlers';
+import { teamHandlers } from './team/handlers';
 import { skillHandlers } from './skill/handlers';
 import { genreHandlers } from './genre/handlers';
 
@@ -26,6 +28,8 @@ export const handlers = [
   ...songHandlers,
   ...songTeamHandlers,
   ...spaceHandlers,
+  ...storageHandlers,
+  ...teamHandlers,
   ...skillHandlers,
   ...genreHandlers,
 ];

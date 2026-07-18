@@ -1,6 +1,7 @@
 import type { SongKey } from '../../../generated/prisma';
 
 import type { SongSourceType } from './song-preview.type';
+import type { SongReferenceFileItem } from './song-reference-file.type';
 
 export interface SongListSkillItem {
   skillTypeId: string;
@@ -17,6 +18,10 @@ export interface SongListItem {
   difficultyLevel: number | null;
   sourceUrl: string | null;
   sourceType: SongSourceType | null;
+  songCoverUrl: string | null;
+  songLength: number | null;
+  externalLinks: string[];
+  referenceFiles: SongReferenceFileItem[];
   createdAt: string;
   skills: SongListSkillItem[];
 }

@@ -10,9 +10,10 @@ export const placeKeys = {
 export const useBandPlaces = (
   bandId: string,
   params: GetBandPlacesParams = {},
+  options: { enabled?: boolean } = {},
 ) =>
   useQuery({
     queryKey: placeKeys.list(bandId, params),
     queryFn: () => getBandPlaces(bandId, params),
-    enabled: !!bandId,
+    enabled: (options.enabled ?? true) && !!bandId,
   });

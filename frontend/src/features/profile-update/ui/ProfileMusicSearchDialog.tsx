@@ -86,9 +86,7 @@ export function ProfileMusicSearchDialog({
       <AppDialogContent className="p-8 text-grey-50">
         <AppDialogClose aria-label="곡 검색 닫기" />
         <AppDialogHeader>
-          <DialogTitle className="text-2xl font-bold text-grey-50">
-            곡 검색
-          </DialogTitle>
+          <DialogTitle>곡 검색</DialogTitle>
         </AppDialogHeader>
 
         <AppDialogBody className="gap-0">

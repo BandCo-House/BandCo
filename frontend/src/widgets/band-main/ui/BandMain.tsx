@@ -9,6 +9,7 @@ import { WeekDatePicker } from '@/shared/ui/week-date-picker';
 import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
 import { useBandSpaces } from '@/entities/space/api/useBandSpaces';
 import { BandSpaceCard } from '@/entities/space/ui/BandSpaceCard';
+import { SpaceCreateModal } from '@/features/space-create/ui/SpaceCreateModal';
 import { BandNoticeSection } from './BandNoticeSection';
 
 type SpaceFilter = 'mine' | 'inProgress';
@@ -30,16 +31,17 @@ export const BandMain = () => {
   const { bandId } = useParams({ from: '/band/$bandId/' });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [filter, setFilter] = useState<SpaceFilter>('mine');
+  const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
   const { data: spaces, isLoading } = useBandSpaces(
     bandId,
     FILTER_PARAMS[filter],
   );
 
-  // 멤버 초대/새 합주/새 일정은 별도 컨텍스트가 필요해 시각만 우선 구현한다.
-  // TODO: 기존 band-invite / space-create / schedule-create 모달과 연결.
+  // 멤버 초대/새 일정은 별도 컨텍스트가 필요해 시각만 우선 구현한다.
+  // TODO: 기존 band-invite / schedule-create 모달과 연결.
   const fabActions: SpeedDialAction[] = [
     { label: '멤버 초대' },
-    { label: '새 합주' },
+    { label: '새 합주', onClick: () => setIsSpaceModalOpen(true) },
     { label: '새 일정' },
   ];
 
@@ -82,6 +84,12 @@ export const BandMain = () => {
       </div>
 
       <SpeedDialFab className="bottom-24" actions={fabActions} />
+
+      <SpaceCreateModal
+        open={isSpaceModalOpen}
+        onOpenChange={setIsSpaceModalOpen}
+        bandId={bandId}
+      />
     </div>
   );
 };

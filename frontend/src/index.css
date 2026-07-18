@@ -7,14 +7,7 @@
 
 @theme inline {
   --shadow-drop: 0px 0px 20px 2px rgba(255, 255, 255, 0.4);
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 1.75rem;
-  --radius-4xl: 2rem;
-  --radius-full: var(--Round-full);
+  --radius-md: var(--Round-md);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--surface-card);

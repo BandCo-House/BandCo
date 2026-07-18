@@ -139,9 +139,30 @@ export const spaceHandlers = [
     const space =
       spaces.find((item) => item.spaceId === params.spaceId) ?? spaces[0];
 
-    return HttpResponse.json<ApiResponse<{ space: Space }>>({
+    // 상세 응답은 멤버 배열과 곡 수를 함께 반환한다(헤더 요약용).
+    const members = Array.from({ length: space.memberCount ?? 0 }, (_, i) => ({
+      bandMemberId: `member-${i + 1}`,
+      nickname: `멤버${i + 1}`,
+      role: 'MEMBER',
+      status: 'ACTIVE',
+      joinedAt: '2026-01-01',
+    }));
+
+    return HttpResponse.json<
+      ApiResponse<{
+        space: Space;
+        members: unknown[];
+        songCount: number;
+        scheduleCount: number;
+      }>
+    >({
       success: true,
-      data: { space },
+      data: {
+        space,
+        members,
+        songCount: space.songCount ?? 0,
+        scheduleCount: 0,
+      },
     });
   }),
   http.post(`${API_URL}/bands/:bandId/bandspaces`, async ({ request }) => {

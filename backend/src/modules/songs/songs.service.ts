@@ -229,8 +229,23 @@ export class SongsService {
     const hasSourceType = input.sourceType !== undefined;
     const hasMemo = input.memo !== undefined;
     const hasSkillTypeIds = input.skillTypeIds !== undefined;
+    const hasSongCoverUrl = input.songCoverUrl !== undefined;
+    const hasSongLength = input.songLength !== undefined;
+    const hasExternalLinks = input.externalLinks !== undefined;
+    const hasReferenceFiles = input.referenceFiles !== undefined;
 
-    if (!hasTitle && !hasArtistName && !hasSourceUrl && !hasSourceType && !hasMemo && !hasSkillTypeIds) {
+    if (
+      !hasTitle &&
+      !hasArtistName &&
+      !hasSourceUrl &&
+      !hasSourceType &&
+      !hasMemo &&
+      !hasSkillTypeIds &&
+      !hasSongCoverUrl &&
+      !hasSongLength &&
+      !hasExternalLinks &&
+      !hasReferenceFiles
+    ) {
       throw new BadRequestException('수정할 곡 정보가 필요합니다.');
     }
   }

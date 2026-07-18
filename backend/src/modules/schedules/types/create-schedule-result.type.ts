@@ -16,6 +16,7 @@ export interface CreateScheduleResult {
   status: string;
   songs: ScheduleSongItem[];
   participantCount: number;
+  teamId: string | null;
   memo: string | null;
   createdAt: string;
 }

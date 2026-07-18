@@ -24,6 +24,7 @@ import type { BandGenreItem, CreateBandInvitationSuccessItem } from '../types/cr
 import type { DeclineBandInvitationResult } from '../types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from '../types/delete-band-invitation-result.type';
 import type { DeleteBandResult } from '../types/delete-band-result.type';
+import type { GetBandResult } from '../types/get-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult, MyBandListItem } from '../types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from '../types/received-band-invitation-list.type';
@@ -51,7 +52,7 @@ export class BandsPrismaRepository implements BandsRepository {
    * @param {string} invitationId - 수락할 초대 ID
    * @param {string} bandId - 가입할 밴드 ID
    * @param {string} userId - 가입할 사용자 ID
-   * @param {Date} _respondedAt - 기존 인터페이스 호환을 위해 받지만 초대 삭제 정책에서는 저장하지 않는 응답 시각
+   * @param {Date} respondedAt - 초대 응답 시각
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<AcceptBandInvitationResult>} 수락 처리 결과
    */
@@ -59,7 +60,7 @@ export class BandsPrismaRepository implements BandsRepository {
     invitationId: string,
     bandId: string,
     userId: string,
-    _respondedAt: Date,
+    respondedAt: Date,
     tx?: Prisma.TransactionClient,
   ): Promise<AcceptBandInvitationResult> {
     const client = tx ?? this.prisma;
@@ -75,9 +76,17 @@ export class BandsPrismaRepository implements BandsRepository {
       },
     });
 
-    await client.bandInvitation.delete({
+    const invitation = await client.bandInvitation.update({
       where: {
         id: invitationId,
+      },
+      data: {
+        status: 'ACCEPTED',
+        respondedAt,
+      },
+      select: {
+        status: true,
+        respondedAt: true,
       },
     });
 
@@ -85,7 +94,7 @@ export class BandsPrismaRepository implements BandsRepository {
       invitationId,
       bandId,
       userId,
-      invitationStatus: 'ACCEPTED',
+      invitationStatus: invitation.status,
       joinedAt: member.joinedAt.toISOString(),
     };
   }
@@ -811,6 +820,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const invitations = await client.bandInvitation.findMany({
       where: {
@@ -847,7 +857,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -896,6 +906,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandInvitationsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const invitations = await client.bandInvitation.findMany({
       where: {
@@ -931,7 +942,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -980,6 +991,7 @@ export class BandsPrismaRepository implements BandsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSentBandJoinRequestsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const joinRequests = await client.bandJoinRequest.findMany({
       where: {
@@ -999,7 +1011,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -1032,6 +1044,7 @@ export class BandsPrismaRepository implements BandsRepository {
    */
   async findBandJoinRequests(bandId: string, query: GetBandJoinRequestsQuery, tx?: Prisma.TransactionClient): Promise<GetBandJoinRequestsResult> {
     const client = tx ?? this.prisma;
+    const { orderBy } = parseToPrismaQuery(query);
 
     const joinRequests = await client.bandJoinRequest.findMany({
       where: {
@@ -1056,7 +1069,7 @@ export class BandsPrismaRepository implements BandsRepository {
           },
         },
       },
-      orderBy: [{ createdAt: query.order__created_at }, { id: query.order__id }],
+      orderBy,
       take: query.take + 1,
       ...(query.cursor__id !== undefined ? { cursor: { id: query.cursor__id }, skip: 1 } : {}),
     });
@@ -1848,6 +1861,52 @@ export class BandsPrismaRepository implements BandsRepository {
       message: joinRequest.message,
       joinRequestStatus: joinRequest.status,
       createdAt: joinRequest.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * bandId로 삭제되지 않은 밴드 상세 정보를 장르·멤버 수와 함께 조회한다.
+   *
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandResult['band'] | null>} 밴드 상세 정보, 없으면 null
+   */
+  async findBandDetail(bandId: string, tx?: Prisma.TransactionClient): Promise<GetBandResult['band'] | null> {
+    const client = tx ?? this.prisma;
+
+    const band = await client.band.findFirst({
+      where: { id: bandId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        visibility: true,
+        coverImgUrl: true,
+        bandMasterUserId: true,
+        createdAt: true,
+        bandGenres: {
+          select: {
+            genre: { select: { id: true, name: true } },
+          },
+        },
+        _count: { select: { members: true } },
+      },
+    });
+
+    if (band === null) {
+      return null;
+    }
+
+    return {
+      id: band.id,
+      name: band.name,
+      description: band.description,
+      visibility: band.visibility,
+      coverImgUrl: band.coverImgUrl,
+      bandMasterUserId: band.bandMasterUserId,
+      genres: band.bandGenres.map(bg => bg.genre),
+      memberCount: band._count.members,
+      createdAt: band.createdAt.toISOString(),
     };
   }
 

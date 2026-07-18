@@ -32,6 +32,7 @@
 | 중간 | `docs/backend/conventions.md` | ORDER_DIRECTIONS는 Prisma 호환을 위해 소문자(`'asc'`/`'desc'`)로 정의한다는 규칙 추가 필요. songs는 소문자, places는 대문자로 불일치 발생 — 대문자를 쓰면 repository에서 `.toLowerCase() as 'asc' \| 'desc'` 캐스트 우회가 필요해짐. | places 모듈 리뷰 중 |
 | 낮음 | `.claude/agents/be-designer.md` | cursor__created_at 날짜 유효성 검사(`Number.isNaN`) 패턴을 Service 비즈니스 규칙 체크리스트에 추가. bands는 `validateCursorPair`에서 날짜 파싱 후 NaN 체크를 하는데 places에는 누락되어 잘못된 날짜가 Prisma에 전달될 수 있음. | bands와 places 비교 중 발견 |
 | 높음 | `CLAUDE.md`, `.claude/agents/be-orchestrator.md` | 하네스 Phase 4(QA) 이후 PR 생성을 Phase 5로 추가해야 함. 현재는 QA 통과 후 설계 문서 보관으로 끝나는데, API 단위로 작업할 때 PR까지 생성하는 흐름이 표준화되어야 함. `/pr` 슬래시 커맨드 또는 `be-orchestrate` 스킬 마지막 단계에 PR 생성 안내를 포함하는 방식 검토. | places 모듈 전체 구현 완료 후 PR 생성이 흐름에서 빠져 있음을 발견 |
+| 중간 | `src/modules/songs/songs.service.spec.ts` | 파일 전체가 손으로 만든 Repository Stub이 아닌 `jest.Mocked<SongsRepository>` + `jest.fn()` 패턴으로 작성되어 있어 "Backend 필수 규칙"(auth 제외 TestingModule/jest.fn() 금지)과 충돌. 곡 미디어 필드(songCoverUrl 등) 추가 작업에서는 기존 패턴에 값만 추가했고, 파일 전체를 Stub 패턴으로 재작성하는 것은 해당 작업 범위를 벗어나 별도 리팩터링으로 분리 필요. | 곡 생성/수정 API에 songCoverUrl·referenceFiles·externalLinks·songLength 추가 후 be-qa 검증 중 발견 |
 
 **기록 방법** (한 줄씩 추가):
 

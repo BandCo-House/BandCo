@@ -30,7 +30,7 @@ export const PlaceSelect = ({ value, onChange, label }: PlaceSelectProps) => {
           id={id}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="typo-sm-r h-12 w-full appearance-none rounded-2xl border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
+          className="typo-sm-r h-12 w-full appearance-none rounded-md border border-border bg-input pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring/50"
         >
           <option value="" disabled>
             장소 선택

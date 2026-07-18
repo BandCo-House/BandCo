@@ -54,7 +54,7 @@ export const PageHeader = ({
 
   return (
     <header
-      className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 bg-gradient-top/60 backdrop-blur-sm"
+      className="fixed top-0 z-50 w-full max-w-[648px] shrink-0 bg-gradient-top/65 backdrop-blur-sm"
       style={
         bottomBlur
           ? { boxShadow: '0px 8px 40px 0px rgba(221, 254, 85, 0.12)' }

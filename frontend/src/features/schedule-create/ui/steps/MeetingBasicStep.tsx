@@ -34,7 +34,7 @@ export const MeetingBasicStep = ({
             placeholder="회의 제목을 입력해주세요"
             value={data.title}
             onChange={(e) => onChange({ title: e.target.value })}
-            className="h-12 rounded-2xl"
+            className="h-12 rounded-md"
           />
         </div>
 
@@ -60,7 +60,7 @@ export const MeetingBasicStep = ({
             placeholder="회의 관련 메모를 입력해주세요"
             value={data.memo}
             onChange={(e) => onChange({ memo: e.target.value })}
-            className="typo-sm-r placeholder:text-muted flex min-h-24 w-full rounded-2xl border border-border bg-input px-3 py-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="typo-sm-r placeholder:text-muted flex min-h-24 w-full rounded-md border border-border bg-input px-3 py-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
       </div>
@@ -68,7 +68,7 @@ export const MeetingBasicStep = ({
       <Button
         onClick={onNext}
         disabled={isNextDisabled}
-        className="typo-lg-b mt-4 h-12 rounded-2xl"
+        className="typo-lg-b mt-4 h-12 rounded-md"
       >
         참여자 선택하러 가기
       </Button>

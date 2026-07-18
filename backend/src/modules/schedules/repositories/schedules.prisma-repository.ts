@@ -58,6 +58,12 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       });
     }
 
+    if (input.teamId) {
+      await client.scheduleTeam.create({
+        data: { scheduleId: schedule.id, teamId: input.teamId },
+      });
+    }
+
     const songs =
       songIds.length > 0
         ? await client.song.findMany({
@@ -80,9 +86,18 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       status: schedule.status,
       songs: songs.map(s => ({ songId: s.id, title: s.title, artistName: s.artistName })),
       participantCount,
+      teamId: input.teamId ?? null,
       memo: schedule.memo,
       createdAt: schedule.createdAt.toISOString(),
     };
+  }
+
+  async findTeamInSameBandAsSpace(teamId: string, bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    return client.team.findFirst({
+      where: { id: teamId, band: { bandSpaces: { some: { id: bandSpaceId } } } },
+      select: { id: true },
+    });
   }
 
   async findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
@@ -102,7 +117,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     return members.map(m => m.bandMember.userId);
   }
 
-  async findScheduleById(scheduleId: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult | undefined> {
+  async findScheduleById(scheduleId: string, userId?: string, tx?: Prisma.TransactionClient): Promise<GetScheduleDetailResult | undefined> {
     const client = tx ?? this.prisma;
 
     const row = await client.schedule.findUnique({
@@ -110,11 +125,28 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       include: {
         place: { select: { id: true, name: true, address: true } },
         scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
-        participants: { select: { id: true, bandMemberId: true, attendanceStatus: true, note: true } },
+        createdByBandMember: { select: { userId: true } },
+        participants: {
+          select: {
+            id: true,
+            bandMemberId: true,
+            attendanceStatus: true,
+            note: true,
+            bandMember: {
+              select: {
+                userId: true,
+                user: { select: { profile: { select: { nickname: true, avatarUrl: true } } } },
+              },
+            },
+          },
+        },
       },
     });
 
     if (!row) return undefined;
+
+    // 로그인 사용자가 생성자이거나 참여자이면 본인과 연관된 일정으로 본다.
+    const isMine = userId !== undefined && (row.createdByBandMember.userId === userId || row.participants.some(p => p.bandMember.userId === userId));
 
     return {
       schedule: {
@@ -130,11 +162,15 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         participants: row.participants.map(p => ({
           participantId: p.id,
           bandMemberId: p.bandMemberId,
+          userId: p.bandMember.userId,
+          nickname: p.bandMember.user.profile?.nickname ?? '',
+          avatarUrl: p.bandMember.user.profile?.avatarUrl ?? null,
           attendanceStatus: p.attendanceStatus ?? null,
           note: p.note ?? null,
         })),
         memo: row.memo,
         createdByBandMemberId: row.createdByBandMemberId,
+        isMine,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
       },
@@ -222,9 +258,39 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     });
   }
 
-  async findSchedulesByBandId(bandId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSchedulesResult> {
+  /**
+   * 일정 목록 조회의 AND 결합 조건을 만든다.
+   * cursor 기반 keyset 조건과 "내가 포함된 일정만"(where__is_mine) 조건을 함께 담아
+   * 최상위 OR 키 충돌 없이 결합한다.
+   */
+  private buildScheduleListAndConditions(query: GetSchedulesQuery, userId: string): Prisma.ScheduleWhereInput[] {
+    const and: Prisma.ScheduleWhereInput[] = [];
+
+    if (query.cursor__start_at && query.cursor__id) {
+      and.push({
+        OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
+      });
+    }
+
+    // 생성자이거나 참여자이면 본인과 연관된 일정으로 본다. isMine 플래그와 판정 기준이 같다.
+    if (query.where__is_mine) {
+      and.push({
+        OR: [{ createdByBandMember: { userId } }, { participants: { some: { bandMember: { userId } } } }],
+      });
+    }
+
+    return and;
+  }
+
+  async findSchedulesByBandId(
+    bandId: string,
+    query: GetSchedulesQuery,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetBandSchedulesResult> {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
+    const and = this.buildScheduleListAndConditions(query, userId);
 
     const where: Prisma.ScheduleWhereInput = {
       bandSpace: { bandId, deletedAt: null },
@@ -238,10 +304,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       ...(query.where__place_id && { placeId: query.where__place_id }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
-      ...(query.cursor__start_at &&
-        query.cursor__id && {
-          OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
-        }),
+      ...(and.length > 0 ? { AND: and } : {}),
     };
 
     const rows = await client.schedule.findMany({
@@ -250,6 +313,8 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       take: take + 1,
       include: {
         bandSpace: { select: { id: true, name: true } },
+        createdByBandMember: { select: { userId: true } },
+        participants: { where: { bandMember: { userId } }, select: { id: true }, take: 1 },
       },
     });
 
@@ -275,15 +340,22 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
           startAt: row.startAt?.toISOString() ?? null,
           endAt: row.endAt?.toISOString() ?? null,
           status: row.status,
+          isMine: row.createdByBandMember.userId === userId || row.participants.length > 0,
         }),
       ),
       meta,
     };
   }
 
-  async findSchedulesBySpaceId(bandSpaceId: string, query: GetSchedulesQuery, tx?: Prisma.TransactionClient): Promise<GetSpaceSchedulesResult> {
+  async findSchedulesBySpaceId(
+    bandSpaceId: string,
+    query: GetSchedulesQuery,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetSpaceSchedulesResult> {
     const client = tx ?? this.prisma;
     const take = query.take ?? 50;
+    const and = this.buildScheduleListAndConditions(query, userId);
 
     const where: Prisma.ScheduleWhereInput = {
       bandSpaceId,
@@ -295,12 +367,10 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         },
       }),
       ...(query.where__place_id && { placeId: query.where__place_id }),
+      ...(query.where__team_id && { scheduleTeams: { some: { teamId: query.where__team_id } } }),
       ...(query.where__schedule_type && { scheduleType: query.where__schedule_type }),
       ...(query.where__status && { status: query.where__status }),
-      ...(query.cursor__start_at &&
-        query.cursor__id && {
-          OR: [{ startAt: { gt: new Date(query.cursor__start_at) } }, { startAt: new Date(query.cursor__start_at), id: { gt: query.cursor__id } }],
-        }),
+      ...(and.length > 0 ? { AND: and } : {}),
     };
 
     const rows = await client.schedule.findMany({
@@ -309,8 +379,20 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       take: take + 1,
       include: {
         place: { select: { id: true, name: true } },
+        scheduleTeams: { select: { team: { select: { id: true, name: true } } }, take: 1 },
         scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
-        _count: { select: { participants: true } },
+        createdByBandMember: { select: { userId: true } },
+        participants: {
+          select: {
+            bandMemberId: true,
+            bandMember: {
+              select: {
+                userId: true,
+                user: { select: { profile: { select: { nickname: true, avatarUrl: true } } } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -334,10 +416,17 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         startAt: row.startAt?.toISOString() ?? null,
         endAt: row.endAt?.toISOString() ?? null,
         place: row.place ? { placeId: row.place.id, name: row.place.name } : null,
+        team: row.scheduleTeams[0] ? { teamId: row.scheduleTeams[0].team.id, name: row.scheduleTeams[0].team.name } : null,
         songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName })),
-        participantCount: row._count.participants,
+        participantCount: row.participants.length,
+        participants: row.participants.map(p => ({
+          bandMemberId: p.bandMemberId,
+          nickname: p.bandMember.user.profile?.nickname ?? '',
+          profileImageUrl: p.bandMember.user.profile?.avatarUrl ?? null,
+        })),
         memo: row.memo,
         status: row.status,
+        isMine: row.createdByBandMember.userId === userId || row.participants.some(p => p.bandMember.userId === userId),
       })),
       meta,
     };

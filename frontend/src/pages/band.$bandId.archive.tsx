@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { getBand } from '@/entities/band/api/band-api';
 import { ComingSoon } from '@/shared/ui/coming-soon';
 import { bandMainTabStaticData } from './-band-main-route';
 
 export const Route = createFileRoute('/band/$bandId/archive')({
   component: BandArchiveRoutePage,
+  loader: ({ params }) => getBand(params.bandId),
   staticData: bandMainTabStaticData,
 });
 

@@ -44,9 +44,7 @@ export const BandCreateDialog = ({
         <AppDialogClose />
 
         <AppDialogHeader>
-          <DialogTitle className="text-2xl text-grey-100">
-            밴드 만들기
-          </DialogTitle>
+          <DialogTitle>밴드 만들기</DialogTitle>
         </AppDialogHeader>
 
         <AppDialogBody>
@@ -104,7 +102,7 @@ export const BandCreateDialog = ({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                'relative flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-grey-500/30 px-5 text-muted transition hover:border-ring',
+                'relative flex items-center gap-3 overflow-hidden rounded-md border border-border bg-grey-500/30 px-5 text-muted transition hover:border-ring',
                 preview
                   ? 'h-48 w-48 rounded-full'
                   : 'h-14 w-full rounded-l-full rounded-r-full',

@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 
 import { apiClient } from '@/shared/api/client';
-import { createSpace, getBandSpaces, getSpace } from './space-api';
+import {
+  createSpace,
+  getBandSpaces,
+  getSpace,
+  getSpaceDetail,
+} from './space-api';
 
 const mock = new MockAdapter(apiClient);
 
@@ -75,6 +80,33 @@ describe('band space api 어댑터', () => {
 
     expect(result.spaceId).toBe('space-1');
     expect(result.spaceType).toBe('PERFORMANCE');
+  });
+
+  it('상세 응답에서 멤버 수(members 길이)와 곡 수를 요약해 반환한다', async () => {
+    mock.onGet('/bandspaces/space-1').reply(200, {
+      success: true,
+      data: {
+        space: {
+          spaceId: 'space-1',
+          bandId: 'band-1',
+          name: '2026 하계 공연 무대',
+          description: '여름 축제 공연 준비',
+          spaceType: 'PERFORMANCE',
+          status: 'ACTIVE',
+          startDate: '2026-07-01',
+          endDate: '2026-09-05',
+        },
+        members: [{ bandMemberId: 'm-1' }, { bandMemberId: 'm-2' }],
+        songCount: 6,
+        scheduleCount: 4,
+      },
+    });
+
+    const result = await getSpaceDetail('space-1');
+
+    expect(result.space.name).toBe('2026 하계 공연 무대');
+    expect(result.memberCount).toBe(2);
+    expect(result.songCount).toBe(6);
   });
 
   it('스페이스를 bandspaces 경로로 생성한다', async () => {

@@ -41,4 +41,30 @@ export const placeHandlers = [
       },
     });
   }),
+
+  // 연습 장소 생성 mock (POST /bands/:bandId/places)
+  http.post(`${API_URL}/bands/:bandId/places`, async ({ params, request }) => {
+    const { bandId } = params as { bandId: string };
+    const body = (await request.json()) as {
+      name: string;
+      address: string;
+      detailAddress?: string;
+      imageUrl?: string;
+    };
+
+    return HttpResponse.json<ApiResponse<Place>>({
+      success: true,
+      data: {
+        placeId: `place-created-${Date.now()}`,
+        bandId,
+        name: body.name,
+        address: body.address,
+        detailAddress: body.detailAddress ?? null,
+        imageUrl: body.imageUrl ?? null,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }),
 ];

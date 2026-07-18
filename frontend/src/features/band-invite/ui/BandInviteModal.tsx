@@ -76,9 +76,9 @@ export function BandInviteModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-2xl border-slate-800 bg-slate-900 text-slate-100">
+      <DialogContent className="max-w-sm rounded-md border-slate-800 bg-slate-900 text-slate-100">
         <DialogHeader>
-          <DialogTitle className="typo-xl-b flex items-center gap-2 text-white">
+          <DialogTitle className="flex items-center gap-2">
             <UserPlus className="size-5 text-violet-400" />
             밴드 초대하기
           </DialogTitle>
@@ -96,7 +96,7 @@ export function BandInviteModal({
               <select
                 value={selectedBandId}
                 onChange={(e) => setSelectedBandId(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 typo-sm-r text-slate-200 focus:border-violet-500 focus:outline-none"
+                className="w-full rounded-md border border-slate-800 bg-slate-950 p-3 typo-sm-r text-slate-200 focus:border-violet-500 focus:outline-none"
               >
                 {availableBands.map((b) => (
                   <option key={b.id} value={b.id}>
