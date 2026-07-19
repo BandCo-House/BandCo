@@ -1,25 +1,13 @@
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
 import type { ScheduleDetail } from '@/entities/schedule/model/types';
-import { pad2 } from '@/shared/ui/wheel-date';
+import { formatClockTime, formatDotDate } from '@/shared/lib/date';
 import { MemberCard } from './components/MemberCard';
 
 interface ScheduleDetailViewProps {
   detail: ScheduleDetail;
   bandId: string;
 }
-
-const formatDate = (iso: string | null): string => {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}. ${pad2(d.getDate())}`;
-};
-
-const formatTime = (iso: string | null): string => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-};
 
 const InfoItem = ({
   icon: Icon,
@@ -45,7 +33,7 @@ export const ScheduleDetailView = ({
   );
 
   const timeRange = detail.startAt
-    ? `${formatTime(detail.startAt)}-${formatTime(detail.endAt)}`
+    ? `${formatClockTime(detail.startAt)}-${formatClockTime(detail.endAt)}`
     : '-';
 
   return (
@@ -60,7 +48,7 @@ export const ScheduleDetailView = ({
 
       {/* 날짜 / 시간 / 장소 */}
       <div className="flex items-center justify-center gap-3 py-8">
-        <InfoItem icon={Calendar}>{formatDate(detail.startAt)}</InfoItem>
+        <InfoItem icon={Calendar}>{formatDotDate(detail.startAt)}</InfoItem>
         <InfoItem icon={Clock}>{timeRange}</InfoItem>
         <InfoItem icon={MapPin}>{detail.place?.name ?? '장소 없음'}</InfoItem>
       </div>
