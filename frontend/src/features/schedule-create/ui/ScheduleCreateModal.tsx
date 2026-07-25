@@ -130,7 +130,7 @@ export const ScheduleCreateModal = ({
           합주·회의 일정을 추가하거나 수정하고 상세를 확인합니다.
         </SheetDescription>
 
-        <header className="flex items-center gap-4 py-3 pr-5 pl-2.5">
+        <header className="flex items-center gap-4 bg-gradient-top/65 py-3 pr-5 pl-2.5 header-glow backdrop-blur-sm">
           <button
             type="button"
             aria-label="뒤로 가기"

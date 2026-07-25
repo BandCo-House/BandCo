@@ -23,7 +23,7 @@ export const ScheduleActionBar = ({
   primaryDisabled,
   primaryLoading,
 }: ScheduleActionBarProps) => (
-  <div className="flex items-center justify-end gap-3 border-t border-white/24 bg-gradient-to-b from-gradient-top to-gradient-bottom px-5 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))]">
+  <div className="flex items-center justify-end gap-3 bg-gradient-top/65 px-5 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] footer-glow backdrop-blur-sm">
     <Button
       type="button"
       variant="outline"

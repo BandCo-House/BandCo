@@ -119,7 +119,7 @@ export const PlaceCreateModal = ({
           연습 장소의 이름·주소·커버를 입력해 추가합니다.
         </SheetDescription>
 
-        <header className="flex items-center py-3 pr-5 pl-2.5">
+        <header className="flex items-center bg-gradient-top/65 py-3 pr-5 pl-2.5 header-glow backdrop-blur-sm">
           <button
             type="button"
             aria-label="뒤로 가기"
@@ -197,7 +197,7 @@ export const PlaceCreateModal = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-9 px-5 py-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-end gap-3 bg-gradient-top/65 px-5 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] footer-glow backdrop-blur-sm">
           <Button
             type="button"
             variant="outline"
