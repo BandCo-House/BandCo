@@ -31,6 +31,7 @@ describe('resolveHeader', () => {
     expect(resolved).toEqual({
       showBack: true,
       backBehavior: 'route',
+      bottomBlur: true,
       title: '동적 제목',
       subtitle: '기본 부제',
       resolve: expect.any(Function),

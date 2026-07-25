@@ -130,6 +130,16 @@
   border-width: 0.5px 0.5px 1px 0.5px;
 }
 
+/* 헤더 하단 글로우(공용). 라우트 PageHeader와 풀스크린 모달 헤더가 함께 쓴다. */
+@utility header-glow {
+  box-shadow: 0px 8px 40px 0px rgba(221, 254, 85, 0.12);
+}
+
+/* 푸터 상단 글로우(header-glow의 위쪽 방향 미러). 풀스크린 모달 하단 액션바에 쓴다. */
+@utility footer-glow {
+  box-shadow: 0px -8px 40px 0px rgba(221, 254, 85, 0.12);
+}
+
 /* ===== Typography ===== */
 
 @utility typo-3xl-b {
