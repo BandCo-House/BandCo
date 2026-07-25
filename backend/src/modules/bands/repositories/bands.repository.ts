@@ -25,7 +25,7 @@ import type { DeleteBandResult } from '../types/delete-band-result.type';
 import type { GetBandResult } from '../types/get-band-result.type';
 import type { LeaveBandResult } from '../types/leave-band-result.type';
 import type { GetMyBandsResult } from '../types/my-band-list.type';
-import type { GetReceivedBandInvitationsResult } from '../types/received-band-invitation-list.type';
+import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from '../types/received-band-invitation-list.type';
 import type { RejectBandJoinRequestResult } from '../types/reject-band-join-request-result.type';
 import type { GetSentBandInvitationsResult } from '../types/sent-band-invitation-list.type';
 import type { GetSentBandJoinRequestsResult } from '../types/sent-band-join-request-list.type';
@@ -93,6 +93,7 @@ export interface BandsRepository {
     query: GetReceivedBandInvitationsQuery,
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult>;
+  findBandInvitationDetail(invitationId: string, tx?: Prisma.TransactionClient): Promise<ReceivedBandInvitationListItem | null>;
   findSentBandInvitations(userId: string, query: GetSentBandInvitationsQuery, tx?: Prisma.TransactionClient): Promise<GetSentBandInvitationsResult>;
   findSentBandJoinRequests(
     userId: string,

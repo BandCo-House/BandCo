@@ -305,3 +305,50 @@
 | 코드 | 조건 |
 |------|------|
 | 401 | 인증 실패 (JWT 없음 또는 만료) |
+
+---
+
+## #20 GET /invitations/{invitationId}
+
+**설명:** 초대받은 사용자가 자신의 밴드 초대를 단건으로 조회한다.
+**인증:** 필요 (JWT Bearer)
+**권한:** 초대받은 사용자 본인만 조회 가능
+
+### Request
+
+**Path Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|:----:|------|
+| invitationId | string (UUID) | ✅ | 초대 ID |
+
+### Response 200
+
+```json
+{
+  "data": {
+    "invitationId": "uuid",
+    "band": {
+      "bandId": "uuid",
+      "name": "Rocking Stars",
+      "description": "직장인 밴드"
+    },
+    "inviter": {
+      "userId": "uuid",
+      "nickname": "Jun"
+    },
+    "message": "같이 밴드 하실래요?",
+    "invitationStatus": "PENDING",
+    "createdAt": "2026-04-30T10:00:00.000Z"
+  },
+  "success": true
+}
+```
+
+### Error
+
+| 코드 | 조건 |
+|------|------|
+| 401 | 인증 실패 (JWT 없음 또는 만료) |
+| 403 | 권한 없음 (본인이 받은 초대가 아님) |
+| 404 | 초대 없음 |
