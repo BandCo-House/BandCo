@@ -11,6 +11,38 @@ import {
 const baseForm = (): ScheduleFormState =>
   createEmptyForm(new Date('2026-03-01T00:00:00'));
 
+// 로컬 타임 기준 상세(분 정규화·status 왕복 검증용). startAt/endAt은 Z 없이 로컬로 해석되게 둔다.
+const makeDetail = (
+  overrides: Partial<ScheduleDetail> = {},
+): ScheduleDetail => ({
+  scheduleId: 'sch-1',
+  spaceId: 'space-1',
+  scheduleType: 'MEETING',
+  title: '정기회의',
+  startAt: '2026-03-01T14:30:00',
+  endAt: '2026-03-01T15:30:00',
+  status: 'PLANNED',
+  place: { placeId: 'place-1', name: '연습실 A', address: '' },
+  songs: [],
+  participants: [
+    {
+      participantId: 'p1',
+      bandMemberId: 'member-1',
+      userId: 'user-1',
+      nickname: '김민수',
+      avatarUrl: null,
+      attendanceStatus: null,
+      note: null,
+    },
+  ],
+  memo: '안건 조율',
+  createdByBandMemberId: 'member-1',
+  isMine: true,
+  createdAt: '2026-03-01T00:00:00.000Z',
+  updatedAt: '2026-03-01T00:00:00.000Z',
+  ...overrides,
+});
+
 describe('toScheduleRequest', () => {
   it('합주는 songIds로 감싸고 title/memo를 trim한다', () => {
     const req = toScheduleRequest({
@@ -140,5 +172,23 @@ describe('detailToForm', () => {
       participantBandMemberIds: ['member-1'],
       memo: '안건 조율',
     });
+  });
+
+  it('원본 status(CANCELED/DONE 등)를 폼에 보존하고 저장 요청에 그대로 싣는다', () => {
+    const form = detailToForm(makeDetail({ status: 'CANCELED' }));
+    expect(form.status).toBe('CANCELED');
+    // 수정 저장 시 PLANNED로 덮어쓰지 않는다.
+    expect(toScheduleRequest(form).status).toBe('CANCELED');
+  });
+
+  it('15분 단위가 아닌 분은 진입 시 내림 정규화해 표시=저장을 맞춘다', () => {
+    const form = detailToForm(
+      makeDetail({
+        startAt: '2026-03-01T14:37:00',
+        endAt: '2026-03-01T15:52:00',
+      }),
+    );
+    expect(form.startTime).toBe('14:30');
+    expect(form.endTime).toBe('15:45');
   });
 });

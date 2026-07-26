@@ -247,6 +247,9 @@ const membersById = new Map(BAND_MEMBERS.map((m) => [m.bandMemberId, m]));
 // 생성/수정한 일정을 상세로 되돌려주기 위한 인메모리 스토어(세션 한정).
 const scheduleStore = new Map<string, ScheduleDetail>();
 
+/** 테스트 간 생성/수정 일정이 새지 않도록 스토어를 비운다(test setup afterEach에서 호출). */
+export const resetScheduleStore = () => scheduleStore.clear();
+
 const buildParticipants = (
   ids: string[] = [],
   scheduleId: string,

@@ -55,7 +55,9 @@ export const WheelColumn = ({
     <div
       ref={ref}
       onScroll={handleScroll}
-      role="listbox"
+      // listbox roving-focus를 구현하지 않으므로 역할을 과장하지 않는다. 항목은 각자 포커스 가능한
+      // 토글 버튼(aria-pressed)이라 group으로 묶어 선택 상태만 정직하게 노출한다.
+      role="group"
       aria-label={label}
       // overscroll-contain: 모달(Radix Dialog)의 스크롤 잠금과 충돌하지 않게 스크롤을 이 안에 가둔다.
       className={cn(
@@ -71,8 +73,7 @@ export const WheelColumn = ({
           <button
             key={item}
             type="button"
-            role="option"
-            aria-selected={selected}
+            aria-pressed={selected}
             onClick={() => onChange(item)}
             className={cn(
               'flex w-full snap-center items-center justify-center typo-base-sb transition-colors',

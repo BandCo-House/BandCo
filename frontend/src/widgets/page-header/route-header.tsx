@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, useRouter } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { cn } from '@/shared/lib/utils';
-import { Button } from '@/shared/ui/button';
+import { Button, buttonVariants } from '@/shared/ui/button';
 import type { HeaderStaticConfig } from './types';
 
 const HEIGHT_CLASSES = {
@@ -58,29 +58,32 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
           params,
         }) ??
         false;
-      const tabButton = (
-        <Button
-          type="button"
-          variant={isActive ? 'default' : 'outline'}
-          size="sm"
-          data-variant={isActive ? 'default' : 'outline'}
-          onClick={tab.onClick}
-        >
-          {tab.label}
-        </Button>
-      );
+      const variant = isActive ? 'default' : 'outline';
 
+      // 링크 탭은 <a> 자체를 버튼 스타일로 렌더링한다(예전엔 <a><button> 중첩으로 HTML 규격 위반).
       return tabPath ? (
         <Link
           key={tab.key}
           to={tabPath as never}
           {...(tabParams ? { params: tabParams as never } : {})}
           {...(tabSearch ? { search: tabSearch as never } : {})}
+          onClick={tab.onClick}
+          data-variant={variant}
+          className={buttonVariants({ variant, size: 'sm' })}
         >
-          {tabButton}
+          {tab.label}
         </Link>
       ) : (
-        <span key={tab.key}>{tabButton}</span>
+        <Button
+          key={tab.key}
+          type="button"
+          variant={variant}
+          size="sm"
+          data-variant={variant}
+          onClick={tab.onClick}
+        >
+          {tab.label}
+        </Button>
       );
     });
 
@@ -90,10 +93,10 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
         <Link
           to={header.rightActionTo as never}
           {...(rightActionParams ? { params: rightActionParams as never } : {})}
+          data-variant="outline"
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
         >
-          <Button type="button" variant="outline" size="sm">
-            {header.rightActionLabel}
-          </Button>
+          {header.rightActionLabel}
         </Link>
       ) : null;
 

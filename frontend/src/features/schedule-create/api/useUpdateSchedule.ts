@@ -8,8 +8,12 @@ export const useUpdateSchedule = (scheduleId: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateScheduleRequest) =>
-      updateSchedule(scheduleId as string, data),
+    mutationFn: (data: UpdateScheduleRequest) => {
+      if (!scheduleId) {
+        return Promise.reject(new Error('scheduleId가 필요해요.'));
+      }
+      return updateSchedule(scheduleId, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduleQueries.all });
       if (scheduleId) {
