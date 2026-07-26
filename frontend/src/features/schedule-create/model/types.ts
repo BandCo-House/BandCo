@@ -8,7 +8,7 @@ import type {
 
 export type { ScheduleType } from '@/entities/schedule/model/types';
 
-/** 합주/회의 공용 폼 상태. 합주 전용(songId·sessionSkillId)과 참여자는 유형에 따라 취사선택된다. */
+/** 합주/회의 공용 폼 상태. 합주 전용(songId)과 참여자는 유형에 따라 취사선택된다. */
 export interface ScheduleFormState {
   scheduleType: ScheduleType;
   title: string;
@@ -18,9 +18,7 @@ export interface ScheduleFormState {
   placeId: string | null;
   /** 합주(PRACTICE) 전용. 백엔드는 배열로 받으므로 전송 시 [songId]로 감싼다. */
   songId: string | null;
-  /** 합주 세션 선택(플레이 파트). 멤버 목록을 좁히는 UI 필터로만 쓰고 전송하지 않는다. */
-  sessionSkillId: string | null;
-  /** 합주=멤버 / 회의=참여자. 둘 다 bandMemberId 배열. */
+  /** 참여자 bandMemberId 배열(합주·회의 공통). */
   participantBandMemberIds: string[];
   memo: string;
 }
@@ -36,7 +34,6 @@ export const createEmptyForm = (initialDate?: Date): ScheduleFormState => ({
   endTime: '21:00',
   placeId: null,
   songId: null,
-  sessionSkillId: null,
   participantBandMemberIds: [],
   memo: '',
 });
@@ -108,7 +105,6 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
     endTime: hhmm(end),
     placeId: detail.place?.placeId ?? null,
     songId: detail.songs[0]?.songId ?? null,
-    sessionSkillId: null,
     participantBandMemberIds: detail.participants.map((p) => p.bandMemberId),
     memo: detail.memo ?? '',
   };
@@ -118,6 +114,8 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
 export const isFormValid = (form: ScheduleFormState): boolean => {
   if (form.title.trim().length === 0) return false;
   if (!form.placeId) return false;
+  // 참여자는 합주·회의 공통 필수. 합주는 곡도 필수.
+  if (form.participantBandMemberIds.length === 0) return false;
   if (form.scheduleType === 'PRACTICE') return !!form.songId;
-  return form.participantBandMemberIds.length > 0;
+  return true;
 };

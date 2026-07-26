@@ -70,11 +70,21 @@ describe('toScheduleRequest', () => {
 });
 
 describe('isFormValid', () => {
-  it('합주는 이름·장소·곡이 모두 있어야 유효하다', () => {
+  it('합주는 이름·장소·곡·참여자가 모두 있어야 유효하다', () => {
     const form = baseForm();
     expect(isFormValid(form)).toBe(false);
+    // 참여자가 없으면 곡이 있어도 무효.
     expect(
       isFormValid({ ...form, title: '합주', placeId: 'p', songId: 's' }),
+    ).toBe(false);
+    expect(
+      isFormValid({
+        ...form,
+        title: '합주',
+        placeId: 'p',
+        songId: 's',
+        participantBandMemberIds: ['member-1'],
+      }),
     ).toBe(true);
   });
 
