@@ -1,5 +1,6 @@
 import { pad2, type WheelDate } from '@/shared/ui/wheel-date';
 import { WheelTimePicker } from '@/shared/ui/wheel-time-picker';
+import { useFieldRequired } from '@/shared/ui/field-context';
 
 interface ScheduleTimeSheetProps {
   /** 스케줄 화면에서 보고 있던 날짜(읽기 전용). 휠로 바꾸지 않는다. */
@@ -55,9 +56,15 @@ export const ScheduleTimeSheet = ({
   onEndTimeChange,
 }: ScheduleTimeSheetProps) => {
   const endDate = endTime <= startTime ? addOneDay(date) : date;
+  const fieldRequired = useFieldRequired();
 
   return (
-    <div className="flex flex-col gap-6 rounded-md field-border border-surface-1 bg-white/24 px-5 py-8 shadow-[0px_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-md">
+    <div
+      role="group"
+      aria-label="시작·종료 시간"
+      aria-required={fieldRequired || undefined}
+      className="flex flex-col gap-6 rounded-md field-border border-surface-1 bg-white/24 px-5 py-8 shadow-[0px_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-md"
+    >
       <Row date={date} time={startTime} onChange={onStartTimeChange} />
       <Row date={endDate} time={endTime} onChange={onEndTimeChange} />
     </div>

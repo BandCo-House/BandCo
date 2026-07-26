@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/utils';
+import { FieldRequiredContext } from './field-context';
 
 interface FieldLabelProps {
   children: ReactNode;
@@ -66,6 +67,9 @@ export const Field = ({
     <FieldLabel htmlFor={htmlFor} required={required} size={labelSize}>
       {label}
     </FieldLabel>
-    {children}
+    {/* required를 하위 컨트롤로 전달해 각자 aria-required를 붙이게 한다. */}
+    <FieldRequiredContext.Provider value={Boolean(required)}>
+      {children}
+    </FieldRequiredContext.Provider>
   </div>
 );

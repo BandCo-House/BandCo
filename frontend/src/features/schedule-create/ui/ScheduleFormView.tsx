@@ -102,7 +102,6 @@ export const ScheduleFormView = ({
             isPractice ? '합주 이름을 입력하세요' : '회의 이름을 입력하세요'
           }
           maxLength={40}
-          aria-required
         />
       </Field>
 

@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { cn } from '@/shared/lib/utils';
+import { useFieldRequired } from './field-context';
 
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -33,6 +34,7 @@ export const SegmentedToggle = <T extends string>({
   variant = 'filter',
 }: SegmentedToggleProps<T>) => {
   const isTab = variant === 'tab';
+  const fieldRequired = useFieldRequired();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const moveSelection = (currentIndex: number, delta: number) => {
@@ -59,6 +61,7 @@ export const SegmentedToggle = <T extends string>({
     <div
       role="group"
       aria-label={label}
+      aria-required={fieldRequired || undefined}
       className={cn(
         'flex items-center gap-2',
         isTab &&

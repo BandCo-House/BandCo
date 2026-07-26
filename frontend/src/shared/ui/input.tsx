@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/shared/lib/utils';
 import { Search } from 'lucide-react';
+import { useFieldRequired } from './field-context';
 
 const inputVariantClassNames = {
   roundedFull:
@@ -45,6 +46,11 @@ const Input = ({
       ? { ...props, 'aria-label': defaultSearchAriaLabel }
       : props;
 
+  // 상위 Field가 required면 aria-required를 자동 부여(명시값이 있으면 그대로 존중).
+  const fieldRequired = useFieldRequired();
+  const ariaRequired =
+    inputProps['aria-required'] ?? (fieldRequired || undefined);
+
   const inputElement = (
     <input
       type={type}
@@ -57,6 +63,7 @@ const Input = ({
         className,
       )}
       {...inputProps}
+      aria-required={ariaRequired}
     />
   );
 

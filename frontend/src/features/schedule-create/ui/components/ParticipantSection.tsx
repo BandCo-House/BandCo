@@ -54,7 +54,13 @@ export const ParticipantSection = ({
   ];
 
   return (
-    <section className="flex flex-col gap-3">
+    // Field로 감싸지 않는 커스텀 레이아웃이라 그룹 자체에 필수 의미를 부여한다.
+    <section
+      className="flex flex-col gap-3"
+      role="group"
+      aria-label="참여자"
+      aria-required
+    >
       <div className="flex items-center justify-between">
         <FieldLabel required>참여자</FieldLabel>
         <button
