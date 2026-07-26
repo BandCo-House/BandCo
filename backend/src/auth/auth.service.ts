@@ -78,9 +78,9 @@ export class AuthService {
 
   /**
    * 이메일과 비밀번호로 유저를 생성하고 토큰 쌍을 발급한다.
-   * @param nickname 프로필 닉네임으로 저장할 이름. 생략하면 임의 닉네임이 생성된다.
+   * @param nickname 프로필 닉네임으로 저장할 이름
    */
-  async registerWithEmail(email: string, password: string, nickname?: string) {
+  async registerWithEmail(email: string, password: string, nickname: string) {
     const hash = await bcrypt.hash(password, this.bcryptSaltRounds);
     const newUser = await this.usersService.createUserWithEmail(email, hash, nickname);
     return this.loginUser(newUser.email!, newUser.id);

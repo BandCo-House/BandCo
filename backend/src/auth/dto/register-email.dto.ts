@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { lengthValidationMessage } from 'src/common/validation-message/length-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
@@ -22,10 +22,9 @@ export class RegisterEmailDto {
   })
   password: string;
 
-  @ApiPropertyOptional({ description: '이름 (프로필 닉네임으로 저장된다. 생략하면 임의 닉네임이 생성된다)', example: '홍길동' })
-  @IsOptional()
+  @ApiProperty({ description: '이름 (프로필 닉네임으로 저장된다)', example: '홍길동' })
   @IsString({ message: stringValidationMessage })
   @MinLength(2, { message: lengthValidationMessage })
   @MaxLength(255, { message: lengthValidationMessage })
-  name?: string;
+  name: string;
 }

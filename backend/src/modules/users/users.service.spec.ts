@@ -143,11 +143,11 @@ describe('UsersService', () => {
 
   describe('createUserWithEmail', () => {
     it('이미 존재하는 이메일이면 BadRequestException을 던진다', async () => {
-      await expect(service.createUserWithEmail('test@example.com', 'hashed')).rejects.toThrow(BadRequestException);
+      await expect(service.createUserWithEmail('test@example.com', 'hashed', '홍길동')).rejects.toThrow(BadRequestException);
     });
 
     it('새 이메일이면 유저를 생성하여 반환한다', async () => {
-      const result = await service.createUserWithEmail('new@example.com', 'hashed');
+      const result = await service.createUserWithEmail('new@example.com', 'hashed', '홍길동');
       expect(result.email).toBe('new@example.com');
     });
 

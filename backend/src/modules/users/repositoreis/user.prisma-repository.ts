@@ -9,7 +9,6 @@ import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
 import type { ProfileMusicTrack } from '../types/profile-music.type';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
-import { generateRandomNickname } from '../util/nickname_maker';
 
 import type { AuthUser, DeleteUserResult, PasswordAuthUser, UsersRepository } from './user.repository';
 
@@ -77,7 +76,7 @@ export class UsersPrismaRepository implements UsersRepository {
     };
   }
 
-  async createUserWithEmail(email: string, passwordHash: string, nickname?: string, tx?: Prisma.TransactionClient): Promise<User> {
+  async createUserWithEmail(email: string, passwordHash: string, nickname: string, tx?: Prisma.TransactionClient): Promise<User> {
     const run = async (client: Prisma.TransactionClient) => {
       const user = await client.user.create({
         data: { email, passwordHash },
@@ -86,7 +85,7 @@ export class UsersPrismaRepository implements UsersRepository {
       await client.userProfile.create({
         data: {
           userId: user.id,
-          nickname: nickname ?? generateRandomNickname(),
+          nickname,
         },
       });
 

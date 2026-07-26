@@ -195,7 +195,7 @@ describe('AuthService', () => {
       mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
       mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
 
-      const result = await service.registerWithEmail('new@u.com', 'pw');
+      const result = await service.registerWithEmail('new@u.com', 'pw', '홍길동');
       expect(bcrypt.hash).toHaveBeenCalledWith('pw', 10);
       expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     });
