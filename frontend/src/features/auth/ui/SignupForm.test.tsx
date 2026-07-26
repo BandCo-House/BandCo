@@ -105,8 +105,8 @@ describe('SignupForm', () => {
     const fields = getFields();
 
     await user.type(fields.email, 'test@test.com');
-    await user.type(fields.password, 'pass12_');
-    await user.type(fields.passwordConfirm, 'pass12_');
+    await user.type(fields.password, 'pass123_!');
+    await user.type(fields.passwordConfirm, 'pass123_!');
     await user.type(fields.name, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
@@ -126,14 +126,14 @@ describe('SignupForm', () => {
     const fields = getFields();
 
     await user.type(fields.email, 'test@test.com');
-    await user.type(fields.password, '111111');
-    await user.type(fields.passwordConfirm, '111111');
+    await user.type(fields.password, '1111111!');
+    await user.type(fields.passwordConfirm, '1111111!');
     await user.type(fields.name, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 
     expect(
-      screen.getByText('비밀번호에는 영문과 숫자를 모두 포함해주세요.'),
+      screen.getByText('비밀번호에는 영문을 1개 이상 포함해주세요.'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(

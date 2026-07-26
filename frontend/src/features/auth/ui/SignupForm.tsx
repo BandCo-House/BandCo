@@ -410,7 +410,7 @@ export const SignupForm = ({
           label="비밀번호"
           onChange={handleChange}
           placeholder="비밀번호를 입력하세요."
-          helperText="영문, 숫자, 특수문자(!@#$%^&*())만 사용할 수 있습니다."
+          helperText="8자 이상, 영문·숫자·특수문자(!@#$%^&*())를 각 1개 이상 포함해주세요."
           errorMessage={errors.password}
         />
         <SignupInput

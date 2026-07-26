@@ -15,61 +15,75 @@ describe('authSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('비밀번호가 6자 미만이면 실패해야 한다', () => {
+    it('비밀번호가 8자 미만이면 실패해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'pass1',
+        password: 'pass12!',
       });
       expect(result.success).toBe(false);
     });
 
-    it('비밀번호가 정확히 6자이면 성공해야 한다', () => {
+    it('비밀번호가 정확히 8자이면 성공해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'pass12',
+        password: 'pass123!',
       });
       expect(result.success).toBe(true);
     });
 
-    it('대문자와 숫자로 구성된 비밀번호도 성공해야 한다', () => {
+    it('대문자로 구성된 비밀번호도 성공해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'PASSWORD1',
+        password: 'PASSWORD1!',
       });
       expect(result.success).toBe(true);
     });
 
-    it('비밀번호가 12자를 초과하면 실패해야 한다', () => {
+    it('비밀번호가 12자를 초과해도 성공해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'password123456',
+        password: 'password123456!',
       });
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('비밀번호에 숫자가 포함되지 않으면 실패해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'password',
+        password: 'password!',
       });
       expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.message).toBe(
+        '비밀번호에는 숫자를 1개 이상 포함해주세요.',
+      );
     });
 
     it('비밀번호에 영문이 포함되지 않으면 실패해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: '123456',
+        password: '12345678!',
       });
       expect(result.success).toBe(false);
       expect(result.error?.issues[0]?.message).toBe(
-        '비밀번호에는 영문과 숫자를 모두 포함해주세요.',
+        '비밀번호에는 영문을 1개 이상 포함해주세요.',
+      );
+    });
+
+    it('비밀번호에 특수문자가 포함되지 않으면 실패해야 한다', () => {
+      const result = loginSchema.safeParse({
+        email: 't@t.com',
+        password: 'password123',
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.message).toBe(
+        '비밀번호에는 특수문자(!@#$%^&*())를 1개 이상 포함해주세요.',
       );
     });
 
     it('비밀번호에 한글이 포함되면 실패해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'pass12한글',
+        password: 'pass123!한글',
       });
       expect(result.success).toBe(false);
       expect(result.error?.issues[0]?.message).toBe(
@@ -80,7 +94,7 @@ describe('authSchema', () => {
     it('비밀번호에 허용되지 않은 특수문자가 포함되면 실패해야 한다', () => {
       const result = loginSchema.safeParse({
         email: 't@t.com',
-        password: 'pass12_',
+        password: 'pass123!_',
       });
       expect(result.success).toBe(false);
     });
