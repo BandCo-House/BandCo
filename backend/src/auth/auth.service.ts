@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import type { Prisma } from 'src/generated/prisma';
 import { UsersService } from 'src/modules/users/users.service';
 
 import { JwtPayload } from './types/auth.types';
@@ -80,9 +81,9 @@ export class AuthService {
    * 이메일과 비밀번호로 유저를 생성하고 토큰 쌍을 발급한다.
    * @param nickname 프로필 닉네임으로 저장할 이름
    */
-  async registerWithEmail(email: string, password: string, nickname: string) {
+  async registerWithEmail(email: string, password: string, nickname: string, tx?: Prisma.TransactionClient) {
     const hash = await bcrypt.hash(password, this.bcryptSaltRounds);
-    const newUser = await this.usersService.createUserWithEmail(email, hash, nickname);
+    const newUser = await this.usersService.createUserWithEmail(email, hash, nickname, tx);
     return this.loginUser(newUser.email!, newUser.id);
   }
 
