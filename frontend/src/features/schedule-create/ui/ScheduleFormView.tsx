@@ -185,6 +185,7 @@ export const ScheduleFormView = ({
         open={isPlaceModalOpen}
         onOpenChange={setIsPlaceModalOpen}
         bandId={bandId}
+        onCreated={(placeId) => onChange({ placeId })}
       />
     </div>
   );

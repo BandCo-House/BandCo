@@ -18,6 +18,8 @@ interface PlaceCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bandId: string;
+  /** 생성 성공 시 새 장소 ID. 폼에서 방금 만든 장소를 바로 선택하는 데 쓴다. */
+  onCreated?: (placeId: string) => void;
 }
 
 /**
@@ -28,6 +30,7 @@ export const PlaceCreateModal = ({
   open,
   onOpenChange,
   bandId,
+  onCreated,
 }: PlaceCreateModalProps) => {
   const { mutate, isPending } = useCreatePlace(bandId);
 
@@ -96,8 +99,9 @@ export const PlaceCreateModal = ({
     mutate(
       { name: name.trim(), address: address.trim(), imageUrl },
       {
-        onSuccess: () => {
+        onSuccess: (created) => {
           toast.success('연습 장소를 추가했어요.');
+          onCreated?.(created.placeId);
           onOpenChange(false);
         },
         onError: () => {

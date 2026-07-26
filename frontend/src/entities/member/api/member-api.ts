@@ -11,24 +11,22 @@ export interface GetBandMembersParams {
   cursor__id?: string;
 }
 
-interface GetBandMembersResult {
-  bandId?: string;
-  members: unknown[];
-  meta?: unknown;
-}
-
-const bandMemberListSchema = z.array(bandMemberListItemSchema);
+// 응답 envelope 전체를 런타임 검증한다. members만 부분 신뢰하면 형태가 어긋날 때
+// z.array에 undefined가 흘러가 불명확한 에러가 나므로 unknown으로 받아 통째로 parse한다.
+const bandMemberResponseSchema = z.object({
+  bandId: z.string().optional(),
+  members: z.array(bandMemberListItemSchema),
+  meta: z.unknown().optional(),
+});
 
 /**
  * 밴드 멤버 목록을 조회한다.
- * 백엔드는 `{ bandId, members, meta }`를 돌려주므로 members만 파싱해 반환한다.
+ * 백엔드는 `{ bandId, members, meta }`를 돌려주므로 envelope을 검증하고 members만 반환한다.
  */
 export const getBandMembers = async (
   bandId: string,
   params?: GetBandMembersParams,
 ): Promise<BandMemberListItem[]> => {
-  const data = await apiGet<GetBandMembersResult>(`/bands/${bandId}/users`, {
-    params,
-  });
-  return bandMemberListSchema.parse(data.members);
+  const data = await apiGet<unknown>(`/bands/${bandId}/users`, { params });
+  return bandMemberResponseSchema.parse(data).members;
 };
