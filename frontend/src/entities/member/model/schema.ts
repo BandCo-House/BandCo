@@ -19,7 +19,5 @@ export const bandMemberListItemSchema = z.object({
   avatarUrl: z.string().nullable().default(null),
   role: z.string().default('MEMBER'),
   joinedAt: z.string().optional(),
-  // 악기/장비(예: Fender Stratocaster). 백엔드가 아직 안 줄 수 있어 nullable.
-  instrument: z.string().nullable().default(null),
   skills: z.array(bandMemberSkillSchema).default([]),
 });

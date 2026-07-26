@@ -112,7 +112,6 @@ export const ParticipantSection = ({
               <MemberCard
                 key={member.bandMemberId}
                 name={member.nickname}
-                note={member.instrument}
                 sessions={member.skills.map((s) => s.skillName)}
                 badge={badgeFor(member.role)}
                 className={cn(!special && 'min-h-[92px]')}

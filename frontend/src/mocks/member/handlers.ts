@@ -13,7 +13,6 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
     avatarUrl: null,
     role: 'BM',
     joinedAt: '2026-01-02T00:00:00+09:00',
-    instrument: 'Fender Stratocaster',
     skills: [
       {
         skillTypeId: 'vocal-1',
@@ -36,7 +35,6 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
     avatarUrl: null,
     role: 'ADMIN',
     joinedAt: '2026-01-05T00:00:00+09:00',
-    instrument: 'Fender Precision Bass',
     skills: [
       {
         skillTypeId: 'bass-1',
@@ -53,7 +51,6 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
     avatarUrl: null,
     role: 'MEMBER',
     joinedAt: '2026-01-08T00:00:00+09:00',
-    instrument: 'Pearl Export Series',
     skills: [
       {
         skillTypeId: 'drum-1',
@@ -70,7 +67,6 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
     avatarUrl: null,
     role: 'MEMBER',
     joinedAt: '2026-01-11T00:00:00+09:00',
-    instrument: 'Nord Stage 3',
     skills: [
       {
         skillTypeId: 'keyboard-1',
@@ -82,14 +78,12 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
   },
 ];
 
-// 멤버별 악기/지참사항(참여자 카드 2번째 줄). BAND_MEMBERS.instrument에서 파생한다.
-export const MEMBER_GEAR: Record<string, string> = Object.fromEntries(
-  BAND_MEMBERS.flatMap((member) =>
-    member.instrument
-      ? [[member.bandMemberId, member.instrument] as const]
-      : [],
-  ),
-);
+// 멤버별 지참사항(일정 상세 참여자 note 시드). 멤버 속성이 아니라 일정별 참여자 메모다.
+export const MEMBER_GEAR: Record<string, string> = {
+  'member-1': 'Fender Stratocaster',
+  'member-2': 'Fender Precision Bass',
+  'member-3': 'Pearl Export Series',
+};
 
 export const memberHandlers = [
   // 밴드 멤버 목록 mock (GET /bands/:bandId/users)

@@ -1,5 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
-import { Upload } from 'lucide-react';
+import { useState } from 'react';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
@@ -47,7 +46,7 @@ const LinkButton = ({
 );
 
 /**
- * 합주/회의 공용 일정 입력 폼. 유형 토글로 합주 전용(곡·악보) 필드를 켜고,
+ * 합주/회의 공용 일정 입력 폼. 유형 토글로 합주 전용(곡) 필드를 켜고,
  * 참여자 선택은 합주·회의 공통 ParticipantSection으로 통일한다.
  */
 export const ScheduleFormView = ({
@@ -57,8 +56,6 @@ export const ScheduleFormView = ({
 }: ScheduleFormViewProps) => {
   const isPractice = form.scheduleType === 'PRACTICE';
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
-  // 악보/코드는 아직 백엔드 저장 필드가 없어 파일명만 로컬로 보여준다(전송하지 않음).
-  const [scoreFileName, setScoreFileName] = useState<string | null>(null);
 
   const { data: places = [] } = useBandPlaces(bandId);
   const { data: songs = [] } = useBandSongs(
@@ -75,11 +72,6 @@ export const ScheduleFormView = ({
     value: song.id,
     label: `${song.title} · ${song.artistName}`,
   }));
-
-  const handleScoreSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) setScoreFileName(file.name);
-  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -158,22 +150,6 @@ export const ScheduleFormView = ({
               options={songOptions}
               placeholder="라이브러리 곡을 선택하세요"
             />
-          </Field>
-
-          {/* 악보 / 코드 (선택) */}
-          <Field label="악보 / 코드">
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-full field-border border-grey-300 bg-surface-1 px-5 py-4 text-grey-50">
-              <Upload aria-hidden="true" className="size-5" />
-              <span className="typo-sm-m">
-                {scoreFileName ?? '악보/코드 업로드'}
-              </span>
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleScoreSelect}
-                className="sr-only"
-              />
-            </label>
           </Field>
 
           <Divider />
