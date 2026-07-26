@@ -199,5 +199,15 @@ describe('AuthService', () => {
       expect(bcrypt.hash).toHaveBeenCalledWith('pw', 10);
       expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
     });
+
+    it('이름을 닉네임으로 usersService에 전달한다', async () => {
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
+      mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+
+      await service.registerWithEmail('new@u.com', 'pw', '홍길동');
+
+      expect(mockUsersService.createUserWithEmail).toHaveBeenCalledWith('new@u.com', 'hashed', '홍길동');
+    });
   });
 });

@@ -40,7 +40,8 @@ Notion "유저 api" 데이터베이스는 `src/auth`(인증)와 `src/modules/use
 ```json
 {
   "email": "user@example.com",
-  "password": "Password123!"
+  "password": "Password123!",
+  "name": "홍길동"
 }
 ```
 
@@ -48,6 +49,7 @@ Notion "유저 api" 데이터베이스는 `src/auth`(인증)와 `src/modules/use
 |------|------|:----:|------|
 | `email` | string | Y | 이메일 형식 |
 | `password` | string | Y | 최소 8자, 알파벳·숫자·특수문자(`!@#$%^&*()`) 각 1개 이상 포함 |
+| `name` | string | N | 2~255자. 프로필 닉네임으로 저장된다. 생략하면 임의 닉네임이 생성된다 |
 
 ### Response 201
 

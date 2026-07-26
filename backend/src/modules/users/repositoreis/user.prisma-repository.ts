@@ -77,7 +77,7 @@ export class UsersPrismaRepository implements UsersRepository {
     };
   }
 
-  async createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient): Promise<User> {
+  async createUserWithEmail(email: string, passwordHash: string, nickname?: string, tx?: Prisma.TransactionClient): Promise<User> {
     const run = async (client: Prisma.TransactionClient) => {
       const user = await client.user.create({
         data: { email, passwordHash },
@@ -86,7 +86,7 @@ export class UsersPrismaRepository implements UsersRepository {
       await client.userProfile.create({
         data: {
           userId: user.id,
-          nickname: generateRandomNickname(),
+          nickname: nickname ?? generateRandomNickname(),
         },
       });
 

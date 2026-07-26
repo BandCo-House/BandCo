@@ -143,10 +143,30 @@ describe('UsersPrismaRepository', () => {
         userProfile: { create: jest.fn().mockResolvedValue({}) },
       };
 
-      await repository.createUserWithEmail('tx@example.com', 'hashed', txClient as unknown as Prisma.TransactionClient);
+      await repository.createUserWithEmail('tx@example.com', 'hashed', undefined, txClient as unknown as Prisma.TransactionClient);
 
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
       expect(txClient.user.create).toHaveBeenCalled();
+    });
+
+    it('nickname이 전달되면 프로필 닉네임으로 저장한다', async () => {
+      mockPrisma.user.create.mockResolvedValue({ id: 'new-uid', email: 'new@example.com' });
+      mockPrisma.userProfile.create.mockResolvedValue({});
+
+      await repository.createUserWithEmail('new@example.com', 'hashed', '홍길동');
+
+      expect(mockPrisma.userProfile.create).toHaveBeenCalledWith({ data: { userId: 'new-uid', nickname: '홍길동' } });
+    });
+
+    it('nickname이 없으면 임의 닉네임을 생성한다', async () => {
+      mockPrisma.user.create.mockResolvedValue({ id: 'new-uid', email: 'new@example.com' });
+      mockPrisma.userProfile.create.mockResolvedValue({});
+
+      await repository.createUserWithEmail('new@example.com', 'hashed');
+
+      const nickname = mockPrisma.userProfile.create.mock.calls[0]?.[0]?.data?.nickname;
+      expect(typeof nickname).toBe('string');
+      expect(nickname).not.toBe('');
     });
   });
 

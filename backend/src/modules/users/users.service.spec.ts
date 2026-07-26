@@ -150,6 +150,16 @@ describe('UsersService', () => {
       const result = await service.createUserWithEmail('new@example.com', 'hashed');
       expect(result.email).toBe('new@example.com');
     });
+
+    it('nickname과 tx를 repository에 그대로 전달한다', async () => {
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithEmail');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.createUserWithEmail('new@example.com', 'hashed', '홍길동', tx);
+
+      expect(createSpy).toHaveBeenCalledWith('new@example.com', 'hashed', '홍길동', tx);
+      createSpy.mockRestore();
+    });
   });
 
   describe('getUsers', () => {
