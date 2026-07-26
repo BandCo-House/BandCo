@@ -65,18 +65,13 @@ export const SpaceCalendar = () => {
     { label: '새 일정', onClick: () => setIsModalOpen(true) },
   ];
 
+  const detailFilterActive =
+    detailFilter.songIds.length > 0 ||
+    detailFilter.placeIds.length > 0 ||
+    detailFilter.teamIds.length > 0;
+
   return (
     <div className="flex w-full flex-col pb-[calc(5rem_+_env(safe-area-inset-bottom))]">
-      {/* 헤더 하단 글로우: 미고정 땐 헤더 아래, 고정 땐 아래 sticky 바가 이어받는다
-          (헤더↔필터 사이엔 안 생기게). */}
-      {!collapsed && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-x-0 z-40 mx-auto h-px w-full max-w-[648px] shadow-[0px_8px_40px_0px_rgba(221,254,85,0.12)]"
-          style={{ top: APP_HEADER_PX }}
-        />
-      )}
-
       <div className="flex flex-col gap-6 px-5 pt-5">
         {spaceDetail && (
           <SpaceSummaryHeader
@@ -91,12 +86,12 @@ export const SpaceCalendar = () => {
 
       <div ref={stickSentinelRef} className="h-0" />
 
-      {/* 고정 시 헤더와 같은 프로스트 + 1px 겹침으로 한 덩어리처럼 이어진다. */}
+      {/* 고정될 때만 헤더와 같은 프로스트 + 상단 글로우로 한 덩어리처럼 이어진다.
+          (합주 메인은 앱바 글로우를 끄고, 스크롤로 고정될 때 이 바가 글로우를 담당한다.) */}
       <div
         className={cn(
           'sticky z-20 flex flex-col gap-3 px-5 py-3',
-          collapsed &&
-            'bg-gradient-top/65 shadow-[0px_8px_40px_0px_rgba(221,254,85,0.12)] backdrop-blur-sm',
+          collapsed && 'bg-gradient-top/65 header-glow backdrop-blur-sm',
         )}
         style={{ top: APP_HEADER_PX - 1 }}
       >
@@ -135,6 +130,7 @@ export const SpaceCalendar = () => {
           onlyMine={onlyMine}
           onOnlyMineChange={setOnlyMine}
           onDetailFilterOpen={() => setIsFilterSheetOpen(true)}
+          detailFilterActive={detailFilterActive}
         />
       </div>
 

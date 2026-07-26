@@ -10,6 +10,8 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
       // 공간 이름/설명은 본문 요약 헤더에서 보여주므로 앱바 제목은 작은 고정 라벨을 쓴다.
       title: '내 합주',
       titleSize: 'md',
+      // 합주 메인은 스크롤 시 sticky 필터 바가 글로우를 이어받으므로 앱바 자체 글로우는 끈다.
+      bottomBlur: false,
       backTo: '/band/$bandId',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
