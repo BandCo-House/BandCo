@@ -186,13 +186,15 @@ model BandInviteLink {
   id                 String     @id @default(uuid()) @db.Uuid
   bandId             String     @map("band_id") @db.Uuid
   createBandMemberId String     @map("create_band_member_id") @db.Uuid
-  code               String?    @db.VarChar(255)
+  codeHash           String?    @map("code") @db.VarChar(255)
   expiredAt          DateTime?  @map("expired_at") @db.Timestamptz(6)
   createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
   band               Band       @relation(fields: [bandId], references: [id], onDelete: Cascade)
   createBandMember   BandMember @relation("BandInviteLinkCreator", fields: [createBandMemberId], references: [id], onDelete: Cascade)
 
+  @@unique([bandId])
+  @@unique([codeHash])
   @@map("band_invite_link")
 }
 
