@@ -136,6 +136,7 @@ describe('SongsService', () => {
         artistName: 'Daft Punk',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: '후렴 진입 전 드럼 큐 확인',
         key: null,
         bpm: null,
@@ -171,6 +172,7 @@ describe('SongsService', () => {
       artistName: 'Daft Punk',
       sourceUrl: 'https://www.deezer.com/track/3135556',
       sourceType: 'DEEZER',
+      externalTrackId: '3135556',
       memo: '후렴 진입 전 드럼 큐 확인',
       skillTypeIds: ['skill-type-1', 'skill-type-2'],
       songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
@@ -187,6 +189,7 @@ describe('SongsService', () => {
         artistName: 'Daft Punk',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: '후렴 진입 전 드럼 큐 확인',
         skillTypeIds: ['skill-type-1', 'skill-type-2'],
         songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
@@ -222,6 +225,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: null,
         key: null,
         bpm: null,
@@ -244,6 +248,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
       },
       tx as never,
     );
@@ -262,6 +267,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         skillTypeIds: ['skill-type-1', 'skill-type-1'],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -279,6 +285,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -297,6 +304,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
@@ -319,6 +327,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         skillTypeIds: ['skill-type-1', 'skill-type-2'],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -347,6 +356,7 @@ describe('SongsService', () => {
           difficultyLevel: null,
           sourceUrl: 'https://www.deezer.com/track/3135556',
           sourceType: 'DEEZER',
+          externalTrackId: '3135556',
           songCoverUrl: null,
           songLength: null,
           externalLinks: [],
