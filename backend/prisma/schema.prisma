@@ -292,6 +292,7 @@ model Song {
   bpm                   Int?                @db.SmallInt
   sourceUrl             String?             @map("source_url")
   sourceType            String?             @map("source_type") @db.VarChar(20)
+  externalTrackId       String?             @map("external_track_id") @db.VarChar(255)
   memo                  String?
   difficultyLevel       Int?                @map("difficulty_level") @db.SmallInt
   songCoverUrl          String?             @map("song_cover_url") @db.VarChar(255)

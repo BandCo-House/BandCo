@@ -16,6 +16,7 @@ export interface CreateSongResult {
     artistName: string;
     sourceUrl: string | null;
     sourceType: SongSourceType | null;
+    externalTrackId: string | null;
     memo: string | null;
     key: SongKey | null;
     bpm: number | null;

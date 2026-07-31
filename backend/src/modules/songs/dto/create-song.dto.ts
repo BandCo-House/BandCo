@@ -56,11 +56,24 @@ export class CreateSongBodyDto {
   })
   sourceUrl!: string;
 
-  @ApiProperty({ enum: SONG_SOURCE_TYPES, description: '음원 출처', example: 'SPOTIFY' })
+  @ApiProperty({ enum: SONG_SOURCE_TYPES, description: '음원 출처', example: 'DEEZER' })
   @IsEnum(SONG_SOURCE_TYPES, {
     message: enumValidationMessage,
   })
   sourceType!: SongSourceType;
+
+  @ApiProperty({ description: 'Deezer 외부 트랙 ID', example: '3135556' })
+  @Transform(trimStringValue)
+  @IsString({
+    message: stringValidationMessage,
+  })
+  @IsNotEmpty({
+    message: notemptyValidationMessage,
+  })
+  @MaxLength(255, {
+    message: lengthValidationMessage,
+  })
+  externalTrackId!: string;
 
   @ApiPropertyOptional({ description: '곡 메모', example: '인트로 부분 연습 필요' })
   @Transform(normalizeOptionalStringValue)
