@@ -7,7 +7,10 @@ import { useNotificationList } from '@/entities/notification/api/useNotification
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
 import { useDeleteManyNotifications } from '@/entities/notification/api/useDeleteManyNotifications';
-import { useNotificationUnreadSummary } from '@/entities/notification/api/useNotificationUnreadSummary';
+import {
+  useNotificationUnreadSummary,
+  notificationQueries,
+} from '@/entities/notification/api/useNotificationUnreadSummary';
 import { updateNotificationHeader } from '@/entities/notification/model/notification-header-state';
 import type { NotificationType } from '@/entities/notification/model/types';
 import { acceptInvite } from '@/features/invite-accept/api/invite-api';
@@ -75,12 +78,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     type: NotificationType,
     targetPath?: string,
     isRead?: boolean,
+    referenceId?: string,
   ) => {
     if (type === 'INVITE') {
       const inviteId =
+        referenceId ??
         new URLSearchParams(targetPath?.split('?')[1] ?? '').get(
           'invitationId',
-        ) ?? '';
+        ) ??
+        '';
 
       if (!inviteId) {
         toast.error('유효하지 않은 초대 ID입니다.');
@@ -90,10 +96,10 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       try {
         const data = await acceptInvite(inviteId);
         toast.success('초대를 수락했습니다!');
-        
+
         // 쿼리 캐시 갱신
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+          queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
           queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
         ]);
 
@@ -118,12 +124,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     notificationId: string,
     type: NotificationType,
     targetPath?: string,
+    referenceId?: string,
   ) => {
     if (type === 'INVITE') {
       const inviteId =
+        referenceId ??
         new URLSearchParams(targetPath?.split('?')[1] ?? '').get(
           'invitationId',
-        ) ?? '';
+        ) ??
+        '';
 
       if (!inviteId) {
         toast.error('유효하지 않은 초대 ID입니다.');
@@ -133,10 +142,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       try {
         await declineInvite(inviteId);
         toast.success('초대를 거절했습니다.');
-        
+
         // 거절 완료되면 해당 알림을 읽음 처리함
-        await markAsReadMutation.mutateAsync({ notificationId, type: 'INVITE' });
-        await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        await markAsReadMutation.mutateAsync({
+          notificationId,
+          type: 'INVITE',
+        });
+        await queryClient.invalidateQueries({
+          queryKey: notificationQueries.all,
+        });
       } catch (error) {
         console.error('초대 거절 실패:', error);
         toast.error('초대 거절 중 오류가 발생했습니다.');
@@ -301,7 +315,14 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
               isSelected={selectedIds.has(noti.notificationId)}
               onToggleSelect={handleToggleSelect}
               onAction={handleNotificationAction}
-              onDelete={(id) => handleNotificationDelete(id, noti.type, noti.targetPath)}
+              onDelete={(id) =>
+                handleNotificationDelete(
+                  id,
+                  noti.type,
+                  noti.targetPath,
+                  noti.reference?.id,
+                )
+              }
               onMarkAsRead={(id) =>
                 markAsReadMutation.mutate({
                   notificationId: id,

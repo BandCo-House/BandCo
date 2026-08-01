@@ -154,7 +154,8 @@ describe('NotificationList', () => {
                 title: '밴드 초대',
                 description: '합주하자 밴드로 초대했습니다.',
                 isRead: false,
-                targetPath: '/invitations/received?invitationId=uuid-invite-999',
+                targetPath:
+                  '/invitations/received?invitationId=uuid-invite-999',
                 createdAt: '2026-06-12T00:00:00Z',
               },
             ],
@@ -174,7 +175,7 @@ describe('NotificationList', () => {
             joinedAt: '2026-04-30T10:00:00.000Z',
           },
         });
-      })
+      }),
     );
 
     renderWithClient(<NotificationList tab="INVITE" />);
@@ -184,7 +185,9 @@ describe('NotificationList', () => {
 
     await waitFor(() => {
       expect(acceptApiCalled).toBe(true);
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/band/mock-joined-band-id' });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: '/band/mock-joined-band-id',
+      });
     });
   });
 });

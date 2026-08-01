@@ -1,4 +1,4 @@
-import { X, Users, Guitar } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -8,6 +8,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import type { NotificationItem } from '@/entities/notification/model/types';
 import { useBandInvitation } from '@/entities/invite/api/useBandInvitation';
+import { useBand } from '@/entities/band/api/useBand';
 import { useReceivedInvite } from '../model/useReceivedInvite';
 
 interface ReceivedInviteSheetProps {
@@ -35,6 +36,8 @@ export function ReceivedInviteSheet({
     enabled: Boolean(inviteId && isOpen),
   });
 
+  const bandId = invitation?.band.bandId ?? '';
+  const { data: bandDetail } = useBand(bandId);
 
   const { handleAccept, handleDecline, isSubmitting } = useReceivedInvite({
     inviteId,
@@ -67,6 +70,7 @@ export function ReceivedInviteSheet({
   const inviter = invitation?.inviter.nickname ?? fallback.inviter;
   const band = invitation?.band.name ?? fallback.band;
   const bandDescription = invitation?.band.description ?? '';
+  const memberCount = bandDetail?.memberCount;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -109,27 +113,15 @@ export function ReceivedInviteSheet({
               </p>
             )}
 
-            {/* 통계 요약 (멤버 수 / 공연 횟수) */}
-            <div className="flex w-full items-center justify-center gap-8 px-6">
+            {/* 동적 통계 요약 (멤버 수) */}
+            <div className="flex w-full items-center justify-center px-6">
               <div className="flex flex-col items-center gap-1">
                 <Users className="h-4 w-4 text-[#9D9D9F]" />
                 <span className="font-['SUIT'] text-[20px] leading-7 font-semibold text-[#1B1B32]">
-                  10
+                  {memberCount != null ? memberCount : '-'}
                 </span>
                 <span className="font-['SUIT Variable'] text-xs font-normal text-[#9D9D9F]">
                   멤버
-                </span>
-              </div>
-
-              <div className="h-12 w-[1px] bg-[#DFDFE1]" />
-
-              <div className="flex flex-col items-center gap-1">
-                <Guitar className="h-4 w-4 text-[#9D9D9F]" />
-                <span className="font-['SUIT'] text-[20px] leading-7 font-semibold text-[#1B1B32]">
-                  12
-                </span>
-                <span className="font-['SUIT Variable'] text-xs font-normal text-[#9D9D9F]">
-                  공연
                 </span>
               </div>
             </div>

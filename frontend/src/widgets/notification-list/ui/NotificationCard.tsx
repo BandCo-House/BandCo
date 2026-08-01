@@ -17,6 +17,7 @@ type NotificationCardProps = {
     type: NotificationType,
     targetPath?: string,
     isRead?: boolean,
+    referenceId?: string,
   ) => void;
   onDelete: (notificationId: string) => void;
   onMarkAsRead: (notificationId: string) => void;
@@ -38,8 +39,24 @@ export const NotificationCard = ({
   const handleClick = isClickable
     ? isEditMode
       ? () => onToggleSelect(noti.notificationId)
-      : () =>
-          onAction(noti.notificationId, noti.type, noti.targetPath, noti.isRead)
+      : () => {
+          if (noti.reference?.id) {
+            onAction(
+              noti.notificationId,
+              noti.type,
+              noti.targetPath,
+              noti.isRead,
+              noti.reference.id,
+            );
+          } else {
+            onAction(
+              noti.notificationId,
+              noti.type,
+              noti.targetPath,
+              noti.isRead,
+            );
+          }
+        }
     : undefined;
 
   return (
@@ -139,12 +156,22 @@ export const NotificationCard = ({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onAction(
-                    noti.notificationId,
-                    noti.type,
-                    noti.targetPath,
-                    noti.isRead,
-                  );
+                  if (noti.reference?.id) {
+                    onAction(
+                      noti.notificationId,
+                      noti.type,
+                      noti.targetPath,
+                      noti.isRead,
+                      noti.reference.id,
+                    );
+                  } else {
+                    onAction(
+                      noti.notificationId,
+                      noti.type,
+                      noti.targetPath,
+                      noti.isRead,
+                    );
+                  }
                 }}
                 className="flex items-center gap-2.5 rounded-full border border-primary px-4 py-1.5 typo-xs-m text-primary transition-all hover:bg-primary hover:text-black"
               >

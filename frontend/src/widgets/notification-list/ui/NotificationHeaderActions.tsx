@@ -1,7 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { useNotificationHeaderState } from '@/entities/notification/model/notification-header-state';
 
-
 /**
  * 알림 페이지 헤더 오른쪽에 표시되는 편집/삭제/취소 액션 버튼.
  * notification-header-state 펍섭을 구독해 pages/notifications.tsx의 Route staticData에서 렌더링된다.

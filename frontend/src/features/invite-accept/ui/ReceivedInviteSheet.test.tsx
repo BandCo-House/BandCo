@@ -78,6 +78,27 @@ describe('ReceivedInviteSheet', () => {
           },
         });
       }),
+      http.get('*/bands/:bandId', ({ params }) => {
+        const { bandId } = params;
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '밴드 조회 성공',
+          data: {
+            band: {
+              id: String(bandId),
+              name: '신촌 락밴드',
+              description: '신촌 락밴드입니다.',
+              visibility: true,
+              coverImgUrl: null,
+              bandMasterUserId: 'user-sender-123',
+              genres: [],
+              memberCount: 5,
+              createdAt: '2026-06-01T00:00:00.000Z',
+            },
+          },
+        });
+      }),
     );
   });
 
@@ -95,7 +116,7 @@ describe('ReceivedInviteSheet', () => {
     expect(screen.getByText('신촌 락밴드에 초대했습니다')).toBeInTheDocument();
   });
 
-  it('밴드 요약 정보 카드 통계 및 멤버들이 정상 렌더링된다', () => {
+  it('밴드 요약 정보 카드 통계 및 멤버들이 정상 렌더링된다', async () => {
     renderWithClient(
       <ReceivedInviteSheet
         isOpen={true}
@@ -105,8 +126,8 @@ describe('ReceivedInviteSheet', () => {
     );
 
     expect(screen.getByText('신촌 락밴드는 이런 밴드에요')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument(); // 멤버 수
-    expect(screen.getByText('12')).toBeInTheDocument(); // 공연 수
+    expect(await screen.findByText('5')).toBeInTheDocument(); // 동적 멤버 수
+    expect(screen.getByText('멤버')).toBeInTheDocument();
   });
 
   it('수락하고 참여하기 버튼 클릭 시 acceptInvite API가 성공적으로 호출되고 토스트를 표시한다', async () => {

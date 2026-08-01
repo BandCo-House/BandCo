@@ -61,8 +61,14 @@ describe('invite accept 어댑터', () => {
       },
     };
 
-    mock.onGet('/invitations/received', { params: { where__invitation_status: 'PENDING' } }).reply(200, mockResponse);
+    mock
+      .onGet('/invitations/received', {
+        params: { where__invitation_status: 'PENDING' },
+      })
+      .reply(200, mockResponse);
 
-    await expect(getReceivedInvitations({ where__invitation_status: 'PENDING' })).resolves.toEqual(mockResponse.data);
+    await expect(
+      getReceivedInvitations({ where__invitation_status: 'PENDING' }),
+    ).resolves.toEqual(mockResponse.data);
   });
 });

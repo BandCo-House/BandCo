@@ -9,7 +9,7 @@ const renderWithClient = (ui: React.ReactElement) => {
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
   );
 };
 
@@ -42,7 +42,9 @@ describe('NotificationCard', () => {
   });
 
   it('읽지 않은 알림은 unread 스타일 클래스를 갖는다', () => {
-    const { container } = renderWithClient(<NotificationCard {...defaultProps} />);
+    const { container } = renderWithClient(
+      <NotificationCard {...defaultProps} />,
+    );
     const cardDiv = container.firstChild as HTMLElement;
 
     expect(cardDiv).toHaveClass('bg-[rgba(220,226,249,0.4)]');
@@ -51,7 +53,9 @@ describe('NotificationCard', () => {
 
   it('읽은 알림은 read 스타일 클래스를 갖는다', () => {
     const readNoti = { ...mockNoti, isRead: true };
-    const { container } = renderWithClient(<NotificationCard {...defaultProps} noti={readNoti} />);
+    const { container } = renderWithClient(
+      <NotificationCard {...defaultProps} noti={readNoti} />,
+    );
     const cardDiv = container.firstChild as HTMLElement;
 
     expect(cardDiv).toHaveClass('bg-[rgba(101,99,122,0.48)]');
@@ -66,7 +70,7 @@ describe('NotificationCard', () => {
       'noti-123',
       'NOTICE',
       '/notice/123',
-      false
+      false,
     );
   });
 
@@ -90,8 +94,10 @@ describe('NotificationCard', () => {
 
     // 다시 열기
     fireEvent.click(menuBtn);
-    const deleteBtnAgain = await screen.findByRole('button', { name: '삭제하기' });
-    
+    const deleteBtnAgain = await screen.findByRole('button', {
+      name: '삭제하기',
+    });
+
     // 삭제하기 클릭 검증
     fireEvent.click(deleteBtnAgain);
     expect(defaultProps.onDelete).toHaveBeenCalledWith('noti-123');
@@ -104,7 +110,9 @@ describe('NotificationCard', () => {
     const menuBtn = screen.getByRole('button', { name: '알림 메뉴 열기' });
     fireEvent.click(menuBtn);
 
-    const markReadBtn = await screen.findByRole('button', { name: '읽음 처리' });
+    const markReadBtn = await screen.findByRole('button', {
+      name: '읽음 처리',
+    });
     expect(markReadBtn).toBeDisabled();
     expect(markReadBtn).toHaveClass('cursor-not-allowed');
   });
@@ -121,7 +129,9 @@ describe('NotificationCard', () => {
     };
 
     it('읽지 않은 초대장은 "수락" 버튼을 표시한다', () => {
-      renderWithClient(<NotificationCard {...defaultProps} noti={inviteNoti} />);
+      renderWithClient(
+        <NotificationCard {...defaultProps} noti={inviteNoti} />,
+      );
 
       expect(screen.getByRole('button', { name: '수락' })).toBeInTheDocument();
       expect(screen.queryByText('수락됨')).not.toBeInTheDocument();
@@ -141,25 +151,37 @@ describe('NotificationCard', () => {
           },
         },
       };
-      renderWithClient(<NotificationCard {...defaultProps} noti={inviteWithRef} />);
-      expect(screen.getByText('홍길동님이 회원님을 밴드에 초대했습니다.')).toBeInTheDocument();
+      renderWithClient(
+        <NotificationCard {...defaultProps} noti={inviteWithRef} />,
+      );
+      expect(
+        screen.getByText('홍길동님이 회원님을 밴드에 초대했습니다.'),
+      ).toBeInTheDocument();
     });
 
     it('이미 읽은 초대장은 비활성화된 "수락됨" 텍스트를 표시한다', () => {
       const readInvite = { ...inviteNoti, isRead: true };
-      renderWithClient(<NotificationCard {...defaultProps} noti={readInvite} />);
+      renderWithClient(
+        <NotificationCard {...defaultProps} noti={readInvite} />,
+      );
 
       expect(screen.getByText('수락됨')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: '수락' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: '수락' }),
+      ).not.toBeInTheDocument();
     });
 
     it('삼점 메뉴 클릭 시 거절하기가 렌더링되고 클릭 시 onDelete가 호출된다', async () => {
-      renderWithClient(<NotificationCard {...defaultProps} noti={inviteNoti} />);
+      renderWithClient(
+        <NotificationCard {...defaultProps} noti={inviteNoti} />,
+      );
 
       const menuBtn = screen.getByRole('button', { name: '알림 메뉴 열기' });
       fireEvent.click(menuBtn);
 
-      const declineBtn = await screen.findByRole('button', { name: '거절하기' });
+      const declineBtn = await screen.findByRole('button', {
+        name: '거절하기',
+      });
       expect(declineBtn).toBeInTheDocument();
 
       fireEvent.click(declineBtn);
@@ -167,7 +189,9 @@ describe('NotificationCard', () => {
     });
 
     it('초대장 보기 버튼 클릭 시 ReceivedInviteSheet 드로어가 렌더링된다', async () => {
-      renderWithClient(<NotificationCard {...defaultProps} noti={inviteNoti} />);
+      renderWithClient(
+        <NotificationCard {...defaultProps} noti={inviteNoti} />,
+      );
 
       const viewInviteBtn = screen.getByRole('button', { name: '초대장 보기' });
       fireEvent.click(viewInviteBtn);
