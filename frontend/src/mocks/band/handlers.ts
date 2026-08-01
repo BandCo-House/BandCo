@@ -253,6 +253,53 @@ export const bandHandlers = [
     });
   }),
 
+  // 밴드 검색 Mock (GET /bands/search)
+  // '/bands/me' 및 '/bands/:bandId'보다 위에 선언
+  http.get(`${API_URL}/bands/search`, ({ request }) => {
+    const url = new URL(request.url);
+    const keyword = url.searchParams.get('where__name__contain') || '';
+    const take = Number(url.searchParams.get('take') || 20);
+
+    const filtered = mockBands.filter(
+      (b) =>
+        b.visibility &&
+        (b.name.toLowerCase().includes(keyword.toLowerCase()) ||
+          (b.description &&
+            b.description.toLowerCase().includes(keyword.toLowerCase()))),
+    );
+
+    const sliced = filtered.slice(0, take);
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 검색 완료',
+      data: {
+        items: sliced.map((band) => ({
+          ...band,
+          coverImgUrl: null,
+          bandMasterUserId: '11111111-1111-1111-1111-111111111111',
+          genres: [
+            { id: 'genre-rock', name: '록' },
+            { id: 'genre-indie', name: '인디' },
+          ],
+        })),
+        meta: {
+          count: sliced.length,
+          take,
+          cursor:
+            sliced.length > 0
+              ? {
+                  id: sliced[sliced.length - 1].id,
+                  createdAt: sliced[sliced.length - 1].createdAt,
+                }
+              : null,
+          next: null,
+        },
+      },
+    });
+  }),
+
   // 밴드 상세 조회 Mock (GET /bands/:bandId)
   // '/bands/me' 뒤에 둬야 :bandId가 me를 가로채지 않는다.
   http.get(`${API_URL}/bands/:bandId`, ({ params }) => {

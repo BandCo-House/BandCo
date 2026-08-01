@@ -22,6 +22,14 @@ export const bandGenreSchema = z.object({
   name: z.string(),
 });
 
+export const searchBandItemSchema = bandSummarySchema.extend({
+  coverImgUrl: z.string().nullable().optional(),
+  genres: z.array(bandGenreSchema).optional(),
+  memberCount: z.number().int().nonnegative().optional(),
+});
+
+export type SearchBandItem = z.infer<typeof searchBandItemSchema>;
+
 /** 밴드 상세(GET /bands/:bandId). 목록과 필드가 달라 별도 스키마로 둔다. */
 export const bandDetailSchema = z.object({
   id: z.string(),
