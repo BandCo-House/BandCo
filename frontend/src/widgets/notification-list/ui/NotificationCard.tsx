@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { MoreVertical } from 'lucide-react';
+import { Check, MoreVertical } from 'lucide-react';
 import type {
   NotificationItem,
   NotificationType,
 } from '@/entities/notification/model/types';
 import { NotificationCardMenuSheet } from './NotificationCardMenuSheet';
+import { ReceivedInviteSheet } from '@/features/invite-accept/ui/ReceivedInviteSheet';
 
 type NotificationCardProps = {
   noti: NotificationItem;
@@ -31,6 +32,7 @@ export const NotificationCard = ({
   onMarkAsRead,
 }: NotificationCardProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isInviteSheetOpen, setIsInviteSheetOpen] = useState(false);
   const isClickable = isEditMode || noti.type !== 'INVITE';
 
   const handleClick = isClickable
@@ -101,18 +103,20 @@ export const NotificationCard = ({
       {/* 알림 상세 텍스트 */}
       <div className="flex flex-1 flex-col justify-center gap-0.5">
         <h3
-          className={`typo-sm-b pr-6 ${
+          className={`pr-6 typo-sm-b ${
             !noti.isRead ? 'text-white' : 'text-[#C6C6C8]'
           }`}
         >
           {noti.title}
         </h3>
         <p
-          className={`line-clamp-1 typo-xs-m pr-6 ${
+          className={`line-clamp-1 pr-6 typo-xs-m ${
             !noti.isRead ? 'text-[#C6C6C8]' : 'text-[#9D9D9F]'
           }`}
         >
-          {noti.description}
+          {noti.type === 'INVITE' && noti.reference?.sender?.nickname
+            ? `${noti.reference.sender.nickname}님이 회원님을 밴드에 초대했습니다.`
+            : noti.description}
         </p>
 
         {/* INVITE 전용 액션 버튼 영역 */}
@@ -122,14 +126,9 @@ export const NotificationCard = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onAction(
-                  noti.notificationId,
-                  noti.type,
-                  noti.targetPath,
-                  noti.isRead,
-                );
+                setIsInviteSheetOpen(true);
               }}
-              className="typo-xs-m text-[#9CA578] transition-opacity hover:opacity-80"
+              className="typo-xs-m text-[#9CA578] underline transition-opacity hover:opacity-80"
             >
               초대장 보기
             </button>
@@ -147,14 +146,13 @@ export const NotificationCard = ({
                     noti.isRead,
                   );
                 }}
-                className="rounded-full border border-primary px-4 py-1.5 typo-xs-m text-primary transition-all hover:bg-primary hover:text-black"
+                className="flex items-center gap-2.5 rounded-full border border-primary px-4 py-1.5 typo-xs-m text-primary transition-all hover:bg-primary hover:text-black"
               >
                 수락
+                <Check size={16} />
               </button>
             ) : (
-              <div
-                className="rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-m text-[#C6C6C8] flex items-center gap-1 cursor-default select-none"
-              >
+              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-m text-[#C6C6C8] select-none">
                 수락됨
               </div>
             )}
@@ -171,7 +169,7 @@ export const NotificationCard = ({
             e.stopPropagation();
             setIsMenuOpen(true);
           }}
-          className="absolute top-4 right-4 text-grey-200 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-grey-200 transition-colors hover:text-white"
         >
           <MoreVertical className="h-4 w-4" />
         </button>
@@ -184,6 +182,13 @@ export const NotificationCard = ({
         noti={noti}
         onDelete={() => onDelete(noti.notificationId)}
         onMarkAsRead={() => onMarkAsRead(noti.notificationId)}
+      />
+
+      {/* 초대장 상세 정보 드로어 */}
+      <ReceivedInviteSheet
+        isOpen={isInviteSheetOpen}
+        onOpenChange={setIsInviteSheetOpen}
+        noti={noti}
       />
     </div>
   );

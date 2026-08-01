@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Loader2, Mail } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useNotificationList } from '@/entities/notification/api/useNotificationList';
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
@@ -8,6 +10,9 @@ import { useDeleteManyNotifications } from '@/entities/notification/api/useDelet
 import { useNotificationUnreadSummary } from '@/entities/notification/api/useNotificationUnreadSummary';
 import { updateNotificationHeader } from '@/entities/notification/model/notification-header-state';
 import type { NotificationType } from '@/entities/notification/model/types';
+import { acceptInvite } from '@/features/invite-accept/api/invite-api';
+import { declineInvite } from '@/features/invite-decline/api/invite-api';
+import { bandKeys } from '@/entities/band/api/useBands';
 import { NotificationCard } from './NotificationCard';
 
 type TabType = 'NOTICE' | 'INVITE' | 'REMINDER';
@@ -15,7 +20,7 @@ type TabType = 'NOTICE' | 'INVITE' | 'REMINDER';
 const TAB_CONFIGS = [
   { key: 'NOTICE' as const, label: '공지사항' },
   { key: 'INVITE' as const, label: '초대장' },
-  { key: 'REMINDER' as const, label: '일정조율' },
+  { key: 'REMINDER' as const, label: '일정 조율' },
 ] as const;
 
 type NotificationListProps = {
@@ -29,6 +34,7 @@ type NotificationListProps = {
  */
 export const NotificationList = ({ tab }: NotificationListProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -70,11 +76,78 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     targetPath?: string,
     isRead?: boolean,
   ) => {
+    if (type === 'INVITE') {
+      const inviteId =
+        new URLSearchParams(targetPath?.split('?')[1] ?? '').get(
+          'invitationId',
+        ) ?? '';
+
+      if (!inviteId) {
+        toast.error('유효하지 않은 초대 ID입니다.');
+        return;
+      }
+
+      try {
+        const data = await acceptInvite(inviteId);
+        toast.success('초대를 수락했습니다!');
+        
+        // 쿼리 캐시 갱신
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+          queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
+        ]);
+
+        // 가입 완료된 밴드 상세 페이지로 리다이렉션
+        navigate({ to: `/band/${data.bandId}` as never });
+      } catch (error) {
+        console.error('초대 수락 실패:', error);
+        toast.error('초대 수락 중 오류가 발생했습니다.');
+      }
+      return;
+    }
+
     if (!isRead) {
       await markAsReadMutation.mutateAsync({ notificationId, type });
     }
     if (targetPath) {
       navigate({ to: targetPath as never });
+    }
+  };
+
+  const handleNotificationDelete = async (
+    notificationId: string,
+    type: NotificationType,
+    targetPath?: string,
+  ) => {
+    if (type === 'INVITE') {
+      const inviteId =
+        new URLSearchParams(targetPath?.split('?')[1] ?? '').get(
+          'invitationId',
+        ) ?? '';
+
+      if (!inviteId) {
+        toast.error('유효하지 않은 초대 ID입니다.');
+        return;
+      }
+
+      try {
+        await declineInvite(inviteId);
+        toast.success('초대를 거절했습니다.');
+        
+        // 거절 완료되면 해당 알림을 읽음 처리함
+        await markAsReadMutation.mutateAsync({ notificationId, type: 'INVITE' });
+        await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      } catch (error) {
+        console.error('초대 거절 실패:', error);
+        toast.error('초대 거절 중 오류가 발생했습니다.');
+      }
+      return;
+    }
+
+    try {
+      await deleteManyMutation.mutateAsync([notificationId]);
+    } catch (error) {
+      console.error('알림 삭제 실패:', error);
     }
   };
 
@@ -161,14 +234,14 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   onClick={() =>
                     navigate({ to: '/notifications', search: { tab: key } })
                   }
-                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 transition-all duration-200 ${
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-all duration-200 ${
                     isActive
                       ? 'h-[34px] bg-primary typo-base-b text-black shadow-sm'
-                      : 'h-[30px] bg-transparent typo-sm-b text-primary/60 hover:text-primary'
+                      : 'h-[30px] bg-transparent text-[13px] leading-[18px] font-bold text-primary'
                   }`}
                 >
                   {label}
-                  {!isActive && hasUnreadForTab && (
+                  {hasUnreadForTab && (
                     <span className="absolute top-2 right-4 h-[5px] w-[5px] shrink-0 rounded-full bg-[#D6705C]" />
                   )}
                 </button>
@@ -210,9 +283,13 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
           </p>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="text-grey-40 flex min-h-[300px] flex-col items-center justify-center py-20 text-center">
-          <Mail className="mb-4 h-12 w-12 opacity-30" />
-          <p className="typo-base-r">도착한 알림이 없습니다.</p>
+        <div className="flex h-[110px] w-full flex-col justify-center gap-0.5 rounded-lg p-4">
+          <h4 className="text-[12px] leading-[17px] font-medium text-[#ECFCAB]">
+            새로운 알림이 없습니다.
+          </h4>
+          <p className="text-[12px] leading-[17px] font-medium text-[#9D9D9F]">
+            밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요.
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -224,7 +301,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
               isSelected={selectedIds.has(noti.notificationId)}
               onToggleSelect={handleToggleSelect}
               onAction={handleNotificationAction}
-              onDelete={(id) => deleteManyMutation.mutate([id])}
+              onDelete={(id) => handleNotificationDelete(id, noti.type, noti.targetPath)}
               onMarkAsRead={(id) =>
                 markAsReadMutation.mutate({
                   notificationId: id,

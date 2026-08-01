@@ -1,6 +1,17 @@
 import { http, HttpResponse } from 'msw';
 import { API_URL } from '../config';
 
+interface MockNotificationReference {
+  type: 'BAND_INVITATION';
+  id: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  sender: {
+    userId: string;
+    nickname: string;
+    avatarUrl: string | null;
+  } | null;
+}
+
 interface MockNotification {
   notificationId: string;
   type: string;
@@ -8,18 +19,33 @@ interface MockNotification {
   description: string;
   isRead: boolean;
   targetPath: string;
+  reference: MockNotificationReference | null;
   createdAt: string;
 }
 
-let mockNotifications: MockNotification[] = Array.from({ length: 30 }, (_, i) => ({
-  notificationId: `uuid-invite-${i + 1}`,
-  type: 'INVITE',
-  title: `밴드 초대가 도착했습니다. (초대장 ${i + 1})`,
-  description: `김민준님이 합주하자 밴드로 초대했습니다. (초대 ID: ${i + 1})`,
-  isRead: i < 15, // 15개는 이미 읽음, 15개는 안 읽음 상태
-  targetPath: `/invite/uuid-${i + 1}`,
-  createdAt: new Date(Date.now() - i * 3600000).toISOString(),
-}));
+let mockNotifications: MockNotification[] = Array.from({ length: 30 }, (_, i) => {
+  const isRead = i < 15;
+  const invitationId = `uuid-invite-${i + 1}`;
+  return {
+    notificationId: invitationId,
+    type: 'INVITE',
+    title: '밴드 초대가 도착했습니다.',
+    description: '새 밴드 초대가 도착했습니다.',
+    isRead,
+    targetPath: `/invitations/received?invitationId=${invitationId}`,
+    reference: {
+      type: 'BAND_INVITATION',
+      id: invitationId,
+      status: isRead ? 'ACCEPTED' : 'PENDING',
+      sender: {
+        userId: `user-sender-${i + 1}`,
+        nickname: `김민준${i + 1}`,
+        avatarUrl: null,
+      },
+    },
+    createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+  };
+});
 
 export const notificationHandlers = [
   http.get(`${API_URL}/notifications/me`, ({ request }) => {

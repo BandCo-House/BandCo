@@ -70,10 +70,10 @@ export const NotificationCardMenuSheet = ({
           {/* Action 2: 읽음 처리 */}
           <button
             type="button"
-            disabled={noti.isRead}
+            disabled={noti.isRead || isInvite}
             onClick={handleMarkAsRead}
             className={`relative z-10 flex h-[60px] w-full items-center justify-center text-center text-xl leading-7 font-semibold transition-colors ${
-              noti.isRead
+              noti.isRead || isInvite
                 ? 'cursor-not-allowed text-[#DFDFE1]/40'
                 : 'cursor-pointer text-[#DFDFE1] hover:bg-white/5 active:bg-white/10'
             }`}

@@ -13,6 +13,21 @@ export const notificationUnreadSummarySchema = z.object({
   unreadByType: notificationUnreadByTypeSchema,
 });
 
+export const notificationReferenceTypeSchema = z.enum(['BAND_INVITATION']);
+
+export const notificationSenderSchema = z.object({
+  userId: z.string(),
+  nickname: z.string(),
+  avatarUrl: z.string().nullable(),
+});
+
+export const notificationReferenceSchema = z.object({
+  type: notificationReferenceTypeSchema,
+  id: z.string(),
+  status: z.string(),
+  sender: notificationSenderSchema.nullable(),
+});
+
 export const notificationItemSchema = z.object({
   notificationId: z.string().min(1),
   type: notificationTypeSchema,
@@ -20,6 +35,7 @@ export const notificationItemSchema = z.object({
   description: z.string(),
   isRead: z.boolean(),
   targetPath: z.string().optional(),
+  reference: notificationReferenceSchema.nullable().optional(),
   createdAt: z.string(),
 });
 

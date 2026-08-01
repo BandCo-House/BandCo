@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import { apiClient } from '@/shared/api/client';
+import { apiClient } from '@/shared/api';
 import {
   getNotificationList,
   getUnreadNotificationBadge,

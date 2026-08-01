@@ -1,12 +1,15 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
 import { NotificationList } from './NotificationList';
 
+import { fireEvent } from '@testing-library/react';
+
+const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mockNavigate,
 }));
 
 const renderWithClient = (ui: React.ReactElement) => {
@@ -47,7 +50,7 @@ describe('NotificationList', () => {
             meta: { count: 1, take: 20, next: null },
           },
         });
-      })
+      }),
     );
 
     renderWithClient(<NotificationList tab="NOTICE" />);
@@ -82,7 +85,7 @@ describe('NotificationList', () => {
             meta: { count: 0, take: 20, next: null },
           },
         });
-      })
+      }),
     );
 
     renderWithClient(<NotificationList tab="NOTICE" />);
@@ -118,13 +121,70 @@ describe('NotificationList', () => {
             meta: { count: 1, take: 20, next: null },
           },
         });
-      })
+      }),
     );
 
     renderWithClient(<NotificationList tab="NOTICE" />);
 
     const markAllBtn = await screen.findByRole('button', { name: '모두 읽음' });
     expect(markAllBtn).toBeInTheDocument();
-    expect(markAllBtn).toHaveClass('rounded-full', 'border', 'border-grey-300', 'px-4', 'py-1.5');
+    expect(markAllBtn).toHaveClass(
+      'rounded-full',
+      'border',
+      'border-grey-300',
+      'px-4',
+      'py-1.5',
+    );
+  });
+
+  it('초대장 알림 리스트에서 수락 클릭 시 acceptInvite API가 성공적으로 호출되고 밴드로 이동한다', async () => {
+    let acceptApiCalled = false;
+
+    server.use(
+      http.get('/api/notifications/me', () => {
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '성공',
+          data: {
+            items: [
+              {
+                notificationId: 'noti-invite-999',
+                type: 'INVITE',
+                title: '밴드 초대',
+                description: '합주하자 밴드로 초대했습니다.',
+                isRead: false,
+                targetPath: '/invitations/received?invitationId=uuid-invite-999',
+                createdAt: '2026-06-12T00:00:00Z',
+              },
+            ],
+            meta: { count: 1, take: 20, next: null },
+          },
+        });
+      }),
+      http.post('*/invitations/uuid-invite-999/accept', () => {
+        acceptApiCalled = true;
+        return HttpResponse.json({
+          success: true,
+          data: {
+            invitationId: 'uuid-invite-999',
+            bandId: 'mock-joined-band-id',
+            userId: 'user-123',
+            invitationStatus: 'ACCEPTED',
+            joinedAt: '2026-04-30T10:00:00.000Z',
+          },
+        });
+      })
+    );
+
+    renderWithClient(<NotificationList tab="INVITE" />);
+
+    const acceptBtn = await screen.findByRole('button', { name: '수락' });
+    fireEvent.click(acceptBtn);
+
+    await waitFor(() => {
+      expect(acceptApiCalled).toBe(true);
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/band/mock-joined-band-id' });
+    });
   });
 });
