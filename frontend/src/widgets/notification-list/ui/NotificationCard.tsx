@@ -150,8 +150,16 @@ export const NotificationCard = ({
               초대장 보기
             </button>
 
-            {/* 수락 / 수락됨 버튼 분기 */}
-            {!noti.isRead ? (
+            {/* 수락 / 수락됨 / 거절됨 상태 분기 */}
+            {noti.reference?.status === 'DECLINED' ? (
+              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#9D9D9F] bg-[rgba(39,43,34,0.4)] px-4 py-1.5 typo-xs-m text-[#9D9D9F] select-none">
+                거절됨
+              </div>
+            ) : noti.reference?.status === 'ACCEPTED' ? (
+              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-m text-[#C6C6C8] select-none">
+                수락됨
+              </div>
+            ) : (
               <button
                 type="button"
                 onClick={(e) => {
@@ -178,10 +186,6 @@ export const NotificationCard = ({
                 수락
                 <Check size={16} />
               </button>
-            ) : (
-              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-m text-[#C6C6C8] select-none">
-                수락됨
-              </div>
             )}
           </div>
         )}

@@ -3,6 +3,7 @@ import type { ApiResponse } from '@/shared/api';
 import type { Invite } from '@/entities/invite/model/types';
 import { API_URL } from '../config';
 import type { AcceptInviteResponse } from '@/features/invite-accept/api/invite-api';
+import { updateMockNotificationInviteStatus } from '../notification/handlers';
 
 const invite: Invite = {
   id: 'invite-1',
@@ -18,7 +19,8 @@ const invite: Invite = {
 export const inviteHandlers = [
   http.get(`${API_URL}/invitations/received`, ({ request }) => {
     const url = new URL(request.url);
-    const status = url.searchParams.get('where__invitation_status') || 'PENDING';
+    const status =
+      url.searchParams.get('where__invitation_status') || 'PENDING';
 
     const items = Array.from({ length: 30 }, (_, i) => {
       const isRead = i < 15;
@@ -101,6 +103,7 @@ export const inviteHandlers = [
   }),
   http.post(`${API_URL}/invitations/:inviteId/accept`, ({ params }) => {
     const { inviteId } = params;
+    updateMockNotificationInviteStatus(String(inviteId), 'ACCEPTED');
     return HttpResponse.json<ApiResponse<AcceptInviteResponse>>({
       success: true,
       data: {
@@ -112,7 +115,9 @@ export const inviteHandlers = [
       },
     });
   }),
-  http.post(`${API_URL}/invitations/:inviteId/decline`, () => {
+  http.post(`${API_URL}/invitations/:inviteId/decline`, ({ params }) => {
+    const { inviteId } = params;
+    updateMockNotificationInviteStatus(String(inviteId), 'DECLINED');
     return HttpResponse.json<ApiResponse<void>>({
       success: true,
       data: undefined,

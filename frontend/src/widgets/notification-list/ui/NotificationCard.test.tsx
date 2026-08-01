@@ -159,16 +159,43 @@ describe('NotificationCard', () => {
       ).toBeInTheDocument();
     });
 
-    it('이미 읽은 초대장은 비활성화된 "수락됨" 텍스트를 표시한다', () => {
-      const readInvite = { ...inviteNoti, isRead: true };
+    it('수락 완료된 초대장은 비활성화된 "수락됨" 텍스트를 표시한다', () => {
+      const acceptedInvite = {
+        ...inviteNoti,
+        isRead: true,
+        reference: {
+          type: 'BAND_INVITATION' as const,
+          id: 'uuid-invite-123',
+          status: 'ACCEPTED' as const,
+          sender: null,
+        },
+      };
       renderWithClient(
-        <NotificationCard {...defaultProps} noti={readInvite} />,
+        <NotificationCard {...defaultProps} noti={acceptedInvite} />,
       );
 
       expect(screen.getByText('수락됨')).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: '수락' }),
       ).not.toBeInTheDocument();
+    });
+
+    it('거절된 초대장은 비활성화된 "거절됨" 텍스트를 표시한다', () => {
+      const declinedInvite = {
+        ...inviteNoti,
+        isRead: true,
+        reference: {
+          type: 'BAND_INVITATION' as const,
+          id: 'uuid-invite-123',
+          status: 'DECLINED' as const,
+          sender: null,
+        },
+      };
+      renderWithClient(
+        <NotificationCard {...defaultProps} noti={declinedInvite} />,
+      );
+
+      expect(screen.getByText('거절됨')).toBeInTheDocument();
     });
 
     it('삼점 메뉴 클릭 시 거절하기가 렌더링되고 클릭 시 onDelete가 호출된다', async () => {

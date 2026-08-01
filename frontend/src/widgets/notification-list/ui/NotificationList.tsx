@@ -225,14 +225,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   return (
     <div data-testid="notifications-page" className="w-full pb-16">
       {/* 통합 sticky 헤더 (탭 바 + 요약/모두읽음 바) */}
-      <div
-        className="sticky top-[64px] z-30 -mx-5 -mt-8 px-5"
-        style={{
-          background:
-            'linear-gradient(135deg, var(--gradient-top) 0%, var(--gradient-bottom) 100%)',
-          backgroundAttachment: 'fixed',
-        }}
-      >
+      <div className="sticky top-[64px] z-30 -mx-5 -mt-8 bg-gradient-top/70 px-5 backdrop-blur-sm">
         {/* 탭 네비게이션 */}
         <div className="pt-2 pb-0">
           <div className="flex w-full gap-4 px-5">
@@ -250,8 +243,8 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   }
                   className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-all duration-200 ${
                     isActive
-                      ? 'h-[34px] bg-primary typo-base-b text-black shadow-sm'
-                      : 'h-[30px] bg-transparent text-[13px] leading-[18px] font-bold text-primary'
+                      ? 'h-8.5 bg-primary typo-base-b text-black shadow-sm'
+                      : 'h-7.5 bg-transparent text-[13px] leading-4.5 font-bold text-primary'
                   }`}
                 >
                   {label}

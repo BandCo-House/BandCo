@@ -23,15 +23,20 @@ export const NotificationCardMenuSheet = ({
   onMarkAsRead,
 }: NotificationCardMenuSheetProps) => {
   const isInvite = noti.type === 'INVITE';
+  const isDeclined = noti.reference?.status === 'DECLINED';
+  const isAccepted = noti.reference?.status === 'ACCEPTED';
+  const isInviteActionDisabled = isInvite && (isAccepted || isDeclined);
 
   const handleAction = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isInviteActionDisabled) return;
     onDelete();
     onOpenChange(false);
   };
 
   const handleMarkAsRead = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (noti.isRead) return;
     onMarkAsRead();
     onOpenChange(false);
   };
@@ -59,21 +64,32 @@ export const NotificationCardMenuSheet = ({
           {/* Action 1: 거절하기 / 삭제하기 */}
           <button
             type="button"
+            disabled={isInviteActionDisabled}
             onClick={handleAction}
-            className="relative z-10 flex h-[60px] w-full cursor-pointer items-center justify-center border-b border-white/10 text-center text-xl leading-7 font-semibold text-[#DFDFE1] transition-colors hover:bg-white/5 active:bg-white/10"
+            className={`relative z-10 flex h-[60px] w-full items-center justify-center border-b border-white/10 text-center text-xl leading-7 font-semibold transition-colors ${
+              isInviteActionDisabled
+                ? 'cursor-not-allowed text-[#DFDFE1]/40'
+                : 'cursor-pointer text-[#DFDFE1] hover:bg-white/5 active:bg-white/10'
+            }`}
           >
             <span className="relative z-10">
-              {isInvite ? '거절하기' : '삭제하기'}
+              {isInvite
+                ? isDeclined
+                  ? '이미 거절됨'
+                  : isAccepted
+                    ? '이미 수락됨'
+                    : '거절하기'
+                : '삭제하기'}
             </span>
           </button>
 
           {/* Action 2: 읽음 처리 */}
           <button
             type="button"
-            disabled={noti.isRead || isInvite}
+            disabled={noti.isRead}
             onClick={handleMarkAsRead}
             className={`relative z-10 flex h-[60px] w-full items-center justify-center text-center text-xl leading-7 font-semibold transition-colors ${
-              noti.isRead || isInvite
+              noti.isRead
                 ? 'cursor-not-allowed text-[#DFDFE1]/40'
                 : 'cursor-pointer text-[#DFDFE1] hover:bg-white/5 active:bg-white/10'
             }`}

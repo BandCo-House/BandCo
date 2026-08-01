@@ -23,29 +23,48 @@ interface MockNotification {
   createdAt: string;
 }
 
-let mockNotifications: MockNotification[] = Array.from({ length: 30 }, (_, i) => {
-  const isRead = i < 15;
-  const invitationId = `uuid-invite-${i + 1}`;
-  return {
-    notificationId: invitationId,
-    type: 'INVITE',
-    title: '밴드 초대가 도착했습니다.',
-    description: '새 밴드 초대가 도착했습니다.',
-    isRead,
-    targetPath: `/invitations/received?invitationId=${invitationId}`,
-    reference: {
-      type: 'BAND_INVITATION',
-      id: invitationId,
-      status: isRead ? 'ACCEPTED' : 'PENDING',
-      sender: {
-        userId: `user-sender-${i + 1}`,
-        nickname: `김민준${i + 1}`,
-        avatarUrl: null,
+let mockNotifications: MockNotification[] = Array.from(
+  { length: 30 },
+  (_, i) => {
+    const isRead = i < 15;
+    const invitationId = `uuid-invite-${i + 1}`;
+    return {
+      notificationId: invitationId,
+      type: 'INVITE',
+      title: '밴드 초대가 도착했습니다.',
+      description: '새 밴드 초대가 도착했습니다.',
+      isRead,
+      targetPath: `/invitations/received?invitationId=${invitationId}`,
+      reference: {
+        type: 'BAND_INVITATION',
+        id: invitationId,
+        status: 'PENDING',
+        sender: {
+          userId: `user-sender-${i + 1}`,
+          nickname: `김민준${i + 1}`,
+          avatarUrl: null,
+        },
       },
-    },
-    createdAt: new Date(Date.now() - i * 3600000).toISOString(),
-  };
-});
+      createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+    };
+  },
+);
+
+export const updateMockNotificationInviteStatus = (
+  invitationId: string,
+  status: 'ACCEPTED' | 'DECLINED',
+) => {
+  const target = mockNotifications.find(
+    (n) =>
+      n.reference?.id === invitationId || n.notificationId === invitationId,
+  );
+  if (target) {
+    target.isRead = true;
+    if (target.reference) {
+      target.reference.status = status;
+    }
+  }
+};
 
 export const notificationHandlers = [
   http.get(`${API_URL}/notifications/me`, ({ request }) => {
@@ -98,9 +117,9 @@ export const notificationHandlers = [
   }),
   http.delete(`${API_URL}/notifications`, async ({ request }) => {
     const body = (await request.json()) as { notificationIds: string[] };
-    
+
     mockNotifications = mockNotifications.filter(
-      (n) => !body.notificationIds.includes(n.notificationId)
+      (n) => !body.notificationIds.includes(n.notificationId),
     );
 
     return HttpResponse.json({
@@ -136,7 +155,9 @@ export const notificationHandlers = [
   }),
   http.patch(`${API_URL}/notifications/:notificationId/read`, ({ params }) => {
     const { notificationId } = params;
-    const target = mockNotifications.find((n) => n.notificationId === notificationId);
+    const target = mockNotifications.find(
+      (n) => n.notificationId === notificationId,
+    );
     let updatedCount = 0;
     if (target) {
       if (!target.isRead) {
