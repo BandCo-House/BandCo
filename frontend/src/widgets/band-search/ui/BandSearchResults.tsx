@@ -79,13 +79,14 @@ export const BandSearchResults = ({
   return (
     <div className="flex flex-col gap-5 px-5 py-4">
       {bands.map((band) => {
-        const hasValidImage = band.coverImgUrl && !failedImages[band.id];
+        const id = band.bandId || band.id || '';
+        const hasValidImage = band.coverImgUrl && !failedImages[id];
 
         return (
           <Link
-            key={band.id}
+            key={id}
             to="/band/$bandId"
-            params={{ bandId: band.id }}
+            params={{ bandId: id }}
             className="group flex w-full items-start gap-2 transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {/* Left: Poster Card (Figma Node 1604:15779) */}
@@ -95,7 +96,7 @@ export const BandSearchResults = ({
                   <img
                     src={band.coverImgUrl!}
                     alt={band.name}
-                    onError={() => handleImageError(band.id)}
+                    onError={() => handleImageError(id)}
                     className="h-full w-full object-cover"
                   />
                 ) : (

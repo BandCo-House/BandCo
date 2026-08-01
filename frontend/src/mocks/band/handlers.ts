@@ -300,6 +300,11 @@ export const bandHandlers = [
       data: {
         items: sliced.map((band) => ({
           ...band,
+          bandId: band.id,
+          bandMaster: {
+            userId: '11111111-1111-1111-1111-111111111111',
+            nickname: '밴드마스터',
+          },
           coverImgUrl: null,
           bandMasterUserId: '11111111-1111-1111-1111-111111111111',
           genres: [
