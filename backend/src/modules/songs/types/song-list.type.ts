@@ -18,6 +18,7 @@ export interface SongListItem {
   difficultyLevel: number | null;
   sourceUrl: string | null;
   sourceType: SongSourceType | null;
+  externalTrackId: string | null;
   songCoverUrl: string | null;
   songLength: number | null;
   externalLinks: string[];

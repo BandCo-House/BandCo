@@ -10,7 +10,7 @@ import { GetSentBandInvitationsQueryDto } from './dto/get-sent-band-invitations-
 import type { AcceptBandInvitationResult } from './types/accept-band-invitation-result.type';
 import type { DeclineBandInvitationResult } from './types/decline-band-invitation-result.type';
 import type { DeleteBandInvitationResult } from './types/delete-band-invitation-result.type';
-import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
+import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from './types/received-band-invitation-list.type';
 import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
 import { BandsService } from './bands.service';
 
@@ -50,6 +50,23 @@ export class BandInvitationsController {
     const invitations = await this.bandsService.getSentBandInvitations(request.user.id, query);
 
     return createSuccessResponse('보낸 초대 목록 조회 성공', invitations);
+  }
+
+  @Get(':invitationId')
+  @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: '밴드 초대 단건 조회' })
+  @ApiParam({ name: 'invitationId', description: '초대 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '초대 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '초대를 찾을 수 없음' })
+  async getBandInvitation(
+    @Req() request: AuthenticatedRequest,
+    @Param('invitationId') invitationId: string,
+  ): Promise<ApiSuccessResponse<ReceivedBandInvitationListItem>> {
+    const invitation = await this.bandsService.getBandInvitationDetail(request.user.id, invitationId);
+
+    return createSuccessResponse('초대 조회 성공', invitation);
   }
 
   @Post(':invitationId/accept')

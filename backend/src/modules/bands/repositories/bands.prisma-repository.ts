@@ -893,6 +893,50 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
+   * 초대 ID로 밴드 초대 상세 정보를 단건 조회한다.
+   *
+   * @param {string} invitationId - 조회할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<ReceivedBandInvitationListItem | null>} 초대 상세 정보
+   */
+  async findBandInvitationDetail(invitationId: string, tx?: Prisma.TransactionClient): Promise<ReceivedBandInvitationListItem | null> {
+    const client = tx ?? this.prisma;
+
+    const invitation = await client.bandInvitation.findFirst({
+      where: {
+        id: invitationId,
+        band: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        band: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+        inviterBandMember: {
+          include: {
+            user: {
+              include: {
+                profile: {
+                  select: {
+                    nickname: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return invitation === null ? null : this.mapReceivedBandInvitationListItem(invitation);
+  }
+
+  /**
    * 인증 사용자가 직접 보낸 초대를 상태와 커서 기준으로 조회한다.
    *
    * @param {string} userId - 인증된 사용자 ID
