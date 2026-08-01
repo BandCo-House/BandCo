@@ -9,10 +9,7 @@ import { BandSearchResults } from '@/widgets/band-search/ui/BandSearchResults';
 export const Route = createFileRoute('/search')({
   component: SearchPage,
   staticData: {
-    header: {
-      title: '검색',
-      showBack: false,
-    },
+    fullBleed: true,
   },
 });
 
@@ -51,31 +48,40 @@ function SearchPage() {
 
   return (
     <div className="w-full pb-20" data-testid="search-page">
-      {/* Top Header & Searchbar */}
-      <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md">
+      {/* Top Header & Searchbar (Figma Node 1604:15585) */}
+      <div className="sticky top-0 z-30 flex min-h-[64px] items-center gap-[10px] border-b py-2.5 pr-[20px] pl-[10px] backdrop-blur-md">
+        {/* 뒤로가기 버튼 */}
         <button
           type="button"
           onClick={() => navigate({ to: '..' })}
-          className="p-1 text-white hover:opacity-80"
+          className="flex h-[42px] w-[32px] items-center justify-center text-white transition-opacity hover:opacity-80"
           aria-label="뒤로 가기"
         >
-          <ArrowLeft size={22} />
+          <ArrowLeft size={24} />
         </button>
 
-        <div className="relative flex flex-1 items-center">
+        {/* 검색어 입력창 (Searchbar) */}
+        <div className="relative flex h-[42px] flex-1 items-center rounded-full border-[1.5px] border-[#9CA578] bg-[rgba(220,226,249,0.4)]">
+          {/* 돋보기 아이콘 (Left) */}
+          <SearchIcon
+            size={16}
+            className="pointer-events-none absolute left-[14px] text-[#C6C6C8]"
+          />
+
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="밴드 이름으로 검색해보세요"
-            className="w-full rounded-full border border-white/20 bg-white/10 px-4 py-2 pr-9 text-sm text-white placeholder-[#9D9D9F] transition-colors outline-none focus:border-primary"
+            placeholder="밴드/사용자를 찾아보세요"
+            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] text-sm text-white placeholder-[#C6C6C8] outline-none"
           />
+
           {inputValue && (
             <button
               type="button"
               onClick={handleClearInput}
-              className="absolute right-3 p-1 text-[#9D9D9F] hover:text-white"
+              className="absolute right-[12px] p-1 text-[#9D9D9F] transition-colors hover:text-white"
               aria-label="입력 초기화"
             >
               <X size={16} />
@@ -83,12 +89,12 @@ function SearchPage() {
           )}
         </div>
 
+        {/* "검색" 버튼 (Inbtn1) */}
         <button
           type="button"
           onClick={() => handleSearchSubmit(inputValue)}
-          className="flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-black transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex h-[42px] shrink-0 items-center justify-center rounded-full bg-[#ECFCAB] px-5 text-base font-semibold text-black transition-opacity hover:opacity-90 active:opacity-80"
         >
-          <SearchIcon size={14} />
           검색
         </button>
       </div>
