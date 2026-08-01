@@ -3,7 +3,20 @@ import { http, HttpResponse } from 'msw';
 import { API_URL } from '../config';
 import type { CreateBandResponse } from '@/entities/band/model/schema';
 
+const generatedTestBands: Band[] = Array.from({ length: 50 }, (_, index) => ({
+  id: `test-band-uuid-${index + 1}`,
+  name: `홍대 밴드 ${index + 1}`,
+  description: `무한 스크롤 테스트용 밴드 ${index + 1} 설명입니다.`,
+  visibility: true,
+  inviteCode: `BAND${index + 1}`,
+  myRole: 'MEMBER' as const,
+  joinedAt: new Date(Date.now() - index * 86400000).toISOString(),
+  createdAt: new Date(Date.now() - index * 86400000).toISOString(),
+  memberCount: (index % 10) + 1,
+}));
+
 let mockBands: Band[] = [
+  ...generatedTestBands,
   {
     id: 'a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1',
     name: '합주하자',
@@ -259,6 +272,7 @@ export const bandHandlers = [
     const url = new URL(request.url);
     const keyword = url.searchParams.get('where__name__contain') || '';
     const take = Number(url.searchParams.get('take') || 20);
+    const cursorId = url.searchParams.get('cursor__id');
 
     const filtered = mockBands.filter(
       (b) =>
@@ -268,7 +282,16 @@ export const bandHandlers = [
             b.description.toLowerCase().includes(keyword.toLowerCase()))),
     );
 
-    const sliced = filtered.slice(0, take);
+    let startIndex = 0;
+    if (cursorId) {
+      const foundIndex = filtered.findIndex((b) => b.id === cursorId);
+      if (foundIndex !== -1) {
+        startIndex = foundIndex + 1;
+      }
+    }
+
+    const sliced = filtered.slice(startIndex, startIndex + take);
+    const hasMore = startIndex + take < filtered.length;
 
     return HttpResponse.json({
       status: 'success',
@@ -288,7 +311,7 @@ export const bandHandlers = [
           count: sliced.length,
           take,
           cursor:
-            sliced.length > 0
+            hasMore && sliced.length > 0
               ? {
                   id: sliced[sliced.length - 1].id,
                   createdAt: sliced[sliced.length - 1].createdAt,

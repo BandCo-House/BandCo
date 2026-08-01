@@ -20,7 +20,14 @@ function SearchPage() {
 
   const { searches, addSearch, removeSearch, clearAll } = useRecentSearches();
 
-  const { data, isLoading, isError } = useBandSearch({
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useBandSearch({
     keyword: submittedQuery,
   });
 
@@ -48,8 +55,13 @@ function SearchPage() {
 
   return (
     <div className="w-full pb-20" data-testid="search-page">
-      {/* Top Header & Searchbar (Figma Node 1604:15585) */}
-      <div className="sticky top-0 z-30 flex min-h-[64px] items-center gap-[10px] border-b py-2.5 pr-[20px] pl-[10px] backdrop-blur-md">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSearchSubmit(inputValue);
+        }}
+        className="sticky top-0 z-30 flex min-h-[64px] items-center gap-[10px] py-2.5 pr-[20px] pl-[10px] backdrop-blur-md"
+      >
         {/* 뒤로가기 버튼 */}
         <button
           type="button"
@@ -69,12 +81,12 @@ function SearchPage() {
           />
 
           <input
-            type="text"
+            type="search"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="밴드/사용자를 찾아보세요"
-            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] text-sm text-white placeholder-[#C6C6C8] outline-none"
+            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] text-sm text-white placeholder-[#C6C6C8] outline-none [&::-webkit-search-cancel-button]:hidden"
           />
 
           {inputValue && (
@@ -91,13 +103,12 @@ function SearchPage() {
 
         {/* "검색" 버튼 (Inbtn1) */}
         <button
-          type="button"
-          onClick={() => handleSearchSubmit(inputValue)}
+          type="submit"
           className="flex h-[42px] shrink-0 items-center justify-center rounded-full bg-[#ECFCAB] px-5 text-base font-semibold text-black transition-opacity hover:opacity-90 active:opacity-80"
         >
           검색
         </button>
-      </div>
+      </form>
 
       {/* Main Content: Recent Searches or Band Search Results */}
       {!submittedQuery ? (
@@ -112,6 +123,9 @@ function SearchPage() {
           bands={searchResults}
           isLoading={isLoading}
           isError={isError}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onFetchNextPage={fetchNextPage}
         />
       )}
     </div>
