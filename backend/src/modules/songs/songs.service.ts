@@ -227,6 +227,8 @@ export class SongsService {
     const hasArtistName = input.artistName !== undefined;
     const hasSourceUrl = input.sourceUrl !== undefined;
     const hasSourceType = input.sourceType !== undefined;
+    const hasKey = input.key !== undefined;
+    const hasBpm = input.bpm !== undefined;
     const hasMemo = input.memo !== undefined;
     const hasSkillTypeIds = input.skillTypeIds !== undefined;
     const hasSongCoverUrl = input.songCoverUrl !== undefined;
@@ -239,6 +241,8 @@ export class SongsService {
       !hasArtistName &&
       !hasSourceUrl &&
       !hasSourceType &&
+      !hasKey &&
+      !hasBpm &&
       !hasMemo &&
       !hasSkillTypeIds &&
       !hasSongCoverUrl &&

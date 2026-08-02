@@ -479,19 +479,31 @@ enum TeamStatus {
   INACTIVE
 }
 
+/// 조성. 접미사 없음은 major, M은 minor, S는 sharp(#)를 뜻한다.
+/// 플랫(♭)은 이명동음(예: D♭ = C#)이라 sharp 값으로 표현한다.
 enum SongKey {
   C
   CM
+  CS
+  CSM
   D
   DM
+  DS
+  DSM
   E
   EM
   F
   FM
+  FS
+  FSM
   G
   GM
+  GS
+  GSM
   A
   AM
+  AS
+  ASM
   B
   BM
 }

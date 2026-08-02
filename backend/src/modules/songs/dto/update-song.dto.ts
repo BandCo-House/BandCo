@@ -10,9 +10,10 @@ import { minValidationMessage } from '../../../common/validation-message/min-val
 import { notemptyValidationMessage } from '../../../common/validation-message/notempty-validation.message';
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
 import { uuidValidationMessage } from '../../../common/validation-message/uuid-validation.message';
+import type { SongKey } from '../../../generated/prisma';
 import type { SongSourceType } from '../types/song-preview.type';
 
-import { SONG_SOURCE_TYPES } from './create-song.dto';
+import { SONG_KEYS, SONG_SOURCE_TYPES } from './create-song.dto';
 import { SongReferenceFileDto } from './song-reference-file.dto';
 
 /**
@@ -61,6 +62,23 @@ export class UpdateSongBodyDto {
     message: enumValidationMessage,
   })
   sourceType?: SongSourceType | null;
+
+  @ApiPropertyOptional({ enum: SONG_KEYS, description: '조성 (null로 설정 시 삭제)', nullable: true, example: 'FSM' })
+  @IsOptional()
+  @IsEnum(SONG_KEYS, {
+    message: enumValidationMessage,
+  })
+  key?: SongKey | null;
+
+  @ApiPropertyOptional({ description: 'BPM (null로 설정 시 삭제)', nullable: true, example: 120 })
+  @IsOptional()
+  @IsInt({
+    message: intValidationMessage,
+  })
+  @Min(1, {
+    message: minValidationMessage,
+  })
+  bpm?: number | null;
 
   @ApiPropertyOptional({ description: '곡 메모 (null로 설정 시 삭제)', nullable: true, example: '인트로 부분 연습 필요' })
   @Transform(normalizeOptionalStringValue)
