@@ -201,10 +201,11 @@ describe('앱 라우터', () => {
 
     await screen.findByText('SongsPage');
 
-    expect(
-      screen.getByRole('button', { name: '곡 라이브러리' }),
-    ).toHaveAttribute('data-variant', 'default');
-    expect(screen.getByRole('button', { name: '캘린더' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '곡 라이브러리' })).toHaveAttribute(
+      'data-variant',
+      'default',
+    );
+    expect(screen.getByRole('link', { name: '캘린더' })).toHaveAttribute(
       'data-variant',
       'outline',
     );
@@ -219,7 +220,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('SongsPage');
-    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
+    fireEvent.click(screen.getByRole('link', { name: '캘린더' }));
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
@@ -11,6 +11,7 @@ import {
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
+import { Field, FieldLabel } from '@/shared/ui/field';
 import { Switch } from '@/shared/ui/switch';
 import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
 import {
@@ -28,21 +29,6 @@ interface SpaceCreateModalProps {
 // 종료 없음(상시)일 때 백엔드가 endDate를 필수로 받으므로 먼 미래(9999) sentinel을 보낸다.
 // 뱃지는 spaceType(PRACTICE)로 상시 처리하므로 이 날짜 자체는 표시에 쓰이지 않는다.
 const ONGOING_END_DATE = '9999-12-31';
-
-const FieldLabel = ({
-  children,
-  required,
-}: {
-  children: ReactNode;
-  required?: boolean;
-}) => (
-  <span className="flex items-center gap-1 typo-lg-sb text-grey-50">
-    {children}
-    {required && (
-      <span aria-hidden="true" className="size-1 rounded-full bg-destructive" />
-    )}
-  </span>
-);
 
 const compareDate = (a: WheelDate, b: WheelDate) =>
   a.year - b.year || a.month - b.month || a.day - b.day;
@@ -126,9 +112,14 @@ export const SpaceCreateModal = ({
         </div>
 
         <AppDialogBody className="gap-9 overflow-y-auto">
-          <label className="flex flex-col gap-2">
-            <FieldLabel required>합주 공간 이름</FieldLabel>
+          <Field
+            label="합주 공간 이름"
+            required
+            labelSize="lg"
+            htmlFor="space-name"
+          >
             <Input
+              id="space-name"
               variant="underline"
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -136,22 +127,24 @@ export const SpaceCreateModal = ({
               maxLength={30}
               aria-required
             />
-          </label>
+          </Field>
 
-          <label className="flex flex-col gap-2">
-            <FieldLabel>설명</FieldLabel>
+          <Field label="설명" labelSize="lg" htmlFor="space-description">
             <Input
+              id="space-description"
               variant="underline"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="부가 설명을 추가할 수 있어요"
               maxLength={50}
             />
-          </label>
+          </Field>
 
           <div className="relative flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <FieldLabel required>합주 기간</FieldLabel>
+              <FieldLabel required size="lg">
+                합주 기간
+              </FieldLabel>
               <span className="flex items-center gap-2.5">
                 <span className="typo-xs-sb text-grey-200">종료 날짜</span>
                 <Switch
@@ -163,7 +156,7 @@ export const SpaceCreateModal = ({
             </div>
 
             {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
-            <div className="flex h-[232px] flex-col justify-center gap-6 rounded-md border border-surface-1 bg-grey-600/20 px-2.5 backdrop-blur-md">
+            <div className="flex h-[232px] flex-col justify-center gap-6 rounded-md field-border border-surface-1 bg-grey-600/20 px-2.5 backdrop-blur-md">
               <WheelDatePicker value={startDate} onChange={setStartDate} />
               {hasEnd ? (
                 <WheelDatePicker value={endDate} onChange={setEndDate} />

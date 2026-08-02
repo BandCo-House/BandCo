@@ -3,6 +3,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { Select as SelectPrimitive } from 'radix-ui';
 
 import { cn } from '@/shared/lib/utils';
+import { useFieldRequired } from './field-context';
 
 function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
@@ -13,11 +14,14 @@ function SelectTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
+  // 상위 Field가 required면 트리거(포커스 요소)에 aria-required를 부여.
+  const fieldRequired = useFieldRequired();
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
+      aria-required={props['aria-required'] ?? (fieldRequired || undefined)}
       className={cn(
-        'flex h-10 w-full items-center justify-between gap-2 rounded-full border border-grey-50/40 bg-white/16 px-4 py-2 typo-sm-sb text-grey-50 shadow-none transition-colors outline-none hover:bg-white/24 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate',
+        'flex h-10 w-full items-center justify-between gap-2 rounded-full field-border border-grey-50/40 bg-white/16 px-4 py-2 typo-sm-sb text-grey-50 shadow-none transition-colors outline-none hover:bg-white/24 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate',
         className,
       )}
       {...props}

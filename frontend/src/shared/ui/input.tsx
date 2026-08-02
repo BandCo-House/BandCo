@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { cn } from '@/shared/lib/utils';
 import { Search } from 'lucide-react';
+import { useFieldRequired } from './field-context';
 
 const inputVariantClassNames = {
   roundedFull:
-    'rounded-full border-[1.5px] bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-primary focus-visible:outline-2 focus-visible:outline-primary',
+    'rounded-full field-border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-primary focus-visible:outline-2 focus-visible:outline-primary',
   underline:
-    'rounded-none border-0 border-b bg-transparent px-0 py-3 outline-none hover:border-primary focus-visible:border-primary focus-visible:ring-0',
+    'rounded-none border-0 border-b bg-transparent px-5 py-3 outline-none hover:border-primary focus-visible:border-primary focus-visible:ring-0',
 } as const;
 
 type InputProps = React.ComponentProps<'input'> & {
@@ -45,6 +46,11 @@ const Input = ({
       ? { ...props, 'aria-label': defaultSearchAriaLabel }
       : props;
 
+  // 상위 Field가 required면 aria-required를 자동 부여(명시값이 있으면 그대로 존중).
+  const fieldRequired = useFieldRequired();
+  const ariaRequired =
+    inputProps['aria-required'] ?? (fieldRequired || undefined);
+
   const inputElement = (
     <input
       type={type}
@@ -57,6 +63,7 @@ const Input = ({
         className,
       )}
       {...inputProps}
+      aria-required={ariaRequired}
     />
   );
 

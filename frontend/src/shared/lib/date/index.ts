@@ -91,3 +91,25 @@ export const formatWeekRange = (startDate: Date, endDate: Date): string => {
 
   return `${startYear}년 ${startMonth}월 ${startDay}일 ~ ${endDay}일`;
 };
+
+/**
+ * ISO 문자열을 "YYYY.MM. DD" 형식으로 변환합니다. 값이 없으면 "-".
+ */
+export const formatDotDate = (iso: string | null): string => {
+  if (!iso) return '-';
+  const date = new Date(iso);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}.${month}. ${day}`;
+};
+
+/**
+ * ISO 문자열을 "HH:mm"(24시간) 형식으로 변환합니다. 값이 없으면 빈 문자열.
+ */
+export const formatClockTime = (iso: string | null): string => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
