@@ -9,6 +9,9 @@ export const buttonVariants = cva(
         key: 'bg-key text-key-foreground disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100',
         shining:
           'relative rounded-full bg-primary text-primary-dark drop-shadow-[0_1px_9px_rgba(236,252,171,0.72)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(149deg,rgb(255,255,255)_6.91%,rgba(255,255,255,0)_19.64%)] before:content-[""] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_-2px_-3px_3px_0px_rgba(39,51,31,0.56),inset_0px_-1px_1px_0px_var(--semantic-success-surface)] after:content-[""] disabled:cursor-not-allowed disabled:border disabled:border-white disabled:bg-grey-300 disabled:text-grey-500 disabled:drop-shadow-none disabled:opacity-100 disabled:before:opacity-0 disabled:after:opacity-0',
+        // 폼 안쪽 보조 액션(곡 검색·＋링크). shining과 달리 광택/글로우 없이 평평하게 채운다.
+        accent:
+          'bg-primary text-gradient-top drop-shadow-[0_2px_4px_rgba(255,255,255,0.24)] disabled:cursor-not-allowed disabled:bg-grey-300 disabled:text-grey-500 disabled:opacity-100 disabled:drop-shadow-none',
         neutral:
           'field-border border-grey-50 bg-white/48 text-gradient-bottom typo-base-b disabled:cursor-not-allowed disabled:border-grey-300 disabled:border-b disabled:bg-grey-400 disabled:text-grey-300 disabled:opacity-100',
         disabled:

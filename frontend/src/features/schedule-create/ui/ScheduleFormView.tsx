@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
+import { SongCreateModal } from '@/features/song-create';
 import { Input } from '@/shared/ui/input';
 import { SegmentedToggle } from '@/shared/ui/segmented-toggle';
 import { Field } from '@/shared/ui/field';
+import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
 import { cn } from '@/shared/lib/utils';
 import type { ScheduleFormState, ScheduleType } from '../model/types';
-import { SelectField, type SelectFieldOption } from './components/SelectField';
 import { ScheduleTimeSheet } from './components/ScheduleTimeSheet';
 import { ParticipantSection } from './components/ParticipantSection';
 
@@ -56,6 +57,7 @@ export const ScheduleFormView = ({
 }: ScheduleFormViewProps) => {
   const isPractice = form.scheduleType === 'PRACTICE';
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
+  const [isSongModalOpen, setIsSongModalOpen] = useState(false);
 
   const { data: places = [] } = useBandPlaces(bandId);
   const { data: songs = [] } = useBandSongs(
@@ -149,6 +151,11 @@ export const ScheduleFormView = ({
               options={songOptions}
               placeholder="라이브러리 곡을 선택하세요"
             />
+            <div className="flex justify-end">
+              <LinkButton onClick={() => setIsSongModalOpen(true)}>
+                합주곡 추가하기
+              </LinkButton>
+            </div>
           </Field>
 
           <Divider />
@@ -186,6 +193,13 @@ export const ScheduleFormView = ({
         onOpenChange={setIsPlaceModalOpen}
         bandId={bandId}
         onCreated={(placeId) => onChange({ placeId })}
+      />
+
+      <SongCreateModal
+        open={isSongModalOpen}
+        onOpenChange={setIsSongModalOpen}
+        bandId={bandId}
+        onCreated={(songId) => onChange({ songId })}
       />
     </div>
   );

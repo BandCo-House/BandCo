@@ -30,7 +30,7 @@ export const SONG_KEYS = [
 
 export const songKeySchema = z.enum(SONG_KEYS);
 
-export const SONG_SOURCE_TYPES = ['SPOTIFY', 'DEEZER'] as const;
+const SONG_SOURCE_TYPES = ['SPOTIFY', 'DEEZER'] as const;
 
 export const songSourceTypeSchema = z.enum(SONG_SOURCE_TYPES);
 

@@ -5,7 +5,7 @@ import type { SongKey } from './types';
  * 조성 표시 라벨. 백엔드 enum은 sharp만 갖고 있어 플랫은 이명동음으로 함께 적는다.
  * (예: `CSM` = C#/D♭ Minor)
  */
-export const SONG_KEY_LABELS: Record<SongKey, string> = {
+const SONG_KEY_LABELS: Record<SongKey, string> = {
   C: 'C Major',
   CM: 'C Minor',
   CS: 'C#/D♭ Major',

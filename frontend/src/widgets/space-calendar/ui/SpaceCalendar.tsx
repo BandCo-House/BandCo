@@ -72,7 +72,7 @@ export const SpaceCalendar = () => {
 
   return (
     <div className="flex w-full flex-col pb-[calc(5rem_+_env(safe-area-inset-bottom))]">
-      <div className="flex flex-col gap-6 px-5 pt-5">
+      <div className="flex flex-col gap-6 px-5 pt-8">
         {spaceDetail && (
           <SpaceSummaryHeader
             name={spaceDetail.space.name}

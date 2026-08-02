@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { uploadFile } from '@/shared/api';
@@ -13,6 +13,7 @@ import {
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
+import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
 
 interface PlaceCreateModalProps {
   open: boolean;
@@ -177,14 +178,7 @@ export const PlaceCreateModal = ({
                   alt="선택한 커버 미리보기"
                   className="size-full rounded-md border border-grey-50 object-cover opacity-80"
                 />
-                <button
-                  type="button"
-                  aria-label="커버 제거"
-                  onClick={clearCover}
-                  className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full border border-grey-50 bg-grey-400 text-grey-50 focus-visible:outline-2 focus-visible:outline-key"
-                >
-                  <X aria-hidden="true" className="size-3" />
-                </button>
+                <ThumbnailRemoveButton label="커버 제거" onClick={clearCover} />
               </div>
             ) : (
               <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300">

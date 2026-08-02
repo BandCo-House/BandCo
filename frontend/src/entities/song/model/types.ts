@@ -4,13 +4,11 @@ import type {
   songKeySchema,
   songListItemSchema,
   songPreviewSchema,
-  songReferenceFileSchema,
   songSourceTypeSchema,
 } from './schema';
 
 export type SongListItem = z.infer<typeof songListItemSchema>;
 export type SongPreview = z.infer<typeof songPreviewSchema>;
-export type SongReferenceFile = z.infer<typeof songReferenceFileSchema>;
 export type SongKey = z.infer<typeof songKeySchema>;
 export type SongSourceType = z.infer<typeof songSourceTypeSchema>;
 export type CreatedSong = z.infer<typeof createdSongSchema>;
