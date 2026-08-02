@@ -207,9 +207,10 @@ describe('ReceivedInviteSheet', () => {
       ...mockNoti,
       isRead: true,
       reference: {
+        type: 'BAND_INVITATION' as const,
         id: 'invite-123',
-        type: 'INVITE' as const,
         status: 'ACCEPTED' as const,
+        sender: null,
       },
     };
 
@@ -235,9 +236,10 @@ describe('ReceivedInviteSheet', () => {
       ...mockNoti,
       isRead: true,
       reference: {
+        type: 'BAND_INVITATION' as const,
         id: 'invite-123',
-        type: 'INVITE' as const,
         status: 'PENDING' as const,
+        sender: null,
       },
     };
 

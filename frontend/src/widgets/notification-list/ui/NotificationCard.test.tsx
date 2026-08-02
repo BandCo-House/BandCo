@@ -147,7 +147,7 @@ describe('NotificationCard', () => {
         reference: {
           type: 'BAND_INVITATION' as const,
           id: 'uuid-invite-123',
-          status: 'PENDING',
+          status: 'PENDING' as const,
           sender: {
             userId: 'user-1',
             nickname: '홍길동',
