@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { useAudioPreview } from '@/shared/lib/use-audio-preview';
+import { useTrackPreview } from '../api/useTrackPreview';
 import type { SongListItem } from '../model/types';
 
 interface SongLibraryItemProps {
@@ -12,13 +14,48 @@ const DISC_BASE_CLASS =
 /**
  * 라이브러리 합주곡 한 항목. 원형 커버 + 곡명/아티스트.
  * 커버 이미지가 없으면 밝은 회색 원으로 비어 있음을 드러낸다.
- * 미리듣기 URL이 있으면 디스크가 재생/일시정지 버튼이 되고, 없으면 표시 전용이다.
+ *
+ * 미리듣기 URL은 곡 목록 응답에 없어서, 재생을 누른 곡만 externalTrackId로
+ * 트랙을 조회해 재생한다(목록 진입만으로 곡 수만큼 요청하지 않도록).
  */
 export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
-  const { isPlaying, canPlay, toggle, audioRef, audioEventProps } =
-    useAudioPreview(song.previewUrl, {
-      errorMessage: '곡을 재생할 수 없어요.',
-    });
+  const [hasRequested, setHasRequested] = useState(false);
+  // 재생을 눌러 둔 상태. 렌더에 영향이 없어 state 대신 ref로 둔다.
+  const playWhenReadyRef = useRef(false);
+
+  const { data: track } = useTrackPreview(song.externalTrackId, hasRequested);
+  const previewUrl = track?.previewUrl ?? null;
+
+  const { isPlaying, toggle, audioRef, audioEventProps } = useAudioPreview(
+    previewUrl,
+    { errorMessage: '곡을 재생할 수 없어요.' },
+  );
+
+  // 미리듣기 URL이 도착하면 눌러 둔 재생을 이어서 실행한다.
+  useEffect(() => {
+    if (!playWhenReadyRef.current || !previewUrl) return;
+    playWhenReadyRef.current = false;
+
+    const audio = audioRef.current;
+    if (!audio) return;
+    try {
+      // 브라우저가 재생을 막으면 사용자가 다시 누르면 되므로 조용히 넘어간다.
+      void audio.play()?.catch(() => undefined);
+    } catch {
+      // jsdom처럼 재생을 지원하지 않는 환경에서는 동기적으로 throw한다.
+    }
+  }, [previewUrl, audioRef]);
+
+  const canPlay = Boolean(song.externalTrackId);
+
+  const handleToggle = () => {
+    if (previewUrl) {
+      toggle();
+      return;
+    }
+    playWhenReadyRef.current = true;
+    setHasRequested(true);
+  };
 
   const discClass = `${DISC_BASE_CLASS} ${song.songCoverUrl ? 'bg-grey-500' : 'bg-grey-200'}`;
 
@@ -56,7 +93,7 @@ export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
       {canPlay ? (
         <button
           type="button"
-          onClick={toggle}
+          onClick={handleToggle}
           aria-label={
             isPlaying ? `${song.title} 일시정지` : `${song.title} 미리듣기`
           }
@@ -67,10 +104,10 @@ export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
       ) : (
         <div className={discClass}>{cover}</div>
       )}
-      {song.previewUrl && (
+      {previewUrl && (
         <audio
           ref={audioRef}
-          src={song.previewUrl}
+          src={previewUrl}
           preload="none"
           {...audioEventProps}
         />

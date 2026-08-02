@@ -328,20 +328,59 @@ export const bandHandlers = [
     });
   }),
 
-  // 밴드 영구 초대 링크 Mock (GET /bands/:bandId/invite-link)
-  // TODO: 백엔드에 band_invite_link 테이블만 있고 API가 없어 mock으로만 동작한다.
+  // 밴드 초대 링크 발급·재발급 Mock (POST /bands/:bandId/invite-link)
   // ':bandId' 핸들러보다 앞에 둬야 하위 경로가 가로채이지 않는다.
-  http.get(`${API_URL}/bands/:bandId/invite-link`, ({ params }) => {
+  http.post(`${API_URL}/bands/:bandId/invite-link`, ({ params }) => {
     const { bandId } = params as { bandId: string };
     const found = mockBands.find((band) => band.id === bandId) ?? mockBands[0];
-    const code = `INV-${found.inviteCode ?? 'BANDCO01'}`;
+    // 서버는 매 발급마다 새 코드를 만들고 이전 코드를 무효화한다.
+    const inviteCode = `${found.inviteCode ?? 'BANDCO01'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
+
+    return HttpResponse.json(
+      {
+        status: 'success',
+        error: null,
+        message: '밴드 초대 링크를 발급했습니다.',
+        data: {
+          bandId,
+          inviteCode,
+          expiredAt: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        },
+      },
+      { status: 201 },
+    );
+  }),
+
+  // 밴드 초대 링크 폐기 Mock (DELETE /bands/:bandId/invite-link)
+  http.delete(`${API_URL}/bands/:bandId/invite-link`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
 
     return HttpResponse.json({
       status: 'success',
       error: null,
-      message: '밴드 초대 링크 조회 성공',
-      data: { code, url: `${window.location.origin}/invite/${code}` },
+      message: '밴드 초대 링크를 폐기했습니다.',
+      data: { bandId, revokedAt: new Date().toISOString() },
     });
+  }),
+
+  // 초대 코드로 밴드 가입 Mock (POST /invite-links/:code/join)
+  http.post(`${API_URL}/invite-links/:code/join`, () => {
+    return HttpResponse.json(
+      {
+        status: 'success',
+        error: null,
+        message: '밴드에 가입했습니다.',
+        data: {
+          bandId: mockBands[0].id,
+          userId: 'user-001',
+          memberId: 'band-member-1',
+          joinedAt: new Date().toISOString(),
+        },
+      },
+      { status: 201 },
+    );
   }),
 
   // 밴드 정보 수정 Mock (PATCH /bands/:bandId)

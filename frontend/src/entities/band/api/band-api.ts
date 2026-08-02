@@ -1,4 +1,4 @@
-import { apiClient, apiDelete, apiGet, apiPatch } from '@/shared/api';
+import { apiClient, apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api';
 import type {
   Band,
   BandDetail,
@@ -43,12 +43,20 @@ export const leaveBand = (bandId: string): Promise<unknown> =>
   apiDelete(`/bands/${bandId}/me`);
 
 /**
- * 밴드 영구 초대 링크 조회.
- * TODO: 백엔드 API 신설 전까지 MSW mock이 응답한다(band_invite_link 테이블만 존재).
+ * 밴드 초대 링크 발급·재발급(POST). 기존 코드를 무효화하고 7일짜리 새 코드를 만든다.
+ * 밴드 운영자(BM/ADMIN)만 호출할 수 있고, 원본 코드는 이 응답에서만 볼 수 있다.
  */
-export const getBandInviteLink = async (
+export const createBandInviteLink = async (
   bandId: string,
 ): Promise<BandInviteLink> => {
-  const data = await apiGet<unknown>(`/bands/${bandId}/invite-link`);
+  const data = await apiPost<unknown>(`/bands/${bandId}/invite-link`);
   return bandInviteLinkSchema.parse(data);
 };
+
+/** 밴드 초대 링크 폐기(DELETE). 운영자만 호출할 수 있다. */
+export const revokeBandInviteLink = (bandId: string): Promise<unknown> =>
+  apiDelete(`/bands/${bandId}/invite-link`);
+
+/** 초대 코드로 밴드에 가입한다(POST /invite-links/:code/join). */
+export const joinBandByInviteCode = (code: string): Promise<unknown> =>
+  apiPost(`/invite-links/${code}/join`);

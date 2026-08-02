@@ -21,6 +21,7 @@ const listItem = {
   difficultyLevel: 2,
   sourceUrl: 'https://www.deezer.com/track/1',
   sourceType: 'DEEZER',
+  externalTrackId: 'track-1',
   songCoverUrl: 'https://cdn/cover.jpg',
   songLength: 277,
   externalLinks: ['https://youtu.be/abc'],
@@ -82,7 +83,7 @@ describe('band song api 어댑터', () => {
     expect(song?.referenceFiles[0]?.fileName).toBe('악보.pdf');
   });
 
-  it('미리듣기 URL은 아직 목록 응답에 없어 null로 채워진다', async () => {
+  it('미리듣기 조회에 쓰는 외부 트랙 ID를 보존한다', async () => {
     mock.onGet('/bands/band-1/songs').reply(200, {
       success: true,
       data: { items: [listItem], meta: {} },
@@ -90,7 +91,20 @@ describe('band song api 어댑터', () => {
 
     const [song] = await getBandSongs('band-1');
 
-    expect(song?.previewUrl).toBeNull();
+    expect(song?.externalTrackId).toBe('track-1');
+  });
+
+  it('직접 입력한 곡은 외부 트랙 ID가 없어 null로 채워진다', async () => {
+    const withoutTrackId: Record<string, unknown> = { ...listItem };
+    delete withoutTrackId.externalTrackId;
+    mock.onGet('/bands/band-1/songs').reply(200, {
+      success: true,
+      data: { items: [withoutTrackId], meta: {} },
+    });
+
+    const [song] = await getBandSongs('band-1');
+
+    expect(song?.externalTrackId).toBeNull();
   });
 
   it('필수 필드(id)가 누락되면 reject된다', async () => {

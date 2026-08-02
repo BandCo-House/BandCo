@@ -31,8 +31,10 @@ const bandSongs: SongListItem[] = SONG_FIXTURES.map((fixture, i) => ({
   key: null,
   bpm: 128,
   difficultyLevel: 2,
-  sourceUrl: null,
-  sourceType: null,
+  sourceUrl: `https://www.deezer.com/track/${i + 1}`,
+  sourceType: 'DEEZER',
+  // 미리듣기는 목록에 없고 이 ID로 트랙을 따로 조회해 재생한다.
+  externalTrackId: `track-${i + 1}`,
   songCoverUrl:
     fixture.hasCover === false
       ? null
@@ -42,8 +44,6 @@ const bandSongs: SongListItem[] = SONG_FIXTURES.map((fixture, i) => ({
   referenceFiles: [],
   createdAt: '2026-05-01T00:00:00+09:00',
   skills: [],
-  // 백엔드 미리듣기 URL 추가 전까지 mock에서 샘플로 동작을 확인한다.
-  previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
 }));
 
 // 외부 음원 검색 mock. '없는곡'으로 검색하면 빈 결과 → 직접 입력 경로를 확인할 수 있다.
@@ -83,6 +83,28 @@ export const songHandlers = [
     });
   }),
 
+  // 외부 트랙 단건 조회. 라이브러리에서 재생을 누른 곡만 이 경로로 미리듣기 URL을 받아간다.
+  http.get(`${API_URL}/songs/tracks/:trackId`, ({ params }) => {
+    const trackId = String(params.trackId);
+
+    return HttpResponse.json<ApiResponse<SongPreview>>({
+      success: true,
+      data: {
+        externalTrackId: trackId,
+        title: '미리듣기 트랙',
+        artistName: 'DAY6(데이식스)',
+        albumName: 'The Book of Us',
+        albumImageUrl: `https://picsum.photos/seed/${trackId}/300`,
+        releaseDate: '2021-04-19',
+        durationMs: 202_000,
+        previewUrl:
+          'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        sourceUrl: `https://www.deezer.com/track/${trackId}`,
+        sourceType: 'DEEZER',
+      },
+    });
+  }),
+
   http.post(`${API_URL}/bands/:bandId/songs`, async ({ request, params }) => {
     const body = (await request.json()) as CreateSongRequest;
     const created: SongListItem = {
@@ -95,13 +117,13 @@ export const songHandlers = [
       difficultyLevel: null,
       sourceUrl: body.sourceUrl ?? null,
       sourceType: body.sourceType ?? null,
+      externalTrackId: body.externalTrackId ?? null,
       songCoverUrl: body.songCoverUrl ?? null,
       songLength: body.songLength ?? null,
       externalLinks: body.externalLinks ?? [],
       referenceFiles: [],
       createdAt: new Date().toISOString(),
       skills: [],
-      previewUrl: null,
     };
     bandSongs.push(created);
 

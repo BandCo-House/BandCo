@@ -57,14 +57,14 @@ export const songListItemSchema = z.object({
   difficultyLevel: z.number().nullable().default(null),
   sourceUrl: z.string().nullable().default(null),
   sourceType: songSourceTypeSchema.nullable().default(null),
+  /** 외부 검색으로 등록한 곡만 존재. 미리듣기는 이 ID로 따로 조회한다. */
+  externalTrackId: z.string().nullable().default(null),
   songCoverUrl: z.string().nullable().default(null),
   songLength: z.number().nullable().default(null),
   externalLinks: z.array(z.string()).default([]),
   referenceFiles: z.array(songReferenceFileSchema).default([]),
   createdAt: z.string(),
   skills: z.array(songSkillItemSchema).default([]),
-  // 미리듣기 URL은 아직 목록 응답에 없어 mock에서만 채워진다.
-  previewUrl: z.string().nullable().default(null),
 });
 
 /** 외부 음원 검색(`GET /songs/tracks/search`) 결과 한 항목. */

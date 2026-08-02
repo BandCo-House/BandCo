@@ -49,6 +49,17 @@ export const searchTracks = async (query: string): Promise<SongPreview[]> => {
   return songPreviewListSchema.parse(data);
 };
 
+/**
+ * 외부 음원 트랙 단건 조회. 곡 목록은 미리듣기 URL을 주지 않으므로
+ * 재생이 필요할 때 externalTrackId로 따로 받아온다.
+ */
+export const getTrackPreview = async (
+  trackId: string,
+): Promise<SongPreview> => {
+  const data = await apiGet<unknown>(`/songs/tracks/${trackId}`);
+  return songPreviewSchema.parse(data);
+};
+
 /** 밴드 라이브러리에 합주곡을 추가한다. */
 export const createSong = async (
   bandId: string,
