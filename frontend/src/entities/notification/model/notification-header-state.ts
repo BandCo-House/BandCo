@@ -33,7 +33,9 @@ export const updateNotificationHeader = (
 export const getNotificationHeaderState = (): NotificationHeaderState =>
   headerState;
 
-export const subscribeNotificationHeader = (listener: () => void): (() => void) => {
+export const subscribeNotificationHeader = (
+  listener: () => void,
+): (() => void) => {
   headerListeners.add(listener);
   return () => {
     headerListeners.delete(listener);

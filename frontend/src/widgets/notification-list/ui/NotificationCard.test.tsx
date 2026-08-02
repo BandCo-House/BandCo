@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NotificationCard } from './NotificationCard';
 import type { NotificationItem } from '@/entities/notification/model/types';
@@ -33,6 +33,10 @@ describe('NotificationCard', () => {
     onDelete: vi.fn(),
     onMarkAsRead: vi.fn(),
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('알림의 제목과 설명을 정상적으로 렌더링한다', () => {
     renderWithClient(<NotificationCard {...defaultProps} />);

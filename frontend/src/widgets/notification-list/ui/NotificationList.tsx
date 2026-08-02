@@ -13,6 +13,7 @@ import {
 } from '@/entities/notification/api/useNotificationUnreadSummary';
 import { updateNotificationHeader } from '@/entities/notification/model/notification-header-state';
 import type { NotificationType } from '@/entities/notification/model/types';
+import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
 import { acceptInvite } from '@/features/invite-accept/api/invite-api';
 import { declineInvite } from '@/features/invite-decline/api/invite-api';
 import { bandKeys } from '@/entities/band/api/useBands';
@@ -81,12 +82,10 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     referenceId?: string,
   ) => {
     if (type === 'INVITE') {
-      const inviteId =
-        referenceId ??
-        new URLSearchParams(targetPath?.split('?')[1] ?? '').get(
-          'invitationId',
-        ) ??
-        '';
+      const inviteId = resolveInviteId({
+        reference: referenceId ? ({ id: referenceId } as never) : null,
+        targetPath,
+      });
 
       if (!inviteId) {
         toast.error('유효하지 않은 초대 ID입니다.');
@@ -127,12 +126,10 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     referenceId?: string,
   ) => {
     if (type === 'INVITE') {
-      const inviteId =
-        referenceId ??
-        new URLSearchParams(targetPath?.split('?')[1] ?? '').get(
-          'invitationId',
-        ) ??
-        '';
+      const inviteId = resolveInviteId({
+        reference: referenceId ? ({ id: referenceId } as never) : null,
+        targetPath,
+      });
 
       if (!inviteId) {
         toast.error('유효하지 않은 초대 ID입니다.');
@@ -171,10 +168,12 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     }
   };
 
+  const deleteManyMutate = deleteManyMutation.mutateAsync;
+
   const handleDeleteSelected = useCallback(async () => {
     if (selectedIds.size === 0) return;
     try {
-      await deleteManyMutation.mutateAsync(Array.from(selectedIds));
+      await deleteManyMutate(Array.from(selectedIds));
       setSelectedIds(new Set());
       setIsEditMode(false);
     } catch (error) {

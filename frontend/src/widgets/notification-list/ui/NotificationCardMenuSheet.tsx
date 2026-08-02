@@ -49,6 +49,7 @@ export const NotificationCardMenuSheet = ({
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
+        side="bottom"
         className="fixed inset-x-4 top-auto bottom-6 z-50 mx-auto flex h-auto w-[calc(100%-2rem)] max-w-[608px] animate-none! flex-col gap-2 border-0 bg-transparent p-0 shadow-none transition-none! duration-0 outline-none"
         showCloseButton={false}
       >

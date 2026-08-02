@@ -12,6 +12,6 @@ export function useBandInvitation(
   return useQuery({
     queryKey: inviteKeys.detail(invitationId),
     queryFn: () => getBandInvitationDetail(invitationId),
-    enabled: options?.enabled ?? Boolean(invitationId),
+    enabled: Boolean(invitationId) && (options?.enabled ?? true),
   });
 }

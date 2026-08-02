@@ -1,11 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
+import { API_URL } from '@/mocks/config';
 import { NotificationList } from './NotificationList';
-
-import { fireEvent } from '@testing-library/react';
 
 const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
@@ -28,7 +27,7 @@ describe('NotificationList', () => {
 
   it('공지사항 탭일 때 공지사항 알림 목록을 요청하고 렌더링한다', async () => {
     server.use(
-      http.get('/api/notifications/me', ({ request }) => {
+      http.get(`${API_URL}/notifications/me`, ({ request }) => {
         const url = new URL(request.url);
         expect(url.searchParams.get('where__type')).toBe('NOTICE');
         return HttpResponse.json({
@@ -60,7 +59,7 @@ describe('NotificationList', () => {
 
   it('비활성 탭에 안 읽은 알림이 있을 경우 #D6705C 색상의 dot 배지를 표시한다', async () => {
     server.use(
-      http.get('/api/notifications/unread-summary', () => {
+      http.get(`${API_URL}/notifications/unread-summary`, () => {
         return HttpResponse.json({
           status: 'success',
           error: null,
@@ -75,7 +74,7 @@ describe('NotificationList', () => {
           },
         });
       }),
-      http.get('/api/notifications/me', () => {
+      http.get(`${API_URL}/notifications/me`, () => {
         return HttpResponse.json({
           status: 'success',
           error: null,
@@ -101,7 +100,7 @@ describe('NotificationList', () => {
 
   it('모두 읽음 버튼이 알약(캡슐) 모양의 스타일(border-grey-300 rounded-full)로 표시된다', async () => {
     server.use(
-      http.get('/api/notifications/me', () => {
+      http.get(`${API_URL}/notifications/me`, () => {
         return HttpResponse.json({
           status: 'success',
           error: null,
@@ -141,7 +140,7 @@ describe('NotificationList', () => {
     let acceptApiCalled = false;
 
     server.use(
-      http.get('/api/notifications/me', () => {
+      http.get(`${API_URL}/notifications/me`, () => {
         return HttpResponse.json({
           status: 'success',
           error: null,

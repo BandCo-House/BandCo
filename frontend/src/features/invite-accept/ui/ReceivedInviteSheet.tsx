@@ -7,6 +7,7 @@ import {
 } from '@/shared/ui/sheet';
 import { useNavigate } from '@tanstack/react-router';
 import type { NotificationItem } from '@/entities/notification/model/types';
+import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
 import { useBandInvitation } from '@/entities/invite/api/useBandInvitation';
 import { useBand } from '@/entities/band/api/useBand';
 import { useReceivedInvite } from '../model/useReceivedInvite';
@@ -24,13 +25,7 @@ export function ReceivedInviteSheet({
 }: ReceivedInviteSheetProps) {
   const navigate = useNavigate();
 
-  // targetPath 혹은 reference에서 invitationId 추출
-  const inviteId =
-    noti.reference?.id ??
-    new URLSearchParams(noti.targetPath?.split('?')[1] ?? '').get(
-      'invitationId',
-    ) ??
-    '';
+  const inviteId = resolveInviteId(noti);
 
   const { data: invitation } = useBandInvitation(inviteId, {
     enabled: Boolean(inviteId && isOpen),

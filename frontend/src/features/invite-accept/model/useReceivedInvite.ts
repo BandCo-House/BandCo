@@ -10,7 +10,7 @@ import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNo
 interface UseReceivedInviteProps {
   inviteId: string;
   notificationId?: string;
-  onSuccess?: (bandId: string) => void;
+  onSuccess?: (joinedBandId: string) => void;
   onDeclineSuccess?: () => void;
 }
 

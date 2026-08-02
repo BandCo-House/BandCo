@@ -18,4 +18,3 @@ export type GetReceivedBandInvitationsResult = z.infer<
 export type GetBandInvitationResponse = z.infer<
   typeof getBandInvitationResponseSchema
 >;
-

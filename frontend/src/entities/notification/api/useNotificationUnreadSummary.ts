@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { getNotificationUnreadSummary, getUnreadNotificationBadge } from './notification-api';
+import {
+  getNotificationUnreadSummary,
+  getUnreadNotificationBadge,
+} from './notification-api';
 
 export const notificationQueries = {
   all: ['notifications'] as const,

@@ -40,20 +40,23 @@ export const getReceivedBandInvitationsResultSchema = z.object({
   }),
 });
 
-export const getReceivedBandInvitationsResponseSchema = z.discriminatedUnion('status', [
-  z.object({
-    status: z.literal('success'),
-    error: z.null(),
-    message: z.string(),
-    data: getReceivedBandInvitationsResultSchema,
-  }),
-  z.object({
-    status: z.literal('error'),
-    error: z.string().nullable(),
-    message: z.string(),
-    data: z.unknown().optional(),
-  }),
-]);
+export const getReceivedBandInvitationsResponseSchema = z.discriminatedUnion(
+  'status',
+  [
+    z.object({
+      status: z.literal('success'),
+      error: z.null(),
+      message: z.string(),
+      data: getReceivedBandInvitationsResultSchema,
+    }),
+    z.object({
+      status: z.literal('error'),
+      error: z.string().nullable(),
+      message: z.string(),
+      data: z.unknown().optional(),
+    }),
+  ],
+);
 
 export const getBandInvitationResponseSchema = z.discriminatedUnion('status', [
   z.object({
@@ -69,4 +72,3 @@ export const getBandInvitationResponseSchema = z.discriminatedUnion('status', [
     data: z.unknown().optional(),
   }),
 ]);
-
