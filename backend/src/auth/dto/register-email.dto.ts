@@ -22,9 +22,9 @@ export class RegisterEmailDto {
   })
   password: string;
 
-  @ApiProperty({ description: '이름 (프로필 닉네임으로 저장된다)', example: '홍길동' })
+  @ApiProperty({ description: '닉네임 (프로필 닉네임으로 저장된다)', example: '홍길동' })
   @IsString({ message: stringValidationMessage })
   @MinLength(2, { message: lengthValidationMessage })
   @MaxLength(255, { message: lengthValidationMessage })
-  name: string;
+  nickname: string;
 }

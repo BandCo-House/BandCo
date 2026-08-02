@@ -23,7 +23,7 @@ export const loginSchema = z.object({
 });
 
 export const signupSchema = loginSchema.extend({
-  name: z.string().min(2, '이름은 2자 이상이어야 합니다.'),
+  nickname: z.string().min(2, '이름은 2자 이상이어야 합니다.'),
 });
 
 export type LoginReq = z.infer<typeof loginSchema>;

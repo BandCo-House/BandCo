@@ -7,7 +7,7 @@ import { server } from '@/mocks/server';
 
 describe('SignupForm', () => {
   const getFields = () => ({
-    name: screen.getByLabelText(/^이름\s*\*$/),
+    nickname: screen.getByLabelText(/^이름\s*\*$/),
     email: screen.getByLabelText(/^이메일\s*\*$/),
     password: screen.getByLabelText(/^비밀번호\s*\*$/),
     passwordConfirm: screen.getByLabelText(/^비밀번호 확인\s*\*$/),
@@ -29,7 +29,7 @@ describe('SignupForm', () => {
     expect(fields.email).toBeInTheDocument();
     expect(fields.password).toBeInTheDocument();
     expect(fields.passwordConfirm).toBeInTheDocument();
-    expect(fields.name).toBeInTheDocument();
+    expect(fields.nickname).toBeInTheDocument();
   });
 
   it('필수 입력과 약관 동의가 끝나면 가입하기 버튼은 활성화되어야 한다', async () => {
@@ -43,7 +43,7 @@ describe('SignupForm', () => {
     await user.type(fields.email, 'test@test.com');
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
-    await user.type(fields.name, '홍길동');
+    await user.type(fields.nickname, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
 
     expect(submitButton).toBeEnabled();
@@ -61,7 +61,7 @@ describe('SignupForm', () => {
     await user.type(fields.email, 'test@test.com');
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
-    await user.type(fields.name, '홍길동');
+    await user.type(fields.nickname, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(screen.getByRole('button', { name: '중복 확인' }));
     await waitFor(() => expect(submitButton).toBeEnabled());
@@ -70,7 +70,7 @@ describe('SignupForm', () => {
     expect(handleSubmit).toHaveBeenCalledWith({
       email: 'test@test.com',
       password: 'password123!',
-      name: '홍길동',
+      nickname: '홍길동',
     });
   });
 
@@ -85,7 +85,7 @@ describe('SignupForm', () => {
     await user.type(fields.email, 'invalid-email');
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
-    await user.type(fields.name, '홍길동');
+    await user.type(fields.nickname, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
 
     expect(submitButton).toBeEnabled();
@@ -107,7 +107,7 @@ describe('SignupForm', () => {
     await user.type(fields.email, 'test@test.com');
     await user.type(fields.password, 'pass123_!');
     await user.type(fields.passwordConfirm, 'pass123_!');
-    await user.type(fields.name, '홍길동');
+    await user.type(fields.nickname, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 
@@ -128,7 +128,7 @@ describe('SignupForm', () => {
     await user.type(fields.email, 'test@test.com');
     await user.type(fields.password, '1111111!');
     await user.type(fields.passwordConfirm, '1111111!');
-    await user.type(fields.name, '홍길동');
+    await user.type(fields.nickname, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 
@@ -152,7 +152,7 @@ describe('SignupForm', () => {
     await user.type(fields.email, 'test@test.com');
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
-    await user.type(fields.name, '홍길동');
+    await user.type(fields.nickname, '홍길동');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 

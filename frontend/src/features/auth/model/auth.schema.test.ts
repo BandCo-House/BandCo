@@ -105,7 +105,7 @@ describe('authSchema', () => {
       const validData = {
         email: 'test@test.com',
         password: 'pass123!',
-        name: '홍길동',
+        nickname: '홍길동',
       };
       const result = signupSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -115,7 +115,7 @@ describe('authSchema', () => {
       const result = signupSchema.safeParse({
         email: 't@t.com',
         password: 'pass123!',
-        name: '김',
+        nickname: '김',
       });
       expect(result.success).toBe(false);
     });

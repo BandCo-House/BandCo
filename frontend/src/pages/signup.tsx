@@ -30,7 +30,7 @@ export function SignupPage() {
       const res = await registerEmail(data);
       // 회원가입 성공 시 자동 로그인 (이름은 가입 요청에서 프로필 닉네임으로 저장된다)
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/onboarding', search: { name: data.name } });
+      await navigate({ to: '/onboarding', search: { name: data.nickname } });
     } catch (err) {
       toast.error(getApiErrorMessage(err, '회원가입에 실패했습니다.'));
     } finally {

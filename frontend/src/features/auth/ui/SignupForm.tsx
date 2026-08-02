@@ -229,7 +229,7 @@ export const SignupForm = ({
   const [formData, setFormData] = useState<SignupReq>({
     email: '',
     password: '',
-    name: '',
+    nickname: '',
   });
   const [errors, setErrors] = useState<SignupFormErrors>({});
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -246,7 +246,7 @@ export const SignupForm = ({
     hasPasswordConfirmInput && formData.password === passwordConfirm;
   const isRequiredTermsChecked = terms.service && terms.privacy;
   const isRequiredFieldsFilled =
-    formData.name.length > 0 &&
+    formData.nickname.length > 0 &&
     formData.email.length > 0 &&
     formData.password.length > 0 &&
     passwordConfirm.length > 0;
@@ -372,12 +372,12 @@ export const SignupForm = ({
     <div className="flex min-h-full w-full flex-col pb-8 text-muted">
       <form onSubmit={handleSubmit} className="flex flex-col gap-10" noValidate>
         <SignupInput
-          id="name"
-          value={formData.name}
+          id="nickname"
+          value={formData.nickname}
           label="이름"
           onChange={handleChange}
           placeholder="이름을 입력하세요."
-          errorMessage={errors.name}
+          errorMessage={errors.nickname}
         />
         <SignupInput
           id="email"
