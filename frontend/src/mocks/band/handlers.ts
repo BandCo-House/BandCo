@@ -328,6 +328,76 @@ export const bandHandlers = [
     });
   }),
 
+  // 밴드 영구 초대 링크 Mock (GET /bands/:bandId/invite-link)
+  // TODO: 백엔드에 band_invite_link 테이블만 있고 API가 없어 mock으로만 동작한다.
+  // ':bandId' 핸들러보다 앞에 둬야 하위 경로가 가로채이지 않는다.
+  http.get(`${API_URL}/bands/:bandId/invite-link`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+    const found = mockBands.find((band) => band.id === bandId) ?? mockBands[0];
+    const code = `INV-${found.inviteCode ?? 'BANDCO01'}`;
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 초대 링크 조회 성공',
+      data: { code, url: `${window.location.origin}/invite/${code}` },
+    });
+  }),
+
+  // 밴드 정보 수정 Mock (PATCH /bands/:bandId)
+  http.patch(`${API_URL}/bands/:bandId`, async ({ params, request }) => {
+    const { bandId } = params as { bandId: string };
+    const body = (await request.json()) as {
+      name?: string;
+      description?: string | null;
+      visibility?: boolean;
+      coverImgUrl?: string | null;
+    };
+    const index = mockBands.findIndex((band) => band.id === bandId);
+    const target = index >= 0 ? mockBands[index] : mockBands[0];
+    const updated = {
+      ...target,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.description !== undefined
+        ? { description: body.description }
+        : {}),
+      ...(body.visibility !== undefined ? { visibility: body.visibility } : {}),
+    };
+    if (index >= 0) mockBands[index] = updated;
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 정보 수정 성공',
+      data: {
+        band: {
+          id: updated.id,
+          name: updated.name,
+          description: updated.description,
+          visibility: updated.visibility,
+          coverImgUrl: body.coverImgUrl ?? null,
+          bandMasterUserId: '11111111-1111-1111-1111-111111111111',
+          genres: [],
+          memberCount: updated.memberCount ?? 0,
+          createdAt: updated.createdAt,
+        },
+      },
+    });
+  }),
+
+  // 밴드 나가기 Mock (DELETE /bands/:bandId/me)
+  http.delete(`${API_URL}/bands/:bandId/me`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+    mockBands = mockBands.filter((band) => band.id !== bandId);
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 나가기 완료',
+      data: { bandId },
+    });
+  }),
+
   // 밴드 상세 조회 Mock (GET /bands/:bandId)
   // '/bands/me' 뒤에 둬야 :bandId가 me를 가로채지 않는다.
   http.get(`${API_URL}/bands/:bandId`, ({ params }) => {

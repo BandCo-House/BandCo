@@ -49,6 +49,15 @@ export const bandDetailSchema = z.object({
   createdAt: z.string(),
 });
 
+/**
+ * 밴드 영구 초대 링크(`GET /bands/:bandId/invite-link`).
+ * TODO: 백엔드는 band_invite_link 테이블만 있고 API가 아직 없어 현재는 MSW mock으로만 동작한다.
+ */
+export const bandInviteLinkSchema = z.object({
+  code: z.string(),
+  url: z.string(),
+});
+
 export const bandListResponseSchema = z.object({
   status: z.enum(['success', 'error']),
   error: z.string().nullable(),
