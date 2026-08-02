@@ -21,12 +21,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const isAccessExpired = isTokenExpired(accessToken);
     const isRefreshExpired = isTokenExpired(refreshToken);
     
-    // 액세스 토큰이 유효하거나, 혹은 액세스 토큰은 만료되었으나 리프레시 토큰이 만료되지 않고 존재하는 경우 로그인 유지
-    const isLoggedIn = !!userId && (!isAccessExpired || (!!refreshToken && !isRefreshExpired));
-    
-    if (accessToken && (isAccessExpired && (!refreshToken || isRefreshExpired))) {
+    const isAccessInvalid = !accessToken || isAccessExpired;
+    const isRefreshInvalid = !refreshToken || isRefreshExpired;
+
+    if (isAccessInvalid && isRefreshInvalid && (Boolean(accessToken) || Boolean(refreshToken))) {
       clearTokens();
     }
+
+    const isLoggedIn = !!userId && (!isAccessExpired || (!!refreshToken && !isRefreshExpired));
     
     return {
       isLoggedIn,

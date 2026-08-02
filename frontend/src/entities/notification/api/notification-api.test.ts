@@ -14,10 +14,10 @@ afterEach(() => {
 });
 
 describe('getUnreadNotificationBadge 어댑터', () => {
-  it('GET /notifications/me?where__is_read=false&take=10 요청을 하여 10개 미만일 때 개수를 반환한다', async () => {
+  it('GET /notifications/me?where__is_read=false&where__type=INVITE&take=10 요청을 하여 10개 미만일 때 개수를 반환한다', async () => {
     mock
       .onGet('/notifications/me', {
-        params: { where__is_read: false, take: 10 },
+        params: { where__is_read: false, where__type: 'INVITE', take: 10 },
       })
       .reply(200, {
         status: 'success',
@@ -46,7 +46,7 @@ describe('getUnreadNotificationBadge 어댑터', () => {
   it('10개 이상 데이터가 있어 next 필드가 존재하면 hasMore를 true로 반환한다', async () => {
     mock
       .onGet('/notifications/me', {
-        params: { where__is_read: false, take: 10 },
+        params: { where__is_read: false, where__type: 'INVITE', take: 10 },
       })
       .reply(200, {
         status: 'success',

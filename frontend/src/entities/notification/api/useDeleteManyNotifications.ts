@@ -11,7 +11,10 @@ export const useDeleteManyNotifications = () => {
   return useMutation({
     mutationFn: deleteManyNotifications,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: notificationQueries.all });
+      queryClient.invalidateQueries({ queryKey: notificationQueries.list() });
+      queryClient.invalidateQueries({
+        queryKey: notificationQueries.unreadBadge(),
+      });
     },
   });
 };

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { getUserIdFromToken, isTokenExpired } from './jwt';
 
 // Mock JWT payload: {"email":"test@example.com","id":"user-001","type":"access"}
-const mockToken = 'header.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpZCI6InVzZXItMDAxIiwidHlwZSI6ImFjY2VzcyJ9.signature';
+const mockToken =
+  'header.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpZCI6InVzZXItMDAxIiwidHlwZSI6ImFjY2VzcyJ9.signature';
 
 describe('getUserIdFromToken', () => {
   it('토큰이 있으면 ID를 파싱하여 반환한다', () => {
@@ -66,6 +67,12 @@ describe('isTokenExpired', () => {
   it('토큰의 exp가 숫자가 아니면 true를 반환한다', () => {
     const invalidExpToken = `header.${window.btoa(JSON.stringify({ exp: 'invalid' }))}.signature`;
     expect(isTokenExpired(invalidExpToken)).toBe(true);
+  });
+
+  it('토큰의 exp가 현재 시간과 정확히 같으면 true(만료됨)를 반환한다', () => {
+    const nowTime = Math.floor(Date.now() / 1000);
+    const nowToken = `header.${window.btoa(JSON.stringify({ exp: nowTime }))}.signature`;
+    expect(isTokenExpired(nowToken)).toBe(true);
   });
 
   it('토큰이 null이거나 잘못된 형식이면 true를 반환한다', () => {

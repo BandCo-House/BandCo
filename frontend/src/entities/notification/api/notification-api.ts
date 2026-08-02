@@ -38,6 +38,7 @@ export const getUnreadNotificationBadge = async (): Promise<{
 }> => {
   const data = await getNotificationList({
     where__is_read: false,
+    where__type: 'INVITE',
     take: 10,
   });
   return {

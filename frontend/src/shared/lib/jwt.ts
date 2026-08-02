@@ -36,7 +36,7 @@ export const isTokenExpired = (token: string | null): boolean => {
   if (!token) return true;
   const payload = decodeToken(token);
   if (!payload) return true;
-  if (payload.exp === undefined || typeof payload.exp !== 'number') return true;
-  return payload.exp * 1000 < Date.now();
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp))
+    return true;
+  return payload.exp * 1000 <= Date.now();
 };
-

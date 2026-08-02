@@ -150,4 +150,18 @@ describe('AuthProvider Token Expiration Logic', () => {
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');
     expect(clearTokens).toHaveBeenCalled();
   });
+
+  it('액세스 토큰이 없고 만료된 리프레시 토큰만 있는 경우 clearTokens를 실행하고 비로그인 상태를 유지한다', () => {
+    vi.mocked(getAccessToken).mockReturnValue(null);
+    vi.mocked(getRefreshToken).mockReturnValue(mockExpiredRefreshToken);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('logged-in').textContent).toBe('NO');
+    expect(clearTokens).toHaveBeenCalled();
+  });
 });

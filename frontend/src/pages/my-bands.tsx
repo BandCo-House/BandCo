@@ -20,15 +20,13 @@ function MyBandsHeaderActions() {
       </Link>
       <Link
         to="/notifications"
-        search={{
-          tab:"INVITE"
-        }}
-        className="relative rounded-full transition-colors p-1"
+        search={{ tab: 'INVITE' }}
+        className="relative rounded-full p-1 transition-colors"
         aria-label="알림"
       >
         <Bell className="size-6" />
         {showBadge && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] leading-none font-bold text-white">
             {badgeText}
           </span>
         )}

@@ -8,6 +8,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import type { NotificationItem } from '@/entities/notification/model/types';
 import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
+import { getKoreanParticle } from '@/shared/lib/korean-particle';
 import { useBandInvitation } from '@/entities/invite/api/useBandInvitation';
 import { useBand } from '@/entities/band/api/useBand';
 import { useReceivedInvite } from '../model/useReceivedInvite';
@@ -98,7 +99,8 @@ export function ReceivedInviteSheet({
         {/* 밴드 요약 정보 카드 */}
         <div className="mt-8 flex w-full flex-col gap-2">
           <span className="text-center font-['SUIT'] text-xs font-normal text-[#9D9D9F]">
-            {band}는 이런 밴드에요
+            {band}
+            {getKoreanParticle(band, '은/는')} 이런 밴드에요
           </span>
 
           <div className="flex w-full flex-col gap-6 rounded-lg bg-white p-6 shadow-sm">
