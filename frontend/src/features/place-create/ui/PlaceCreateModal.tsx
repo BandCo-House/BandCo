@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { uploadImage } from '@/shared/api';
+import { uploadFile } from '@/shared/api';
 import { useCreatePlace } from '@/entities/place/api/useCreatePlace';
 import {
   Sheet,
@@ -85,7 +85,7 @@ export const PlaceCreateModal = ({
     if (coverFile) {
       setIsUploading(true);
       try {
-        imageUrl = await uploadImage(coverFile, 'places');
+        imageUrl = await uploadFile(coverFile, 'places');
       } catch {
         toast.error(
           '커버 이미지를 업로드하지 못했어요. 잠시 후 다시 시도해주세요.',
@@ -134,7 +134,7 @@ export const PlaceCreateModal = ({
           </button>
         </header>
 
-        <div className="flex flex-1 flex-col gap-9 overflow-y-auto px-5 pt-2 pb-6">
+        <div className="flex flex-1 flex-col gap-9 overflow-y-auto px-5 pt-8 pb-6">
           <div className="flex flex-col gap-2">
             <SheetTitle className="typo-xl-sb text-grey-50">
               장소 추가

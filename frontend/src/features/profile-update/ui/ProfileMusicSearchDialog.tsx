@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -32,17 +33,12 @@ export function ProfileMusicSearchDialog({
   onSelect,
 }: ProfileMusicSearchDialogProps) {
   const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [results, setResults] = useState<ProfileMusicPreview[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const debouncedQuery = useDebouncedValue(query);
 
   const hasQuery = useMemo(() => query.trim().length > 0, [query]);
   const shouldShowResults = open && debouncedQuery.trim().length > 0;
-
-  useEffect(() => {
-    const timerId = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(timerId);
-  }, [query]);
 
   useEffect(() => {
     if (!open || !debouncedQuery.trim()) return;
@@ -74,7 +70,6 @@ export function ProfileMusicSearchDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       setQuery('');
-      setDebouncedQuery('');
       setResults([]);
       setIsLoading(false);
     }
