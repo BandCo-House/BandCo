@@ -129,7 +129,7 @@ export function ReceivedInviteSheet({
             <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center text-sm font-semibold text-[#9D9D9F] select-none">
               이미 거절한 초대장입니다
             </div>
-          ) : noti.isRead || noti.reference?.status === 'ACCEPTED' ? (
+          ) : noti.reference?.status === 'ACCEPTED' ? (
             <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center text-sm font-semibold text-[#9D9D9F] select-none">
               이미 수락한 초대장입니다
             </div>

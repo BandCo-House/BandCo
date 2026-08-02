@@ -202,17 +202,22 @@ describe('ReceivedInviteSheet', () => {
     });
   });
 
-  it('이미 읽은(수락 완료된) 초대장인 경우, 이미 수락한 초대장입니다 라는 상태를 노출하고 수락/거절 버튼을 노출하지 않는다', () => {
-    const mockReadNoti = {
+  it('이미 수락 완료된 초대장인 경우, 이미 수락한 초대장입니다 라는 상태를 노출하고 수락/거절 버튼을 노출하지 않는다', () => {
+    const mockAcceptedNoti = {
       ...mockNoti,
       isRead: true,
+      reference: {
+        id: 'invite-123',
+        type: 'INVITE' as const,
+        status: 'ACCEPTED' as const,
+      },
     };
 
     renderWithClient(
       <ReceivedInviteSheet
         isOpen={true}
         onOpenChange={vi.fn()}
-        noti={mockReadNoti}
+        noti={mockAcceptedNoti}
       />,
     );
 
@@ -223,5 +228,30 @@ describe('ReceivedInviteSheet', () => {
     expect(
       screen.queryByRole('button', { name: '거절' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('알림이 읽음 상태(isRead: true)이더라도 초대 상태가 PENDING이면 수락/거절 버튼이 정상 노출된다', () => {
+    const mockReadPendingNoti = {
+      ...mockNoti,
+      isRead: true,
+      reference: {
+        id: 'invite-123',
+        type: 'INVITE' as const,
+        status: 'PENDING' as const,
+      },
+    };
+
+    renderWithClient(
+      <ReceivedInviteSheet
+        isOpen={true}
+        onOpenChange={vi.fn()}
+        noti={mockReadPendingNoti}
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', { name: '수락하고 참여하기' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '거절' })).toBeInTheDocument();
   });
 });
