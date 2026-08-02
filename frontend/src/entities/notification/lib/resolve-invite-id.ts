@@ -9,11 +9,13 @@ export const resolveInviteId = (
   if (!noti) return '';
   if (noti.reference?.id) return noti.reference.id;
   if (noti.targetPath) {
-    const searchParams = new URLSearchParams(
-      noti.targetPath.split('?')[1] ?? '',
-    );
-    const invitationId = searchParams.get('invitationId');
-    if (invitationId) return invitationId;
+    try {
+      const url = new URL(noti.targetPath, 'http://dummy.local');
+      const invitationId = url.searchParams.get('invitationId');
+      if (invitationId) return invitationId;
+    } catch {
+      return '';
+    }
   }
   return '';
 };
