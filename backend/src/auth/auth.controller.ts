@@ -55,8 +55,10 @@ export class AuthController {
   @ApiOperation({ summary: '이메일 회원가입' })
   @ApiResponse({ status: 201, description: '회원가입 성공' })
   @ApiResponse({ status: 400, description: '유효성 검사 실패 (이메일 형식 불일치, 비밀번호 패턴 불일치) | 이미 존재하는 이메일' })
-  async registerEmail(@Body() { email, password }: RegisterEmailDto): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
-    const tokens = await this.authService.registerWithEmail(email, password);
+  async registerEmail(
+    @Body() { email, password, nickname }: RegisterEmailDto,
+  ): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
+    const tokens = await this.authService.registerWithEmail(email, password, nickname);
     return createSuccessResponse('회원가입 성공', tokens);
   }
 

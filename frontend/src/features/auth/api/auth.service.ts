@@ -17,7 +17,7 @@ export type EmailDuplicateCheckResponse = {
 
 /**
  * 이메일 회원가입
- * @param data email, password, name
+ * @param data email, password, nickname
  * @returns accessToken, refreshToken
  */
 export const registerEmail = async (

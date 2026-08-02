@@ -25,7 +25,7 @@ export interface UsersRepository {
   findByEmail(email: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
   findAuthUserById(id: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
   findUserForPasswordAuth(email: string, tx?: Prisma.TransactionClient): Promise<PasswordAuthUser | null>;
-  createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient): Promise<User>;
+  createUserWithEmail(email: string, passwordHash: string, nickname: string, tx?: Prisma.TransactionClient): Promise<User>;
   findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult>;
   findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null>;
   updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult>;

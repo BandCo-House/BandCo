@@ -9,6 +9,8 @@ export {
 
 export { uploadImage } from './upload';
 
+export { getApiErrorMessage } from './error';
+
 export type { ApiResponse, ApiError, TokenResponse } from './types';
 
 export {

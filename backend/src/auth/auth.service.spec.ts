@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import type { Prisma } from 'src/generated/prisma';
 import { UsersService } from 'src/modules/users/users.service';
 
 import { AuthService } from './auth.service';
@@ -195,9 +196,30 @@ describe('AuthService', () => {
       mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
       mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
 
-      const result = await service.registerWithEmail('new@u.com', 'pw');
+      const result = await service.registerWithEmail('new@u.com', 'pw', '홍길동');
       expect(bcrypt.hash).toHaveBeenCalledWith('pw', 10);
       expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    });
+
+    it('이름을 닉네임으로 usersService에 전달한다', async () => {
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
+      mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+
+      await service.registerWithEmail('new@u.com', 'pw', '홍길동');
+
+      expect(mockUsersService.createUserWithEmail).toHaveBeenCalledWith('new@u.com', 'hashed', '홍길동', undefined);
+    });
+
+    it('외부 tx가 전달되면 usersService에 동일한 tx를 전달한다', async () => {
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
+      mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.registerWithEmail('new@u.com', 'pw', '홍길동', tx);
+
+      expect(mockUsersService.createUserWithEmail).toHaveBeenCalledWith('new@u.com', 'hashed', '홍길동', tx);
     });
   });
 });

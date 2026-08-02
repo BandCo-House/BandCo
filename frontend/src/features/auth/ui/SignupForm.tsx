@@ -229,7 +229,7 @@ export const SignupForm = ({
   const [formData, setFormData] = useState<SignupReq>({
     email: '',
     password: '',
-    name: '',
+    nickname: '',
   });
   const [errors, setErrors] = useState<SignupFormErrors>({});
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -246,7 +246,7 @@ export const SignupForm = ({
     hasPasswordConfirmInput && formData.password === passwordConfirm;
   const isRequiredTermsChecked = terms.service && terms.privacy;
   const isRequiredFieldsFilled =
-    formData.name.length > 0 &&
+    formData.nickname.length > 0 &&
     formData.email.length > 0 &&
     formData.password.length > 0 &&
     passwordConfirm.length > 0;
@@ -372,12 +372,12 @@ export const SignupForm = ({
     <div className="flex min-h-full w-full flex-col pb-8 text-muted">
       <form onSubmit={handleSubmit} className="flex flex-col gap-10" noValidate>
         <SignupInput
-          id="name"
-          value={formData.name}
+          id="nickname"
+          value={formData.nickname}
           label="이름"
           onChange={handleChange}
           placeholder="이름을 입력하세요."
-          errorMessage={errors.name}
+          errorMessage={errors.nickname}
         />
         <SignupInput
           id="email"
@@ -410,7 +410,7 @@ export const SignupForm = ({
           label="비밀번호"
           onChange={handleChange}
           placeholder="비밀번호를 입력하세요."
-          helperText="영문, 숫자, 특수문자(!@#$%^&*())만 사용할 수 있습니다."
+          helperText="8자 이상, 영문·숫자·특수문자(!@#$%^&*())를 각 1개 이상 포함해주세요."
           errorMessage={errors.password}
         />
         <SignupInput
