@@ -106,6 +106,7 @@ export const toCreateSongRequest = (
     artistName: form.artistName.trim(),
     sourceUrl: form.track?.sourceUrl,
     sourceType: form.track?.sourceType,
+    externalTrackId: form.track?.externalTrackId,
     key: form.songKey ?? undefined,
     bpm: bpm ? Number(bpm) : undefined,
     songCoverUrl: uploaded.songCoverUrl,

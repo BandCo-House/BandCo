@@ -28,11 +28,10 @@ export const Route = createFileRoute('/onboarding')({
 function OnboardingPage() {
   const navigate = useNavigate();
   const auth = useAuth();
-  const { name, profileUpdateFailed } = Route.useSearch();
+  const { name } = Route.useSearch();
   // 장르·파트는 공용 목록(/common/*)을 쓰고, 온보딩 선택지 형태로만 옮긴다.
   const genreOptionsQuery = useGenres();
   const partOptionsQuery = useSkillTypes();
-  const shouldShowProfileUpdateFailure = profileUpdateFailed === '1';
 
   const toOptions = (
     items: { id: string; name: string }[] | undefined,
@@ -101,23 +100,11 @@ function OnboardingPage() {
   }
 
   return (
-    <>
-      {shouldShowProfileUpdateFailure ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mx-auto mb-6 w-full max-w-2xl rounded-md bg-destructive/10 px-5 py-4 text-center typo-sm-m text-destructive"
-        >
-          회원가입은 완료됐지만 프로필 저장에 실패했습니다. 온보딩에서 이어서
-          설정해주세요.
-        </div>
-      ) : null}
-      <OnboardingFlow
-        userName={name}
-        genres={toOptions(genreOptionsQuery.data)}
-        parts={toOptions(partOptionsQuery.data)}
-        onComplete={handleComplete}
-      />
-    </>
+    <OnboardingFlow
+      userName={name}
+      genres={toOptions(genreOptionsQuery.data)}
+      parts={toOptions(partOptionsQuery.data)}
+      onComplete={handleComplete}
+    />
   );
 }

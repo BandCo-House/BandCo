@@ -81,18 +81,16 @@ export class CreateSongBodyDto {
   })
   bpm?: number;
 
-  @ApiProperty({ description: 'Deezer 외부 트랙 ID', example: '3135556' })
-  @Transform(trimStringValue)
+  @ApiPropertyOptional({ description: 'Deezer 외부 트랙 ID (외부 검색으로 등록한 곡만 존재)', example: '3135556' })
+  @Transform(normalizeOptionalStringValue)
+  @IsOptional()
   @IsString({
     message: stringValidationMessage,
-  })
-  @IsNotEmpty({
-    message: notemptyValidationMessage,
   })
   @MaxLength(255, {
     message: lengthValidationMessage,
   })
-  externalTrackId!: string;
+  externalTrackId?: string;
 
   @ApiPropertyOptional({ description: '곡 메모', example: '인트로 부분 연습 필요' })
   @Transform(normalizeOptionalStringValue)

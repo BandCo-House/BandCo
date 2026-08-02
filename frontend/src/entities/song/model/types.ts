@@ -19,6 +19,8 @@ export interface CreateSongRequest {
   artistName: string;
   sourceUrl?: string;
   sourceType?: SongSourceType;
+  /** 외부 검색으로 등록한 곡만 존재한다. 직접 입력한 곡은 없다. */
+  externalTrackId?: string;
   key?: SongKey;
   bpm?: number;
   songCoverUrl?: string;

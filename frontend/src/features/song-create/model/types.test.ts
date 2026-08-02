@@ -108,6 +108,7 @@ describe('toCreateSongRequest', () => {
       artistName: 'Oasis',
       sourceUrl: 'https://www.deezer.com/track/1',
       sourceType: 'DEEZER',
+      externalTrackId: 'track-1',
       key: 'FSM',
       bpm: 120,
       songLength: 277,
@@ -128,6 +129,7 @@ describe('toCreateSongRequest', () => {
     expect(request.artistName).toBe('우리밴드');
     expect(request.sourceUrl).toBeUndefined();
     expect(request.sourceType).toBeUndefined();
+    expect(request.externalTrackId).toBeUndefined();
     expect(request.key).toBeUndefined();
     expect(request.bpm).toBeUndefined();
     expect(request.songLength).toBeUndefined();
