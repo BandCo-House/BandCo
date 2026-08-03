@@ -4,6 +4,7 @@ import {
   applyManualEntryToForm,
   applyTrackToForm,
   createEmptyForm,
+  isExternalLinkValid,
   isFormValid,
   toCreateSongRequest,
 } from './types';
@@ -88,6 +89,20 @@ describe('isFormValid', () => {
     expect(isFormValid({ ...filled, bpm: '0' })).toBe(false);
     expect(isFormValid({ ...filled, bpm: '백이십' })).toBe(false);
     expect(isFormValid({ ...filled, songLength: '437' })).toBe(false);
+  });
+});
+
+describe('isExternalLinkValid', () => {
+  it('http(s) 주소만 통과시킨다', () => {
+    expect(isExternalLinkValid('https://youtu.be/abc')).toBe(true);
+    expect(isExternalLinkValid('http://example.com')).toBe(true);
+  });
+
+  it('스킴이 없거나 http(s)가 아니면 막는다', () => {
+    expect(isExternalLinkValid('youtu.be/abc')).toBe(false);
+    expect(isExternalLinkValid('그냥 메모')).toBe(false);
+    expect(isExternalLinkValid('javascript:alert(1)')).toBe(false);
+    expect(isExternalLinkValid('')).toBe(false);
   });
 });
 

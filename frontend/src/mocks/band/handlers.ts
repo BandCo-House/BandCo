@@ -239,6 +239,9 @@ let mockBands: Band[] = [
   },
 ];
 
+// 밴드 커버는 Band 목록 타입에 없어 mock에서만 따로 기억한다(수정 후 재조회 확인용).
+const mockCoverImgUrls = new Map<string, string | null>();
+
 export const bandHandlers = [
   // 밴드 목록 조회 Mock
   http.get(`${API_URL}/bands`, () => {
@@ -403,6 +406,8 @@ export const bandHandlers = [
       ...(body.visibility !== undefined ? { visibility: body.visibility } : {}),
     };
     if (index >= 0) mockBands[index] = updated;
+    if (body.coverImgUrl !== undefined)
+      mockCoverImgUrls.set(bandId, body.coverImgUrl);
 
     return HttpResponse.json({
       status: 'success',
@@ -414,7 +419,7 @@ export const bandHandlers = [
           name: updated.name,
           description: updated.description,
           visibility: updated.visibility,
-          coverImgUrl: body.coverImgUrl ?? null,
+          coverImgUrl: mockCoverImgUrls.get(bandId) ?? null,
           bandMasterUserId: '11111111-1111-1111-1111-111111111111',
           genres: [],
           memberCount: updated.memberCount ?? 0,
@@ -453,7 +458,7 @@ export const bandHandlers = [
           name: found.name,
           description: found.description,
           visibility: found.visibility,
-          coverImgUrl: null,
+          coverImgUrl: mockCoverImgUrls.get(bandId) ?? null,
           bandMasterUserId: '11111111-1111-1111-1111-111111111111',
           genres: [
             { id: 'genre-rock', name: '록' },

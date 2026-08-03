@@ -9,6 +9,7 @@ import {
 import type { BandInviteLink } from '@/entities/band/model/types';
 import { formatDotDate } from '@/shared/lib/date';
 import { Button } from '@/shared/ui/button';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 
 interface BandInviteLinkCardProps {
   bandId: string;
@@ -43,6 +44,7 @@ export const BandInviteLinkCard = ({
   bandName,
 }: BandInviteLinkCardProps) => {
   const [inviteLink, setInviteLink] = useState<BandInviteLink | null>(null);
+  const [isIssueConfirmOpen, setIsIssueConfirmOpen] = useState(false);
   const { mutate: issue, isPending: isIssuing } =
     useCreateBandInviteLink(bandId);
   const { mutate: revoke, isPending: isRevoking } =
@@ -91,15 +93,30 @@ export const BandInviteLinkCard = ({
           링크를 발급하면 코드를 아는 사람은 누구나 &ldquo;{bandName}&rdquo;
           밴드에 참여할 수 있어요.
         </p>
+        <p className="typo-xs-r text-grey-200">
+          이미 공유한 링크가 있다면 새로 발급하는 순간 그 링크는 무효가 됩니다.
+        </p>
         <Button
           type="button"
           variant="accent"
           className="h-[46px] px-4 typo-base-b"
           disabled={isIssuing}
-          onClick={handleIssue}
+          onClick={() => setIsIssueConfirmOpen(true)}
         >
           {isIssuing ? '발급 중...' : '초대 링크 발급'}
         </Button>
+
+        <ConfirmDialog
+          open={isIssueConfirmOpen}
+          onOpenChange={setIsIssueConfirmOpen}
+          title="초대 링크를 발급할까요?"
+          description="이미 공유한 링크가 있으면 즉시 무효가 되고, 받은 사람은 더 이상 참여할 수 없어요."
+          confirmLabel="발급"
+          onConfirm={() => {
+            setIsIssueConfirmOpen(false);
+            handleIssue();
+          }}
+        />
       </div>
     );
   }

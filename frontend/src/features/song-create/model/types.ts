@@ -74,6 +74,16 @@ export const applyManualEntryToForm = (
 
 const BPM_PATTERN = /^\d{1,3}$/;
 
+/** 외부 링크는 http(s) URL만 받는다. 임의 문자열이 저장되면 어디서도 열 수 없다. */
+export const isExternalLinkValid = (link: string): boolean => {
+  try {
+    const { protocol } = new URL(link.trim());
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 export const isBpmValid = (bpm: string): boolean =>
   bpm.trim() === '' || (BPM_PATTERN.test(bpm.trim()) && Number(bpm) > 0);
 

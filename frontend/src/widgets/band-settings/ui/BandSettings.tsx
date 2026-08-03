@@ -29,5 +29,6 @@ export const BandSettings = () => {
     );
   }
 
-  return <BandBasicSettings band={band} />;
+  // 밴드가 바뀌면 폼 상태(이름·공개 여부·커버)를 새 밴드 값으로 다시 잡아야 한다.
+  return <BandBasicSettings key={band.id} band={band} />;
 };

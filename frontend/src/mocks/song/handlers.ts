@@ -121,7 +121,12 @@ export const songHandlers = [
       songCoverUrl: body.songCoverUrl ?? null,
       songLength: body.songLength ?? null,
       externalLinks: body.externalLinks ?? [],
-      referenceFiles: [],
+      referenceFiles: (body.referenceFiles ?? []).map((file, index) => ({
+        id: `ref-${bandSongs.length + 1}-${index + 1}`,
+        fileUrl: file.fileUrl,
+        fileName: file.fileName,
+        createdAt: new Date().toISOString(),
+      })),
       createdAt: new Date().toISOString(),
       skills: [],
     };

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAudioPreview } from '@/shared/lib/use-audio-preview';
 import { useTrackPreview } from '../api/useTrackPreview';
 import type { SongListItem } from '../model/types';
@@ -23,8 +24,24 @@ export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
   // 재생을 눌러 둔 상태. 렌더에 영향이 없어 state 대신 ref로 둔다.
   const playWhenReadyRef = useRef(false);
 
-  const { data: track } = useTrackPreview(song.externalTrackId, hasRequested);
+  const {
+    data: track,
+    isFetching,
+    isError,
+  } = useTrackPreview(song.externalTrackId, hasRequested);
   const previewUrl = track?.previewUrl ?? null;
+
+  // 조회가 끝났는데 미리듣기가 없으면 눌러도 아무 일이 없어 보이므로 이유를 알린다.
+  useEffect(() => {
+    if (!hasRequested || isFetching) return;
+    if (isError) {
+      toast.error('곡을 재생할 수 없어요.');
+      return;
+    }
+    if (track && !track.previewUrl) {
+      toast.info('이 곡은 미리듣기를 제공하지 않아요.');
+    }
+  }, [hasRequested, isFetching, isError, track]);
 
   const { isPlaying, toggle, audioRef, audioEventProps } = useAudioPreview(
     previewUrl,

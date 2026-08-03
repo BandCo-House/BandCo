@@ -23,6 +23,7 @@ import {
   createEmptyForm,
   isBpmValid,
   isFormValid,
+  isExternalLinkValid,
   isSongLengthValid,
   toCreateSongRequest,
   type SongFormState,
@@ -145,8 +146,11 @@ export const SongCreateModal = ({
   };
 
   const trimmedLink = linkDraft.trim();
+  const isLinkDuplicated = form.externalLinks.includes(trimmedLink);
+  const isLinkMalformed =
+    trimmedLink.length > 0 && !isExternalLinkValid(trimmedLink);
   const canAddLink =
-    trimmedLink.length > 0 && !form.externalLinks.includes(trimmedLink);
+    trimmedLink.length > 0 && !isLinkDuplicated && !isLinkMalformed;
 
   const handleAddLink = () => {
     if (!canAddLink) return;
@@ -335,6 +339,10 @@ export const SongCreateModal = ({
                   handleAddLink();
                 }}
                 placeholder="https://"
+                aria-invalid={isLinkMalformed || undefined}
+                aria-describedby={
+                  isLinkMalformed ? 'song-link-error' : undefined
+                }
               />
               <Button
                 type="button"
@@ -347,6 +355,11 @@ export const SongCreateModal = ({
                 링크
               </Button>
             </div>
+            {isLinkMalformed && (
+              <p id="song-link-error" className="typo-sm-r text-destructive">
+                http:// 또는 https:// 로 시작하는 주소를 입력해주세요.
+              </p>
+            )}
             {form.externalLinks.length > 0 && (
               <ul className="flex flex-wrap gap-2">
                 {form.externalLinks.map((link) => (
