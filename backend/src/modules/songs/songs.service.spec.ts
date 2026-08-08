@@ -610,6 +610,13 @@ describe('SongsService', () => {
     expect(result.song.bpm).toBe(120);
   });
 
+  it('음원 URL만 수정하려 하면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(service.updateSong('user-id', 'song-id', { sourceUrl: null })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).not.toHaveBeenCalled();
+  });
+
   it('곡 수정 본문이 비어 있으면 BadRequestException을 던진다', async () => {
     const { service, repository } = createService();
 

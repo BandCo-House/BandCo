@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import WithdrawIcon from '@/assets/icons/withdraw.svg?react';
@@ -6,6 +7,8 @@ import { uploadFile } from '@/shared/api';
 import { useLeaveBand } from '@/entities/band/api/useLeaveBand';
 import { useUpdateBand } from '@/entities/band/api/useUpdateBand';
 import type { BandDetail } from '@/entities/band/model/types';
+import { buttonVariants } from '@/shared/ui/button';
+import { cn } from '@/shared/lib/utils';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { Field, FieldLabel } from '@/shared/ui/field';
 import { Input } from '@/shared/ui/input';
@@ -40,6 +43,7 @@ const VISIBILITY_OPTIONS: SegmentedOption<Visibility>[] = [
  * 저장 가능 여부(변경 있음 + 이름 비어있지 않음)는 save-action-store로 헤더 버튼에 넘긴다.
  */
 export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
+  const navigate = useNavigate();
   const { mutate: update, isPending: isSaving } = useUpdateBand(band.id);
   const { mutate: leave, isPending: isLeaving } = useLeaveBand(band.id);
 
@@ -49,6 +53,8 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
   );
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  // 저장된 커버를 지우겠다는 의사. 새 파일을 고르면 자동으로 해제된다.
+  const [isCoverCleared, setIsCoverCleared] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
 
@@ -62,7 +68,8 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
   const isDirty =
     trimmedName !== band.name ||
     (visibility === 'public') !== band.visibility ||
-    coverFile !== null;
+    coverFile !== null ||
+    isCoverCleared;
   const canSave = isDirty && trimmedName.length > 0 && !isUploading;
 
   const handleSubmit = async () => {
@@ -85,12 +92,18 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
       {
         name: trimmedName,
         visibility: visibility === 'public',
-        ...(coverImgUrl ? { coverImgUrl } : {}),
+        // 새로 올렸으면 그 URL, 지웠으면 null, 둘 다 아니면 건드리지 않는다.
+        ...(coverImgUrl
+          ? { coverImgUrl }
+          : isCoverCleared
+            ? { coverImgUrl: null }
+            : {}),
       },
       {
         onSuccess: () => {
           setCoverFile(null);
           setCoverPreview(null);
+          setIsCoverCleared(false);
           toast.success('밴드 설정을 저장했어요.');
         },
         onError: () => {
@@ -119,17 +132,27 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
     if (file) {
       setCoverFile(file);
       setCoverPreview(URL.createObjectURL(file));
+      setIsCoverCleared(false);
     }
     event.target.value = '';
   };
 
-  const coverUrl = coverPreview ?? band.coverImgUrl;
+  const clearCover = () => {
+    setCoverFile(null);
+    setCoverPreview(null);
+    // 저장된 커버가 있으면 지우겠다는 표시를 남겨야 저장 때 null로 보낼 수 있다.
+    setIsCoverCleared(Boolean(band.coverImgUrl));
+  };
+
+  const coverUrl = coverPreview ?? (isCoverCleared ? null : band.coverImgUrl);
 
   const handleLeave = () => {
     leave(undefined, {
       onSuccess: () => {
         toast.success('밴드에서 나왔어요.');
         setIsLeaveOpen(false);
+        // 더 이상 볼 수 없는 밴드라 설정 화면에 남겨두면 안 된다.
+        void navigate({ to: '/my-bands' });
       },
       onError: () => {
         toast.error(
@@ -156,19 +179,33 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
       <div className="flex flex-col gap-2">
         <FieldLabel>밴드 커버</FieldLabel>
         {coverUrl ? (
-          <div className="relative w-20">
-            <img
-              src={coverUrl}
-              alt="밴드 커버 미리보기"
-              className="size-20 rounded-md object-cover"
-            />
-            <ThumbnailRemoveButton
-              label="밴드 커버 제거"
-              onClick={() => {
-                setCoverFile(null);
-                setCoverPreview(null);
-              }}
-            />
+          <div className="flex items-start gap-3">
+            <div className="relative w-20">
+              <img
+                src={coverUrl}
+                alt="밴드 커버 미리보기"
+                className="size-20 rounded-md object-cover"
+              />
+              <ThumbnailRemoveButton
+                label="밴드 커버 제거"
+                onClick={clearCover}
+              />
+            </div>
+            {/* 커버가 있어도 바로 다른 이미지로 바꿀 수 있어야 한다. */}
+            <label
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'cursor-pointer focus-within:outline-2 focus-within:outline-primary',
+              )}
+            >
+              이미지 수정
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCoverSelect}
+                className="sr-only"
+              />
+            </label>
           </div>
         ) : (
           <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">

@@ -61,16 +61,26 @@ export const applyTrackToForm = (
   songLength: formatSongLength(Math.round(track.durationMs / 1000)),
 });
 
-/** 검색 결과가 없어 직접 입력으로 빠질 때. 검색어를 곡 제목 초안으로 넘긴다. */
+/**
+ * 검색 결과가 없어 직접 입력으로 빠질 때. 검색어를 곡 제목 초안으로 넘긴다.
+ * 앞서 고른 트랙이 있었다면 그 트랙에서 온 값(아티스트·곡 길이·앨범아트)을 비운다.
+ * 남겨 두면 직접 입력한 곡이 남의 아티스트·재생시간을 달고 저장된다.
+ */
 export const applyManualEntryToForm = (
   form: SongFormState,
   query: string,
-): SongFormState => ({
-  ...form,
-  title: query,
-  track: null,
-  coverSource: form.coverSource === 'album' ? 'none' : form.coverSource,
-});
+): SongFormState => {
+  const hadTrack = form.track !== null;
+
+  return {
+    ...form,
+    title: query,
+    track: null,
+    artistName: hadTrack ? '' : form.artistName,
+    songLength: hadTrack ? '' : form.songLength,
+    coverSource: form.coverSource === 'album' ? 'none' : form.coverSource,
+  };
+};
 
 const BPM_PATTERN = /^\d{1,3}$/;
 

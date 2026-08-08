@@ -50,6 +50,19 @@ export const bandDetailSchema = z.object({
 });
 
 /**
+ * 밴드 수정 결과(`PATCH /bands/:bandId`).
+ * 상세 조회와 달리 감싸지 않은 평평한 객체이고 `id` 대신 `bandId`를 준다.
+ */
+export const updatedBandSchema = z.object({
+  bandId: z.string(),
+  name: z.string(),
+  description: z.string().nullable().default(null),
+  visibility: z.boolean(),
+  coverImgUrl: z.string().nullable().default(null),
+  updatedAt: z.string(),
+});
+
+/**
  * 밴드 초대 링크 발급 결과(`POST /bands/:bandId/invite-link`).
  * 코드는 서버에 해시로만 저장돼 재조회할 수 없고, 발급 응답에서만 원본을 볼 수 있다.
  */

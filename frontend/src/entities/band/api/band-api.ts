@@ -4,10 +4,12 @@ import type {
   BandDetail,
   BandInviteLink,
   UpdateBandRequest,
+  UpdatedBand,
 } from '../model/types';
 import {
   bandDetailSchema,
   bandInviteLinkSchema,
+  updatedBandSchema,
   bandListResponseSchema,
 } from '../model/schema';
 
@@ -29,13 +31,16 @@ export const getBand = async (bandId: string): Promise<BandDetail> => {
   return bandDetailSchema.parse(band);
 };
 
-/** 밴드 정보 수정(PATCH /bands/:bandId). 밴드 설정의 기본 설정 탭이 쓴다. */
+/**
+ * 밴드 정보 수정(PATCH /bands/:bandId). 밴드 설정의 기본 설정 탭이 쓴다.
+ * 응답은 상세 조회와 달리 감싸지 않은 평평한 객체다(`{ bandId, ... }`).
+ */
 export const updateBand = async (
   bandId: string,
   body: UpdateBandRequest,
-): Promise<BandDetail> => {
-  const { band } = await apiPatch<{ band: unknown }>(`/bands/${bandId}`, body);
-  return bandDetailSchema.parse(band);
+): Promise<UpdatedBand> => {
+  const data = await apiPatch<unknown>(`/bands/${bandId}`, body);
+  return updatedBandSchema.parse(data);
 };
 
 /** 밴드 나가기(DELETE /bands/:bandId/me). 밴드 마스터는 403이 돌아온다. */

@@ -28,6 +28,7 @@ export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
     data: track,
     isFetching,
     isError,
+    refetch,
   } = useTrackPreview(song.externalTrackId, hasRequested);
   const previewUrl = track?.previewUrl ?? null;
 
@@ -71,6 +72,11 @@ export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
       return;
     }
     playWhenReadyRef.current = true;
+    // 이미 조회했다가 실패한 경우엔 상태만 다시 세워도 재요청이 일어나지 않는다.
+    if (hasRequested) {
+      void refetch();
+      return;
+    }
     setHasRequested(true);
   };
 

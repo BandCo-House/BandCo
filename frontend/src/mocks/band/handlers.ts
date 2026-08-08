@@ -413,18 +413,14 @@ export const bandHandlers = [
       status: 'success',
       error: null,
       message: '밴드 정보 수정 성공',
+      // 백엔드 UpdateBandResult는 감싸지 않은 평평한 객체이고 id 대신 bandId를 준다.
       data: {
-        band: {
-          id: updated.id,
-          name: updated.name,
-          description: updated.description,
-          visibility: updated.visibility,
-          coverImgUrl: mockCoverImgUrls.get(bandId) ?? null,
-          bandMasterUserId: '11111111-1111-1111-1111-111111111111',
-          genres: [],
-          memberCount: updated.memberCount ?? 0,
-          createdAt: updated.createdAt,
-        },
+        bandId: updated.id,
+        name: updated.name,
+        description: updated.description,
+        visibility: updated.visibility,
+        coverImgUrl: mockCoverImgUrls.get(bandId) ?? null,
+        updatedAt: new Date().toISOString(),
       },
     });
   }),

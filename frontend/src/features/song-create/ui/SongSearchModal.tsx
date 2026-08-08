@@ -37,7 +37,9 @@ export const SongSearchModal = ({
 }: SongSearchModalProps) => {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query);
-  const keyword = debouncedQuery.trim();
+  // 닫을 때 query만 비우면 debounce된 값이 300ms 더 남아, 다시 열었을 때
+  // 빈 검색창 아래로 이전 검색어의 결과가 잠깐 보인다.
+  const keyword = query.trim() ? debouncedQuery.trim() : '';
 
   const {
     data: tracks = [],
