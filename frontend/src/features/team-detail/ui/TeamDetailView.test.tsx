@@ -6,12 +6,12 @@ import type { TeamDetail, TeamMember } from '@/entities/team/model/types';
 const MOCK_TEAM: TeamDetail = {
   teamId: 'team-1',
   bandId: 'band-1',
-  name: '보컬팀',
-  description: '여자 보컬 중심 팀',
+  name: '듀얼 기타 편성',
+  description: '테스트 팀 설명',
   status: 'ACTIVE',
   teamCoverUrl: null,
-  teamLeader: { userId: 'user-1', nickname: 'Jun' },
-  memberCount: 4,
+  teamLeader: { userId: 'u-1', nickname: '김기타' },
+  memberCount: 2,
 };
 
 const MOCK_MEMBERS: TeamMember[] = [
@@ -38,10 +38,11 @@ describe('TeamDetailView', () => {
         team={MOCK_TEAM}
         members={MOCK_MEMBERS}
         onDeleteTeam={vi.fn()}
-        onEditMembers={vi.fn()}
+        onToggleEdit={vi.fn()}
       />,
     );
 
+    expect(screen.getByText('듀얼 기타 편성')).toBeInTheDocument();
     expect(screen.getByText('팀원 목록')).toBeInTheDocument();
     expect(screen.getByText('참여중인 합주 공간')).toBeInTheDocument();
     expect(screen.getByText('합주곡')).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe('TeamDetailView', () => {
         team={MOCK_TEAM}
         members={MOCK_MEMBERS}
         onDeleteTeam={handleDelete}
-        onEditMembers={vi.fn()}
+        onToggleEdit={vi.fn()}
       />,
     );
 
@@ -69,20 +70,35 @@ describe('TeamDetailView', () => {
     expect(handleDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('팀원 수정 버튼 클릭 시 onEditMembers 콜백을 호출한다', () => {
-    const handleEdit = vi.fn();
+  it('수정 버튼 클릭 시 onToggleEdit 콜백을 호출한다', () => {
+    const handleToggleEdit = vi.fn();
     render(
       <TeamDetailView
         team={MOCK_TEAM}
         members={MOCK_MEMBERS}
         onDeleteTeam={vi.fn()}
-        onEditMembers={handleEdit}
+        onToggleEdit={handleToggleEdit}
       />,
     );
 
     const editBtn = screen.getByRole('button', { name: '팀원 수정' });
     fireEvent.click(editBtn);
-    expect(handleEdit).toHaveBeenCalledTimes(1);
+    expect(handleToggleEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it('isEditing이 true일 때 완료 버튼과 팀원 추가 버튼이 노출된다', () => {
+    const handleSave = vi.fn();
+    render(
+      <TeamDetailView
+        team={MOCK_TEAM}
+        members={MOCK_MEMBERS}
+        isEditing={true}
+        onDeleteTeam={vi.fn()}
+        onSaveMembers={handleSave}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '완료' })).toBeInTheDocument();
+    expect(screen.getByText('팀원 추가')).toBeInTheDocument();
   });
 });
-

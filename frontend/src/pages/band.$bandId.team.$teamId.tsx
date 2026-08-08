@@ -1,31 +1,31 @@
 import { useState } from 'react';
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { TeamDetailView, TeamMemberEditSheet } from '@/features/team-detail';
+import { TeamDetailView } from '@/features/team-detail/ui/TeamDetailView';
 import { useTeamDetail, useTeamMembers } from '@/entities/team/api/queries';
 import { deleteTeam } from '@/entities/team/api/team-api';
 import type { TeamMember } from '@/entities/team/model/types';
 
-export const Route = createFileRoute('/song/$songId/team/$teamId')({
-  component: TeamDetailRoutePage,
+export const Route = createFileRoute('/band/$bandId/team/$teamId')({
+  component: BandTeamDetailRoutePage,
   staticData: {
     header: {
       title: '팀 상세',
-      backTo: '/song/$songId/teams',
+      backTo: '/band/$bandId/settings',
       getBackParams: (params: Record<string, string>) => ({
-        songId: params.songId,
+        bandId: params.bandId,
       }),
     },
   },
 });
 
-// 팀 상세 라우트 전용 화면 (MSW & React Query 연동)
-function TeamDetailRoutePage() {
-  const { teamId } = useParams({ from: '/song/$songId/team/$teamId' });
+function BandTeamDetailRoutePage() {
+  const { teamId, bandId } = useParams({ from: '/band/$bandId/team/$teamId' });
   const { data: team, isLoading: teamLoading } = useTeamDetail(teamId);
-  const { data: members = [], refetch: refetchMembers } = useTeamMembers(teamId);
+  const { data: initialMembers = [], refetch: refetchMembers } = useTeamMembers(teamId);
 
-  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [members, setMembers] = useState<TeamMember[]>(initialMembers);
 
   const handleDeleteTeam = async () => {
     try {
@@ -36,9 +36,11 @@ function TeamDetailRoutePage() {
     }
   };
 
-  const handleSaveMembers = (updated: TeamMember[]) => {
+  const handleSaveMembers = (updatedMembers: TeamMember[]) => {
+    setMembers(updatedMembers);
+    setIsEditing(false);
+    toast.success('팀원 설정이 완료되었습니다.');
     refetchMembers();
-    toast.success('팀원 목록이 업데이트되었습니다!');
   };
 
   if (teamLoading || !team) {
@@ -53,20 +55,13 @@ function TeamDetailRoutePage() {
     <div className="pb-12">
       <TeamDetailView
         team={team}
-        members={members}
+        members={members.length > 0 ? members : initialMembers}
+        isEditing={isEditing}
+        onToggleEdit={() => setIsEditing((prev) => !prev)}
+        onSaveMembers={handleSaveMembers}
         onDeleteTeam={handleDeleteTeam}
-        onEditMembers={() => setEditSheetOpen(true)}
-      />
-
-      <TeamMemberEditSheet
-        open={editSheetOpen}
-        bandId={team.bandId}
-        members={members}
-        onOpenChange={setEditSheetOpen}
-        onSave={handleSaveMembers}
+        bandId={bandId}
       />
     </div>
   );
 }
-
-

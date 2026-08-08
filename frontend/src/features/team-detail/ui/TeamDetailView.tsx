@@ -1,164 +1,321 @@
-import React from 'react';
-import { Music, FileText, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Music, Folder, ChevronRight, Pencil, Trash2, Plus, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { StatusBadge } from '@/shared/ui/status-badge';
 import { Button } from '@/shared/ui/button';
+import { MemberSearchModal } from '@/features/schedule-create/ui/components/MemberSearchModal';
 import type { TeamDetail, TeamMember } from '@/entities/team/model/types';
 
 interface TeamDetailViewProps {
   team: TeamDetail;
   members: TeamMember[];
+  isEditing?: boolean;
+  bandId?: string;
+  onToggleEdit?: () => void;
+  onSaveMembers?: (updatedMembers: TeamMember[]) => void;
   onDeleteTeam: () => void;
-  onEditMembers: () => void;
 }
 
 export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
   team,
-  members,
+  members: propMembers,
+  isEditing = false,
+  bandId = '',
+  onToggleEdit,
+  onSaveMembers,
   onDeleteTeam,
-  onEditMembers,
 }) => {
+  const [currentMembers, setCurrentMembers] = useState<TeamMember[]>(propMembers);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  useEffect(() => {
+    setCurrentMembers(propMembers);
+  }, [propMembers]);
+
+  const handleToggleMember = (bandMemberId: string) => {
+    const existing = currentMembers.find((m) => m.bandMemberId === bandMemberId);
+    if (existing) {
+      setCurrentMembers((prev) =>
+        prev.filter((m) => m.bandMemberId !== bandMemberId),
+      );
+    } else {
+      const newMember: TeamMember = {
+        teamMemberId: `tm-${Date.now()}`,
+        bandMemberId,
+        user: {
+          userId: `u-${bandMemberId}`,
+          nickname: '신규 멤버',
+          profileImageUrl: null,
+        },
+        teamRole: 'MEMBER',
+        sessionName: '세션',
+      };
+      setCurrentMembers((prev) => [...prev, newMember]);
+    }
+  };
+
+  const handleRemoveMember = (teamMemberId: string) => {
+    setCurrentMembers((prev) =>
+      prev.filter((m) => m.teamMemberId !== teamMemberId),
+    );
+  };
+
+  const handleSave = () => {
+    onSaveMembers?.(currentMembers);
+  };
+
   return (
-    <div className="flex flex-col gap-6 px-5 py-4 text-foreground">
-      {/* 1. 팀원 목록 섹션 */}
-      <section className="rounded-xl bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between pb-3">
-          <h3 className="typo-lg-sb">팀원 목록</h3>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onEditMembers}
-            aria-label="팀원 수정"
-            className="typo-sm-m text-primary"
-          >
-            수정
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          {members.map((member) => (
-            <div
-              key={member.teamMemberId}
-              className="flex items-center gap-2 rounded-lg bg-background p-2.5"
+    <div className="flex flex-col gap-5 px-5 py-4 text-foreground">
+      {/* 0. 팀 이름 서브 헤딩 및 액션 */}
+      <div className="flex items-center justify-between pt-1">
+        <h2 className="typo-lg-sb text-grey-100">{team.name || '팀 편성'}</h2>
+        <div className="flex items-center gap-2">
+          {!isEditing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onDeleteTeam}
+              aria-label="팀 삭제"
+              className="flex items-center gap-1.5 typo-xs-r text-grey-300 hover:text-destructive"
             >
-              <span className="typo-xs-r text-muted-foreground">
-                {member.sessionName || '세션'}:
-              </span>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-7 w-7">
+              <span>팀 삭제</span>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={handleSave}
+              aria-label="완료"
+              className="typo-sm-m px-4"
+            >
+              완료
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* 1. 팀원 목록 섹션 */}
+      <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
+        <div className="flex items-center justify-between pb-3">
+          <h3 className="typo-base-sb text-grey-100">팀원 목록</h3>
+          {!isEditing ? (
+            <button
+              type="button"
+              onClick={onToggleEdit}
+              aria-label="팀원 수정"
+              className="flex items-center gap-1 typo-xs-r text-grey-300 hover:text-foreground"
+            >
+              <span>수정</span>
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSearchModalOpen(true)}
+              className="flex items-center gap-1 typo-xs-m text-secondary border-secondary/30"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>팀원 추가</span>
+            </Button>
+          )}
+        </div>
+
+        {/* 수정 모드 상태와 읽기 모드 상태 구분 */}
+        {!isEditing ? (
+          /* 읽기 모드: 둥근 알약 캡슐(Pill) 스타일의 팀원 칩 목록 */
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            {currentMembers.map((member) => (
+              <div
+                key={member.teamMemberId}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#3d3e54] px-3 py-1.5 shadow-xs"
+              >
+                <span className="typo-xs-sb text-secondary">
+                  {member.sessionName || '세션'}:
+                </span>
+                <Avatar className="h-6 w-6">
                   <AvatarImage
                     src={member.user.profileImageUrl || undefined}
                     alt={member.user.nickname}
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className="text-[10px]">
                     {member.user.nickname.slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="typo-sm-m text-foreground">
+                <span className="typo-xs-m text-grey-100">
                   {member.user.nickname}
                 </span>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          /* 수정 모드: 상태 기반 팀원 삭제 및 세션 관리 리스트 */
+          <div className="flex flex-col gap-2.5 pt-1">
+            {currentMembers.map((member) => (
+              <div
+                key={member.teamMemberId}
+                className="flex items-center justify-between rounded-xl border border-white/10 bg-[#3d3e54]/80 p-3"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage
+                      src={member.user.profileImageUrl || undefined}
+                      alt={member.user.nickname}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {member.user.nickname.slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="typo-sm-sb text-grey-100">
+                      {member.user.nickname}
+                    </span>
+                    <span className="typo-xs-r text-secondary">
+                      {member.sessionName || '세션'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveMember(member.teamMemberId)}
+                  className="rounded-full p-1 text-grey-300 hover:bg-destructive/20 hover:text-destructive"
+                  aria-label="삭제"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* 2. 참여중인 합주 공간 섹션 */}
-      <section className="rounded-xl bg-card p-4 shadow-sm">
-        <h3 className="typo-lg-sb pb-3">참여중인 합주 공간</h3>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between rounded-lg bg-background p-3.5">
+      <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
+        <h3 className="typo-base-sb text-grey-100 pb-3">참여중인 합주 공간</h3>
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between py-3">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <StatusBadge variant="default">상시</StatusBadge>
-                <span className="typo-base-sb">정기 모임</span>
+                <span className="typo-sm-sb text-grey-100">정기 모임</span>
               </div>
-              <p className="typo-xs-r text-muted-foreground">
+              <p className="typo-xs-r text-grey-300">
                 정기 연주 및 신곡 연습
               </p>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronRight className="h-5 w-5 text-grey-300" />
           </div>
-          <div className="flex items-center justify-between rounded-lg bg-background p-3.5">
+
+          <div className="border-b border-[#28272a]" />
+
+          <div className="flex items-center justify-between py-3">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <StatusBadge variant="accent">D-2</StatusBadge>
-                <span className="typo-base-sb">봄꽃 축제</span>
+                <span className="typo-sm-sb text-grey-100">봄꽃 축제</span>
               </div>
-              <p className="typo-xs-r text-muted-foreground">
+              <p className="typo-xs-r text-grey-300">
                 봄꽃 축제 연주곡 연습
               </p>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronRight className="h-5 w-5 text-grey-300" />
+          </div>
+
+          <div className="border-b border-[#28272a]" />
+
+          <div className="flex items-center justify-between py-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <StatusBadge variant="outline">D-90</StatusBadge>
+                <span className="typo-sm-sb text-grey-100">
+                  2026 하계 공연 무대
+                </span>
+              </div>
+              <p className="typo-xs-r text-grey-300">여름 축제 공연 준비</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-grey-300" />
           </div>
         </div>
       </section>
 
       {/* 3. 합주곡 섹션 */}
-      <section className="rounded-xl bg-card p-4 shadow-sm">
-        <h3 className="typo-lg-sb pb-3">합주곡</h3>
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between rounded-lg bg-background p-3">
+      <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
+        <h3 className="typo-base-sb text-grey-100 pb-3">합주곡</h3>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-primary">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d3e54] text-secondary">
                 <Music className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="typo-sm-sb">마치 흘러가는 바람처럼</span>
-                <span className="typo-xs-r text-muted-foreground">
+                <span className="typo-sm-sb text-grey-100">
+                  마치 흘러가는 바람처럼
+                </span>
+                <span className="typo-xs-r text-grey-300">
                   DAY6(데이식스)
                 </span>
               </div>
             </div>
+            <div className="flex items-center gap-1 typo-xs-r text-grey-300">
+              <span>곡 상세</span>
+              <ChevronRight className="h-4 w-4 text-grey-300" />
+            </div>
           </div>
-          <div className="flex items-center justify-between rounded-lg bg-background p-3">
+
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-primary">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d3e54] text-secondary">
                 <Music className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="typo-sm-sb">좋은 날</span>
-                <span className="typo-xs-r text-muted-foreground">
-                  IU(아이유)
-                </span>
+                <span className="typo-sm-sb text-grey-100">좋은 날</span>
+                <span className="typo-xs-r text-grey-300">IU(아이유)</span>
               </div>
+            </div>
+            <div className="flex items-center gap-1 typo-xs-r text-grey-300">
+              <span>곡 상세</span>
+              <ChevronRight className="h-4 w-4 text-grey-300" />
             </div>
           </div>
         </div>
       </section>
 
       {/* 4. 팀 파일 섹션 */}
-      <section className="rounded-xl bg-card p-4 shadow-sm">
-        <h3 className="typo-lg-sb pb-3">팀 파일</h3>
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between rounded-lg bg-background p-3">
+      <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
+        <h3 className="typo-base-sb text-grey-100 pb-3">팀 파일</h3>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-primary">
-                <FileText className="h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d3e54] text-grey-200">
+                <Folder className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="typo-sm-sb">악보1</span>
-                <span className="typo-xs-r text-muted-foreground">
-                  26.03.04
-                </span>
+                <span className="typo-sm-sb text-grey-100">악보1</span>
+                <span className="typo-xs-r text-grey-300">23.03.04</span>
               </div>
+            </div>
+            <div className="flex items-center gap-1 typo-xs-r text-grey-300">
+              <span>파일 상세</span>
+              <ChevronRight className="h-4 w-4 text-grey-300" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 헤더 또는 하단에 위치 가능한 팀 삭제 버튼 */}
-      <div className="mt-4 flex justify-end">
-        <Button
-          type="button"
-          variant="destructive"
-          onClick={onDeleteTeam}
-          aria-label="팀 삭제"
-          className="w-full"
-        >
-          팀 삭제
-        </Button>
-      </div>
+      {/* 검색 모달 연동 */}
+      {searchModalOpen && (
+        <MemberSearchModal
+          open={searchModalOpen}
+          onOpenChange={setSearchModalOpen}
+          bandId={bandId}
+          selectedIds={currentMembers.map((m) => m.bandMemberId)}
+          onToggleMember={handleToggleMember}
+        />
+      )}
     </div>
   );
 };

@@ -21,13 +21,12 @@ import { Route as AdminRouteImport } from './pages/admin'
 import { Route as IndexRouteImport } from './pages/index'
 import { Route as BandBandIdRouteImport } from './pages/band.$bandId'
 import { Route as BandBandIdIndexRouteImport } from './pages/band.$bandId.index'
-import { Route as SongSongIdTeamsRouteImport } from './pages/song.$songId.teams'
 import { Route as BandBandIdSongsRouteImport } from './pages/band.$bandId.songs'
 import { Route as BandBandIdSettingsRouteImport } from './pages/band.$bandId.settings'
 import { Route as BandBandIdNoticesRouteImport } from './pages/band.$bandId.notices'
 import { Route as BandBandIdLibraryRouteImport } from './pages/band.$bandId.library'
 import { Route as BandBandIdArchiveRouteImport } from './pages/band.$bandId.archive'
-import { Route as SongSongIdTeamTeamIdRouteImport } from './pages/song.$songId.team.$teamId'
+import { Route as BandBandIdTeamTeamIdRouteImport } from './pages/band.$bandId.team.$teamId'
 import { Route as BandBandIdSpaceSpaceIdRouteImport } from './pages/band.$bandId.space.$spaceId'
 import { Route as BandBandIdNoticesNoticeIdRouteImport } from './pages/band.$bandId.notices.$noticeId'
 import { Route as BandBandIdSpaceSpaceIdIndexRouteImport } from './pages/band.$bandId.space.$spaceId.index'
@@ -93,11 +92,6 @@ const BandBandIdIndexRoute = BandBandIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BandBandIdRoute,
 } as any)
-const SongSongIdTeamsRoute = SongSongIdTeamsRouteImport.update({
-  id: '/song/$songId/teams',
-  path: '/song/$songId/teams',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BandBandIdSongsRoute = BandBandIdSongsRouteImport.update({
   id: '/songs',
   path: '/songs',
@@ -123,10 +117,10 @@ const BandBandIdArchiveRoute = BandBandIdArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => BandBandIdRoute,
 } as any)
-const SongSongIdTeamTeamIdRoute = SongSongIdTeamTeamIdRouteImport.update({
-  id: '/song/$songId/team/$teamId',
-  path: '/song/$songId/team/$teamId',
-  getParentRoute: () => rootRouteImport,
+const BandBandIdTeamTeamIdRoute = BandBandIdTeamTeamIdRouteImport.update({
+  id: '/team/$teamId',
+  path: '/team/$teamId',
+  getParentRoute: () => BandBandIdRoute,
 } as any)
 const BandBandIdSpaceSpaceIdRoute = BandBandIdSpaceSpaceIdRouteImport.update({
   id: '/space/$spaceId',
@@ -169,11 +163,10 @@ export interface FileRoutesByFullPath {
   '/band/$bandId/notices': typeof BandBandIdNoticesRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
-  '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId/': typeof BandBandIdIndexRoute
   '/band/$bandId/notices/$noticeId': typeof BandBandIdNoticesNoticeIdRoute
   '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdRouteWithChildren
-  '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
+  '/band/$bandId/team/$teamId': typeof BandBandIdTeamTeamIdRoute
   '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
   '/band/$bandId/space/$spaceId/': typeof BandBandIdSpaceSpaceIdIndexRoute
 }
@@ -193,10 +186,9 @@ export interface FileRoutesByTo {
   '/band/$bandId/notices': typeof BandBandIdNoticesRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
-  '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId': typeof BandBandIdIndexRoute
   '/band/$bandId/notices/$noticeId': typeof BandBandIdNoticesNoticeIdRoute
-  '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
+  '/band/$bandId/team/$teamId': typeof BandBandIdTeamTeamIdRoute
   '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
   '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdIndexRoute
 }
@@ -218,11 +210,10 @@ export interface FileRoutesById {
   '/band/$bandId/notices': typeof BandBandIdNoticesRouteWithChildren
   '/band/$bandId/settings': typeof BandBandIdSettingsRoute
   '/band/$bandId/songs': typeof BandBandIdSongsRoute
-  '/song/$songId/teams': typeof SongSongIdTeamsRoute
   '/band/$bandId/': typeof BandBandIdIndexRoute
   '/band/$bandId/notices/$noticeId': typeof BandBandIdNoticesNoticeIdRoute
   '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdRouteWithChildren
-  '/song/$songId/team/$teamId': typeof SongSongIdTeamTeamIdRoute
+  '/band/$bandId/team/$teamId': typeof BandBandIdTeamTeamIdRoute
   '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
   '/band/$bandId/space/$spaceId/': typeof BandBandIdSpaceSpaceIdIndexRoute
 }
@@ -245,11 +236,10 @@ export interface FileRouteTypes {
     | '/band/$bandId/notices'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
-    | '/song/$songId/teams'
     | '/band/$bandId/'
     | '/band/$bandId/notices/$noticeId'
     | '/band/$bandId/space/$spaceId'
-    | '/song/$songId/team/$teamId'
+    | '/band/$bandId/team/$teamId'
     | '/band/$bandId/space/$spaceId/settings'
     | '/band/$bandId/space/$spaceId/'
   fileRoutesByTo: FileRoutesByTo
@@ -269,10 +259,9 @@ export interface FileRouteTypes {
     | '/band/$bandId/notices'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
-    | '/song/$songId/teams'
     | '/band/$bandId'
     | '/band/$bandId/notices/$noticeId'
-    | '/song/$songId/team/$teamId'
+    | '/band/$bandId/team/$teamId'
     | '/band/$bandId/space/$spaceId/settings'
     | '/band/$bandId/space/$spaceId'
   id:
@@ -293,11 +282,10 @@ export interface FileRouteTypes {
     | '/band/$bandId/notices'
     | '/band/$bandId/settings'
     | '/band/$bandId/songs'
-    | '/song/$songId/teams'
     | '/band/$bandId/'
     | '/band/$bandId/notices/$noticeId'
     | '/band/$bandId/space/$spaceId'
-    | '/song/$songId/team/$teamId'
+    | '/band/$bandId/team/$teamId'
     | '/band/$bandId/space/$spaceId/settings'
     | '/band/$bandId/space/$spaceId/'
   fileRoutesById: FileRoutesById
@@ -314,8 +302,6 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SignupRoute: typeof SignupRoute
   BandBandIdRoute: typeof BandBandIdRouteWithChildren
-  SongSongIdTeamsRoute: typeof SongSongIdTeamsRoute
-  SongSongIdTeamTeamIdRoute: typeof SongSongIdTeamTeamIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -404,13 +390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BandBandIdIndexRouteImport
       parentRoute: typeof BandBandIdRoute
     }
-    '/song/$songId/teams': {
-      id: '/song/$songId/teams'
-      path: '/song/$songId/teams'
-      fullPath: '/song/$songId/teams'
-      preLoaderRoute: typeof SongSongIdTeamsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/band/$bandId/songs': {
       id: '/band/$bandId/songs'
       path: '/songs'
@@ -446,12 +425,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BandBandIdArchiveRouteImport
       parentRoute: typeof BandBandIdRoute
     }
-    '/song/$songId/team/$teamId': {
-      id: '/song/$songId/team/$teamId'
-      path: '/song/$songId/team/$teamId'
-      fullPath: '/song/$songId/team/$teamId'
-      preLoaderRoute: typeof SongSongIdTeamTeamIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/band/$bandId/team/$teamId': {
+      id: '/band/$bandId/team/$teamId'
+      path: '/team/$teamId'
+      fullPath: '/band/$bandId/team/$teamId'
+      preLoaderRoute: typeof BandBandIdTeamTeamIdRouteImport
+      parentRoute: typeof BandBandIdRoute
     }
     '/band/$bandId/space/$spaceId': {
       id: '/band/$bandId/space/$spaceId'
@@ -519,6 +498,7 @@ interface BandBandIdRouteChildren {
   BandBandIdSongsRoute: typeof BandBandIdSongsRoute
   BandBandIdIndexRoute: typeof BandBandIdIndexRoute
   BandBandIdSpaceSpaceIdRoute: typeof BandBandIdSpaceSpaceIdRouteWithChildren
+  BandBandIdTeamTeamIdRoute: typeof BandBandIdTeamTeamIdRoute
 }
 
 const BandBandIdRouteChildren: BandBandIdRouteChildren = {
@@ -529,6 +509,7 @@ const BandBandIdRouteChildren: BandBandIdRouteChildren = {
   BandBandIdSongsRoute: BandBandIdSongsRoute,
   BandBandIdIndexRoute: BandBandIdIndexRoute,
   BandBandIdSpaceSpaceIdRoute: BandBandIdSpaceSpaceIdRouteWithChildren,
+  BandBandIdTeamTeamIdRoute: BandBandIdTeamTeamIdRoute,
 }
 
 const BandBandIdRouteWithChildren = BandBandIdRoute._addFileChildren(
@@ -547,8 +528,6 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SignupRoute: SignupRoute,
   BandBandIdRoute: BandBandIdRouteWithChildren,
-  SongSongIdTeamsRoute: SongSongIdTeamsRoute,
-  SongSongIdTeamTeamIdRoute: SongSongIdTeamTeamIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
