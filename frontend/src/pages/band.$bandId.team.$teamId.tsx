@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, useParams, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -22,10 +22,7 @@ export const Route = createFileRoute('/band/$bandId/team/$teamId')({
   staticData: {
     header: {
       title: HeaderTitle,
-      backTo: '/band/$bandId/settings',
-      getBackParams: (params: Record<string, string>) => ({
-        bandId: params.bandId,
-      }),
+      backBehavior: 'browser',
       renderRight: () => <HeaderRightAction />,
     },
   },
@@ -88,7 +85,7 @@ function BandTeamDetailRoutePage() {
     setMembers(initialMembers);
   }, [initialMembers]);
 
-  const handleDeleteTeam = async () => {
+  const handleDeleteTeam = useCallback(async () => {
     try {
       await deleteTeam(teamId);
       toast.success('팀이 삭제되었습니다.');
@@ -99,24 +96,27 @@ function BandTeamDetailRoutePage() {
     } catch {
       toast.error('팀 삭제 실패');
     }
-  };
+  }, [teamId, bandId, navigate]);
 
-  const handleSaveMembers = (updatedMembers: TeamMember[]) => {
-    setMembers(updatedMembers);
-    toast.success('팀원 설정이 저장되었습니다.');
-    refetchMembers();
-    navigate({
-      search: {},
-    });
-  };
+  const handleSaveMembers = useCallback(
+    (updatedMembers: TeamMember[]) => {
+      setMembers(updatedMembers);
+      toast.success('팀원 설정이 저장되었습니다.');
+      refetchMembers();
+      navigate({
+        search: {},
+      });
+    },
+    [refetchMembers, navigate],
+  );
 
-  const handleToggleEdit = () => {
+  const handleToggleEdit = useCallback(() => {
     navigate({
       search: { mode: 'edit' },
     });
-  };
+  }, [navigate]);
 
-  // 펍섭(옵저버) 상태를 페이지 상태와 동기화
+  // 펍섭(옵저버) 상태를 페이지 상태와 동기화 (알람 패턴과 동일)
   useEffect(() => {
     updateTeamHeader({
       isEditing,
@@ -124,7 +124,25 @@ function BandTeamDetailRoutePage() {
       onSaveMembers: () => handleSaveMembers(members),
       onToggleEdit: handleToggleEdit,
     });
-  }, [isEditing, members, teamId, bandId]);
+  }, [
+    isEditing,
+    members,
+    handleDeleteTeam,
+    handleSaveMembers,
+    handleToggleEdit,
+  ]);
+
+  // 언마운트 시 헤더 상태 클린업 (알람 NotificationList 패턴 100% 동일 적용)
+  useEffect(() => {
+    return () => {
+      updateTeamHeader({
+        isEditing: false,
+        onDeleteTeam: undefined,
+        onSaveMembers: undefined,
+        onToggleEdit: undefined,
+      });
+    };
+  }, []);
 
   if (teamLoading || !team) {
     return (
