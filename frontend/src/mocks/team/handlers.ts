@@ -38,4 +38,97 @@ export const teamHandlers = [
       },
     });
   }),
+
+  http.get(`${API_URL}/teams/:teamId`, ({ params }) => {
+    const { teamId } = params as { teamId: string };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        teamId,
+        bandId: 'band-1',
+        name: '보컬팀',
+        description: '여자 보컬 중심 팀',
+        status: 'ACTIVE',
+        teamCoverUrl: null,
+        teamLeader: { userId: 'user-1', nickname: 'Jun' },
+        memberCount: 4,
+        createdAt: '2026-05-01T12:00:00Z',
+        updatedAt: '2026-05-01T12:00:00Z',
+      },
+    });
+  }),
+
+  http.delete(`${API_URL}/teams/:teamId`, ({ params }) => {
+    const { teamId } = params as { teamId: string };
+    return HttpResponse.json({
+      success: true,
+      data: { teamId, deleted: true },
+    });
+  }),
+
+  http.get(`${API_URL}/teams/:teamId/members`, () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        items: [
+          {
+            teamMemberId: 'tm-1',
+            bandMemberId: 'bm-1',
+            user: { userId: 'u-1', nickname: '김기타', profileImageUrl: null },
+            teamRole: 'LEADER',
+            joinedAt: '2026-05-01T12:00:00Z',
+            sessionName: '기타',
+          },
+          {
+            teamMemberId: 'tm-2',
+            bandMemberId: 'bm-2',
+            user: { userId: 'u-2', nickname: '이베이스', profileImageUrl: null },
+            teamRole: 'MEMBER',
+            joinedAt: '2026-05-02T12:00:00Z',
+            sessionName: '베이스',
+          },
+          {
+            teamMemberId: 'tm-3',
+            bandMemberId: 'bm-3',
+            user: { userId: 'u-3', nickname: '박드럼', profileImageUrl: null },
+            teamRole: 'MEMBER',
+            joinedAt: '2026-05-03T12:00:00Z',
+            sessionName: '드럼',
+          },
+          {
+            teamMemberId: 'tm-4',
+            bandMemberId: 'bm-4',
+            user: { userId: 'u-4', nickname: '최건반', profileImageUrl: null },
+            teamRole: 'MEMBER',
+            joinedAt: '2026-05-04T12:00:00Z',
+            sessionName: '건반',
+          },
+        ],
+      },
+    });
+  }),
+
+  http.post(`${API_URL}/teams/:teamId/members`, async ({ request }) => {
+    const body = (await request.json()) as { bandMemberId: string };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        teamMemberId: `tm-${Date.now()}`,
+        teamId: 'team-1',
+        bandMemberId: body.bandMemberId,
+        user: { userId: 'u-new', nickname: '신규멤버', profileImageUrl: null },
+        teamRole: 'MEMBER',
+        joinedAt: new Date().toISOString(),
+      },
+    });
+  }),
+
+  http.delete(`${API_URL}/teams/:teamId/members/:teamMemberId`, ({ params }) => {
+    const { teamMemberId } = params as { teamMemberId: string };
+    return HttpResponse.json({
+      success: true,
+      data: { teamMemberId, removed: true },
+    });
+  }),
 ];
+
