@@ -135,7 +135,7 @@ function BandTeamDetailRoutePage() {
   }
 
   return (
-    <div className="pb-12 pt-2">
+    <div className="pb-12 pt-0">
       <TeamDetailView
         team={team}
         members={members.length > 0 ? members : initialMembers}

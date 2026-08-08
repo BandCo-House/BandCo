@@ -70,7 +70,7 @@ describe('TeamDetailView', () => {
     expect(handleToggleEdit).toHaveBeenCalledTimes(1);
   });
 
-  it('isEditing이 true일 때 팀원 추가 버튼과 세션별 검색 돋보기 버튼이 노출된다', () => {
+  it('isEditing이 true일 때 팀원 추가 버튼 및 세션 검색 돋보기 버튼만 노출되고 합주 공간/곡/파일 섹션은 숨겨진다', () => {
     render(
       <TeamDetailView
         team={MOCK_TEAM}
@@ -84,5 +84,9 @@ describe('TeamDetailView', () => {
     expect(screen.getByRole('button', { name: '팀원 추가' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '기타 멤버 변경' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '베이스 멤버 변경' })).toBeInTheDocument();
+
+    expect(screen.queryByText('참여중인 합주 공간')).not.toBeInTheDocument();
+    expect(screen.queryByText('합주곡')).not.toBeInTheDocument();
+    expect(screen.queryByText('팀 파일')).not.toBeInTheDocument();
   });
 });
