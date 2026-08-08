@@ -10,7 +10,6 @@ import { Button } from '@/shared/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { MemberSearchModal } from '@/features/schedule-create/ui/components/MemberSearchModal';
 import type { TeamMember } from '@/entities/team/model/types';
-import type { BandMember } from '@/entities/member/model/types';
 
 interface TeamMemberEditSheetProps {
   open: boolean;
@@ -30,20 +29,26 @@ export const TeamMemberEditSheet: React.FC<TeamMemberEditSheetProps> = ({
   const [currentMembers, setCurrentMembers] = useState<TeamMember[]>(initialMembers);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
-  const handleMemberSelect = (selectedBandMember: BandMember) => {
-    const newMember: TeamMember = {
-      teamMemberId: `tm-${Date.now()}`,
-      bandMemberId: selectedBandMember.bandMemberId,
-      user: {
-        userId: selectedBandMember.userId,
-        nickname: selectedBandMember.nickname,
-        profileImageUrl: selectedBandMember.profileImageUrl ?? null,
-      },
-      teamRole: 'MEMBER',
-      sessionName: '세션',
-    };
-    setCurrentMembers((prev) => [...prev, newMember]);
-    setSearchModalOpen(false);
+  const handleToggleMember = (bandMemberId: string) => {
+    const existing = currentMembers.find((m) => m.bandMemberId === bandMemberId);
+    if (existing) {
+      setCurrentMembers((prev) =>
+        prev.filter((m) => m.bandMemberId !== bandMemberId),
+      );
+    } else {
+      const newMember: TeamMember = {
+        teamMemberId: `tm-${Date.now()}`,
+        bandMemberId,
+        user: {
+          userId: `u-${bandMemberId}`,
+          nickname: '멤버',
+          profileImageUrl: null,
+        },
+        teamRole: 'MEMBER',
+        sessionName: '세션',
+      };
+      setCurrentMembers((prev) => [...prev, newMember]);
+    }
   };
 
   const handleRemoveMember = (teamMemberId: string) => {
@@ -142,11 +147,13 @@ export const TeamMemberEditSheet: React.FC<TeamMemberEditSheetProps> = ({
       {searchModalOpen && (
         <MemberSearchModal
           open={searchModalOpen}
+          onOpenChange={setSearchModalOpen}
           bandId={bandId}
-          onClose={() => setSearchModalOpen(false)}
-          onSelect={handleMemberSelect}
+          selectedIds={currentMembers.map((m) => m.bandMemberId)}
+          onToggleMember={handleToggleMember}
         />
       )}
     </>
   );
 };
+
