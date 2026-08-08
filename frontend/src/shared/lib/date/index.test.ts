@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getStartOfWeek, getWeekDays, addDays, formatWeekRange } from './index';
+import {
+  getStartOfWeek,
+  getWeekDays,
+  addDays,
+  formatWeekRange,
+  formatDotDate,
+  formatClockTime,
+} from './index';
 
 describe('Date Utilities (날짜 유틸리티)', () => {
   describe('getStartOfWeek', () => {
@@ -115,5 +122,23 @@ describe('Date Utilities (날짜 유틸리티)', () => {
         '2025년 12월 29일 ~ 2026년 1월 4일',
       );
     });
+  });
+});
+
+describe('formatDotDate', () => {
+  it('ISO 문자열을 "YYYY.MM. DD"로 변환한다', () => {
+    expect(formatDotDate('2026-03-01T14:30:00')).toBe('2026.03. 01');
+  });
+  it('값이 없으면 "-"를 반환한다', () => {
+    expect(formatDotDate(null)).toBe('-');
+  });
+});
+
+describe('formatClockTime', () => {
+  it('ISO 문자열을 "HH:mm"으로 변환한다', () => {
+    expect(formatClockTime('2026-03-01T09:05:00')).toBe('09:05');
+  });
+  it('값이 없으면 빈 문자열을 반환한다', () => {
+    expect(formatClockTime(null)).toBe('');
   });
 });

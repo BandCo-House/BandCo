@@ -139,24 +139,6 @@ describe('앱 라우터', () => {
     ).toBeInTheDocument();
   });
 
-  it('온보딩 경로에 프로필 저장 실패 플래그가 있으면 안내 메시지를 표시한다', async () => {
-    const router = createRouterForTest(
-      '/onboarding?name=테스터&profileUpdateFailed=1',
-      {
-        isLoggedIn: true,
-        isAdmin: false,
-      },
-    );
-
-    renderWithRouter(router);
-
-    expect(
-      await screen.findByText(
-        /회원가입은 완료됐지만 프로필 저장에 실패했습니다/i,
-      ),
-    ).toBeInTheDocument();
-  });
-
   it('로그인 사용자가 프로필 경로로 접근하면 프로필 페이지를 렌더링한다', async () => {
     const router = createRouterForTest('/profile', {
       isLoggedIn: true,
@@ -201,10 +183,11 @@ describe('앱 라우터', () => {
 
     await screen.findByText('SongsPage');
 
-    expect(
-      screen.getByRole('button', { name: '곡 라이브러리' }),
-    ).toHaveAttribute('data-variant', 'default');
-    expect(screen.getByRole('button', { name: '캘린더' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '곡 라이브러리' })).toHaveAttribute(
+      'data-variant',
+      'default',
+    );
+    expect(screen.getByRole('link', { name: '캘린더' })).toHaveAttribute(
       'data-variant',
       'outline',
     );
@@ -219,7 +202,7 @@ describe('앱 라우터', () => {
     renderWithRouter(router);
 
     await screen.findByText('SongsPage');
-    fireEvent.click(screen.getByRole('button', { name: '캘린더' }));
+    fireEvent.click(screen.getByRole('link', { name: '캘린더' }));
 
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });

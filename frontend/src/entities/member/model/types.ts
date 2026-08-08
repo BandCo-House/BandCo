@@ -1,4 +1,5 @@
 import type { z } from 'zod';
-import { memberSchema } from './schema';
+import { bandMemberListItemSchema, bandMemberSkillSchema } from './schema';
 
-export type Member = z.infer<typeof memberSchema>;
+export type BandMemberSkill = z.infer<typeof bandMemberSkillSchema>;
+export type BandMemberListItem = z.infer<typeof bandMemberListItemSchema>;

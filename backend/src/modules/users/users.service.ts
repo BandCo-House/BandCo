@@ -46,12 +46,26 @@ export class UsersService {
     return this.usersRepository.findUserForPasswordAuth(email, tx);
   }
 
-  async createUserWithEmail(email: string, passwordHash: string, tx?: Prisma.TransactionClient) {
+  /**
+   * 이메일 유저와 프로필을 생성한다.
+   *
+   * 중복 검사와 생성 사이에 동시 요청이 끼어들 수 있어, User.email 유니크 제약
+   * 위반(P2002)도 사전 검사와 동일한 예외로 변환한다.
+   * @param nickname 프로필 닉네임으로 저장할 이름
+   */
+  async createUserWithEmail(email: string, passwordHash: string, nickname: string, tx?: Prisma.TransactionClient) {
     const existingUser = await this.usersRepository.findByEmail(email, tx);
     if (existingUser) {
       throw new BadRequestException('이미 존재하는 이메일입니다.');
     }
-    return this.usersRepository.createUserWithEmail(email, passwordHash, tx);
+    try {
+      return await this.usersRepository.createUserWithEmail(email, passwordHash, nickname, tx);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('이미 존재하는 이메일입니다.');
+      }
+      throw error;
+    }
   }
 
   async getUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient) {
