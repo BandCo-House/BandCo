@@ -4,6 +4,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/shared/ui/sheet';
 import { Button } from '@/shared/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
@@ -61,9 +62,14 @@ export const TeamMemberEditSheet: React.FC<TeamMemberEditSheetProps> = ({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl p-0">
           <SheetHeader className="flex flex-row items-center justify-between border-b border-border px-5 py-4">
-            <SheetTitle className="typo-lg-sb text-foreground">
-              팀원 수정
-            </SheetTitle>
+            <div>
+              <SheetTitle className="typo-lg-sb text-foreground">
+                팀원 수정
+              </SheetTitle>
+              <SheetDescription className="sr-only">
+                세션별 팀원을 수정하고 추가합니다.
+              </SheetDescription>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
