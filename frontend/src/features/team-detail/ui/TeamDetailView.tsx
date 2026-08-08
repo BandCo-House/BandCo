@@ -220,54 +220,77 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
       {/* 3. 참여중인 합주 공간, 합주곡, 팀 파일 섹션 (수정 모드일 때는 피그마 명세에 따라 숨김) */}
       {!isEditing && (
         <>
-          {/* 참여중인 합주 공간 섹션 */}
-          <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
-            <h3 className="typo-base-sb text-grey-100 pb-3">참여중인 합주 공간</h3>
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between py-3">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge variant="default">상시</StatusBadge>
-                    <span className="typo-sm-sb text-grey-100">정기 모임</span>
+          {/* 참여중인 합주 공간 섹션 (Figma MCP Node 1930:19210 100% 반영) */}
+          <div className="bg-[var(--surface\/3,rgba(101,99,122,0.48))] border-[0.667px] border-[var(--greyscale\/500,#28272a)] border-solid content-stretch flex flex-col gap-[12px] items-start p-[20.667px] relative rounded-[20px] w-full">
+            <div className="relative shrink-0">
+              <p className="font-['SUIT:Bold'] leading-[1.4] not-italic text-white text-[16px] whitespace-nowrap">
+                참여중인 합주 공간
+              </p>
+            </div>
+            <div className="relative shrink-0 w-full">
+              <div className="content-stretch flex flex-col gap-[6px] items-start justify-center relative w-full">
+                {/* 1번째 항목: 상시 정기 모임 */}
+                <div className="content-stretch flex gap-[8px] items-center p-[16px] relative shrink-0 w-full hover:bg-white/5 transition-colors rounded-xl cursor-pointer">
+                  <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start justify-center min-w-px relative">
+                    <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
+                      <div className="bg-[var(--greyscale\/100,#dfdfe1)] content-stretch flex items-start px-[8px] py-[2px] relative rounded-[999px] shrink-0">
+                        <p className="font-['SUIT:SemiBold'] leading-[1.4] not-italic text-[12px] text-black whitespace-nowrap">
+                          상시
+                        </p>
+                      </div>
+                      <p className="font-['SUIT:SemiBold'] leading-[1.4] not-italic text-white text-[18px] whitespace-nowrap">
+                        정기 모임
+                      </p>
+                    </div>
+                    <p className="font-['SUIT:Regular'] leading-[1.4] not-italic text-[14px] text-[color:var(--greyscale\/200,#c6c6c8)] whitespace-nowrap">
+                      정기 연주 및 신곡 연습
+                    </p>
                   </div>
-                  <p className="typo-xs-r text-grey-300">
-                    정기 연주 및 신곡 연습
-                  </p>
+                  <ChevronRight className="size-[24px] text-[color:var(--greyscale\/200,#c6c6c8)] shrink-0" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-grey-300" />
-              </div>
 
-              <div className="border-b border-[#28272a]" />
-
-              <div className="flex items-center justify-between py-3">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge variant="accent">D-2</StatusBadge>
-                    <span className="typo-sm-sb text-grey-100">봄꽃 축제</span>
+                {/* 2번째 항목: D-2 봄꽃 축제 (하단 테두리 포함) */}
+                <div className="border-[var(--greyscale\/500,#28272a)] border-b border-solid content-stretch flex gap-[8px] items-center p-[16px] relative shrink-0 w-full hover:bg-white/5 transition-colors rounded-xl cursor-pointer">
+                  <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start justify-center min-w-px relative">
+                    <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
+                      <div className="bg-[var(--semantic\/destructive\/surface,#fee6e1)] content-stretch flex items-start px-[8px] py-[2px] relative rounded-[999px] shrink-0">
+                        <p className="font-['SUIT:SemiBold'] leading-[1.4] not-italic text-[12px] text-[color:var(--semantic\/destructive\/main,#d6705c)] whitespace-nowrap">
+                          D-2
+                        </p>
+                      </div>
+                      <p className="font-['SUIT:SemiBold'] leading-[1.4] not-italic text-white text-[18px] whitespace-nowrap">
+                        봄꽃 축제
+                      </p>
+                    </div>
+                    <p className="font-['SUIT:Regular'] leading-[1.4] not-italic text-[14px] text-[color:var(--greyscale\/200,#c6c6c8)] whitespace-nowrap">
+                      봄꽃 축제 연주곡 연습
+                    </p>
                   </div>
-                  <p className="typo-xs-r text-grey-300">
-                    봄꽃 축제 연주곡 연습
-                  </p>
+                  <ChevronRight className="size-[24px] text-[color:var(--greyscale\/200,#c6c6c8)] shrink-0" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-grey-300" />
-              </div>
 
-              <div className="border-b border-[#28272a]" />
-
-              <div className="flex items-center justify-between py-3">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge variant="outline">D-90</StatusBadge>
-                    <span className="typo-sm-sb text-grey-100">
-                      2026 하계 공연 무대
-                    </span>
+                {/* 3번째 항목: D-90 2026 하계 공연 무대 (하단 테두리 포함) */}
+                <div className="border-[var(--greyscale\/500,#28272a)] border-b border-solid content-stretch flex gap-[8px] items-center p-[16px] relative shrink-0 w-full hover:bg-white/5 transition-colors rounded-xl cursor-pointer">
+                  <div className="content-stretch flex flex-[1_0_0] flex-col gap-[4px] items-start justify-center min-w-px relative">
+                    <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
+                      <div className="bg-[var(--greyscale\/100,#dfdfe1)] content-stretch flex items-start px-[8px] py-[2px] relative rounded-[999px] shrink-0">
+                        <p className="font-['SUIT:SemiBold'] leading-[1.4] not-italic text-[12px] text-black whitespace-nowrap">
+                          D-90
+                        </p>
+                      </div>
+                      <p className="font-['SUIT:SemiBold'] leading-[1.4] not-italic text-white text-[18px] whitespace-nowrap">
+                        2026 하계 공연 무대
+                      </p>
+                    </div>
+                    <p className="font-['SUIT:Regular'] leading-[1.4] not-italic text-[14px] text-[color:var(--greyscale\/200,#c6c6c8)] whitespace-nowrap">
+                      여름 축제 공연 준비
+                    </p>
                   </div>
-                  <p className="typo-xs-r text-grey-300">여름 축제 공연 준비</p>
+                  <ChevronRight className="size-[24px] text-[color:var(--greyscale\/200,#c6c6c8)] shrink-0" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-grey-300" />
               </div>
             </div>
-          </section>
+          </div>
 
           {/* 합주곡 섹션 */}
           <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
