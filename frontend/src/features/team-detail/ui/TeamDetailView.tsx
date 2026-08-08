@@ -92,116 +92,130 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
         )}
       </div>
 
-      {/* 2. 팀원 목록 섹션 */}
-      <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
-        <div className="flex items-center justify-between pb-3">
-          <h3 className="typo-base-sb text-grey-100">팀원 목록</h3>
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={onToggleEdit}
-              aria-label="팀원 수정"
-              className="flex items-center gap-1 typo-xs-r text-grey-300 hover:text-foreground"
-            >
-              <span>수정</span>
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          )}
+      {/* 2. 팀원 목록 섹션 (Figma MCP Node 1930:19190 100% 그대로 적용) */}
+      <div className="bg-[var(--surface\/3,rgba(101,99,122,0.48))] border-[0.667px] border-[var(--greyscale\/500,#28272a)] border-solid content-stretch flex flex-col gap-[var(--xs,12px)] items-start p-[var(--xl-2,20.667px)] relative rounded-[var(--round\/md,20px)] w-full">
+        <div className="relative shrink-0 w-full">
+          <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex items-center justify-between relative size-full">
+            <p className="[word-break:break-word] font-['SUIT:Bold'] leading-[1.4] not-italic relative shrink-0 text-[color:var(--greyscale\/50,white)] text-[length:var(--base,16px)] whitespace-nowrap">
+              팀원 목록
+            </p>
+            {!isEditing && (
+              <button
+                type="button"
+                onClick={onToggleEdit}
+                aria-label="팀원 수정"
+                className="content-stretch flex gap-[10px] items-center justify-center px-[12px] py-[8px] relative rounded-[24px] shrink-0 text-[color:var(--greyscale\/300,#9d9d9f)] hover:text-white transition-colors"
+              >
+                <span className="[word-break:break-word] font-['SUIT:Medium'] leading-[1.4] not-italic text-[14px] text-center whitespace-nowrap">
+                  수정
+                </span>
+                <Pencil className="size-[16px]" />
+              </button>
+            )}
+          </div>
         </div>
 
         {!isEditing ? (
-          /* 읽기 모드: 피그마 알약 캡슐(Pill) 스타일 */
-          <div className="flex flex-wrap gap-2.5 pt-1">
-            {currentMembers.map((member) => (
-              <div
-                key={member.teamMemberId}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#3d3e54] px-3.5 py-1.5 shadow-xs"
-              >
-                <span className="typo-xs-sb text-secondary">
-                  {member.sessionName || '세션'}:
-                </span>
-                <Avatar className="h-6 w-6">
-                  <AvatarImage
-                    src={member.user.profileImageUrl || undefined}
-                    alt={member.user.nickname}
-                  />
-                  <AvatarFallback className="text-[10px]">
-                    {member.user.nickname.slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="typo-xs-m text-grey-100">
-                  {member.user.nickname}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          /* 피그마 팀원 수정 모드: 세션별 언더라인 행 + 멤버 칩 + 원형 돋보기 🔍 버튼 */
-          <div className="flex flex-col gap-4 pt-1">
-            {currentMembers.map((member, idx) => (
-              <div
-                key={member.teamMemberId}
-                className="flex items-center justify-between pb-2"
-              >
-                {/* 좌측 세션명 + 밑줄 */}
-                <div className="flex-1 border-b border-[#3D3E54] pb-1.5 mr-3">
-                  <span className="typo-sm-sb text-grey-100">
-                    {member.sessionName || `세션${idx + 1}`}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* 멤버 칩 */}
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-[#3d3e54] px-3 py-1.5">
-                    <Avatar className="h-6 w-6">
+          /* 읽기 모드: Figma MCP Node 1930:19194 팀원 상세 그대로 */
+          <div className="relative shrink-0 w-full">
+            <div className="bg-clip-padding border-0 border-[transparent] border-solid content-start flex flex-wrap gap-[6px] items-start relative size-full">
+              {currentMembers.map((member) => (
+                <div
+                  key={member.teamMemberId}
+                  className="bg-[var(--surface\/2,rgba(97,117,158,0.56))] content-stretch flex gap-[5px] items-center px-[12px] py-[4px] relative rounded-[var(--round\/full,999px)] shrink-0"
+                >
+                  <p className="[word-break:break-word] font-['SUIT:SemiBold'] leading-[1.4] not-italic relative shrink-0 text-[color:var(--primary\/main,#ecfcab)] text-[length:var(--base,16px)] whitespace-nowrap">
+                    {member.sessionName || '세션'}:
+                  </p>
+                  <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
+                    <Avatar className="size-[32px] rounded-[20px] shrink-0">
                       <AvatarImage
                         src={member.user.profileImageUrl || undefined}
                         alt={member.user.nickname}
                       />
-                      <AvatarFallback className="text-[10px]">
+                      <AvatarFallback className="text-xs">
                         {member.user.nickname.slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="typo-xs-m text-grey-100">
+                    <p className="[word-break:break-word] font-['SUIT:Medium'] leading-[1.4] not-italic relative shrink-0 text-[color:var(--greyscale\/50,white)] text-[length:var(--sm,14px)] whitespace-nowrap">
                       {member.user.nickname}
-                    </span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* 피그마 팀원 수정 모드: Node 1930:19309 그대로 반영 (라임 #ECFCAB 밑줄 Input + 40px 원형 🔍 돋보기 버튼) */
+          <div className="relative shrink-0 w-full pt-1">
+            <div className="bg-clip-padding border-0 border-[transparent] border-solid content-stretch flex flex-col gap-[16px] items-start relative size-full">
+              {currentMembers.map((member, idx) => (
+                <div
+                  key={member.teamMemberId}
+                  className="content-stretch flex gap-[8px] items-center py-[2px] relative shrink-0 w-full"
+                >
+                  {/* 좌측 세션명 + 라임 #ECFCAB 밑줄 */}
+                  <div className="border-[var(--primary\/main,#ecfcab)] border-b border-solid content-stretch flex flex-[1_0_0] gap-[12px] h-[54px] items-center min-w-px px-[12px] py-[16px] relative">
+                    <div className="content-stretch flex flex-[1_0_0] gap-[10px] items-center min-w-px relative">
+                      <p className="[word-break:break-word] font-['SUIT:SemiBold'] leading-[1.4] not-italic text-[16px] text-[color:var(--greyscale\/50,white)] whitespace-nowrap">
+                        {member.sessionName || `세션${idx + 1}`}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* 돋보기 버튼 */}
+                  {/* 멤버 칩 (Figma profileUI Node 1930:19315 그대로) */}
+                  <div className="bg-[var(--surface\/2,rgba(97,117,158,0.56))] content-stretch flex items-center px-[12px] py-[6px] relative rounded-[var(--round\/full,999px)] shrink-0">
+                    <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
+                      <Avatar className="size-[32px] rounded-[20px] shrink-0">
+                        <AvatarImage
+                          src={member.user.profileImageUrl || undefined}
+                          alt={member.user.nickname}
+                        />
+                        <AvatarFallback className="text-xs">
+                          {member.user.nickname.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="[word-break:break-word] font-['SUIT:Medium'] leading-[1.4] not-italic relative shrink-0 text-[color:var(--greyscale\/50,white)] text-[length:var(--sm,14px)] whitespace-nowrap">
+                        {member.user.nickname}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 라임 🔍 돋보기 40px 원형 버튼 (Node 1930:19317 그대로) */}
                   <button
                     type="button"
                     onClick={() => handleOpenSearchForSession(idx)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#3d3e54] text-grey-200 hover:text-foreground hover:bg-[#4a4b64] transition-colors"
+                    className="bg-(--surface\/2,rgba(97,117,158,0.56)) content-stretch flex items-center justify-center relative rounded-[var(--round\/full,999px)] shrink-0 size-[40px] text-[color:var(--primary\/main,#ecfcab)] hover:bg-[#61759E]/80 transition-colors"
                     aria-label={`${member.sessionName} 멤버 변경`}
                   >
-                    <Search className="h-4 w-4" />
+                    <Search className="size-6" />
                   </button>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            {/* 미할당 세션 추가 라인 */}
-            <div className="flex items-center justify-between pb-1 pt-1">
-              <div className="flex-1 border-b border-[#3D3E54] pb-1.5 mr-3">
-                <span className="typo-sm-r text-grey-400">
-                  {`세션${currentMembers.length + 1}`}
-                </span>
+              {/* 미할당 세션 추가 라인 */}
+              <div className="content-stretch flex gap-2 items-center py-[2px] relative shrink-0 w-full">
+                <div className="border-[var(--greyscale\/500,#3D3E54)] border-b border-solid content-stretch flex flex-[1_0_0] gap-[12px] h-[54px] items-center min-w-px px-[12px] py-[16px] relative">
+                  <p className="font-['SUIT:Regular'] text-[16px] text-[#9D9D9F]">
+                    {`세션${currentMembers.length + 1}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSessionIndex(null);
+                    setSearchModalOpen(true);
+                  }}
+                  className="bg-[var(--surface\/2,rgba(97,117,158,0.56))] content-stretch flex items-center justify-center relative rounded-[var(--round\/full,999px)] shrink-0 size-[40px] text-[color:var(--primary\/main,#ecfcab)] hover:bg-[#61759E]/80 transition-colors"
+                  aria-label="세션 멤버 검색"
+                >
+                  <Search className="size-[24px]" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedSessionIndex(null);
-                  setSearchModalOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#3d3e54] px-3.5 py-2 typo-xs-m text-grey-200 hover:text-foreground hover:bg-[#4a4b64] transition-colors"
-              >
-                <Search className="h-3.5 w-3.5 text-secondary" />
-                <span>멤버</span>
-              </button>
             </div>
           </div>
         )}
-      </section>
+      </div>
 
       {/* 3. 참여중인 합주 공간, 합주곡, 팀 파일 섹션 (수정 모드일 때는 피그마 명세에 따라 숨김) */}
       {!isEditing && (
