@@ -32,7 +32,7 @@ const MOCK_MEMBERS: TeamMember[] = [
 ];
 
 describe('TeamDetailView', () => {
-  it('팀 헤더 및 섹션(팀원 목록, 합주 공간, 합주곡, 팀 파일)을 올바르게 렌더링한다', () => {
+  it('팀원 목록, 합주 공간, 합주곡, 팀 파일 섹션을 올바르게 렌더링한다', () => {
     render(
       <TeamDetailView
         team={MOCK_TEAM}
@@ -54,22 +54,6 @@ describe('TeamDetailView', () => {
     expect(screen.getByText('이베이스')).toBeInTheDocument();
   });
 
-  it('팀 삭제 버튼 클릭 시 onDeleteTeam 콜백을 호출한다', () => {
-    const handleDelete = vi.fn();
-    render(
-      <TeamDetailView
-        team={MOCK_TEAM}
-        members={MOCK_MEMBERS}
-        onDeleteTeam={handleDelete}
-        onToggleEdit={vi.fn()}
-      />,
-    );
-
-    const deleteBtn = screen.getByRole('button', { name: '팀 삭제' });
-    fireEvent.click(deleteBtn);
-    expect(handleDelete).toHaveBeenCalledTimes(1);
-  });
-
   it('수정 버튼 클릭 시 onToggleEdit 콜백을 호출한다', () => {
     const handleToggleEdit = vi.fn();
     render(
@@ -86,19 +70,19 @@ describe('TeamDetailView', () => {
     expect(handleToggleEdit).toHaveBeenCalledTimes(1);
   });
 
-  it('isEditing이 true일 때 완료 버튼과 팀원 추가 버튼이 노출된다', () => {
-    const handleSave = vi.fn();
+  it('isEditing이 true일 때 팀원 추가 버튼과 세션별 검색 돋보기 버튼이 노출된다', () => {
     render(
       <TeamDetailView
         team={MOCK_TEAM}
         members={MOCK_MEMBERS}
         isEditing={true}
         onDeleteTeam={vi.fn()}
-        onSaveMembers={handleSave}
+        onSaveMembers={vi.fn()}
       />,
     );
 
-    expect(screen.getByRole('button', { name: '완료' })).toBeInTheDocument();
-    expect(screen.getByText('팀원 추가')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '팀원 추가' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '기타 멤버 변경' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '베이스 멤버 변경' })).toBeInTheDocument();
   });
 });

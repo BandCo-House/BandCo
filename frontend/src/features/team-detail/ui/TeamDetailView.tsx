@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Folder, ChevronRight, Pencil, Trash2, Plus, X } from 'lucide-react';
+import { Music, Folder, ChevronRight, Pencil, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { StatusBadge } from '@/shared/ui/status-badge';
-import { Button } from '@/shared/ui/button';
 import { MemberSearchModal } from '@/features/schedule-create/ui/components/MemberSearchModal';
 import type { TeamDetail, TeamMember } from '@/entities/team/model/types';
 
@@ -22,23 +21,35 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
   isEditing = false,
   bandId = '',
   onToggleEdit,
-  onSaveMembers,
-  onDeleteTeam,
 }) => {
   const [currentMembers, setCurrentMembers] = useState<TeamMember[]>(propMembers);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [selectedSessionIndex, setSelectedSessionIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentMembers(propMembers);
   }, [propMembers]);
 
   const handleToggleMember = (bandMemberId: string) => {
-    const existing = currentMembers.find((m) => m.bandMemberId === bandMemberId);
-    if (existing) {
+    if (selectedSessionIndex !== null && selectedSessionIndex < currentMembers.length) {
+      // 기존 세션의 멤버 변경
       setCurrentMembers((prev) =>
-        prev.filter((m) => m.bandMemberId !== bandMemberId),
+        prev.map((m, idx) =>
+          idx === selectedSessionIndex
+            ? {
+                ...m,
+                bandMemberId,
+                user: {
+                  userId: `u-${bandMemberId}`,
+                  nickname: '선택 멤버',
+                  profileImageUrl: null,
+                },
+              }
+            : m,
+        ),
       );
     } else {
+      // 신규 멤버/세션 추가
       const newMember: TeamMember = {
         teamMemberId: `tm-${Date.now()}`,
         bandMemberId,
@@ -48,60 +59,44 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
           profileImageUrl: null,
         },
         teamRole: 'MEMBER',
-        sessionName: '세션',
+        sessionName: `세션${currentMembers.length + 1}`,
       };
       setCurrentMembers((prev) => [...prev, newMember]);
     }
+    setSearchModalOpen(false);
+    setSelectedSessionIndex(null);
   };
 
-  const handleRemoveMember = (teamMemberId: string) => {
-    setCurrentMembers((prev) =>
-      prev.filter((m) => m.teamMemberId !== teamMemberId),
-    );
-  };
-
-  const handleSave = () => {
-    onSaveMembers?.(currentMembers);
+  const handleOpenSearchForSession = (index: number) => {
+    setSelectedSessionIndex(index);
+    setSearchModalOpen(true);
   };
 
   return (
-    <div className="flex flex-col gap-5 px-5 py-4 text-foreground">
-      {/* 0. 팀 이름 서브 헤딩 및 액션 */}
-      <div className="flex items-center justify-between pt-1">
-        <h2 className="typo-lg-sb text-grey-100">{team.name || '팀 편성'}</h2>
-        <div className="flex items-center gap-2">
-          {!isEditing ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onDeleteTeam}
-              aria-label="팀 삭제"
-              className="flex items-center gap-1.5 typo-xs-r text-grey-300 hover:text-destructive"
-            >
-              <span>팀 삭제</span>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={handleSave}
-              aria-label="완료"
-              className="typo-sm-m px-4"
-            >
-              완료
-            </Button>
-          )}
-        </div>
+    <div className="flex flex-col gap-5 px-5 pt-1 pb-8 text-foreground">
+      {/* 1. 서브 헤더 라인: 팀 이름 (좌측) + 팀원 추가 (우측 - 수정 모드일 때만 라임 캡슐) */}
+      <div className="flex items-center justify-between">
+        <h2 className="typo-lg-sb text-grey-100">{team.name || '듀얼 기타 편성'}</h2>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedSessionIndex(null);
+              setSearchModalOpen(true);
+            }}
+            aria-label="팀원 추가"
+            className="rounded-[24px] bg-[#ECFCAB] px-4 py-2 typo-sm-sb text-[#1B1B32] shadow-xs hover:bg-[#DDFE55] transition-colors"
+          >
+            팀원 추가
+          </button>
+        )}
       </div>
 
-      {/* 1. 팀원 목록 섹션 */}
+      {/* 2. 팀원 목록 섹션 */}
       <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
         <div className="flex items-center justify-between pb-3">
           <h3 className="typo-base-sb text-grey-100">팀원 목록</h3>
-          {!isEditing ? (
+          {!isEditing && (
             <button
               type="button"
               onClick={onToggleEdit}
@@ -111,28 +106,16 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
               <span>수정</span>
               <Pencil className="h-3.5 w-3.5" />
             </button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setSearchModalOpen(true)}
-              className="flex items-center gap-1 typo-xs-m text-secondary border-secondary/30"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>팀원 추가</span>
-            </Button>
           )}
         </div>
 
-        {/* 수정 모드 상태와 읽기 모드 상태 구분 */}
         {!isEditing ? (
-          /* 읽기 모드: 둥근 알약 캡슐(Pill) 스타일의 팀원 칩 목록 */
+          /* 읽기 모드: 피그마 알약 캡슐(Pill) 스타일 */
           <div className="flex flex-wrap gap-2.5 pt-1">
             {currentMembers.map((member) => (
               <div
                 key={member.teamMemberId}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#3d3e54] px-3 py-1.5 shadow-xs"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#3d3e54] px-3.5 py-1.5 shadow-xs"
               >
                 <span className="typo-xs-sb text-secondary">
                   {member.sessionName || '세션'}:
@@ -153,47 +136,74 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
             ))}
           </div>
         ) : (
-          /* 수정 모드: 상태 기반 팀원 삭제 및 세션 관리 리스트 */
-          <div className="flex flex-col gap-2.5 pt-1">
-            {currentMembers.map((member) => (
+          /* 피그마 팀원 수정 모드: 세션별 언더라인 행 + 멤버 칩 + 원형 돋보기 🔍 버튼 */
+          <div className="flex flex-col gap-4 pt-1">
+            {currentMembers.map((member, idx) => (
               <div
                 key={member.teamMemberId}
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-[#3d3e54]/80 p-3"
+                className="flex items-center justify-between pb-2"
               >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={member.user.profileImageUrl || undefined}
-                      alt={member.user.nickname}
-                    />
-                    <AvatarFallback className="text-xs">
-                      {member.user.nickname.slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className="typo-sm-sb text-grey-100">
+                {/* 좌측 세션명 + 밑줄 */}
+                <div className="flex-1 border-b border-[#3D3E54] pb-1.5 mr-3">
+                  <span className="typo-sm-sb text-grey-100">
+                    {member.sessionName || `세션${idx + 1}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* 멤버 칩 */}
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-[#3d3e54] px-3 py-1.5">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={member.user.profileImageUrl || undefined}
+                        alt={member.user.nickname}
+                      />
+                      <AvatarFallback className="text-[10px]">
+                        {member.user.nickname.slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="typo-xs-m text-grey-100">
                       {member.user.nickname}
                     </span>
-                    <span className="typo-xs-r text-secondary">
-                      {member.sessionName || '세션'}
-                    </span>
                   </div>
+
+                  {/* 돋보기 버튼 */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSearchForSession(idx)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#3d3e54] text-grey-200 hover:text-foreground hover:bg-[#4a4b64] transition-colors"
+                    aria-label={`${member.sessionName} 멤버 변경`}
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveMember(member.teamMemberId)}
-                  className="rounded-full p-1 text-grey-300 hover:bg-destructive/20 hover:text-destructive"
-                  aria-label="삭제"
-                >
-                  <X className="h-4 w-4" />
-                </button>
               </div>
             ))}
+
+            {/* 미할당 세션 추가 라인 */}
+            <div className="flex items-center justify-between pb-1 pt-1">
+              <div className="flex-1 border-b border-[#3D3E54] pb-1.5 mr-3">
+                <span className="typo-sm-r text-grey-400">
+                  {`세션${currentMembers.length + 1}`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSessionIndex(null);
+                  setSearchModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#3d3e54] px-3.5 py-2 typo-xs-m text-grey-200 hover:text-foreground hover:bg-[#4a4b64] transition-colors"
+              >
+                <Search className="h-3.5 w-3.5 text-secondary" />
+                <span>멤버</span>
+              </button>
+            </div>
           </div>
         )}
       </section>
 
-      {/* 2. 참여중인 합주 공간 섹션 */}
+      {/* 3. 참여중인 합주 공간 섹션 */}
       <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
         <h3 className="typo-base-sb text-grey-100 pb-3">참여중인 합주 공간</h3>
         <div className="flex flex-col">
@@ -242,7 +252,7 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
         </div>
       </section>
 
-      {/* 3. 합주곡 섹션 */}
+      {/* 4. 합주곡 섹션 */}
       <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
         <h3 className="typo-base-sb text-grey-100 pb-3">합주곡</h3>
         <div className="flex flex-col gap-3">
@@ -284,7 +294,7 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
         </div>
       </section>
 
-      {/* 4. 팀 파일 섹션 */}
+      {/* 5. 팀 파일 섹션 */}
       <section className="rounded-[20px] border border-[#28272a] bg-[#65637a]/40 p-4 shadow-sm backdrop-blur-md">
         <h3 className="typo-base-sb text-grey-100 pb-3">팀 파일</h3>
         <div className="flex flex-col gap-3">
@@ -306,7 +316,7 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
         </div>
       </section>
 
-      {/* 검색 모달 연동 */}
+      {/* 멤버 검색 모달 연동 */}
       {searchModalOpen && (
         <MemberSearchModal
           open={searchModalOpen}
