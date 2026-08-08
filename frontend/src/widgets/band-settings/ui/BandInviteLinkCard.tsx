@@ -82,41 +82,48 @@ export const BandInviteLinkCard = ({
     });
   };
 
-  // surface-1 토큰(#dce2f966)이 이미 40% 알파라 추가 투명도를 곱하지 않는다.
+  // 발급·재발급 모두 기존 링크를 무효화하므로 같은 확인 모달을 거친다.
+  const issueConfirmDialog = (
+    <ConfirmDialog
+      open={isIssueConfirmOpen}
+      onOpenChange={setIsIssueConfirmOpen}
+      title="초대 링크를 발급할까요?"
+      description="이미 공유한 링크가 있으면 즉시 무효가 되고, 받은 사람은 더 이상 참여할 수 없어요."
+      confirmLabel="발급"
+      onConfirm={() => {
+        setIsIssueConfirmOpen(false);
+        handleIssue();
+      }}
+    />
+  );
+
   if (!inviteLink) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-sm border border-grey-200 bg-surface-1 p-6 text-center">
-        <p className="typo-sm-m text-grey-50">
-          아직 발급된 초대 링크가 없어요.
-        </p>
-        <p className="typo-xs-r text-grey-200">
-          링크를 발급하면 코드를 아는 사람은 누구나 &ldquo;{bandName}&rdquo;
-          밴드에 참여할 수 있어요.
-        </p>
-        <p className="typo-xs-r text-grey-200">
-          이미 공유한 링크가 있다면 새로 발급하는 순간 그 링크는 무효가 됩니다.
-        </p>
-        <Button
-          type="button"
-          variant="accent"
-          className="h-[46px] px-4 typo-base-b"
-          disabled={isIssuing}
-          onClick={() => setIsIssueConfirmOpen(true)}
-        >
-          {isIssuing ? '발급 중...' : '초대 링크 발급'}
-        </Button>
+      // 문장이 길어 가운데 정렬하면 줄바꿈이 어중간해진다. 발급 후 카드와 같이 좌정렬한다.
+      <div className="flex flex-col gap-4 rounded-sm bg-surface-3 p-4">
+        <div className="flex flex-col gap-1.5">
+          <p className="typo-base-sb text-grey-50">
+            아직 발급된 초대 링크가 없어요.
+          </p>
+          <p className="typo-sm-r text-grey-200">
+            링크를 아는 사람은 누구나 &ldquo;{bandName}&rdquo; 밴드에 참여할 수
+            있어요. 가장 최근에 발급한 링크로만 접속할 수 있습니다.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="accent"
+            size="pill"
+            className="typo-base-b"
+            disabled={isIssuing}
+            onClick={() => setIsIssueConfirmOpen(true)}
+          >
+            {isIssuing ? '발급 중...' : '초대 링크 발급'}
+          </Button>
+        </div>
 
-        <ConfirmDialog
-          open={isIssueConfirmOpen}
-          onOpenChange={setIsIssueConfirmOpen}
-          title="초대 링크를 발급할까요?"
-          description="이미 공유한 링크가 있으면 즉시 무효가 되고, 받은 사람은 더 이상 참여할 수 없어요."
-          confirmLabel="발급"
-          onConfirm={() => {
-            setIsIssueConfirmOpen(false);
-            handleIssue();
-          }}
-        />
+        {issueConfirmDialog}
       </div>
     );
   }
@@ -124,7 +131,7 @@ export const BandInviteLinkCard = ({
   const url = buildInviteUrl(inviteLink.inviteCode);
 
   return (
-    <div className="flex flex-col gap-6 rounded-sm border border-grey-200 bg-surface-1 p-4">
+    <div className="flex flex-col gap-6 rounded-sm bg-surface-3 p-4">
       <div className="flex flex-col gap-2">
         <p className="typo-sm-m text-grey-50">초대 링크</p>
         <div className="flex items-start gap-2">
@@ -176,17 +183,17 @@ export const BandInviteLinkCard = ({
           * {formatDotDate(inviteLink.expiredAt)}까지 사용할 수 있어요.
         </p>
         <p className="typo-xs-r text-grey-200">
-          * 코드는 지금만 확인할 수 있어요. 화면을 벗어나면 다시 보려면 재발급이
-          필요하고, 재발급하면 이전 링크는 즉시 무효가 됩니다.
+          * 코드는 지금만 볼 수 있어요. 다시 보려면 재발급해야 합니다.
         </p>
       </div>
 
-      <div className="flex justify-end gap-2">
+      {/* 일정 생성 하단 액션바와 같은 조합: 왼쪽 아웃라인 + 오른쪽 shining. */}
+      <div className="flex items-center justify-end gap-3">
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="border-destructive text-destructive"
+          size="pill"
+          className="border-grey-50 typo-base-b text-grey-50"
           disabled={isRevoking}
           onClick={handleRevoke}
         >
@@ -194,15 +201,17 @@ export const BandInviteLinkCard = ({
         </Button>
         <Button
           type="button"
-          variant="outline"
-          size="sm"
-          className="border-primary text-primary"
+          variant="shining"
+          size="pill"
+          className="typo-base-sb"
           disabled={isIssuing}
-          onClick={handleIssue}
+          onClick={() => setIsIssueConfirmOpen(true)}
         >
           재발급
         </Button>
       </div>
+
+      {issueConfirmDialog}
     </div>
   );
 };
