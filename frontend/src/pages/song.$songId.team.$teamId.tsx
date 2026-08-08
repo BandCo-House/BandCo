@@ -2,12 +2,9 @@ import { useState } from 'react';
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { TeamDetailView, TeamMemberEditSheet } from '@/features/team-detail';
-import {
-  useTeamDetail,
-  useTeamMembers,
-  deleteTeam,
-} from '@/entities/team';
-import type { TeamMember } from '@/entities/team';
+import { useTeamDetail, useTeamMembers } from '@/entities/team/api/queries';
+import { deleteTeam } from '@/entities/team/api/team-api';
+import type { TeamMember } from '@/entities/team/model/types';
 
 export const Route = createFileRoute('/song/$songId/team/$teamId')({
   component: TeamDetailRoutePage,

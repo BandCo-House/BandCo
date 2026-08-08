@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
-import { useBandTeams } from '@/entities/team/api/useBandTeams';
+import { useBandTeams } from '@/entities/team/api/queries';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import {
   Dialog,

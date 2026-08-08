@@ -3,7 +3,7 @@ import { RotateCcw, XIcon } from 'lucide-react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
-import { useBandTeams } from '@/entities/team/api/useBandTeams';
+import { useBandTeams } from '@/entities/team/api/queries';
 import {
   Sheet,
   SheetContent,

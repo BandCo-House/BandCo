@@ -1,1 +1,0 @@
-export { useTeamDetail } from './queries';
