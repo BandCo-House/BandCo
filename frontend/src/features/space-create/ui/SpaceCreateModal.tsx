@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
 import {
   AppDialogBody,
+  AppDialogClose,
   AppDialogContent,
   Dialog,
-  DialogClose,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
@@ -100,16 +99,11 @@ export const SpaceCreateModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AppDialogContent className="flex max-h-[85vh] flex-col gap-10 p-5 text-grey-50">
-        <div className="flex items-start gap-8">
-          <DialogTitle className="flex-1">합주 공간 만들기</DialogTitle>
-          <DialogClose
-            type="button"
-            aria-label="합주 공간 만들기 닫기"
-            className="-m-1 flex shrink-0 items-center justify-center rounded-full p-1 text-grey-100 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key"
-          >
-            <X className="size-6" />
-          </DialogClose>
-        </div>
+        <AppDialogClose
+          className="top-5 right-5"
+          aria-label="합주 공간 만들기 닫기"
+        />
+        <DialogTitle className="pr-12">합주 공간 만들기</DialogTitle>
 
         <AppDialogBody className="gap-9 overflow-y-auto">
           <Field

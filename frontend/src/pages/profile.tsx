@@ -351,13 +351,14 @@ function ProfileRoutePage() {
                 변경사항이 저장되지 않습니다
               </p>
             </AppDialogBody>
-            <AppDialogFooter className="mt-8 flex-row justify-center gap-4">
+            <AppDialogFooter className="mt-8 flex-row gap-4">
               <Button
                 type="button"
                 variant="neutral"
                 size="lg"
+                width="flex"
                 onClick={() => setIsLeaveEditDialogOpen(false)}
-                className="w-full text-grey-50"
+                className="text-grey-50"
               >
                 취소
               </Button>
@@ -365,8 +366,8 @@ function ProfileRoutePage() {
                 type="button"
                 variant="shining"
                 size="lg"
+                width="flex"
                 onClick={discardEditChanges}
-                className="w-full"
               >
                 나가기
               </Button>
