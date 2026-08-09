@@ -43,7 +43,11 @@ export const BandMain = () => {
     {
       label: '멤버 초대',
       onClick: () =>
-        navigate({ to: '/band/$bandId/settings', params: { bandId } }),
+        navigate({
+          to: '/band/$bandId/settings',
+          params: { bandId },
+          search: { tab: 'basic' },
+        }),
     },
     { label: '새 합주', onClick: () => setIsSpaceModalOpen(true) },
   ];
