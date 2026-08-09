@@ -3,10 +3,7 @@ import { RootError } from '@/app/states/RootError';
 import { RootLayout } from '@/app/layouts/RootLayout';
 import { RootLoading } from '@/app/states/RootLoading';
 import type { RouterContext } from '@/app/router-guards';
-import {
-  enforceProtectedRoute,
-  syncAuthenticatedUser,
-} from '@/app/router-guards';
+import { enforceProtectedRoute, syncAuthenticatedUser } from '@/app/router-guards';
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context, location }) => {

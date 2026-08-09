@@ -87,11 +87,7 @@ describe('createBand 어댑터', () => {
       ];
     });
 
-    await createBand({
-      name: '테스트 밴드',
-      description: null,
-      visibility: true,
-    });
+    await createBand({ name: '테스트 밴드', description: null, visibility: true });
 
     expect(capturedBody).toEqual({
       name: '테스트 밴드',
@@ -135,11 +131,7 @@ describe('createBand 어댑터', () => {
     });
 
     await expect(
-      createBand({
-        name: '우리 밴드',
-        description: '주 1회 합주',
-        visibility: true,
-      }),
+      createBand({ name: '우리 밴드', description: '주 1회 합주', visibility: true }),
     ).rejects.toThrow();
   });
 });
