@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Search as SearchIcon, X } from 'lucide-react';
+import { Search as SearchIcon, X } from 'lucide-react';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useRecentSearches } from '@/features/band-search-history/model/useRecentSearches';
 import { RecentSearches } from '@/features/band-search-history/ui/RecentSearches';
 import { useBandSearch } from '@/entities/band/api/useBandSearch';
@@ -60,26 +61,25 @@ function SearchPage() {
           e.preventDefault();
           handleSearchSubmit(inputValue);
         }}
-        className="sticky top-0 z-30 flex min-h-[64px] items-center gap-[10px] py-2.5 pr-[20px] pl-[10px] backdrop-blur-md"
+        className="sticky top-0 z-30 flex min-h-16 items-center gap-3 px-5 py-2.5 backdrop-blur-md"
       >
-        {/* 뒤로가기 버튼 */}
         <button
           type="button"
           onClick={() => navigate({ to: '..' })}
-          className="flex h-[42px] w-[32px] items-center justify-center text-white transition-opacity hover:opacity-80"
           aria-label="뒤로 가기"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-2 focus-visible:outline-key"
         >
-          <ArrowLeft size={24} />
+          <ArrowRightIcon
+            aria-hidden="true"
+            data-slot="svg-icon"
+            className="size-6 rotate-180"
+          />
         </button>
-
-        {/* 검색어 입력창 (Searchbar) */}
-        <div className="relative flex h-[42px] flex-1 items-center rounded-full border-[1.5px] border-[#9CA578] bg-[rgba(220,226,249,0.4)]">
-          {/* 돋보기 아이콘 (Left) */}
+        <div className="relative flex h-[42px] flex-1 items-center rounded-full bg-[rgba(220,226,249,0.4)] focus-within:ring-2 focus-within:ring-primary">
           <SearchIcon
             size={16}
             className="pointer-events-none absolute left-[14px] text-[#C6C6C8]"
           />
-
           <input
             type="search"
             value={inputValue}
@@ -101,7 +101,6 @@ function SearchPage() {
           )}
         </div>
 
-        {/* "검색" 버튼 (Inbtn1) */}
         <button
           type="submit"
           className="flex h-[42px] shrink-0 items-center justify-center rounded-full bg-[#ECFCAB] px-5 text-base font-semibold text-black transition-opacity hover:opacity-90 active:opacity-80"
@@ -110,7 +109,6 @@ function SearchPage() {
         </button>
       </form>
 
-      {/* Main Content: Recent Searches or Band Search Results */}
       {!submittedQuery ? (
         <RecentSearches
           searches={searches}
