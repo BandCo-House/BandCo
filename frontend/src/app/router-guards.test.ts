@@ -54,7 +54,7 @@ describe('isPublicGuestPath', () => {
   it('search 파라미터가 null인 경우에도 에러 없이 동작하고 false를 반환한다', () => {
     const mockLocation = {
       pathname: '/profile',
-      search: null,
+      search: null as unknown,
     } as unknown as ParsedLocation;
     expect(isPublicGuestPath(mockLocation)).toBe(false);
   });

@@ -13,6 +13,21 @@ export const notificationUnreadSummarySchema = z.object({
   unreadByType: notificationUnreadByTypeSchema,
 });
 
+export const notificationReferenceTypeSchema = z.enum(['BAND_INVITATION']);
+
+export const notificationSenderSchema = z.object({
+  userId: z.string(),
+  nickname: z.string(),
+  avatarUrl: z.string().nullable(),
+});
+
+export const notificationReferenceSchema = z.object({
+  type: notificationReferenceTypeSchema,
+  id: z.string(),
+  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED']),
+  sender: notificationSenderSchema.nullable(),
+});
+
 export const notificationItemSchema = z.object({
   notificationId: z.string().min(1),
   type: notificationTypeSchema,
@@ -20,19 +35,19 @@ export const notificationItemSchema = z.object({
   description: z.string(),
   isRead: z.boolean(),
   targetPath: z.string().optional(),
+  reference: notificationReferenceSchema.nullable().optional(),
   createdAt: z.string(),
 });
 
-export const notificationPaginationSchema = z.object({
-  page: z.number().int().positive(),
-  size: z.number().int().positive(),
-  totalCount: z.number().int().nonnegative(),
-  hasNext: z.boolean(),
+export const notificationMetaSchema = z.object({
+  count: z.number().int().nonnegative(),
+  take: z.number().int().positive(),
+  next: z.string().nullable(),
 });
 
 export const notificationListSchema = z.object({
   items: z.array(notificationItemSchema),
-  pagination: notificationPaginationSchema,
+  meta: notificationMetaSchema,
 });
 
 export const notificationUnreadSummaryResponseSchema = z.discriminatedUnion(

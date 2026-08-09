@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import {
   notificationItemSchema,
   notificationListSchema,
-  notificationPaginationSchema,
+  notificationMetaSchema,
   notificationTypeSchema,
   notificationUnreadByTypeSchema,
   notificationUnreadSummarySchema,
@@ -10,7 +10,11 @@ import {
 
 export type NotificationItem = z.infer<typeof notificationItemSchema>;
 export type NotificationList = z.infer<typeof notificationListSchema>;
-export type NotificationPagination = z.infer<typeof notificationPaginationSchema>;
+export type NotificationMeta = z.infer<typeof notificationMetaSchema>;
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
-export type NotificationUnreadByType = z.infer<typeof notificationUnreadByTypeSchema>;
-export type NotificationUnreadSummary = z.infer<typeof notificationUnreadSummarySchema>;
+export type NotificationUnreadByType = z.infer<
+  typeof notificationUnreadByTypeSchema
+>;
+export type NotificationUnreadSummary = z.infer<
+  typeof notificationUnreadSummarySchema
+>;

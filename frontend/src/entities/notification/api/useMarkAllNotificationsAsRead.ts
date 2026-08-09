@@ -25,6 +25,10 @@ export const useMarkAllNotificationsAsRead = () => {
           };
         },
       );
+      queryClient.invalidateQueries({ queryKey: notificationQueries.list() });
+      queryClient.invalidateQueries({
+        queryKey: notificationQueries.unreadBadge(),
+      });
     },
   });
 };

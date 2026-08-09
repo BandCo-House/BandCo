@@ -8,11 +8,20 @@ import {
   notificationUnreadSummaryResponseSchema,
 } from '../model/schema';
 
+export interface GetNotificationListParams {
+  where__is_read?: boolean;
+  where__type?: 'NOTICE' | 'INVITE' | 'REMINDER';
+  take?: number;
+  cursor__id?: string;
+}
+
 /**
  * 알림 목록을 조회한다.
  */
-export const getNotificationList = async (): Promise<NotificationList> => {
-  const response = await apiClient.get('/notifications');
+export const getNotificationList = async (
+  params?: GetNotificationListParams,
+): Promise<NotificationList> => {
+  const response = await apiClient.get('/notifications/me', { params });
   const parsed = notificationListResponseSchema.parse(response.data);
 
   if (parsed.status === 'error') throw new Error(parsed.message);
@@ -21,7 +30,25 @@ export const getNotificationList = async (): Promise<NotificationList> => {
 };
 
 /**
- * 읽지 않은 알림 요약 정보를 조회한다.
+ * 뱃지용으로 읽지 않은 알림을 최대 10개 조회합니다. (백엔드 추가 엔드포인트 없음)
+ */
+export const getUnreadNotificationBadge = async (): Promise<{
+  count: number;
+  hasMore: boolean;
+}> => {
+  const data = await getNotificationList({
+    where__is_read: false,
+    where__type: 'INVITE',
+    take: 10,
+  });
+  return {
+    count: data.items.length,
+    hasMore: data.meta.next !== null,
+  };
+};
+
+/**
+ * 읽지 않은 알림 요약 정보를 조회한다.(현재 백엔드쪽에서 미구현이지만 추후 구현될 수도 있으니 유지해 둠)
  */
 export const getNotificationUnreadSummary =
   async (): Promise<NotificationUnreadSummary> => {
@@ -49,4 +76,13 @@ export const markNotificationAsRead = async (notificationId: string) => {
  */
 export const markAllNotificationsAsRead = async () => {
   await apiClient.patch('/notifications/read-all');
+};
+
+/**
+ * 다중 알림을 삭제합니다.
+ */
+export const deleteManyNotifications = async (
+  notificationIds: string[],
+): Promise<void> => {
+  await apiClient.delete('/notifications', { data: { notificationIds } });
 };
