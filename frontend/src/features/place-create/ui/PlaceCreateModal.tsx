@@ -1,8 +1,8 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { uploadImage } from '@/shared/api';
+import { uploadFile } from '@/shared/api';
 import { useCreatePlace } from '@/entities/place/api/useCreatePlace';
 import {
   Sheet,
@@ -13,6 +13,7 @@ import {
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
+import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
 
 interface PlaceCreateModalProps {
   open: boolean;
@@ -85,7 +86,7 @@ export const PlaceCreateModal = ({
     if (coverFile) {
       setIsUploading(true);
       try {
-        imageUrl = await uploadImage(coverFile, 'places');
+        imageUrl = await uploadFile(coverFile, 'places');
       } catch {
         toast.error(
           '커버 이미지를 업로드하지 못했어요. 잠시 후 다시 시도해주세요.',
@@ -134,7 +135,7 @@ export const PlaceCreateModal = ({
           </button>
         </header>
 
-        <div className="flex flex-1 flex-col gap-9 overflow-y-auto px-5 pt-2 pb-6">
+        <div className="flex flex-1 flex-col gap-9 overflow-y-auto px-5 pt-8 pb-6">
           <div className="flex flex-col gap-2">
             <SheetTitle className="typo-xl-sb text-grey-50">
               장소 추가
@@ -177,14 +178,7 @@ export const PlaceCreateModal = ({
                   alt="선택한 커버 미리보기"
                   className="size-full rounded-md border border-grey-50 object-cover opacity-80"
                 />
-                <button
-                  type="button"
-                  aria-label="커버 제거"
-                  onClick={clearCover}
-                  className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full border border-grey-50 bg-grey-400 text-grey-50 focus-visible:outline-2 focus-visible:outline-key"
-                >
-                  <X aria-hidden="true" className="size-3" />
-                </button>
+                <ThumbnailRemoveButton label="커버 제거" onClick={clearCover} />
               </div>
             ) : (
               <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300">

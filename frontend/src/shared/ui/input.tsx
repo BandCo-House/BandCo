@@ -6,8 +6,9 @@ import { useFieldRequired } from './field-context';
 const inputVariantClassNames = {
   roundedFull:
     'rounded-full field-border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-primary focus-visible:outline-2 focus-visible:outline-primary',
+  // 밑줄형은 라벨과 좌측을 맞추기 위해 앞쪽 패딩을 두지 않는다.
   underline:
-    'rounded-none border-0 border-b bg-transparent px-5 py-3 outline-none hover:border-primary focus-visible:border-primary focus-visible:ring-0',
+    'rounded-none border-0 border-b bg-transparent py-3 pr-5 pl-0 outline-none hover:border-primary focus-visible:border-primary focus-visible:ring-0',
 } as const;
 
 type InputProps = React.ComponentProps<'input'> & {

@@ -227,6 +227,8 @@ export class SongsService {
     const hasArtistName = input.artistName !== undefined;
     const hasSourceUrl = input.sourceUrl !== undefined;
     const hasSourceType = input.sourceType !== undefined;
+    const hasKey = input.key !== undefined;
+    const hasBpm = input.bpm !== undefined;
     const hasMemo = input.memo !== undefined;
     const hasSkillTypeIds = input.skillTypeIds !== undefined;
     const hasSongCoverUrl = input.songCoverUrl !== undefined;
@@ -239,6 +241,8 @@ export class SongsService {
       !hasArtistName &&
       !hasSourceUrl &&
       !hasSourceType &&
+      !hasKey &&
+      !hasBpm &&
       !hasMemo &&
       !hasSkillTypeIds &&
       !hasSongCoverUrl &&
@@ -247,6 +251,11 @@ export class SongsService {
       !hasReferenceFiles
     ) {
       throw new BadRequestException('수정할 곡 정보가 필요합니다.');
+    }
+
+    // 음원 URL과 출처는 한 벌이라, 한쪽만 바꾸면 반쪽짜리 출처가 남는다.
+    if (hasSourceUrl !== hasSourceType) {
+      throw new BadRequestException('음원 URL과 음원 출처는 함께 전달해야 합니다.');
     }
   }
 }

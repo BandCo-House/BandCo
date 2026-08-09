@@ -51,6 +51,7 @@
 | production | 배포 주소는 env의 `VITE_API_BASE_URL`로 주입한다. |
 | proxy | 백엔드는 전역 `/api` prefix가 없으므로 dev proxy가 필요할 때만 `/api`를 제거해 백엔드 루트로 전달한다. |
 | 응답 검증 | `shared/api/types.ts`와 entity schema를 확인하고, 런타임 검증이 필요한 값은 zod schema로 parse한다. |
+| 응답 envelope | 백엔드가 `{ genres }`, `{ items }`처럼 감싸 주는지 실제 타입을 확인하고 언랩한다. 배열로 바로 받으면 조용히 빈 목록이 된다. |
 
 ## 상태와 데이터
 
@@ -59,6 +60,7 @@
 | 서버 상태 | TanStack Query를 우선 사용한다. |
 | query key | `bandKeys`, `profileKeys`, `notificationQueries`처럼 도메인 파일에 모아 재사용한다. |
 | mutation 후처리 | 관련 query key를 invalidate하거나 필요한 경우 `setQueryData`로 좁게 갱신한다. |
+| 접근 권한이 사라지는 mutation | 탈퇴·삭제처럼 더 이상 볼 수 없게 되는 리소스는 목록뿐 아니라 **상세 캐시도 `removeQueries`로 지운다.** 남겨 두면 뒤로 가기로 돌아왔을 때 권한 없는 화면이 그대로 보인다. |
 | 인증 token | `shared/lib/auth-storage.ts`와 `apiClient` interceptor 흐름을 유지한다. |
 | 인증 context | `app/providers/AuthProvider.tsx`와 `auth-context.ts`를 통한다. |
 
@@ -81,6 +83,7 @@
 | 컴포넌트 추가 | 없는 컴포넌트는 shadcn에서 받아와서 사용한다. 스타일 코드는 최대한 간략하게 줄이고 기존 스타일 변수를 활용하도록 수정하여 적용한다. |
 | icon | `assets/icons/*.svg?react`를 우선 사용하고 없다면 사용자에게 요청하거나 lucide-react를 사용한다. |
 | styling | Tailwind class와 `cn`/`tailwind-merge` 패턴을 사용한다. |
+| 디자인 토큰 | 토큰 기반 유틸(`rounded-*`, `bg-*`)을 쓰기 전에 `index.css`의 `@theme`에 그 스케일이 **실제로 매핑돼 있는지** 확인한다. 매핑이 없으면 Tailwind 기본값으로 조용히 렌더된다. 토큰 값에 이미 알파가 있으면(`--surface-1: #dce2f966`) `/40`을 덧붙이지 않는다. |
 | semantic HTML | 불필요한 div wrapper를 줄이고 의미 있는 요소를 우선한다. |
 | responsive | 텍스트가 모바일에서 넘치지 않게 width, min-width, wrapping, line clamp, overflow 처리를 함께 고려한다. |
 

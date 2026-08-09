@@ -48,7 +48,7 @@ export const BandMain = () => {
   const hasSpaces = !!spaces && spaces.length > 0;
 
   return (
-    <div className="flex flex-col gap-6 pt-4">
+    <div className="flex flex-col gap-6 pt-8">
       <div className="flex flex-col gap-6 px-8">
         <BandNoticeSection bandId={bandId} />
         <WeekDatePicker value={selectedDate} onChange={setSelectedDate} />

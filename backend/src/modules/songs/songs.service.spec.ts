@@ -569,6 +569,54 @@ describe('SongsService', () => {
     expect(result.song.songLength).toBe(355);
   });
 
+  it('곡 수정 시 조성·BPM만 전달해도 수정할 수 있다', async () => {
+    const { service, repository, transactionClient } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.updateSong.mockResolvedValue({
+      song: {
+        id: 'song-id',
+        bandId: 'band-id',
+        title: 'Song',
+        artistName: 'Artist',
+        sourceUrl: null,
+        sourceType: null,
+        memo: null,
+        key: 'FSM',
+        bpm: 120,
+        difficultyLevel: null,
+        songCoverUrl: null,
+        songLength: null,
+        externalLinks: [],
+        referenceFiles: [],
+        updatedAt: '2026-05-20T00:00:00.000Z',
+        skills: [],
+      },
+    });
+
+    const input = { key: 'FSM' as const, bpm: 120 };
+
+    const result = await service.updateSong('user-id', 'song-id', input);
+
+    expect(repository.updateSong).toHaveBeenCalledWith('song-id', input, transactionClient);
+    expect(result.song.key).toBe('FSM');
+    expect(result.song.bpm).toBe(120);
+  });
+
+  it('음원 URL만 수정하려 하면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(service.updateSong('user-id', 'song-id', { sourceUrl: null })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).not.toHaveBeenCalled();
+  });
+
   it('곡 수정 본문이 비어 있으면 BadRequestException을 던진다', async () => {
     const { service, repository } = createService();
 

@@ -7,7 +7,12 @@
 
 @theme inline {
   --shadow-drop: 0px 0px 20px 2px rgba(255, 255, 255, 0.4);
+  /* Round 토큰을 radius 스케일에 전부 연결한다.
+     md만 연결돼 있어 rounded-sm/xs/lg가 Tailwind 기본값(4/2/8px)으로 렌더되던 문제. */
+  --radius-xs: var(--Round-xs);
+  --radius-sm: var(--Round-sm);
   --radius-md: var(--Round-md);
+  --radius-lg: var(--Round-lg);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--surface-card);

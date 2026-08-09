@@ -186,6 +186,8 @@ export class SongsPrismaRepository implements SongsRepository {
         sourceUrl: input.sourceUrl,
         sourceType: input.sourceType,
         externalTrackId: input.externalTrackId,
+        key: input.key,
+        bpm: input.bpm,
         memo: input.memo,
         songCoverUrl: input.songCoverUrl,
         songLength: input.songLength,
@@ -443,6 +445,14 @@ export class SongsPrismaRepository implements SongsRepository {
 
     if (input.sourceType !== undefined) {
       data.sourceType = input.sourceType;
+    }
+
+    if (input.key !== undefined) {
+      data.key = input.key;
+    }
+
+    if (input.bpm !== undefined) {
+      data.bpm = input.bpm;
     }
 
     if (input.memo !== undefined) {

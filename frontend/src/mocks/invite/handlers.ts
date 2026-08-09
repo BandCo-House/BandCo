@@ -107,7 +107,7 @@ export const inviteHandlers = [
     });
   }),
 
-  http.post(`${API_URL}/bands/:bandId/invites`, async ({ request }) => {
+  http.post(`${API_URL}/bands/:bandId/invitations`, async ({ request }) => {
     const body = (await request.json()) as { inviteeEmail: string };
 
     return HttpResponse.json<ApiResponse<Invite>>({
