@@ -23,17 +23,23 @@ interface MockNotification {
   createdAt: string;
 }
 
-let mockNotifications: MockNotification[] = Array.from(
+const hoursAgo = (hours: number) =>
+  new Date(Date.now() - hours * 3600000).toISOString();
+
+// 안 읽음은 최신 3건만 둔다. 예전엔 앞 15건만 읽음이라 "더 보기"를 누르면
+// 그 뒤부터 전부 안 읽음(밝은 카드)으로 뚝 바뀌어 색이 갈라져 보였다.
+const UNREAD_INVITE_COUNT = 3;
+
+const inviteNotifications: MockNotification[] = Array.from(
   { length: 30 },
   (_, i) => {
-    const isRead = i < 15;
     const invitationId = `uuid-invite-${i + 1}`;
     return {
       notificationId: invitationId,
       type: 'INVITE',
       title: '밴드 초대가 도착했습니다.',
       description: '새 밴드 초대가 도착했습니다.',
-      isRead,
+      isRead: i >= UNREAD_INVITE_COUNT,
       targetPath: `/invitations/received?invitationId=${invitationId}`,
       reference: {
         type: 'BAND_INVITATION',
@@ -45,10 +51,62 @@ let mockNotifications: MockNotification[] = Array.from(
           avatarUrl: null,
         },
       },
-      createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+      createdAt: hoursAgo(i),
     };
   },
 );
+
+const noticeNotifications: MockNotification[] = [
+  {
+    notificationId: 'uuid-notice-1',
+    type: 'NOTICE',
+    title: '새 공지사항이 등록되었습니다.',
+    description: '이번 주 정기 합주 일정이 공지에 올라왔어요.',
+    isRead: false,
+    targetPath: '/band/band-1/notices',
+    reference: null,
+    createdAt: hoursAgo(2),
+  },
+];
+
+const reminderNotifications: MockNotification[] = [
+  {
+    notificationId: 'uuid-reminder-1',
+    type: 'REMINDER',
+    title: '일정 조율 요청이 도착했습니다.',
+    description: '금요일 합주 시간에 대한 응답을 기다리고 있어요.',
+    isRead: false,
+    targetPath: '/band/band-1',
+    reference: null,
+    createdAt: hoursAgo(1),
+  },
+  {
+    notificationId: 'uuid-reminder-2',
+    type: 'REMINDER',
+    title: '내일 합주가 있어요.',
+    description: '신촌 연습실 A · 오후 7시 시작이에요.',
+    isRead: false,
+    targetPath: '/band/band-1',
+    reference: null,
+    createdAt: hoursAgo(5),
+  },
+  {
+    notificationId: 'uuid-reminder-3',
+    type: 'REMINDER',
+    title: '합주 일정이 변경되었습니다.',
+    description: '토요일 합주가 오후 3시로 옮겨졌어요.',
+    isRead: true,
+    targetPath: '/band/band-1',
+    reference: null,
+    createdAt: hoursAgo(30),
+  },
+];
+
+let mockNotifications: MockNotification[] = [
+  ...noticeNotifications,
+  ...reminderNotifications,
+  ...inviteNotifications,
+];
 
 export const updateMockNotificationInviteStatus = (
   invitationId: string,

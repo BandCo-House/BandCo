@@ -4,6 +4,7 @@ import type {
   NotificationItem,
   NotificationType,
 } from '@/entities/notification/model/types';
+import { Checkbox } from '@/shared/ui/checkbox';
 import { NotificationCardMenuSheet } from './NotificationCardMenuSheet';
 import { ReceivedInviteSheet } from '@/features/invite-accept/ui/ReceivedInviteSheet';
 
@@ -81,7 +82,7 @@ export const NotificationCard = ({
             }
           : undefined
       }
-      className={`relative flex gap-3 rounded-lg border border-[rgba(39,43,34,0.8)] p-4 transition-all duration-200 ${
+      className={`relative flex gap-3 rounded-2xl border border-[rgba(39,43,34,0.8)] p-4 transition-all duration-200 ${
         isClickable ? 'cursor-pointer active:scale-[0.995]' : ''
       } ${
         !noti.isRead
@@ -89,31 +90,14 @@ export const NotificationCard = ({
           : 'bg-[rgba(101,99,122,0.48)]'
       }`}
     >
-      {/* 편집 모드 체크박스 */}
+      {/* 선택 토글은 카드 전체가 담당하므로 체크박스는 표시 전용이다. */}
       {isEditMode && (
         <div className="flex shrink-0 items-center justify-center pr-1">
-          <div
-            className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all duration-200 ${
-              isSelected
-                ? 'border-destructive bg-destructive text-white'
-                : 'border-grey-300 bg-transparent'
-            }`}
-          >
-            {isSelected && (
-              <svg
-                className="h-3 w-3 stroke-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            )}
-          </div>
+          <Checkbox
+            checked={isSelected}
+            tabIndex={-1}
+            className="pointer-events-none size-5"
+          />
         </div>
       )}
 
