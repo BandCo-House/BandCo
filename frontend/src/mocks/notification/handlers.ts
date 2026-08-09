@@ -132,7 +132,10 @@ export const notificationHandlers = [
     const take = Number(url.searchParams.get('take') || 20);
     const cursorId = url.searchParams.get('cursor__id');
 
-    let filtered = mockNotifications;
+    // 시드를 타입별로 이어 붙여 두었으므로 응답 직전에 최신순으로 정렬한다.
+    let filtered = [...mockNotifications].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
 
     if (whereType) {
       filtered = filtered.filter((n) => n.type === whereType);

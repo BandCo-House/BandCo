@@ -29,7 +29,11 @@ const inputClass = 'typo-base-sb text-grey-50';
 
 const Divider = () => <div aria-hidden className="h-px w-full bg-grey-50/10" />;
 
-/** 스킴이 없으면 https를 붙여 정규화한다. 형식이 아니면 null. */
+/**
+ * 스킴이 없으면 https를 붙이고 canonical 문자열로 정규화한다. 형식이 아니면 null.
+ * 원본을 그대로 돌려주면 `example.com`과 `https://example.com/`이 서로 다른
+ * 첨부로 쌓여 중복 판정이 뚫린다.
+ */
 const normalizeUrl = (raw: string): string | null => {
   const trimmed = raw.trim();
   if (!trimmed) return null;
@@ -37,7 +41,8 @@ const normalizeUrl = (raw: string): string | null => {
     ? trimmed
     : `https://${trimmed}`;
   try {
-    return new URL(candidate).hostname ? candidate : null;
+    const parsed = new URL(candidate);
+    return parsed.hostname ? parsed.toString() : null;
   } catch {
     return null;
   }

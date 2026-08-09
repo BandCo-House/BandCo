@@ -11,12 +11,13 @@ export const NotificationBellLink = ({ className }: { className?: string }) => {
   const { data: badge } = useNotificationUnreadBadge();
   const count = badge?.count ?? 0;
   const badgeText = badge?.hasMore ? '9+' : String(count);
+  const badgeLabel = badge?.hasMore ? '알림 9건 이상' : `알림 ${count}건`;
 
   return (
     <Link
       to="/notifications"
       search={{ tab: 'INVITE' }}
-      aria-label={count > 0 ? `알림 ${badgeText}건` : '알림'}
+      aria-label={count > 0 ? badgeLabel : '알림'}
       className={cn(
         'relative inline-flex size-9 items-center justify-center rounded-lg text-grey-100 focus-visible:outline-2 focus-visible:outline-primary',
         className,

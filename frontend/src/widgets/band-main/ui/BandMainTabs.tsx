@@ -53,7 +53,7 @@ export const BandMainTabs = () => {
             aria-current={isActive ? 'page' : undefined}
             data-active={isActive}
             className={cn(
-              'flex flex-1 items-center justify-center border-b-2 border-transparent pt-4 pb-5 typo-sm-sb transition-colors outline-none',
+              'flex flex-1 items-center justify-center border-b-2 border-transparent pt-4 pb-5 typo-sm-sb transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary',
               isActive ? 'text-primary' : 'text-grey-300',
             )}
           >

@@ -24,7 +24,7 @@ export const LinkAttachmentItem = ({
 
   return (
     <AttachmentItem
-      name={data?.title || toHostname(url)}
+      name={data?.title || data?.siteName || toHostname(url)}
       href={url}
       iconUrl={data?.faviconUrl}
       onRemove={onRemove}

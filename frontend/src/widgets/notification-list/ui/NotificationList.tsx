@@ -48,6 +48,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // 탭이 바뀌면 이전 탭의 선택을 버린다. 클릭 핸들러에만 두면 뒤로가기·앞으로가기·
+  // URL 직접 이동이 그 경로를 타지 않아, 화면에 없는 알림이 선택된 채 삭제될 수 있다.
+  const [renderedTab, setRenderedTab] = useState(tab);
+  if (renderedTab !== tab) {
+    setRenderedTab(tab);
+    setIsEditMode(false);
+    setSelectedIds(new Set());
+  }
+
   const showTabBar = useShowOnScrollUp();
   const { containerRef: tabContainerRef, indicatorRef: tabIndicatorRef } =
     useSlidingIndicator(tab);
@@ -236,10 +245,11 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     <div data-testid="notifications-page" className="w-full pb-16">
       {/* 통합 sticky 헤더 (탭 바 + 요약/모두읽음 바) */}
       <div
+        inert={!showTabBar}
         className={cn(
           'sticky top-[64px] z-30 -mx-5 -mt-8 px-5 pb-4',
           'transition-[transform,opacity] duration-300 ease-out',
-          !showTabBar && 'pointer-events-none -translate-y-full opacity-0',
+          !showTabBar && '-translate-y-full opacity-0',
         )}
       >
         {/* 탭 네비게이션 */}
@@ -266,10 +276,9 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   key={key}
                   type="button"
                   data-active={isActive}
-                  onClick={() => {
-                    handleCancelEdit();
-                    navigate({ to: '/notifications', search: { tab: key } });
-                  }}
+                  onClick={() =>
+                    navigate({ to: '/notifications', search: { tab: key } })
+                  }
                   className={`relative z-10 flex h-8.5 flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-colors duration-200 ${
                     isActive
                       ? 'typo-base-b text-black'
