@@ -2,8 +2,12 @@ import type { ReactNode } from 'react';
 import { Link, useRouter } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { cn } from '@/shared/lib/utils';
+import {
+  slidingIndicatorClass,
+  useSlidingIndicator,
+} from '@/shared/lib/use-sliding-indicator';
 import { Button, buttonVariants } from '@/shared/ui/button';
-import type { HeaderStaticConfig } from './types';
+import type { HeaderStaticConfig, HeaderTab } from './types';
 
 const HEIGHT_CLASSES = {
   xs: 'min-h-9',
@@ -26,6 +30,14 @@ interface RouteHeaderProps {
  */
 export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
   const router = useRouter();
+
+  const resolveTabActive = (tab: HeaderTab) =>
+    tab.active ??
+    tab.isActive?.({ pathname: router.state.location.pathname, params }) ??
+    false;
+
+  const { containerRef: tabContainerRef, indicatorRef: tabIndicatorRef } =
+    useSlidingIndicator(header.tabs?.find(resolveTabActive)?.key ?? '');
 
   const handleBack = () => {
     if (header.backBehavior === 'browser') {
@@ -51,14 +63,13 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
         ? Object.fromEntries(new URLSearchParams(tabSearchString))
         : undefined;
       const tabParams = tab.getParams?.(params);
-      const isActive =
-        tab.active ??
-        tab.isActive?.({
-          pathname: router.state.location.pathname,
-          params,
-        }) ??
-        false;
+      const isActive = resolveTabActive(tab);
       const variant = isActive ? 'default' : 'outline';
+      const styleClass = cn(
+        buttonVariants({ variant: isActive ? 'ghost' : 'outline', size: 'sm' }),
+        'relative z-10',
+        isActive && 'text-key-foreground',
+      );
 
       // 링크 탭은 <a> 자체를 버튼 스타일로 렌더링한다(예전엔 <a><button> 중첩으로 HTML 규격 위반).
       return tabPath ? (
@@ -69,7 +80,8 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
           {...(tabSearch ? { search: tabSearch as never } : {})}
           onClick={tab.onClick}
           data-variant={variant}
-          className={buttonVariants({ variant, size: 'sm' })}
+          data-active={isActive}
+          className={styleClass}
         >
           {tab.label}
         </Link>
@@ -77,9 +89,11 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
         <Button
           key={tab.key}
           type="button"
-          variant={variant}
+          variant="ghost"
           size="sm"
           data-variant={variant}
+          data-active={isActive}
+          className={styleClass}
           onClick={tab.onClick}
         >
           {tab.label}
@@ -104,7 +118,19 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
 
     return (
       <div className="flex items-center gap-2">
-        {tabs}
+        {tabs?.length ? (
+          <div
+            ref={tabContainerRef}
+            className="relative flex items-center gap-2"
+          >
+            <span
+              ref={tabIndicatorRef}
+              aria-hidden="true"
+              className={cn(slidingIndicatorClass, 'rounded-full bg-key')}
+            />
+            {tabs}
+          </div>
+        ) : null}
         {rightAction}
       </div>
     );

@@ -1,5 +1,9 @@
 import { Link, useParams, useRouterState } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
+import {
+  slidingIndicatorClass,
+  useSlidingIndicator,
+} from '@/shared/lib/use-sliding-indicator';
 
 const TABS = [
   { key: 'home', label: '홈', to: '/band/$bandId' },
@@ -18,9 +22,25 @@ export const BandMainTabs = () => {
   const { bandId } = useParams({ from: '/band/$bandId' });
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const activeKey = resolveActiveKey(pathname);
+  const { containerRef, indicatorRef } = useSlidingIndicator(
+    activeKey,
+    'underline',
+  );
 
   return (
-    <nav aria-label="밴드 메인 탭" className="flex w-full">
+    <nav
+      ref={containerRef}
+      aria-label="밴드 메인 탭"
+      className="relative flex w-full"
+    >
+      <span
+        ref={indicatorRef}
+        aria-hidden="true"
+        className={cn(
+          slidingIndicatorClass,
+          'top-auto bottom-0 h-0.5 bg-primary',
+        )}
+      />
       {TABS.map((tab) => {
         const isActive = tab.key === activeKey;
         return (
@@ -31,11 +51,10 @@ export const BandMainTabs = () => {
             // 홈(`/band/$bandId`)이 자식 경로에서 fuzzy-active 되지 않도록 정확 매칭한다.
             activeOptions={{ exact: true }}
             aria-current={isActive ? 'page' : undefined}
+            data-active={isActive}
             className={cn(
-              'flex flex-1 items-center justify-center border-b-2 pt-4 pb-5 typo-sm-sb transition-colors outline-none',
-              isActive
-                ? 'border-primary text-primary'
-                : 'border-transparent text-grey-300',
+              'flex flex-1 items-center justify-center border-b-2 border-transparent pt-4 pb-5 typo-sm-sb transition-colors outline-none',
+              isActive ? 'text-primary' : 'text-grey-300',
             )}
           >
             {tab.label}
