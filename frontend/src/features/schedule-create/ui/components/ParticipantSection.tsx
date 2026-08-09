@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import { Checkbox } from '@/shared/ui/checkbox';
-import { FieldLabel } from '@/shared/ui/field';
+import { FieldLabel, fieldSurfaceClass } from '@/shared/ui/field';
 import { cn } from '@/shared/lib/utils';
 import { MemberCard } from './MemberCard';
 import { MemberSearchModal } from './MemberSearchModal';
@@ -76,7 +76,10 @@ export const ParticipantSection = ({
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className="flex h-[54px] w-full items-center justify-between rounded-full field-border border-white/24 bg-grey-500/24 px-5 typo-base-sb text-grey-300"
+        className={cn(
+          fieldSurfaceClass,
+          'flex w-full items-center justify-between typo-base-sb text-grey-300',
+        )}
       >
         <span>참여자를 선택하세요</span>
         <ChevronDown aria-hidden="true" className="size-6 text-grey-100" />
