@@ -22,6 +22,20 @@ export const bandGenreSchema = z.object({
   name: z.string(),
 });
 
+export const searchBandItemSchema = z.object({
+  id: z.string().optional(),
+  bandId: z.string().optional(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  visibility: z.boolean().default(true),
+  memberCount: z.number().int().nonnegative().default(0),
+  coverImgUrl: z.string().nullable().optional(),
+  genres: z.array(bandGenreSchema).optional(),
+  createdAt: z.string(),
+});
+
+export type SearchBandItem = z.infer<typeof searchBandItemSchema>;
+
 /** 밴드 상세(GET /bands/:bandId). 목록과 필드가 달라 별도 스키마로 둔다. */
 export const bandDetailSchema = z.object({
   id: z.string(),
