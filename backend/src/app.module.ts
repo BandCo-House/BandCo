@@ -6,6 +6,7 @@ import { PrismaModule } from './database/prisma';
 import { BandsModule } from './modules/bands/bands.module';
 import { BandSpacesModule } from './modules/bandspaces/bandspaces.module';
 import { CommonModule } from './modules/common/common.module';
+import { LinkPreviewsModule } from './modules/link-previews/link-previews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PlacesModule } from './modules/places/places.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
@@ -27,6 +28,7 @@ import { StorageModule } from './storage/storage.module';
     BandsModule,
     SchedulesModule,
     CommonModule,
+    LinkPreviewsModule,
     PlacesModule,
     TeamsModule,
   ],
