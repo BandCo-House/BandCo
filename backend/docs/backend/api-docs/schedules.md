@@ -7,7 +7,7 @@
 > - #48 일정 목록 조회(밴드 기준) 응답 JSON 원본이 여는 중괄호(`{`) 없이 시작하는 오기가 있어 수정하여 기록함.
 > - teams 도메인 MVP 제외로 teamIds/teams 필드를 Request/Response에서 제거함.
 > - scheduleType enum: PRACTICE | MEETING / status enum: PLANNED | DONE | CANCELED (Prisma schema 기준)
-> - PATCH body 전체 필드 선택 (partial update 패턴). POST에서 memo, placeId, songIds, participantBandMemberIds는 선택.
+> - PATCH body 전체 필드 선택 (partial update 패턴). POST에서 memo, placeId, songIds, participantBandMemberIds, externalLinks, referenceFiles는 선택.
 
 ---
 
@@ -39,11 +39,18 @@
     "band-member-uuid-1",
     "band-member-uuid-2"
   ],
-  "memo": "후반부 템포 점검"
+  "memo": "후반부 템포 점검",
+  "externalLinks": ["https://example.com/notice"],
+  "referenceFiles": [
+    {
+      "fileUrl": "https://storage.example.com/schedule-references/uuid.pdf",
+      "fileName": "합주 공지.pdf"
+    }
+  ]
 }
 ```
 
-> 선택 필드: placeId, songIds, participantBandMemberIds, memo
+> 선택 필드: placeId, songIds, participantBandMemberIds, memo, externalLinks, referenceFiles
 
 ### Response 200
 ```json
@@ -70,6 +77,15 @@
     ],
     "participantCount": 2,
     "memo": "후반부 템포 점검",
+    "externalLinks": ["https://example.com/notice"],
+    "referenceFiles": [
+      {
+        "id": "reference-file-uuid",
+        "fileUrl": "https://storage.example.com/schedule-references/uuid.pdf",
+        "fileName": "합주 공지.pdf",
+        "createdAt": "2026-04-30T14:16:00.000+09:00"
+      }
+    ],
     "createdAt": "2026-04-30T14:16:00.000+09:00"
   }
 }
@@ -114,11 +130,13 @@
     "band-member-uuid-2",
     "band-member-uuid-3"
   ],
-  "memo": "후반부 템포 + 엔딩 합 맞추기"
+  "memo": "후반부 템포 + 엔딩 합 맞추기",
+  "externalLinks": [],
+  "referenceFiles": []
 }
 ```
 
-> 모든 필드 선택 (partial update — 전달된 필드만 업데이트)
+> 모든 필드 선택 (partial update — 전달된 필드만 업데이트). `externalLinks`, `referenceFiles`는 전달 시 전체 교체하며 빈 배열은 전체 삭제를 뜻한다.
 
 ### Response 200
 ```json
@@ -140,6 +158,8 @@
     ],
     "participantCount": 3,
     "memo": "후반부 템포 + 엔딩 합 맞추기",
+    "externalLinks": [],
+    "referenceFiles": [],
     "updatedAt": "2026-04-30T14:20:00.000+09:00"
   }
 }
@@ -378,6 +398,15 @@
         }
       ],
       "memo": "후렴 파트 합 맞추기",
+      "externalLinks": ["https://example.com/notice"],
+      "referenceFiles": [
+        {
+          "id": "reference-file-uuid",
+          "fileUrl": "https://storage.example.com/schedule-references/uuid.pdf",
+          "fileName": "합주 공지.pdf",
+          "createdAt": "2026-04-30T14:16:00.000+09:00"
+        }
+      ],
       "createdByBandMemberId": "band-member-uuid",
       "createdAt": "2026-04-30T14:16:00.000+09:00",
       "updatedAt": "2026-04-30T14:16:00.000+09:00"

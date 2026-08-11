@@ -10,6 +10,7 @@ import type { BandScheduleListItem, GetBandSchedulesResult } from '../types/band
 import type { CreateScheduleResult, ScheduleSongItem } from '../types/create-schedule-result.type';
 import type { GetScheduleDetailResult } from '../types/schedule-detail.type';
 import type { GetSpaceSchedulesResult, ScheduleListMeta } from '../types/schedule-list-item.type';
+import type { ScheduleReferenceFileItem } from '../types/schedule-reference-file.type';
 import type { UpdateScheduleResult } from '../types/update-schedule-result.type';
 
 import type { SchedulesRepository } from './schedules.repository';
@@ -40,6 +41,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         status: input.status,
         placeId: input.placeId ?? null,
         memo: input.memo ?? null,
+        externalLinks: input.externalLinks,
       },
     });
 
@@ -64,6 +66,16 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       });
     }
 
+    if (input.referenceFiles !== undefined && input.referenceFiles.length > 0) {
+      await client.scheduleReferenceFile.createMany({
+        data: input.referenceFiles.map(referenceFile => ({
+          scheduleId: schedule.id,
+          fileUrl: referenceFile.fileUrl,
+          fileName: referenceFile.fileName,
+        })),
+      });
+    }
+
     const songs =
       songIds.length > 0
         ? await client.song.findMany({
@@ -73,6 +85,11 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         : [];
 
     const participantCount = participantBandMemberIds.length;
+
+    const referenceFiles = await client.scheduleReferenceFile.findMany({
+      where: { scheduleId: schedule.id },
+      orderBy: { createdAt: 'asc' },
+    });
 
     return {
       scheduleId: schedule.id,
@@ -88,6 +105,8 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       participantCount,
       teamId: input.teamId ?? null,
       memo: schedule.memo,
+      externalLinks: schedule.externalLinks,
+      referenceFiles: this.mapReferenceFiles(referenceFiles),
       createdAt: schedule.createdAt.toISOString(),
     };
   }
@@ -140,6 +159,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
             },
           },
         },
+        referenceFiles: { orderBy: { createdAt: 'asc' } },
       },
     });
 
@@ -169,6 +189,8 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
           note: p.note ?? null,
         })),
         memo: row.memo,
+        externalLinks: row.externalLinks,
+        referenceFiles: this.mapReferenceFiles(row.referenceFiles),
         createdByBandMemberId: row.createdByBandMemberId,
         isMine,
         createdAt: row.createdAt.toISOString(),
@@ -190,6 +212,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         ...(input.placeId !== undefined && { placeId: input.placeId }),
         ...(input.status !== undefined && { status: input.status }),
         ...(input.memo !== undefined && { memo: input.memo }),
+        ...(input.externalLinks !== undefined && { externalLinks: { set: input.externalLinks } }),
       },
     });
 
@@ -211,12 +234,30 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       }
     }
 
+    if (input.referenceFiles !== undefined) {
+      await client.scheduleReferenceFile.deleteMany({ where: { scheduleId } });
+      if (input.referenceFiles.length > 0) {
+        await client.scheduleReferenceFile.createMany({
+          data: input.referenceFiles.map(referenceFile => ({
+            scheduleId,
+            fileUrl: referenceFile.fileUrl,
+            fileName: referenceFile.fileName,
+          })),
+        });
+      }
+    }
+
     const songIds =
       input.songIds !== undefined
         ? input.songIds
         : (await client.scheduleSong.findMany({ where: { scheduleId }, select: { songId: true } })).map(s => s.songId);
 
     const participantCount = await client.scheduleParticipant.count({ where: { scheduleId } });
+
+    const referenceFiles = await client.scheduleReferenceFile.findMany({
+      where: { scheduleId },
+      orderBy: { createdAt: 'asc' },
+    });
 
     return {
       scheduleId: updated.id,
@@ -230,6 +271,8 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       songIds,
       participantCount,
       memo: updated.memo,
+      externalLinks: updated.externalLinks,
+      referenceFiles: this.mapReferenceFiles(referenceFiles),
       updatedAt: updated.updatedAt.toISOString(),
     };
   }
@@ -430,5 +473,14 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       })),
       meta,
     };
+  }
+
+  private mapReferenceFiles(referenceFiles: { id: string; fileUrl: string; fileName: string; createdAt: Date }[]): ScheduleReferenceFileItem[] {
+    return referenceFiles.map(referenceFile => ({
+      id: referenceFile.id,
+      fileUrl: referenceFile.fileUrl,
+      fileName: referenceFile.fileName,
+      createdAt: referenceFile.createdAt.toISOString(),
+    }));
   }
 }

@@ -13,7 +13,7 @@ export const SCHEDULES_REPOSITORY = Symbol('SCHEDULES_REPOSITORY');
 export interface SchedulesRepository {
   /**
    * 밴드 공간에 일정을 생성한다.
-   * songIds, participantBandMemberIds가 있으면 각 중간 테이블에도 레코드를 삽입한다.
+   * songIds, participantBandMemberIds, referenceFiles가 있으면 연관 레코드도 삽입한다.
    */
   createSchedule(
     bandSpaceId: string,
@@ -25,7 +25,7 @@ export interface SchedulesRepository {
   /**
    * 일정을 수정한다.
    * songIds가 있으면 ScheduleSong을 전량 교체(deleteMany → createMany)한다.
-   * participantBandMemberIds가 있으면 ScheduleParticipant를 전량 교체한다.
+   * participantBandMemberIds와 referenceFiles가 있으면 각 연관 레코드를 전량 교체한다.
    */
   updateSchedule(scheduleId: string, input: UpdateScheduleInput, tx?: Prisma.TransactionClient): Promise<UpdateScheduleResult>;
 
