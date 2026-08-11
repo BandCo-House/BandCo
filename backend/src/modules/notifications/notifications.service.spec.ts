@@ -10,6 +10,7 @@ import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkManyReadResult } from './types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
+import type { NotificationUnreadSummary } from './types/notification-unread-summary.type';
 import { NotificationsService } from './notifications.service';
 
 const mockListResult: GetNotificationsResult = {
@@ -42,6 +43,10 @@ const mockAllReadResult: MarkAllReadResult = { updatedCount: 3 };
 const mockManyReadResult: MarkManyReadResult = { updatedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
 const mockDeleteResult: DeleteNotificationResult = { notificationId: 'noti-001' };
 const mockDeleteManyResult: DeleteManyNotificationsResult = { deletedCount: 2, notificationIds: ['noti-001', 'noti-002'] };
+const mockUnreadSummary: NotificationUnreadSummary = {
+  unreadCount: 3,
+  unreadByType: { INVITE: 2, NOTICE: 1, REMINDER: 0 },
+};
 
 const repositoryStub: NotificationsRepository = {
   async createNotification() {
@@ -52,6 +57,9 @@ const repositoryStub: NotificationsRepository = {
   },
   async findNotifications() {
     return mockListResult;
+  },
+  async findUnreadSummary() {
+    return mockUnreadSummary;
   },
   async markAllNotificationsAsRead() {
     return mockAllReadResult;
@@ -87,6 +95,12 @@ describe('NotificationsService', () => {
       const result = await service.getNotifications('user-001', query);
       expect(result.items).toHaveLength(1);
       expect(result.meta.next).toBeNull();
+    });
+  });
+
+  describe('getUnreadSummary', () => {
+    it('repository의 타입별 미읽음 개수를 반환한다', async () => {
+      await expect(service.getUnreadSummary('user-001')).resolves.toEqual(mockUnreadSummary);
     });
   });
 

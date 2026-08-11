@@ -14,6 +14,7 @@ import type { MarkAllReadResult } from './types/mark-all-read-result.type';
 import type { MarkManyReadResult } from './types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from './types/mark-notification-read-result.type';
 import type { GetNotificationsResult } from './types/notification-list-item.type';
+import type { NotificationUnreadSummary } from './types/notification-unread-summary.type';
 import { NotificationsService } from './notifications.service';
 
 @ApiTags('알림')
@@ -22,6 +23,15 @@ import { NotificationsService } from './notifications.service';
 @UseGuards(AccessTokenGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Get('unread-summary')
+  @ApiOperation({ summary: '읽지 않은 알림 개수 조회' })
+  @ApiResponse({ status: 200, description: '읽지 않은 알림 개수 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  async getUnreadSummary(@Req() req: { user: AuthUser }): Promise<ApiSuccessResponse<NotificationUnreadSummary>> {
+    const result = await this.notificationsService.getUnreadSummary(req.user.id);
+    return createSuccessResponse('읽지 않은 알림 개수 조회 성공', result);
+  }
 
   @Get('me')
   @ApiOperation({ summary: '알림 목록 조회' })
