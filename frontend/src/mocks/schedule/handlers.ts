@@ -272,6 +272,20 @@ const resolveSongs = (ids: string[] = []): ScheduleSong[] =>
     .map((id) => songsById.get(id))
     .filter((song): song is ScheduleSong => Boolean(song));
 
+/** 요청의 참고자료(`{ fileUrl, fileName }`)에 서버가 붙이는 id·createdAt을 채워 상세 형태로 만든다. */
+const buildReferenceFiles = (
+  files: CreateScheduleRequest['referenceFiles'] = [],
+  scheduleId: string,
+): ScheduleDetail['referenceFiles'] => {
+  const now = new Date().toISOString();
+  return files.map((file, index) => ({
+    id: `${scheduleId}-ref${index + 1}`,
+    fileUrl: file.fileUrl,
+    fileName: file.fileName,
+    createdAt: now,
+  }));
+};
+
 const buildDetail = (
   scheduleId: string,
   spaceId: string,
@@ -291,6 +305,8 @@ const buildDetail = (
     songs: resolveSongs(body.songIds),
     participants: buildParticipants(body.participantBandMemberIds, scheduleId),
     memo: body.memo ?? null,
+    externalLinks: body.externalLinks ?? [],
+    referenceFiles: buildReferenceFiles(body.referenceFiles, scheduleId),
     createdByBandMemberId: 'member-1',
     isMine: true,
     createdAt: now,
@@ -315,6 +331,8 @@ const buildFallbackDetail = (scheduleId: string): ScheduleDetail => {
       songs: [],
       participants: [],
       memo: null,
+      externalLinks: [],
+      referenceFiles: [],
       createdByBandMemberId: 'member-1',
       isMine: true,
       createdAt: now,
@@ -336,6 +354,8 @@ const buildFallbackDetail = (scheduleId: string): ScheduleDetail => {
     songs: item.songs,
     participants: buildParticipants(participantIds, scheduleId),
     memo: item.memo,
+    externalLinks: [],
+    referenceFiles: [],
     createdByBandMemberId: 'member-1',
     isMine: item.isMine ?? true,
     createdAt: now,
@@ -356,6 +376,8 @@ const toResult = (detail: ScheduleDetail): CreateScheduleResult => ({
   participantCount: detail.participants.length,
   teamId: null,
   memo: detail.memo,
+  externalLinks: detail.externalLinks,
+  referenceFiles: detail.referenceFiles,
   createdAt: detail.createdAt,
 });
 
@@ -443,6 +465,15 @@ export const scheduleHandlers = [
             ? buildParticipants(body.participantBandMemberIds, scheduleId)
             : existing.participants,
         memo: body.memo !== undefined ? (body.memo ?? null) : existing.memo,
+        // 전체 교체: 배열이 오면 그 값으로 통째 교체, 안 오면 기존 유지.
+        externalLinks:
+          body.externalLinks !== undefined
+            ? body.externalLinks
+            : existing.externalLinks,
+        referenceFiles:
+          body.referenceFiles !== undefined
+            ? buildReferenceFiles(body.referenceFiles, scheduleId)
+            : existing.referenceFiles,
         updatedAt: new Date().toISOString(),
       };
       scheduleStore.set(scheduleId, updated);

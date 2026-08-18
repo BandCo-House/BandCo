@@ -15,6 +15,7 @@ import {
   toScheduleRequest,
   type ScheduleFormState,
 } from '../model/types';
+import { resolveReferenceFiles } from '../model/reference-files';
 import { useCreateSchedule } from '../api/useCreateSchedule';
 import { useUpdateSchedule } from '../api/useUpdateSchedule';
 import { ScheduleFormView } from './ScheduleFormView';
@@ -44,6 +45,8 @@ export const ScheduleCreateModal = ({
   const [view, setView] = useState<'form' | 'detail'>('form');
   const [mode, setMode] = useState<'create' | 'edit'>('create');
   const [scheduleId, setScheduleId] = useState<string | null>(null);
+  // 참고자료 업로드는 mutation 전에 도므로 별도 진행 상태로 CTA를 잠근다.
+  const [isUploading, setIsUploading] = useState(false);
 
   // seed가 바뀌면(열림·수정 진입) form을 그 값으로 리셋한다(effect 대신 렌더 중 파생).
   const [seed, setSeed] = useState<ScheduleFormState>(() =>
@@ -76,9 +79,22 @@ export const ScheduleCreateModal = ({
   const updateForm = (patch: Partial<ScheduleFormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
 
-  const handleSubmit = () => {
-    if (!isFormValid(form) || isCreating || isUpdating) return;
-    const payload = toScheduleRequest(form);
+  const handleSubmit = async () => {
+    if (!isFormValid(form) || isCreating || isUpdating || isUploading) return;
+
+    // 참고자료 파일을 먼저 업로드해 objectUrl을 확보한 뒤 페이로드를 만든다.
+    // 업로드가 실패하면 일정 자체를 만들지 않고 멈춘다(부분 저장 방지).
+    let payload;
+    try {
+      setIsUploading(true);
+      const referenceFiles = await resolveReferenceFiles(form.referenceFiles);
+      payload = toScheduleRequest(form, referenceFiles);
+    } catch {
+      toast.error('첨부 파일을 올리지 못했어요. 잠시 후 다시 시도해주세요.');
+      return;
+    } finally {
+      setIsUploading(false);
+    }
 
     if (mode === 'create') {
       create(payload, {
@@ -167,7 +183,7 @@ export const ScheduleCreateModal = ({
             primaryLabel={mode === 'create' ? '추가' : '수정'}
             onPrimary={handleSubmit}
             primaryDisabled={!isFormValid(form)}
-            primaryLoading={isCreating || isUpdating}
+            primaryLoading={isCreating || isUpdating || isUploading}
           />
         ) : (
           <ScheduleActionBar

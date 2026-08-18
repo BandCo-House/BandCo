@@ -11,6 +11,11 @@ import { Field, fieldSurfaceClass } from '@/shared/ui/field';
 import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
 import { cn } from '@/shared/lib/utils';
 import type { ScheduleFormState, ScheduleType } from '../model/types';
+import {
+  type ReferenceFileDraft,
+  referenceFileDraftKey,
+  referenceFileDraftName,
+} from '../model/reference-files';
 import { ScheduleTimeSheet } from './components/ScheduleTimeSheet';
 import { ParticipantSection } from './components/ParticipantSection';
 
@@ -48,10 +53,6 @@ const normalizeUrl = (raw: string): string | null => {
   }
 };
 
-/** 같은 파일을 두 번 고르면 구분되도록 이름 외 메타까지 키에 넣는다. */
-const fileKey = (file: File): string =>
-  `${file.name}-${file.size}-${file.lastModified}`;
-
 /** 밑줄 링크형 텍스트 버튼(장소 추가하기). */
 const LinkButton = ({
   children,
@@ -82,25 +83,43 @@ export const ScheduleFormView = ({
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
 
-  // 첨부 서버 계약(업로드·일정 첨부 필드)이 아직 없어 화면 상태로만 보관한다.
-  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
-  const [links, setLinks] = useState<string[]>([]);
+  // 첨부값은 폼 상태로 올라간다. 파일은 제출 직전에 업로드되고, 링크 입력 초안만
+  // 전송에 안 실리는 임시 텍스트라 로컬 state로 둔다.
+  const referenceFiles = form.referenceFiles;
+  const links = form.externalLinks;
   const [linkDraft, setLinkDraft] = useState('');
 
   const addFiles = (selected: FileList | null) => {
     if (!selected?.length) return;
-    const added = Array.from(selected);
-    setReferenceFiles((prev) => {
-      const seen = new Set(prev.map(fileKey));
-      return [...prev, ...added.filter((file) => !seen.has(fileKey(file)))];
+    const added: ReferenceFileDraft[] = Array.from(selected).map((file) => ({
+      kind: 'local',
+      file,
+    }));
+    const seen = new Set(referenceFiles.map(referenceFileDraftKey));
+    const next = [
+      ...referenceFiles,
+      ...added.filter((draft) => !seen.has(referenceFileDraftKey(draft))),
+    ];
+    onChange({ referenceFiles: next });
+  };
+
+  const removeFile = (key: string) => {
+    onChange({
+      referenceFiles: referenceFiles.filter(
+        (draft) => referenceFileDraftKey(draft) !== key,
+      ),
     });
   };
 
   const addLink = () => {
     const url = normalizeUrl(linkDraft);
     if (!url) return;
-    setLinks((prev) => (prev.includes(url) ? prev : [...prev, url]));
+    if (!links.includes(url)) onChange({ externalLinks: [...links, url] });
     setLinkDraft('');
+  };
+
+  const removeLink = (url: string) => {
+    onChange({ externalLinks: links.filter((l) => l !== url) });
   };
 
   const { data: places = [] } = useBandPlaces(bandId);
@@ -140,17 +159,16 @@ export const ScheduleFormView = ({
           }}
         />
       </label>
-      {referenceFiles.map((file) => (
-        <AttachmentItem
-          key={fileKey(file)}
-          name={file.name}
-          onRemove={() =>
-            setReferenceFiles((prev) =>
-              prev.filter((item) => fileKey(item) !== fileKey(file)),
-            )
-          }
-        />
-      ))}
+      {referenceFiles.map((draft) => {
+        const key = referenceFileDraftKey(draft);
+        return (
+          <AttachmentItem
+            key={key}
+            name={referenceFileDraftName(draft)}
+            onRemove={() => removeFile(key)}
+          />
+        );
+      })}
     </Field>
   );
 
@@ -176,7 +194,7 @@ export const ScheduleFormView = ({
         <LinkAttachmentItem
           key={url}
           url={url}
-          onRemove={() => setLinks((prev) => prev.filter((l) => l !== url))}
+          onRemove={() => removeLink(url)}
         />
       ))}
     </Field>
