@@ -30,25 +30,7 @@ export const getNotificationList = async (
 };
 
 /**
- * 뱃지용으로 읽지 않은 알림을 최대 10개 조회합니다. (백엔드 추가 엔드포인트 없음)
- */
-export const getUnreadNotificationBadge = async (): Promise<{
-  count: number;
-  hasMore: boolean;
-}> => {
-  const data = await getNotificationList({
-    where__is_read: false,
-    where__type: 'INVITE',
-    take: 10,
-  });
-  return {
-    count: data.items.length,
-    hasMore: data.meta.next !== null,
-  };
-};
-
-/**
- * 읽지 않은 알림 요약 정보를 조회한다.(현재 백엔드쪽에서 미구현이지만 추후 구현될 수도 있으니 유지해 둠)
+ * 읽지 않은 알림 요약 정보를 조회한다(GET /notifications/unread-summary).
  */
 export const getNotificationUnreadSummary =
   async (): Promise<NotificationUnreadSummary> => {

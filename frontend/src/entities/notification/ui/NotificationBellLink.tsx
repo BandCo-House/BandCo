@@ -1,17 +1,18 @@
 import { Link } from '@tanstack/react-router';
 import BellIcon from '@/assets/icons/bell.svg?react';
 import { cn } from '@/shared/lib/utils';
-import { useNotificationUnreadBadge } from '../api/useNotificationUnreadSummary';
+import { useNotificationUnreadSummary } from '../api/useNotificationUnreadSummary';
 
 /**
- * 헤더 공용 알림 벨. 안 읽은 초대 개수를 배지로 붙인다.
- * unread-summary는 백엔드 미구현이라 INVITE 미읽음 카운트를 쓴다.
+ * 헤더 공용 알림 벨. 안 읽은 알림 전체 개수를 배지로 붙인다.
+ * 개수는 GET /notifications/unread-summary의 unreadCount에서 온다.
  */
 export const NotificationBellLink = ({ className }: { className?: string }) => {
-  const { data: badge } = useNotificationUnreadBadge();
-  const count = badge?.count ?? 0;
-  const badgeText = badge?.hasMore ? '9+' : String(count);
-  const badgeLabel = badge?.hasMore ? '알림 9건 이상' : `알림 ${count}건`;
+  const { data: summary } = useNotificationUnreadSummary();
+  const count = summary?.unreadCount ?? 0;
+  const overflow = count > 9;
+  const badgeText = overflow ? '9+' : String(count);
+  const badgeLabel = overflow ? '알림 9건 이상' : `알림 ${count}건`;
 
   return (
     <Link
