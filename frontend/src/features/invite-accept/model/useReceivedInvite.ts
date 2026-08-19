@@ -30,7 +30,7 @@ export function useReceivedInvite({
       toast.success('초대를 수락했습니다!');
       const promises = [
         queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
-        queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: bandKeys.all }),
       ];
       if (notificationId) {
         promises.push(
@@ -54,7 +54,7 @@ export function useReceivedInvite({
       toast.success('초대를 거절했습니다.');
       const promises = [
         queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
-        queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: bandKeys.all }),
       ];
       if (notificationId) {
         promises.push(

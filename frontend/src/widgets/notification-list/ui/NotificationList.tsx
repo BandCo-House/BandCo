@@ -117,7 +117,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
         // 쿼리 캐시 갱신
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
-          queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
+          queryClient.invalidateQueries({ queryKey: bandKeys.all }),
         ]);
 
         // 가입 완료된 밴드 상세 페이지로 리다이렉션
@@ -177,12 +177,17 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       await deleteManyMutation.mutateAsync([notificationId]);
     } catch (error) {
       console.error('알림 삭제 실패:', error);
+      toast.error('알림을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
   };
 
   const handleMarkAllAsRead = () => {
     if (hasUnread) {
-      markAllAsReadMutation.mutate();
+      markAllAsReadMutation.mutate(undefined, {
+        onError: () => {
+          toast.error('읽음 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
+        },
+      });
     }
   };
 
@@ -196,6 +201,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       setIsEditMode(false);
     } catch (error) {
       console.error('알림 삭제 실패:', error);
+      toast.error('알림을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
     // 의존성은 mutation 객체가 아니라 실제로 쓰는 mutateAsync 참조여야 한다
     // (객체를 넣으면 React Compiler가 수동 메모이제이션을 보존하지 못한다).
@@ -352,10 +358,19 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                 )
               }
               onMarkAsRead={(id) =>
-                markAsReadMutation.mutate({
-                  notificationId: id,
-                  type: noti.type,
-                })
+                markAsReadMutation.mutate(
+                  {
+                    notificationId: id,
+                    type: noti.type,
+                  },
+                  {
+                    onError: () => {
+                      toast.error(
+                        '읽음 처리에 실패했어요. 잠시 후 다시 시도해주세요.',
+                      );
+                    },
+                  },
+                )
               }
             />
           ))}
