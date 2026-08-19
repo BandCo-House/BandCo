@@ -1,9 +1,10 @@
 import {
+  AppDialogBody,
+  AppDialogContent,
+  AppDialogFooter,
+  AppDialogHeader,
   Dialog,
-  DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
@@ -18,6 +19,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
 }
 
+/** 되돌리기 어려운 동작 전 한 번 확인받는 모달. 앱의 다른 모달과 같은 glass 스타일을 쓴다. */
 export const ConfirmDialog = ({
   open,
   title,
@@ -29,20 +31,39 @@ export const ConfirmDialog = ({
 }: ConfirmDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-md border-border/70 bg-background/95 p-6">
-        <DialogHeader>
+      <AppDialogContent className="px-5 pt-5 pb-8">
+        <AppDialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
-        <DialogFooter className="mt-4">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        </AppDialogHeader>
+        {description ? (
+          <AppDialogBody>
+            <DialogDescription className="typo-sm-r text-grey-200">
+              {description}
+            </DialogDescription>
+          </AppDialogBody>
+        ) : null}
+        {/* DialogFooter 기본값이 모바일 폭에서 flex-col-reverse라 버튼이 세로로 쌓인다. */}
+        <AppDialogFooter className="flex-row justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="pill"
+            className="border-grey-50 typo-base-b text-grey-50"
+            onClick={() => onOpenChange(false)}
+          >
             {cancelLabel}
           </Button>
-          <Button type="button" onClick={onConfirm}>
+          <Button
+            type="button"
+            variant="shining"
+            size="pill"
+            className="typo-base-sb"
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </AppDialogFooter>
+      </AppDialogContent>
     </Dialog>
   );
 };

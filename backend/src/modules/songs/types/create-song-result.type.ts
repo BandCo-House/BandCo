@@ -1,6 +1,7 @@
 import type { SongKey } from '../../../generated/prisma';
 
 import type { SongSourceType } from './song-preview.type';
+import type { SongReferenceFileItem } from './song-reference-file.type';
 
 export interface CreatedSongSkillType {
   id: string;
@@ -15,10 +16,15 @@ export interface CreateSongResult {
     artistName: string;
     sourceUrl: string | null;
     sourceType: SongSourceType | null;
+    externalTrackId: string | null;
     memo: string | null;
     key: SongKey | null;
     bpm: number | null;
     difficultyLevel: number | null;
+    songCoverUrl: string | null;
+    songLength: number | null;
+    externalLinks: string[];
+    referenceFiles: SongReferenceFileItem[];
     userId: string;
     createdAt: string;
   };

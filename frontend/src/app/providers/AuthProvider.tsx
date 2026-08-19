@@ -6,19 +6,34 @@ import {
 } from '@/app/providers/auth-context';
 import {
   getAccessToken,
+  getRefreshToken,
   setTokens,
   clearTokens,
 } from '@/shared/lib/auth-storage';
-import { getUserIdFromToken } from '@/shared/lib/jwt';
+import { getUserIdFromToken, isTokenExpired } from '@/shared/lib/jwt';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserAccess>(() => {
-    const token = getAccessToken();
-    const userId = getUserIdFromToken(token);
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+    
+    const userId = getUserIdFromToken(accessToken);
+    const isAccessExpired = isTokenExpired(accessToken);
+    const isRefreshExpired = isTokenExpired(refreshToken);
+    
+    const isAccessInvalid = !accessToken || isAccessExpired;
+    const isRefreshInvalid = !refreshToken || isRefreshExpired;
+
+    if (isAccessInvalid && isRefreshInvalid && (Boolean(accessToken) || Boolean(refreshToken))) {
+      clearTokens();
+    }
+
+    const isLoggedIn = !!userId && (!isAccessExpired || (!!refreshToken && !isRefreshExpired));
+    
     return {
-      isLoggedIn: !!userId,
+      isLoggedIn,
       isAdmin: false,
-      id: userId,
+      id: isLoggedIn ? userId : null,
     };
   });
 

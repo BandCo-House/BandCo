@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
+import { CloseButtonContent, closeButtonClass } from '@/shared/ui/close-button';
 
 function Dialog({
   ...props
@@ -215,18 +216,10 @@ function AppDialogClose({
   return (
     <DialogClose
       type="button"
-      className={cn(
-        'absolute top-6 right-6 z-50 flex size-10 items-center justify-center rounded-full text-grey-100 transition-colors hover:text-primary focus-visible:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:text-primary',
-        className,
-      )}
+      className={cn(closeButtonClass, className)}
       {...props}
     >
-      {children ?? (
-        <>
-          <XIcon className="size-8" />
-          <span className="sr-only">닫기</span>
-        </>
-      )}
+      {children ?? <CloseButtonContent />}
     </DialogClose>
   );
 }
@@ -274,7 +267,11 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('typo-2xl-b', className)}
+      // 모달 제목 공용 스타일(20px/600/140%/grey-100). 20px SemiBold 유틸이 없어 직접 지정.
+      className={cn(
+        'text-xl leading-[1.4] font-semibold text-grey-100',
+        className,
+      )}
       {...props}
     />
   );

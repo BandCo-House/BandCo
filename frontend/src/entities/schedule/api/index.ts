@@ -1,5 +1,12 @@
-import { apiGet } from '@/shared/api/client';
-import { type GetSchedulesResponse, type ScheduleType } from '../model/types';
+import { apiGet, apiPatch, apiPost } from '@/shared/api/client';
+import {
+  type CreateScheduleRequest,
+  type CreateScheduleResult,
+  type GetSchedulesResponse,
+  type ScheduleDetail,
+  type ScheduleType,
+  type UpdateScheduleRequest,
+} from '../model/types';
 
 export interface ScheduleListFilter {
   /** 시작일시 이상 (ISO 8601) */
@@ -41,3 +48,26 @@ export const getSchedules = (
   apiGet<GetSchedulesResponse>(`/bandspaces/${spaceId}/schedules`, {
     params: buildScheduleParams(filter),
   });
+
+/** 일정 생성(POST /bandspaces/:spaceId/schedules). */
+export const createSchedule = (spaceId: string, body: CreateScheduleRequest) =>
+  apiPost<CreateScheduleResult>(`/bandspaces/${spaceId}/schedules`, body);
+
+/** 일정 수정(PATCH /schedules/:scheduleId). */
+export const updateSchedule = (
+  scheduleId: string,
+  body: UpdateScheduleRequest,
+) => apiPatch<CreateScheduleResult>(`/schedules/${scheduleId}`, body);
+
+/**
+ * 일정 상세(GET /schedules/:scheduleId).
+ * 백엔드가 `{ schedule: {...} }`로 감싸 주므로 schedule 본문만 꺼내 반환한다.
+ */
+export const getScheduleDetail = async (
+  scheduleId: string,
+): Promise<ScheduleDetail> => {
+  const data = await apiGet<{ schedule: ScheduleDetail }>(
+    `/schedules/${scheduleId}`,
+  );
+  return data.schedule;
+};

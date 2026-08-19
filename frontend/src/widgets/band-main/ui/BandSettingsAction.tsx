@@ -11,6 +11,7 @@ export const BandSettingsAction = () => {
     <Link
       to="/band/$bandId/settings"
       params={{ bandId }}
+      search={{ tab: 'basic' }}
       aria-label="밴드 설정"
       className="inline-flex size-10 items-center justify-center rounded-full text-grey-100"
     >

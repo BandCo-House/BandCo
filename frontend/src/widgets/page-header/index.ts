@@ -1,5 +1,4 @@
-export { PageHeader } from './page-header';
-export type { PageHeaderProps } from './page-header';
+export { RouteHeader } from './route-header';
 export { resolveHeader } from './resolve-header';
 export type {
   HeaderResolveContext,

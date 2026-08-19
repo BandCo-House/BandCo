@@ -7,6 +7,8 @@
 > ⚠️ 변환 노트:
 > - Notion "곡 api" 데이터베이스에 대응하는 로컬 문서가 없어 `src/modules/songs/songs.controller.ts`, `songs.service.ts` 코드를 1차 소스로 신규 작성.
 > - Notion 번호(#24~27)는 곡 CRUD 4종에 대응한다. 외부 음원 검색/미리듣기 2종은 Notion에 번호 없는 별도 페이지로 존재.
+> - [설계자 보완 2026-07-09] 곡 커버 이미지(`songCoverUrl`), 참고자료 파일(`referenceFiles`), 외부 링크(`externalLinks`), 곡 길이(`songLength`) 필드를 #24/#25/#26에 추가 (신규 엔드포인트 없음, 기존 번호 유지). 설계 문서: [docs/backend/designs/songs/song-media-fields.md] (QA 통과 후 보관 예정)
+> - [설계 결정 2026-07-28] Deezer `previewUrl`은 만료되는 서명 URL이므로 Song에 저장하지 않는다. 대신 안정적인 `externalTrackId`를 저장하고 실제 재생 시 미리듣기 API로 최신 URL을 조회한다.
 
 ## API 목록
 
@@ -39,10 +41,17 @@
 {
   "title": "Bohemian Rhapsody",
   "artistName": "Queen",
-  "sourceUrl": "https://open.spotify.com/track/...",
-  "sourceType": "SPOTIFY",
+  "sourceUrl": "https://www.deezer.com/track/3135556",
+  "sourceType": "DEEZER",
+  "externalTrackId": "3135556",
   "memo": "인트로 부분 연습 필요",
-  "skillTypeIds": ["uuid"]
+  "skillTypeIds": ["uuid"],
+  "songCoverUrl": "https://.../song-covers/uuid.jpg",
+  "songLength": 355,
+  "externalLinks": ["https://youtube.com/watch?v=..."],
+  "referenceFiles": [
+    { "fileUrl": "https://.../song-references/uuid.pdf", "fileName": "악보_1절.pdf" }
+  ]
 }
 ```
 
@@ -52,8 +61,13 @@
 | `artistName` | string (최대 200자) | Y | 아티스트 이름 |
 | `sourceUrl` | string | Y | 음원 URL |
 | `sourceType` | `"SPOTIFY" \| "DEEZER"` | Y | 음원 출처 |
+| `externalTrackId` | string (최대 255자) | Y | Deezer 외부 트랙 ID |
 | `memo` | string | N | 곡 메모 |
 | `skillTypeIds` | string[] (UUID) | N | 관련 스킬 타입 ID 목록 |
+| `songCoverUrl` | string | N | 곡 커버 이미지 URL (`/storage/presigned-url`로 업로드 후 objectUrl 전달) |
+| `songLength` | number | N | 곡 길이 (초 단위) |
+| `externalLinks` | string[] | N | 외부 링크 URL 목록 |
+| `referenceFiles` | `{ fileUrl: string; fileName: string }[]` | N | 참고자료 파일 목록 (`fileUrl`은 storage 업로드 후 objectUrl) |
 
 ### Response 201
 
@@ -67,12 +81,19 @@
       "bandId": "uuid",
       "title": "Bohemian Rhapsody",
       "artistName": "Queen",
-      "sourceUrl": "https://open.spotify.com/track/...",
-      "sourceType": "SPOTIFY",
+      "sourceUrl": "https://www.deezer.com/track/3135556",
+      "sourceType": "DEEZER",
+      "externalTrackId": "3135556",
       "memo": "인트로 부분 연습 필요",
       "key": null,
       "bpm": null,
       "difficultyLevel": null,
+      "songCoverUrl": "https://.../song-covers/uuid.jpg",
+      "songLength": 355,
+      "externalLinks": ["https://youtube.com/watch?v=..."],
+      "referenceFiles": [
+        { "id": "uuid", "fileUrl": "https://.../song-references/uuid.pdf", "fileName": "악보_1절.pdf", "createdAt": "2026-07-05T00:00:00.000Z" }
+      ],
       "userId": "uuid",
       "createdAt": "2026-07-05T00:00:00.000Z"
     },
@@ -133,8 +154,15 @@
         "key": null,
         "bpm": null,
         "difficultyLevel": null,
-        "sourceUrl": "https://open.spotify.com/track/...",
-        "sourceType": "SPOTIFY",
+        "sourceUrl": "https://www.deezer.com/track/3135556",
+        "sourceType": "DEEZER",
+        "externalTrackId": "3135556",
+        "songCoverUrl": "https://.../song-covers/uuid.jpg",
+        "songLength": 355,
+        "externalLinks": ["https://youtube.com/watch?v=..."],
+        "referenceFiles": [
+          { "id": "uuid", "fileUrl": "https://.../song-references/uuid.pdf", "fileName": "악보_1절.pdf", "createdAt": "2026-07-05T00:00:00.000Z" }
+        ],
         "createdAt": "2026-07-05T00:00:00.000Z",
         "skills": [
           { "skillTypeId": "uuid", "skillName": "기타" }
@@ -150,6 +178,10 @@
   }
 }
 ```
+
+`previewUrl`은 목록 응답에 포함하지 않는다. 클라이언트는 사용자가 재생을 요청한 시점에 목록의 `externalTrackId`로
+`GET /songs/tracks/:trackId`를 호출해 유효한 `previewUrl`을 조회한다. 목록 조회 중 곡마다 Deezer API를 호출하지 않으므로
+목록 크기에 비례한 외부 요청과 외부 API 장애 전파를 피할 수 있다.
 
 ### Error
 
@@ -175,7 +207,8 @@
 
 ### Request Body
 
-전달된 필드만 업데이트한다. `sourceUrl`/`sourceType`/`memo`는 `null` 전달 시 삭제된다.
+전달된 필드만 업데이트한다. `sourceUrl`/`sourceType`/`memo`/`songCoverUrl`/`songLength`는 `null` 전달 시 삭제된다.
+`externalLinks`/`referenceFiles`는 `skillTypeIds`와 동일하게 전달 시(빈 배열 포함) 기존 값을 전체 교체하며, 미전달 시 기존 값을 유지한다.
 
 ```json
 {
@@ -184,9 +217,22 @@
   "sourceUrl": null,
   "sourceType": null,
   "memo": null,
-  "skillTypeIds": ["uuid"]
+  "skillTypeIds": ["uuid"],
+  "songCoverUrl": null,
+  "songLength": 355,
+  "externalLinks": ["https://youtube.com/watch?v=..."],
+  "referenceFiles": [
+    { "fileUrl": "https://.../song-references/uuid.pdf", "fileName": "악보_1절.pdf" }
+  ]
 }
 ```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `songCoverUrl` | string \| null | 곡 커버 이미지 URL (null 전달 시 삭제) |
+| `songLength` | number \| null | 곡 길이 초 단위 (null 전달 시 삭제) |
+| `externalLinks` | string[] | 전달 시 전체 교체 (빈 배열 전달 시 전체 삭제) |
+| `referenceFiles` | `{ fileUrl: string; fileName: string }[]` | 전달 시 전체 교체 (빈 배열 전달 시 전체 삭제) |
 
 ### Response 200
 
@@ -206,6 +252,12 @@
       "key": null,
       "bpm": null,
       "difficultyLevel": null,
+      "songCoverUrl": null,
+      "songLength": 355,
+      "externalLinks": ["https://youtube.com/watch?v=..."],
+      "referenceFiles": [
+        { "id": "uuid", "fileUrl": "https://.../song-references/uuid.pdf", "fileName": "악보_1절.pdf", "createdAt": "2026-07-05T00:00:00.000Z" }
+      ],
       "updatedAt": "2026-07-05T00:00:00.000Z",
       "skills": [
         { "skillTypeId": "uuid", "skillName": "기타" }

@@ -1,13 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/app/providers/auth-context';
 import { registerEmail } from '@/features/auth/api/auth.service';
 import { SignupForm } from '@/features/auth/ui/SignupForm';
-import { updateUserProfile } from '@/features/profile-update/api/profile-api';
 import { requireGuest } from '@/app/router-guards';
 import type { SignupReq } from '@/features/auth/model/auth.schema';
-import axios from 'axios';
-import { getUserIdFromToken } from '@/shared/lib/jwt';
+import { getApiErrorMessage } from '@/shared/api';
 
 export const Route = createFileRoute('/signup')({
   beforeLoad: requireGuest,
@@ -23,49 +22,17 @@ export const Route = createFileRoute('/signup')({
 export function SignupPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async (data: SignupReq) => {
     try {
       setIsLoading(true);
-      setError(null);
       const res = await registerEmail(data);
-      // 회원가입 성공 시 자동 로그인
+      // 회원가입 성공 시 자동 로그인 (이름은 가입 요청에서 프로필 닉네임으로 저장된다)
       login(res.accessToken, res.refreshToken);
-      try {
-        const userId = getUserIdFromToken(res.accessToken);
-        if (!userId) {
-          throw new Error('User ID not found in token');
-        }
-        await updateUserProfile(userId, {
-          profile: {
-            nickname: data.name,
-            selfDescription: null,
-            profileMusic: null,
-            avatarUrl: null,
-          },
-          personalInfo: {
-            email: data.email,
-          },
-        });
-        await navigate({ to: '/onboarding', search: { name: data.name } });
-      } catch (profileUpdateError) {
-        console.error(
-          '회원가입 후 프로필 저장에 실패했습니다.',
-          profileUpdateError,
-        );
-        await navigate({
-          to: '/onboarding',
-          search: { name: data.name, profileUpdateFailed: '1' },
-        });
-      }
+      await navigate({ to: '/onboarding', search: { name: data.nickname } });
     } catch (err) {
-      if (axios.isAxiosError<{ message?: string }>(err)) {
-        setError(err.response?.data?.message || '회원가입에 실패했습니다.');
-      } else {
-        setError('회원가입에 실패했습니다.');
-      }
+      toast.error(getApiErrorMessage(err, '회원가입에 실패했습니다.'));
     } finally {
       setIsLoading(false);
     }
@@ -73,11 +40,6 @@ export function SignupPage() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full flex-col">
-      {error && (
-        <div className="mb-6 rounded-md bg-destructive/10 px-5 py-4 text-center text-sm text-destructive">
-          {error}
-        </div>
-      )}
       <SignupForm onSubmit={handleSignup} isLoading={isLoading} />
     </div>
   );

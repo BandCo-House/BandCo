@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { lengthValidationMessage } from 'src/common/validation-message/length-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
@@ -21,4 +21,10 @@ export class RegisterEmailDto {
     message: '비밀번호는 특수문자(!@#$%^&*())를 1개 이상 포함해야 합니다.',
   })
   password: string;
+
+  @ApiProperty({ description: '닉네임 (프로필 닉네임으로 저장된다)', example: '홍길동' })
+  @IsString({ message: stringValidationMessage })
+  @MinLength(2, { message: lengthValidationMessage })
+  @MaxLength(255, { message: lengthValidationMessage })
+  nickname: string;
 }

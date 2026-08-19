@@ -136,10 +136,22 @@ describe('SongsService', () => {
         artistName: 'Daft Punk',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: '후렴 진입 전 드럼 큐 확인',
         key: null,
         bpm: null,
         difficultyLevel: null,
+        songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+        songLength: 355,
+        externalLinks: ['https://youtube.com/watch?v=uuid'],
+        referenceFiles: [
+          {
+            id: 'reference-file-id',
+            fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+            fileName: '악보_1절.pdf',
+            createdAt: '2026-05-20T00:00:00.000Z',
+          },
+        ],
         userId: 'user-id',
         createdAt: '2026-05-20T00:00:00.000Z',
       },
@@ -160,8 +172,13 @@ describe('SongsService', () => {
       artistName: 'Daft Punk',
       sourceUrl: 'https://www.deezer.com/track/3135556',
       sourceType: 'DEEZER',
+      externalTrackId: '3135556',
       memo: '후렴 진입 전 드럼 큐 확인',
       skillTypeIds: ['skill-type-1', 'skill-type-2'],
+      songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+      songLength: 355,
+      externalLinks: ['https://youtube.com/watch?v=uuid'],
+      referenceFiles: [{ fileUrl: 'https://storage.example.com/song-references/uuid.pdf', fileName: '악보_1절.pdf' }],
     });
 
     expect(repository.findActiveBandWithMemberByBandIdAndUserId).toHaveBeenCalledWith('band-id', 'user-id', transactionClient);
@@ -172,8 +189,13 @@ describe('SongsService', () => {
         artistName: 'Daft Punk',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: '후렴 진입 전 드럼 큐 확인',
         skillTypeIds: ['skill-type-1', 'skill-type-2'],
+        songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+        songLength: 355,
+        externalLinks: ['https://youtube.com/watch?v=uuid'],
+        referenceFiles: [{ fileUrl: 'https://storage.example.com/song-references/uuid.pdf', fileName: '악보_1절.pdf' }],
         bandId: 'band-id',
         userId: 'user-id',
         createdByBandMemberId: 'band-member-id',
@@ -181,6 +203,7 @@ describe('SongsService', () => {
       transactionClient,
     );
     expect(result.song.userId).toBe('user-id');
+    expect(result.song.referenceFiles).toHaveLength(1);
   });
 
   it('상위 트랜잭션이 있으면 새 트랜잭션을 열지 않는다', async () => {
@@ -202,10 +225,15 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: null,
         key: null,
         bpm: null,
         difficultyLevel: null,
+        songCoverUrl: null,
+        songLength: null,
+        externalLinks: [],
+        referenceFiles: [],
         userId: 'user-id',
         createdAt: '2026-05-20T00:00:00.000Z',
       },
@@ -220,6 +248,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
       },
       tx as never,
     );
@@ -238,6 +267,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         skillTypeIds: ['skill-type-1', 'skill-type-1'],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -255,6 +285,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -273,6 +304,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
@@ -295,6 +327,7 @@ describe('SongsService', () => {
         artistName: 'Artist',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         skillTypeIds: ['skill-type-1', 'skill-type-2'],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -323,6 +356,11 @@ describe('SongsService', () => {
           difficultyLevel: null,
           sourceUrl: 'https://www.deezer.com/track/3135556',
           sourceType: 'DEEZER',
+          externalTrackId: '3135556',
+          songCoverUrl: null,
+          songLength: null,
+          externalLinks: [],
+          referenceFiles: [],
           createdAt: '2026-05-20T00:00:00.000Z',
           skills: [
             {
@@ -424,6 +462,10 @@ describe('SongsService', () => {
         key: null,
         bpm: null,
         difficultyLevel: null,
+        songCoverUrl: null,
+        songLength: null,
+        externalLinks: [],
+        referenceFiles: [],
         updatedAt: '2026-05-20T00:00:00.000Z',
         skills: [
           {
@@ -471,6 +513,10 @@ describe('SongsService', () => {
         key: null,
         bpm: null,
         difficultyLevel: null,
+        songCoverUrl: null,
+        songLength: null,
+        externalLinks: [],
+        referenceFiles: [],
         updatedAt: '2026-05-20T00:00:00.000Z',
         skills: [],
       },
@@ -481,6 +527,94 @@ describe('SongsService', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(repository.findSongWithBandMemberBySongIdAndUserId).toHaveBeenCalledWith('song-id', 'user-id', tx);
     expect(repository.updateSong).toHaveBeenCalledWith('song-id', { memo: null }, tx);
+  });
+
+  it('곡 수정 시 신규 미디어 필드만 전달해도 수정할 수 있다', async () => {
+    const { service, repository, transactionClient } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.updateSong.mockResolvedValue({
+      song: {
+        id: 'song-id',
+        bandId: 'band-id',
+        title: 'Song',
+        artistName: 'Artist',
+        sourceUrl: null,
+        sourceType: null,
+        memo: null,
+        key: null,
+        bpm: null,
+        difficultyLevel: null,
+        songCoverUrl: null,
+        songLength: 355,
+        externalLinks: [],
+        referenceFiles: [],
+        updatedAt: '2026-05-20T00:00:00.000Z',
+        skills: [],
+      },
+    });
+
+    const input = { songCoverUrl: null, songLength: 355, externalLinks: [], referenceFiles: [] };
+
+    const result = await service.updateSong('user-id', 'song-id', input);
+
+    expect(repository.updateSong).toHaveBeenCalledWith('song-id', input, transactionClient);
+    expect(result.song.songLength).toBe(355);
+  });
+
+  it('곡 수정 시 조성·BPM만 전달해도 수정할 수 있다', async () => {
+    const { service, repository, transactionClient } = createService();
+
+    repository.findSongWithBandMemberBySongIdAndUserId.mockResolvedValue({
+      id: 'song-id',
+      bandId: 'band-id',
+      member: {
+        id: 'band-member-id',
+        userId: 'user-id',
+      },
+    });
+    repository.updateSong.mockResolvedValue({
+      song: {
+        id: 'song-id',
+        bandId: 'band-id',
+        title: 'Song',
+        artistName: 'Artist',
+        sourceUrl: null,
+        sourceType: null,
+        memo: null,
+        key: 'FSM',
+        bpm: 120,
+        difficultyLevel: null,
+        songCoverUrl: null,
+        songLength: null,
+        externalLinks: [],
+        referenceFiles: [],
+        updatedAt: '2026-05-20T00:00:00.000Z',
+        skills: [],
+      },
+    });
+
+    const input = { key: 'FSM' as const, bpm: 120 };
+
+    const result = await service.updateSong('user-id', 'song-id', input);
+
+    expect(repository.updateSong).toHaveBeenCalledWith('song-id', input, transactionClient);
+    expect(result.song.key).toBe('FSM');
+    expect(result.song.bpm).toBe(120);
+  });
+
+  it('음원 URL만 수정하려 하면 BadRequestException을 던진다', async () => {
+    const { service, repository } = createService();
+
+    await expect(service.updateSong('user-id', 'song-id', { sourceUrl: null })).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.findSongWithBandMemberBySongIdAndUserId).not.toHaveBeenCalled();
   });
 
   it('곡 수정 본문이 비어 있으면 BadRequestException을 던진다', async () => {

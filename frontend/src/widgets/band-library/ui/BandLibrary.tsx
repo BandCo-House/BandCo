@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import {
   horizontalFadeMask,
@@ -7,6 +8,8 @@ import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { SongLibraryItem } from '@/entities/song/ui/SongLibraryItem';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { PlaceCard } from '@/entities/place/ui/PlaceCard';
+import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
+import { SongCreateModal } from '@/features/song-create';
 import { LibrarySectionHeader } from './LibrarySectionHeader';
 
 const STATE_MESSAGE_CLASS = 'py-6 text-center typo-sm-r text-grey-300';
@@ -44,6 +47,9 @@ export const BandLibrary = () => {
   const songs = songsQuery.data ?? [];
   const places = placesQuery.data ?? [];
 
+  const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
+  const [isSongModalOpen, setIsSongModalOpen] = useState(false);
+
   // 합주곡 가로 스크롤: 스크롤바를 숨기고 스크롤 가능한 끝만 mask로 페이드한다.
   const {
     ref: songScrollRef,
@@ -51,10 +57,9 @@ export const BandLibrary = () => {
     atEnd: songAtEnd,
   } = useHorizontalScrollEdges<HTMLUListElement>();
 
-  // TODO: 추가(+) 버튼은 합주곡/연습 장소 생성 모달과 연결한다.
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <header className="flex flex-col gap-2 p-5">
+      <header className="flex flex-col gap-2 px-5 pt-8 pb-5">
         <h1 className="typo-xl-sb text-grey-50">라이브러리</h1>
         <p className="typo-base-r text-grey-300">
           밴드에서 연습할 합주곡과 연습 장소를
@@ -64,7 +69,11 @@ export const BandLibrary = () => {
       </header>
 
       <section className="flex flex-col gap-5 px-5">
-        <LibrarySectionHeader title="합주곡" addLabel="합주곡 추가" />
+        <LibrarySectionHeader
+          title="합주곡"
+          addLabel="합주곡 추가"
+          onAdd={() => setIsSongModalOpen(true)}
+        />
         {songs.length > 0 ? (
           <ul
             ref={songScrollRef}
@@ -89,7 +98,11 @@ export const BandLibrary = () => {
       </section>
 
       <section className="flex flex-col gap-5 px-5">
-        <LibrarySectionHeader title="연습 장소" addLabel="연습 장소 추가" />
+        <LibrarySectionHeader
+          title="연습 장소"
+          addLabel="연습 장소 추가"
+          onAdd={() => setIsPlaceModalOpen(true)}
+        />
         {places.length > 0 ? (
           <ul className="grid grid-cols-2 gap-2">
             {places.map((place) => (
@@ -108,6 +121,18 @@ export const BandLibrary = () => {
           />
         )}
       </section>
+
+      <SongCreateModal
+        open={isSongModalOpen}
+        onOpenChange={setIsSongModalOpen}
+        bandId={bandId}
+      />
+
+      <PlaceCreateModal
+        open={isPlaceModalOpen}
+        onOpenChange={setIsPlaceModalOpen}
+        bandId={bandId}
+      />
     </div>
   );
 };

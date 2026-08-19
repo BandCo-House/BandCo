@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import type { Prisma, User } from 'src/generated/prisma';
+import type { User } from 'src/generated/prisma';
+import { Prisma } from 'src/generated/prisma';
 import type { DeezerTrackClient } from 'src/modules/songs/deezer-track.client';
 import type { DeezerTrackApiResponse } from 'src/modules/songs/types/deezer-track-api-response.type';
 
@@ -143,12 +144,41 @@ describe('UsersService', () => {
 
   describe('createUserWithEmail', () => {
     it('이미 존재하는 이메일이면 BadRequestException을 던진다', async () => {
-      await expect(service.createUserWithEmail('test@example.com', 'hashed')).rejects.toThrow(BadRequestException);
+      await expect(service.createUserWithEmail('test@example.com', 'hashed', '홍길동')).rejects.toThrow(BadRequestException);
     });
 
     it('새 이메일이면 유저를 생성하여 반환한다', async () => {
-      const result = await service.createUserWithEmail('new@example.com', 'hashed');
+      const result = await service.createUserWithEmail('new@example.com', 'hashed', '홍길동');
       expect(result.email).toBe('new@example.com');
+    });
+
+    it('생성 중 P2002가 발생하면 BadRequestException으로 변환한다', async () => {
+      const conflict = new Prisma.PrismaClientKnownRequestError('unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      });
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithEmail').mockRejectedValueOnce(conflict);
+
+      await expect(service.createUserWithEmail('new@example.com', 'hashed', '홍길동')).rejects.toThrow(BadRequestException);
+      createSpy.mockRestore();
+    });
+
+    it('P2002 이외의 오류는 그대로 전파한다', async () => {
+      const unexpected = new Error('db down');
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithEmail').mockRejectedValueOnce(unexpected);
+
+      await expect(service.createUserWithEmail('new@example.com', 'hashed', '홍길동')).rejects.toThrow(unexpected);
+      createSpy.mockRestore();
+    });
+
+    it('nickname과 tx를 repository에 그대로 전달한다', async () => {
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithEmail');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.createUserWithEmail('new@example.com', 'hashed', '홍길동', tx);
+
+      expect(createSpy).toHaveBeenCalledWith('new@example.com', 'hashed', '홍길동', tx);
+      createSpy.mockRestore();
     });
   });
 

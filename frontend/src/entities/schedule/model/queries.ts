@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { addDays, endOfDay, startOfDay } from '@/shared/lib/date';
-import { getSchedules } from '../api';
+import { getScheduleDetail, getSchedules } from '../api';
 import { clipToDayWindow, type DayScheduleBlock } from '../lib/day-window';
 import { calculateOverlaps } from '../lib/calculate-overlaps';
 import { type ScheduleType } from './types';
@@ -32,7 +32,17 @@ export const scheduleQueries = {
       spaceId,
       { ...range, scheduleType: scheduleType ?? null },
     ] as const,
+  detail: (scheduleId: string) =>
+    [...scheduleQueries.all, 'detail', scheduleId] as const,
 };
+
+/** 일정 상세(GET /schedules/:id)를 조회한다. */
+export const useScheduleDetail = (scheduleId: string | null) =>
+  useQuery({
+    queryKey: scheduleQueries.detail(scheduleId ?? ''),
+    queryFn: () => getScheduleDetail(scheduleId as string),
+    enabled: !!scheduleId,
+  });
 
 /**
  * 특정 하루(당일 06:00 ~ 다음 날 06:00)의 일정을 조회한다.

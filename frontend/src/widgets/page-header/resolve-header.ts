@@ -8,9 +8,13 @@ import type {
  * 모든 라우트 헤더에 공통 적용되는 기본값
  * 개별 라우트는 필요한 필드만 선언하면 된다.
  */
-const HEADER_DEFAULTS: Pick<HeaderStaticConfig, 'showBack' | 'backBehavior'> = {
+const HEADER_DEFAULTS: Pick<
+  HeaderStaticConfig,
+  'showBack' | 'backBehavior' | 'bottomBlur'
+> = {
   showBack: true,
   backBehavior: 'route',
+  bottomBlur: true,
 };
 
 /**

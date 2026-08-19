@@ -20,6 +20,11 @@ const createPrismaMock = () => ({
     createMany: jest.fn(),
     deleteMany: jest.fn(),
   },
+  songReferenceFile: {
+    createMany: jest.fn(),
+    deleteMany: jest.fn(),
+    findMany: jest.fn(),
+  },
 });
 
 describe('SongsPrismaRepository', () => {
@@ -147,6 +152,11 @@ describe('SongsPrismaRepository', () => {
               skillTypeId: 'asc',
             },
           },
+          referenceFiles: {
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         cursor: { id: 'cursor-song-id' },
@@ -167,6 +177,10 @@ describe('SongsPrismaRepository', () => {
           difficultyLevel: null,
           sourceUrl: 'https://www.deezer.com/track/3135556',
           sourceType: 'DEEZER',
+          externalTrackId: '3135556',
+          songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+          songLength: 355,
+          externalLinks: ['https://youtube.com/watch?v=uuid'],
           createdAt: new Date('2026-05-20T00:00:00.000Z'),
           songSkills: [
             {
@@ -174,6 +188,14 @@ describe('SongsPrismaRepository', () => {
               skillType: {
                 name: '기타',
               },
+            },
+          ],
+          referenceFiles: [
+            {
+              id: 'reference-file-id',
+              fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+              fileName: '악보_1절.pdf',
+              createdAt: new Date('2026-05-20T00:00:00.000Z'),
             },
           ],
         },
@@ -187,8 +209,13 @@ describe('SongsPrismaRepository', () => {
           difficultyLevel: null,
           sourceUrl: 'https://www.deezer.com/track/3135557',
           sourceType: 'DEEZER',
+          externalTrackId: null,
+          songCoverUrl: null,
+          songLength: null,
+          externalLinks: [],
           createdAt: new Date('2026-05-19T00:00:00.000Z'),
           songSkills: [],
+          referenceFiles: [],
         },
       ]);
 
@@ -210,11 +237,23 @@ describe('SongsPrismaRepository', () => {
             difficultyLevel: null,
             sourceUrl: 'https://www.deezer.com/track/3135556',
             sourceType: 'DEEZER',
+            externalTrackId: '3135556',
+            songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+            songLength: 355,
+            externalLinks: ['https://youtube.com/watch?v=uuid'],
             createdAt: '2026-05-20T00:00:00.000Z',
             skills: [
               {
                 skillTypeId: 'skill-type-1',
                 skillName: '기타',
+              },
+            ],
+            referenceFiles: [
+              {
+                id: 'reference-file-id',
+                fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+                fileName: '악보_1절.pdf',
+                createdAt: '2026-05-20T00:00:00.000Z',
               },
             ],
           },
@@ -228,8 +267,13 @@ describe('SongsPrismaRepository', () => {
             difficultyLevel: null,
             sourceUrl: 'https://www.deezer.com/track/3135557',
             sourceType: 'DEEZER',
+            externalTrackId: null,
+            songCoverUrl: null,
+            songLength: null,
+            externalLinks: [],
             createdAt: '2026-05-19T00:00:00.000Z',
             skills: [],
+            referenceFiles: [],
           },
         ],
         meta: {
@@ -347,9 +391,14 @@ describe('SongsPrismaRepository', () => {
       artistName: 'Daft Punk',
       sourceUrl: 'https://www.deezer.com/track/3135556',
       sourceType: 'DEEZER' as const,
+      externalTrackId: '3135556',
       memo: '후렴 진입 전 드럼 큐 확인',
       createdByBandMemberId: 'band-member-id',
       skillTypeIds: ['skill-type-2', 'skill-type-1'],
+      songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+      songLength: 355,
+      externalLinks: ['https://youtube.com/watch?v=uuid'],
+      referenceFiles: [{ fileUrl: 'https://storage.example.com/song-references/uuid.pdf', fileName: '악보_1절.pdf' }],
     };
 
     beforeEach(() => {
@@ -360,13 +409,26 @@ describe('SongsPrismaRepository', () => {
         artistName: 'Daft Punk',
         sourceUrl: 'https://www.deezer.com/track/3135556',
         sourceType: 'DEEZER',
+        externalTrackId: '3135556',
         memo: '후렴 진입 전 드럼 큐 확인',
         key: null,
         bpm: null,
         difficultyLevel: null,
+        songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+        songLength: 355,
+        externalLinks: ['https://youtube.com/watch?v=uuid'],
         createdAt: new Date('2026-05-20T00:00:00.000Z'),
       });
       prisma.songSkill.createMany.mockResolvedValue({ count: 2 });
+      prisma.songReferenceFile.createMany.mockResolvedValue({ count: 1 });
+      prisma.songReferenceFile.findMany.mockResolvedValue([
+        {
+          id: 'reference-file-id',
+          fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+          fileName: '악보_1절.pdf',
+          createdAt: new Date('2026-05-20T00:00:00.000Z'),
+        },
+      ]);
       prisma.skillType.findMany.mockResolvedValue([
         {
           id: 'skill-type-1',
@@ -389,7 +451,11 @@ describe('SongsPrismaRepository', () => {
           artistName: 'Daft Punk',
           sourceUrl: 'https://www.deezer.com/track/3135556',
           sourceType: 'DEEZER',
+          externalTrackId: '3135556',
           memo: '후렴 진입 전 드럼 큐 확인',
+          songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+          songLength: 355,
+          externalLinks: ['https://youtube.com/watch?v=uuid'],
           createdByBandMemberId: 'band-member-id',
         },
         select: {
@@ -399,10 +465,14 @@ describe('SongsPrismaRepository', () => {
           artistName: true,
           sourceUrl: true,
           sourceType: true,
+          externalTrackId: true,
           memo: true,
           key: true,
           bpm: true,
           difficultyLevel: true,
+          songCoverUrl: true,
+          songLength: true,
+          externalLinks: true,
           createdAt: true,
         },
       });
@@ -415,6 +485,15 @@ describe('SongsPrismaRepository', () => {
           {
             songId: 'song-id',
             skillTypeId: 'skill-type-1',
+          },
+        ],
+      });
+      expect(prisma.songReferenceFile.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            songId: 'song-id',
+            fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+            fileName: '악보_1절.pdf',
           },
         ],
       });
@@ -431,10 +510,22 @@ describe('SongsPrismaRepository', () => {
           artistName: 'Daft Punk',
           sourceUrl: 'https://www.deezer.com/track/3135556',
           sourceType: 'DEEZER',
+          externalTrackId: '3135556',
           memo: '후렴 진입 전 드럼 큐 확인',
           key: null,
           bpm: null,
           difficultyLevel: null,
+          songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+          songLength: 355,
+          externalLinks: ['https://youtube.com/watch?v=uuid'],
+          referenceFiles: [
+            {
+              id: 'reference-file-id',
+              fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+              fileName: '악보_1절.pdf',
+              createdAt: '2026-05-20T00:00:00.000Z',
+            },
+          ],
           userId: 'user-id',
           createdAt: '2026-05-20T00:00:00.000Z',
         },
@@ -459,12 +550,23 @@ describe('SongsPrismaRepository', () => {
 
       expect(prisma.songSkill.createMany).not.toHaveBeenCalled();
     });
+
+    it('참고자료 파일이 없으면 참고자료 파일 연결을 생성하지 않는다', async () => {
+      await repository.createSong({
+        ...input,
+        referenceFiles: [],
+      });
+
+      expect(prisma.songReferenceFile.createMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateSong', () => {
     beforeEach(() => {
       prisma.songSkill.deleteMany.mockResolvedValue({ count: 2 });
       prisma.songSkill.createMany.mockResolvedValue({ count: 1 });
+      prisma.songReferenceFile.deleteMany.mockResolvedValue({ count: 1 });
+      prisma.songReferenceFile.createMany.mockResolvedValue({ count: 1 });
       prisma.song.update.mockResolvedValue({
         id: 'song-id',
         bandId: 'band-id',
@@ -476,6 +578,9 @@ describe('SongsPrismaRepository', () => {
         key: null,
         bpm: null,
         difficultyLevel: null,
+        songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+        songLength: 355,
+        externalLinks: ['https://youtube.com/watch?v=uuid'],
         updatedAt: new Date('2026-05-20T00:00:00.000Z'),
         songSkills: [
           {
@@ -483,6 +588,14 @@ describe('SongsPrismaRepository', () => {
             skillType: {
               name: '기타',
             },
+          },
+        ],
+        referenceFiles: [
+          {
+            id: 'reference-file-id',
+            fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+            fileName: '악보_1절.pdf',
+            createdAt: new Date('2026-05-20T00:00:00.000Z'),
           },
         ],
       });
@@ -529,6 +642,11 @@ describe('SongsPrismaRepository', () => {
               skillTypeId: 'asc',
             },
           },
+          referenceFiles: {
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
         },
       });
     });
@@ -556,6 +674,68 @@ describe('SongsPrismaRepository', () => {
       expect(prisma.songSkill.createMany).not.toHaveBeenCalled();
     });
 
+    it('referenceFiles가 전달되면 기존 참고자료 파일을 교체한다', async () => {
+      await repository.updateSong('song-id', {
+        referenceFiles: [{ fileUrl: 'https://storage.example.com/song-references/new.pdf', fileName: '새_악보.pdf' }],
+      });
+
+      expect(prisma.songReferenceFile.deleteMany).toHaveBeenCalledWith({
+        where: {
+          songId: 'song-id',
+        },
+      });
+      expect(prisma.songReferenceFile.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            songId: 'song-id',
+            fileUrl: 'https://storage.example.com/song-references/new.pdf',
+            fileName: '새_악보.pdf',
+          },
+        ],
+      });
+    });
+
+    it('referenceFiles가 없으면 참고자료 파일을 수정하지 않는다', async () => {
+      await repository.updateSong('song-id', {
+        memo: null,
+      });
+
+      expect(prisma.songReferenceFile.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.songReferenceFile.createMany).not.toHaveBeenCalled();
+    });
+
+    it('referenceFiles가 빈 배열이면 기존 참고자료 파일만 삭제한다', async () => {
+      await repository.updateSong('song-id', {
+        referenceFiles: [],
+      });
+
+      expect(prisma.songReferenceFile.deleteMany).toHaveBeenCalledWith({
+        where: {
+          songId: 'song-id',
+        },
+      });
+      expect(prisma.songReferenceFile.createMany).not.toHaveBeenCalled();
+    });
+
+    it('externalLinks가 전달되면 set으로 전체 교체한다', async () => {
+      await repository.updateSong('song-id', {
+        externalLinks: ['https://youtube.com/watch?v=new'],
+      });
+
+      expect(prisma.song.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { externalLinks: { set: ['https://youtube.com/watch?v=new'] } } }),
+      );
+    });
+
+    it('songCoverUrl과 songLength를 null로 전달하면 삭제한다', async () => {
+      await repository.updateSong('song-id', {
+        songCoverUrl: null,
+        songLength: null,
+      });
+
+      expect(prisma.song.update).toHaveBeenCalledWith(expect.objectContaining({ data: { songCoverUrl: null, songLength: null } }));
+    });
+
     it('수정된 곡 정보를 응답 형태로 매핑한다', async () => {
       const result = await repository.updateSong('song-id', {
         memo: '템포 124 기준으로 연습',
@@ -573,6 +753,17 @@ describe('SongsPrismaRepository', () => {
           key: null,
           bpm: null,
           difficultyLevel: null,
+          songCoverUrl: 'https://storage.example.com/song-covers/uuid.jpg',
+          songLength: 355,
+          externalLinks: ['https://youtube.com/watch?v=uuid'],
+          referenceFiles: [
+            {
+              id: 'reference-file-id',
+              fileUrl: 'https://storage.example.com/song-references/uuid.pdf',
+              fileName: '악보_1절.pdf',
+              createdAt: '2026-05-20T00:00:00.000Z',
+            },
+          ],
           updatedAt: '2026-05-20T00:00:00.000Z',
           skills: [
             {

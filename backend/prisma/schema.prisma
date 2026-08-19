@@ -186,13 +186,15 @@ model BandInviteLink {
   id                 String     @id @default(uuid()) @db.Uuid
   bandId             String     @map("band_id") @db.Uuid
   createBandMemberId String     @map("create_band_member_id") @db.Uuid
-  code               String?    @db.VarChar(255)
+  codeHash           String?    @map("code") @db.VarChar(255)
   expiredAt          DateTime?  @map("expired_at") @db.Timestamptz(6)
   createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
   band               Band       @relation(fields: [bandId], references: [id], onDelete: Cascade)
   createBandMember   BandMember @relation("BandInviteLinkCreator", fields: [createBandMemberId], references: [id], onDelete: Cascade)
 
+  @@unique([bandId])
+  @@unique([codeHash])
   @@map("band_invite_link")
 }
 
@@ -284,23 +286,28 @@ model SpaceMember {
 }
 
 model Song {
-  id                    String         @id @default(uuid()) @db.Uuid
-  bandId                String         @map("band_id") @db.Uuid
-  title                 String         @db.VarChar(200)
-  artistName            String         @map("artist_name") @db.VarChar(200)
-  key                   SongKey?       @map("key")
-  bpm                   Int?           @db.SmallInt
-  sourceUrl             String?        @map("source_url")
-  sourceType            String?        @map("source_type") @db.VarChar(20)
+  id                    String              @id @default(uuid()) @db.Uuid
+  bandId                String              @map("band_id") @db.Uuid
+  title                 String              @db.VarChar(200)
+  artistName            String              @map("artist_name") @db.VarChar(200)
+  key                   SongKey?            @map("key")
+  bpm                   Int?                @db.SmallInt
+  sourceUrl             String?             @map("source_url")
+  sourceType            String?             @map("source_type") @db.VarChar(20)
+  externalTrackId       String?             @map("external_track_id") @db.VarChar(255)
   memo                  String?
-  difficultyLevel       Int?           @map("difficulty_level") @db.SmallInt
-  createdByBandMemberId String?        @map("created_by_band_member_id") @db.Uuid
-  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  difficultyLevel       Int?                @map("difficulty_level") @db.SmallInt
+  songCoverUrl          String?             @map("song_cover_url") @db.VarChar(255)
+  songLength            Int?                @map("song_length") @db.SmallInt
+  externalLinks         String[]            @default([]) @map("external_links")
+  createdByBandMemberId String?             @map("created_by_band_member_id") @db.Uuid
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
   scheduleSongs         ScheduleSong[]
   songSkills            SongSkill[]
-  band                  Band           @relation(fields: [bandId], references: [id], onDelete: Cascade)
-  createdByBandMember   BandMember?    @relation("SongCreator", fields: [createdByBandMemberId], references: [id])
+  referenceFiles        SongReferenceFile[]
+  band                  Band                @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  createdByBandMember   BandMember?         @relation("SongCreator", fields: [createdByBandMemberId], references: [id])
   teamSongs             TeamSong[]
 
   @@map("songs")
@@ -317,27 +324,51 @@ model SongSkill {
   @@map("song_skills")
 }
 
+model SongReferenceFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  songId    String   @map("song_id") @db.Uuid
+  fileUrl   String   @map("file_url")
+  fileName  String   @map("file_name") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@map("song_reference_files")
+}
+
 model Schedule {
-  id                    String                @id @default(uuid()) @db.Uuid
-  bandSpaceId           String                @map("band_space_id") @db.Uuid
-  placeId               String?               @map("place_id") @db.Uuid
-  title                 String                @db.VarChar(150)
-  scheduleType          ScheduleType          @map("schedule_type")
-  startAt               DateTime?             @map("start_at") @db.Timestamptz(6)
-  endAt                 DateTime?             @map("end_at") @db.Timestamptz(6)
+  id                    String                  @id @default(uuid()) @db.Uuid
+  bandSpaceId           String                  @map("band_space_id") @db.Uuid
+  placeId               String?                 @map("place_id") @db.Uuid
+  title                 String                  @db.VarChar(150)
+  scheduleType          ScheduleType            @map("schedule_type")
+  startAt               DateTime?               @map("start_at") @db.Timestamptz(6)
+  endAt                 DateTime?               @map("end_at") @db.Timestamptz(6)
   memo                  String?
-  status                ScheduleStatus        @default(PLANNED)
-  createdByBandMemberId String                @map("created_by_band_member_id") @db.Uuid
-  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  externalLinks         String[]                @default([]) @map("external_links")
+  status                ScheduleStatus          @default(PLANNED)
+  createdByBandMemberId String                  @map("created_by_band_member_id") @db.Uuid
+  createdAt             DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
   participants          ScheduleParticipant[]
   scheduleSongs         ScheduleSong[]
   scheduleTeams         ScheduleTeam[]
-  bandSpace             BandSpace             @relation(fields: [bandSpaceId], references: [id])
-  createdByBandMember   BandMember            @relation("ScheduleCreator", fields: [createdByBandMemberId], references: [id])
-  place                 Place?                @relation(fields: [placeId], references: [id])
+  referenceFiles        ScheduleReferenceFile[]
+  bandSpace             BandSpace               @relation(fields: [bandSpaceId], references: [id])
+  createdByBandMember   BandMember              @relation("ScheduleCreator", fields: [createdByBandMemberId], references: [id])
+  place                 Place?                  @relation(fields: [placeId], references: [id])
 
   @@map("schedules")
+}
+
+model ScheduleReferenceFile {
+  id         String   @id @default(uuid()) @db.Uuid
+  scheduleId String   @map("schedule_id") @db.Uuid
+  fileUrl    String   @map("file_url")
+  fileName   String   @map("file_name") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_reference_files")
 }
 
 model ScheduleParticipant {
@@ -461,19 +492,31 @@ enum TeamStatus {
   INACTIVE
 }
 
+/// 조성. 접미사 없음은 major, M은 minor, S는 sharp(#)를 뜻한다.
+/// 플랫(♭)은 이명동음(예: D♭ = C#)이라 sharp 값으로 표현한다.
 enum SongKey {
   C
   CM
+  CS
+  CSM
   D
   DM
+  DS
+  DSM
   E
   EM
   F
   FM
+  FS
+  FSM
   G
   GM
+  GS
+  GSM
   A
   AM
+  AS
+  ASM
   B
   BM
 }

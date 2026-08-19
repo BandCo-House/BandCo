@@ -7,7 +7,12 @@
 
 @theme inline {
   --shadow-drop: 0px 0px 20px 2px rgba(255, 255, 255, 0.4);
+  /* Round 토큰을 radius 스케일에 전부 연결한다.
+     md만 연결돼 있어 rounded-sm/xs/lg가 Tailwind 기본값(4/2/8px)으로 렌더되던 문제. */
+  --radius-xs: var(--Round-xs);
+  --radius-sm: var(--Round-sm);
   --radius-md: var(--Round-md);
+  --radius-lg: var(--Round-lg);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--surface-card);
@@ -121,6 +126,23 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* 입력/선택/버튼 공통 테두리: 하단만 조금 두껍게(top/left/right 0.5px, bottom 1px).
+   색은 border-* 유틸로 따로 지정한다. underline 계열에는 쓰지 않는다. */
+@utility field-border {
+  border-style: solid;
+  border-width: 0.5px 0.5px 1px 0.5px;
+}
+
+/* 헤더 하단 글로우(공용). 라우트 PageHeader와 풀스크린 모달 헤더가 함께 쓴다. */
+@utility header-glow {
+  box-shadow: 0px 8px 40px 0px rgba(221, 254, 85, 0.12);
+}
+
+/* 푸터 상단 글로우(header-glow의 위쪽 방향 미러). 풀스크린 모달 하단 액션바에 쓴다. */
+@utility footer-glow {
+  box-shadow: 0px -8px 40px 0px rgba(221, 254, 85, 0.12);
 }
 
 /* ===== Typography ===== */

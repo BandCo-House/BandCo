@@ -1,31 +1,27 @@
-import { Search, Bell, Settings } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { BandList } from '@/widgets/band-list/ui/BandList';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import SettingIcon from '@/assets/icons/setting.svg?react';
+import { NotificationBellLink } from '@/entities/notification/ui/NotificationBellLink';
 
-// 내 밴드 전용 우측 다중 아이콘 액션 버튼 컴포넌트
+// 내 밴드 전용 우측 다중 아이콘 액션 버튼. 알림 벨은 홈과 같은 공용 컴포넌트를 쓴다.
 function MyBandsHeaderActions() {
   return (
-    <div className="flex items-center gap-4.5 text-grey-100">
+    <div className="flex items-center gap-4.5">
       <Link
         to="/search"
-        className="rounded-full transition-colors"
         aria-label="검색"
+        className="inline-flex size-9 items-center justify-center rounded-lg text-grey-100 focus-visible:outline-2 focus-visible:outline-primary"
       >
-        <Search className="size-6" />
+        <Search aria-hidden="true" className="size-6" />
       </Link>
-      <Link
-        to="/notifications"
-        className="relative rounded-full transition-colors"
-        aria-label="알림"
-      >
-        <Bell className="size-6" />
-      </Link>
+      <NotificationBellLink />
       <Link
         to="/profile"
-        className="rounded-full transition-colors"
         aria-label="마이 페이지"
+        className="inline-flex size-9 items-center justify-center rounded-lg text-grey-100 focus-visible:outline-2 focus-visible:outline-primary"
       >
-        <Settings className="size-6" />
+        <SettingIcon aria-hidden="true" className="size-5" />
       </Link>
     </div>
   );

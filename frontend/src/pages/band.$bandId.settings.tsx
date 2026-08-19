@@ -1,12 +1,26 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ComingSoon } from '@/shared/ui/coming-soon';
+import {
+  BandSettings,
+  BandSettingsSaveAction,
+  BandSettingsTabs,
+  parseBandSettingsTab,
+} from '@/widgets/band-settings';
 
 export const Route = createFileRoute('/band/$bandId/settings')({
   component: BandSettingsRoutePage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: parseBandSettingsTab(search.tab),
+  }),
   staticData: {
     header: {
       title: '밴드 설정',
+      titleSize: 'md',
       backTo: '/band/$bandId',
+      getBackParams: (params: Record<string, string>) => ({
+        bandId: params.bandId,
+      }),
+      renderRight: () => <BandSettingsSaveAction />,
+      renderBottom: () => <BandSettingsTabs />,
     },
   },
 });
@@ -16,7 +30,7 @@ function BandSettingsRoutePage() {
   return (
     <>
       <span className="sr-only">BandSettingsPage</span>
-      <ComingSoon />
+      <BandSettings />
     </>
   );
 }

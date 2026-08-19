@@ -31,7 +31,7 @@ import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetBandResult } from './types/get-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
-import type { GetReceivedBandInvitationsResult } from './types/received-band-invitation-list.type';
+import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from './types/received-band-invitation-list.type';
 import type { RejectBandJoinRequestResult } from './types/reject-band-join-request-result.type';
 import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
 import type { GetSentBandJoinRequestsResult } from './types/sent-band-join-request-list.type';
@@ -287,6 +287,34 @@ export class BandsService {
     tx?: Prisma.TransactionClient,
   ): Promise<GetReceivedBandInvitationsResult> {
     return this.bandsRepository.findReceivedBandInvitations(userId, query, tx);
+  }
+
+  /**
+   * 초대받은 사용자만 자신의 밴드 초대를 단건으로 조회할 수 있다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} invitationId - 조회할 초대 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<ReceivedBandInvitationListItem>} 초대 상세 정보
+   */
+  async getBandInvitationDetail(userId: string, invitationId: string, tx?: Prisma.TransactionClient): Promise<ReceivedBandInvitationListItem> {
+    const invitation = await this.bandsRepository.findBandInvitationForResponse(invitationId, tx);
+
+    if (invitation === null) {
+      throw new NotFoundException('요청한 밴드 초대를 찾을 수 없습니다.');
+    }
+
+    if (invitation.inviteeUserId !== userId) {
+      throw new ForbiddenException('밴드 초대 조회 권한이 없습니다.');
+    }
+
+    const detail = await this.bandsRepository.findBandInvitationDetail(invitationId, tx);
+
+    if (detail === null) {
+      throw new NotFoundException('요청한 밴드 초대를 찾을 수 없습니다.');
+    }
+
+    return detail;
   }
 
   /**

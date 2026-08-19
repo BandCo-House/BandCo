@@ -646,6 +646,90 @@ describe('BandsPrismaRepository', () => {
     });
   });
 
+  describe('findBandInvitationDetail', () => {
+    it('초대 ID로 초대 상세 정보를 조회하고 매핑한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findFirst.mockResolvedValue({
+        id: 'invitation-001',
+        message: '같이 밴드 하실래요?',
+        status: 'PENDING',
+        createdAt: mockCreatedAt,
+        band: {
+          id: 'band-001',
+          name: 'Rocking Stars',
+          description: '직장인 밴드',
+        },
+        inviterBandMember: {
+          userId: 'user-001',
+          user: {
+            profile: {
+              nickname: 'Jun',
+            },
+          },
+        },
+      });
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandInvitationDetail('invitation-001');
+
+      expect(prisma.bandInvitation.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'invitation-001',
+          band: {
+            deletedAt: null,
+          },
+        },
+        include: {
+          band: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+          inviterBandMember: {
+            include: {
+              user: {
+                include: {
+                  profile: {
+                    select: {
+                      nickname: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      expect(result).toEqual({
+        invitationId: 'invitation-001',
+        band: {
+          bandId: 'band-001',
+          name: 'Rocking Stars',
+          description: '직장인 밴드',
+        },
+        inviter: {
+          userId: 'user-001',
+          nickname: 'Jun',
+        },
+        message: '같이 밴드 하실래요?',
+        invitationStatus: 'PENDING',
+        createdAt: '2026-04-10T12:00:00.000Z',
+      });
+    });
+
+    it('초대가 없으면 null을 반환한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.bandInvitation.findFirst.mockResolvedValue(null);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findBandInvitationDetail('invitation-missing');
+
+      expect(result).toBeNull();
+    });
+  });
+
   describe('acceptBandInvitation', () => {
     it('밴드 멤버를 생성하고 초대 상태를 ACCEPTED로 변경한다', async () => {
       const prisma = createPrismaMock();

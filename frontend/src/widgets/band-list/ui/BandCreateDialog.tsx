@@ -44,9 +44,7 @@ export const BandCreateDialog = ({
         <AppDialogClose />
 
         <AppDialogHeader>
-          <DialogTitle className="text-2xl text-grey-100">
-            밴드 만들기
-          </DialogTitle>
+          <DialogTitle>밴드 만들기</DialogTitle>
         </AppDialogHeader>
 
         <AppDialogBody>

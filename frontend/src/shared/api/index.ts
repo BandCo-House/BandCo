@@ -7,6 +7,10 @@ export {
   apiDelete,
 } from './client';
 
+export { uploadFile } from './upload';
+
+export { getApiErrorMessage } from './error';
+
 export type { ApiResponse, ApiError, TokenResponse } from './types';
 
 export {

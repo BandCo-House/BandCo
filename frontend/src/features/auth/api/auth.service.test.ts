@@ -7,7 +7,7 @@ describe('authService', () => {
       const signupData = {
         email: 'test@test.com',
         password: 'password123!',
-        name: '테스터',
+        nickname: '테스터',
       };
       const response = await registerEmail(signupData);
 
@@ -18,7 +18,7 @@ describe('authService', () => {
       const signupData = {
         email: 'error@test.com',
         password: 'password123!',
-        name: '테스터',
+        nickname: '테스터',
       };
       await expect(registerEmail(signupData)).rejects.toThrow();
     });

@@ -7,9 +7,13 @@ export const songKeys = {
     [...songKeys.all, 'list', bandId, params] as const,
 };
 
-export const useBandSongs = (bandId: string, params: GetBandSongsParams = {}) =>
+export const useBandSongs = (
+  bandId: string,
+  params: GetBandSongsParams = {},
+  options: { enabled?: boolean } = {},
+) =>
   useQuery({
     queryKey: songKeys.list(bandId, params),
     queryFn: () => getBandSongs(bandId, params),
-    enabled: !!bandId,
+    enabled: (options.enabled ?? true) && !!bandId,
   });

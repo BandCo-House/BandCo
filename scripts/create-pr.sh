@@ -19,6 +19,9 @@ if ! command -v gh &>/dev/null; then
   error "gh CLI가 설치되어 있지 않습니다. https://cli.github.com 에서 설치해주세요."
 fi
 
+# ─── 회사 계정 토큰 차단 ─────────────────────────────────────────────────────
+unset GITHUB_TOKEN
+
 # ─── 인증 확인 ───────────────────────────────────────────────────────────────
 if ! gh auth status &>/dev/null; then
   echo -e "${RED}✖ ${RESET}GitHub 인증 정보가 없습니다."
@@ -54,6 +57,10 @@ if ! gh auth status &>/dev/null; then
       ;;
   esac
 fi
+
+# ─── 사용 계정 표시 (멀티 계정 환경이라 어떤 명의로 올라가는지 확인용) ───────
+GH_USER=$(gh api user -q .login 2>/dev/null || true)
+[ -n "$GH_USER" ] && info "GitHub 계정: ${BOLD}$GH_USER${RESET}"
 
 # ─── 현재 브랜치 확인 ────────────────────────────────────────────────────────
 BRANCH=$(git branch --show-current)
