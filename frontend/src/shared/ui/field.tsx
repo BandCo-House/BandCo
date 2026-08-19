@@ -2,6 +2,13 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/utils';
 import { FieldRequiredContext } from './field-context';
 
+/**
+ * 폼 캡슐 행 공통 표면. 입력·선택·첨부가 같은 높이·테두리·배경을 공유하도록
+ * 한 곳에서 관리한다(각 사용처에서 복붙하지 않는다).
+ */
+export const fieldSurfaceClass =
+  'h-[54px] rounded-full field-border border-white/24 bg-grey-500/24 px-5';
+
 interface FieldLabelProps {
   children: ReactNode;
   required?: boolean;

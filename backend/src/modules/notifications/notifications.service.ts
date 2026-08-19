@@ -8,6 +8,7 @@ import {
   NOTIFICATIONS_REPOSITORY,
   type NotificationsRepository,
 } from './repositories/notifications.repository';
+import type { NotificationUnreadSummary } from './types/notification-unread-summary.type';
 
 @Injectable()
 export class NotificationsService {
@@ -26,6 +27,10 @@ export class NotificationsService {
 
   async getNotifications(userId: string, query: GetNotificationsQuery, tx?: Prisma.TransactionClient) {
     return this.notificationsRepository.findNotifications(userId, query, tx);
+  }
+
+  async getUnreadSummary(userId: string, tx?: Prisma.TransactionClient): Promise<NotificationUnreadSummary> {
+    return this.notificationsRepository.findUnreadSummary(userId, tx);
   }
 
   async markManyNotificationsAsRead(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient) {

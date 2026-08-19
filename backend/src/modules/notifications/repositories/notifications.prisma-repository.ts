@@ -11,6 +11,7 @@ import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
 import type { MarkManyReadResult } from '../types/mark-many-read-result.type';
 import type { MarkNotificationReadResult } from '../types/mark-notification-read-result.type';
 import type { GetNotificationsResult, NotificationListItem, NotificationReference } from '../types/notification-list-item.type';
+import type { NotificationUnreadSummary } from '../types/notification-unread-summary.type';
 
 import type { CreateNotificationRepositoryInput, NotificationsRepository } from './notifications.repository';
 
@@ -114,6 +115,28 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
       items: notifications.map(n => this.mapNotification(n, references)),
       meta: { count, take: query.take, next },
     };
+  }
+
+  async findUnreadSummary(userId: string, tx?: Prisma.TransactionClient): Promise<NotificationUnreadSummary> {
+    const client = this.getClient(tx);
+    const counts = await client.notification.groupBy({
+      by: ['type'],
+      where: { userId, isRead: false },
+      _count: { _all: true },
+    });
+
+    const unreadByType = {
+      INVITE: 0,
+      NOTICE: 0,
+      REMINDER: 0,
+    } satisfies Record<NotificationType, number>;
+
+    for (const count of counts) {
+      unreadByType[count.type] = count._count._all;
+    }
+
+    const unreadCount = Object.values(unreadByType).reduce((total, count) => total + count, 0);
+    return { unreadCount, unreadByType };
   }
 
   /**

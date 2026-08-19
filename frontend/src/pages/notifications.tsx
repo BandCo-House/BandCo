@@ -16,12 +16,12 @@ export const Route = createFileRoute('/notifications')({
       showBack: true,
       heightVariant: 'lg',
       renderRight: () => <NotificationHeaderActions />,
-      bottomBlur: false, // 알림은 헤더 글로우 제외(마이페이지·밴드 메인과 함께 커스텀 영역)
+      bottomBlur: true,
     },
   },
 });
 
 function NotificationsPage() {
   const { tab } = Route.useSearch();
-  return <NotificationList key={tab} tab={tab} />;
+  return <NotificationList tab={tab} />;
 }

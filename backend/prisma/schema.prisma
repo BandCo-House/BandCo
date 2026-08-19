@@ -336,26 +336,39 @@ model SongReferenceFile {
 }
 
 model Schedule {
-  id                    String                @id @default(uuid()) @db.Uuid
-  bandSpaceId           String                @map("band_space_id") @db.Uuid
-  placeId               String?               @map("place_id") @db.Uuid
-  title                 String                @db.VarChar(150)
-  scheduleType          ScheduleType          @map("schedule_type")
-  startAt               DateTime?             @map("start_at") @db.Timestamptz(6)
-  endAt                 DateTime?             @map("end_at") @db.Timestamptz(6)
+  id                    String                  @id @default(uuid()) @db.Uuid
+  bandSpaceId           String                  @map("band_space_id") @db.Uuid
+  placeId               String?                 @map("place_id") @db.Uuid
+  title                 String                  @db.VarChar(150)
+  scheduleType          ScheduleType            @map("schedule_type")
+  startAt               DateTime?               @map("start_at") @db.Timestamptz(6)
+  endAt                 DateTime?               @map("end_at") @db.Timestamptz(6)
   memo                  String?
-  status                ScheduleStatus        @default(PLANNED)
-  createdByBandMemberId String                @map("created_by_band_member_id") @db.Uuid
-  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  externalLinks         String[]                @default([]) @map("external_links")
+  status                ScheduleStatus          @default(PLANNED)
+  createdByBandMemberId String                  @map("created_by_band_member_id") @db.Uuid
+  createdAt             DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
   participants          ScheduleParticipant[]
   scheduleSongs         ScheduleSong[]
   scheduleTeams         ScheduleTeam[]
-  bandSpace             BandSpace             @relation(fields: [bandSpaceId], references: [id])
-  createdByBandMember   BandMember            @relation("ScheduleCreator", fields: [createdByBandMemberId], references: [id])
-  place                 Place?                @relation(fields: [placeId], references: [id])
+  referenceFiles        ScheduleReferenceFile[]
+  bandSpace             BandSpace               @relation(fields: [bandSpaceId], references: [id])
+  createdByBandMember   BandMember              @relation("ScheduleCreator", fields: [createdByBandMemberId], references: [id])
+  place                 Place?                  @relation(fields: [placeId], references: [id])
 
   @@map("schedules")
+}
+
+model ScheduleReferenceFile {
+  id         String   @id @default(uuid()) @db.Uuid
+  scheduleId String   @map("schedule_id") @db.Uuid
+  fileUrl    String   @map("file_url")
+  fileName   String   @map("file_name") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_reference_files")
 }
 
 model ScheduleParticipant {

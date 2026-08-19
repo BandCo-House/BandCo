@@ -1,14 +1,21 @@
 import { useState } from 'react';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { useBandSongs } from '@/entities/song/api/useBandSongs';
+import { LinkAttachmentItem } from '@/entities/link/ui/LinkAttachmentItem';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
 import { SongCreateModal } from '@/features/song-create';
+import { AttachmentItem } from '@/shared/ui/attachment-item';
 import { Input } from '@/shared/ui/input';
 import { SegmentedToggle } from '@/shared/ui/segmented-toggle';
-import { Field } from '@/shared/ui/field';
+import { Field, fieldSurfaceClass } from '@/shared/ui/field';
 import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
 import { cn } from '@/shared/lib/utils';
 import type { ScheduleFormState, ScheduleType } from '../model/types';
+import {
+  type ReferenceFileDraft,
+  referenceFileDraftKey,
+  referenceFileDraftName,
+} from '../model/reference-files';
 import { ScheduleTimeSheet } from './components/ScheduleTimeSheet';
 import { ParticipantSection } from './components/ParticipantSection';
 
@@ -23,11 +30,28 @@ const TYPE_OPTIONS: { value: ScheduleType; label: string }[] = [
   { value: 'MEETING', label: '회의' },
 ];
 
-// roundedFull Input의 테두리(field-border)는 유지하고 색·배경·크기만 덮어쓴다.
-const inputClass =
-  'h-[54px] rounded-full border-white/24 bg-grey-500/24 px-5 typo-base-sb';
+const inputClass = 'typo-base-sb text-grey-50';
 
 const Divider = () => <div aria-hidden className="h-px w-full bg-grey-50/10" />;
+
+/**
+ * 스킴이 없으면 https를 붙이고 canonical 문자열로 정규화한다. 형식이 아니면 null.
+ * 원본을 그대로 돌려주면 `example.com`과 `https://example.com/`이 서로 다른
+ * 첨부로 쌓여 중복 판정이 뚫린다.
+ */
+const normalizeUrl = (raw: string): string | null => {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const candidate = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    const parsed = new URL(candidate);
+    return parsed.hostname ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+};
 
 /** 밑줄 링크형 텍스트 버튼(장소 추가하기). */
 const LinkButton = ({
@@ -59,6 +83,45 @@ export const ScheduleFormView = ({
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
 
+  // 첨부값은 폼 상태로 올라간다. 파일은 제출 직전에 업로드되고, 링크 입력 초안만
+  // 전송에 안 실리는 임시 텍스트라 로컬 state로 둔다.
+  const referenceFiles = form.referenceFiles;
+  const links = form.externalLinks;
+  const [linkDraft, setLinkDraft] = useState('');
+
+  const addFiles = (selected: FileList | null) => {
+    if (!selected?.length) return;
+    const added: ReferenceFileDraft[] = Array.from(selected).map((file) => ({
+      kind: 'local',
+      file,
+    }));
+    const seen = new Set(referenceFiles.map(referenceFileDraftKey));
+    const next = [
+      ...referenceFiles,
+      ...added.filter((draft) => !seen.has(referenceFileDraftKey(draft))),
+    ];
+    onChange({ referenceFiles: next });
+  };
+
+  const removeFile = (key: string) => {
+    onChange({
+      referenceFiles: referenceFiles.filter(
+        (draft) => referenceFileDraftKey(draft) !== key,
+      ),
+    });
+  };
+
+  const addLink = () => {
+    const url = normalizeUrl(linkDraft);
+    if (!url) return;
+    if (!links.includes(url)) onChange({ externalLinks: [...links, url] });
+    setLinkDraft('');
+  };
+
+  const removeLink = (url: string) => {
+    onChange({ externalLinks: links.filter((l) => l !== url) });
+  };
+
   const { data: places = [] } = useBandPlaces(bandId);
   const { data: songs = [] } = useBandSongs(
     bandId,
@@ -74,6 +137,68 @@ export const ScheduleFormView = ({
     value: song.id,
     label: `${song.title} · ${song.artistName}`,
   }));
+
+  const referenceField = (
+    <Field label="참고 자료">
+      <label
+        className={cn(
+          fieldSurfaceClass,
+          'flex w-full cursor-pointer items-center typo-base-sb text-grey-300',
+          'focus-within:outline-2 focus-within:outline-primary',
+        )}
+      >
+        파일을 첨부하세요
+        <input
+          type="file"
+          multiple
+          className="sr-only"
+          onChange={(event) => {
+            addFiles(event.target.files);
+            // 같은 파일을 지웠다가 다시 고를 수 있게 입력값을 비운다.
+            event.target.value = '';
+          }}
+        />
+      </label>
+      {referenceFiles.map((draft) => {
+        const key = referenceFileDraftKey(draft);
+        return (
+          <AttachmentItem
+            key={key}
+            name={referenceFileDraftName(draft)}
+            onRemove={() => removeFile(key)}
+          />
+        );
+      })}
+    </Field>
+  );
+
+  const linkField = (
+    <Field label="외부 링크" htmlFor="schedule-link">
+      <Input
+        id="schedule-link"
+        type="url"
+        inputMode="url"
+        variant="underline"
+        className={inputClass}
+        value={linkDraft}
+        onChange={(event) => setLinkDraft(event.target.value)}
+        onBlur={addLink}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          addLink();
+        }}
+        placeholder="링크를 붙여넣고 Enter"
+      />
+      {links.map((url) => (
+        <LinkAttachmentItem
+          key={url}
+          url={url}
+          onRemove={() => removeLink(url)}
+        />
+      ))}
+    </Field>
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -96,7 +221,7 @@ export const ScheduleFormView = ({
       >
         <Input
           id="schedule-title"
-          variant="roundedFull"
+          variant="underline"
           className={inputClass}
           value={form.title}
           onChange={(event) => onChange({ title: event.target.value })}
@@ -139,9 +264,8 @@ export const ScheduleFormView = ({
 
       <Divider />
 
-      {isPractice && (
+      {isPractice ? (
         <>
-          {/* 합주곡 */}
           <Field label="합주곡" required htmlFor="schedule-song">
             <SelectField
               id="schedule-song"
@@ -157,6 +281,15 @@ export const ScheduleFormView = ({
               </LinkButton>
             </div>
           </Field>
+
+          {referenceField}
+          {linkField}
+
+          <Divider />
+        </>
+      ) : (
+        <>
+          {linkField}
 
           <Divider />
         </>

@@ -20,6 +20,7 @@ const mockPrisma = {
     create: jest.fn(),
     createMany: jest.fn(),
     findMany: jest.fn(),
+    groupBy: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
@@ -43,6 +44,36 @@ describe('NotificationsPrismaRepository', () => {
     repository = module.get(NotificationsPrismaRepository);
     jest.clearAllMocks();
     mockPrisma.$transaction.mockImplementation((fn: (tx: typeof mockPrisma) => unknown) => fn(mockPrisma));
+  });
+
+  describe('findUnreadSummary', () => {
+    it('타입별 미읽음 개수와 전체 개수를 반환한다', async () => {
+      mockPrisma.notification.groupBy.mockResolvedValue([
+        { type: 'INVITE', _count: { _all: 2 } },
+        { type: 'NOTICE', _count: { _all: 3 } },
+      ]);
+
+      const result = await repository.findUnreadSummary('user-001');
+
+      expect(mockPrisma.notification.groupBy).toHaveBeenCalledWith({
+        by: ['type'],
+        where: { userId: 'user-001', isRead: false },
+        _count: { _all: true },
+      });
+      expect(result).toEqual({
+        unreadCount: 5,
+        unreadByType: { INVITE: 2, NOTICE: 3, REMINDER: 0 },
+      });
+    });
+
+    it('읽지 않은 알림이 없으면 모든 개수를 0으로 반환한다', async () => {
+      mockPrisma.notification.groupBy.mockResolvedValue([]);
+
+      await expect(repository.findUnreadSummary('user-001')).resolves.toEqual({
+        unreadCount: 0,
+        unreadByType: { INVITE: 0, NOTICE: 0, REMINDER: 0 },
+      });
+    });
   });
 
   describe('findNotifications', () => {

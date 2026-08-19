@@ -1,3 +1,5 @@
+import type { ScheduleReferenceFileItem } from './schedule-reference-file.type';
+
 export interface UpdateScheduleResult {
   scheduleId: string;
   spaceId: string;
@@ -10,5 +12,7 @@ export interface UpdateScheduleResult {
   songIds: string[];
   participantCount: number;
   memo: string | null;
+  externalLinks: string[];
+  referenceFiles: ScheduleReferenceFileItem[];
   updatedAt: string;
 }

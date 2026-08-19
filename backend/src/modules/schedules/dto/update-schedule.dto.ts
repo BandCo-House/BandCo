@@ -1,5 +1,6 @@
-import { Transform } from 'class-transformer';
-import { IsArray, IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
 import { notemptyValidationMessage } from 'src/common/validation-message/notempty-validation.message';
@@ -8,6 +9,8 @@ import { uuidValidationMessage } from 'src/common/validation-message/uuid-valida
 
 import { trimStringValue } from '../../../common/validation/transform.util';
 import { ScheduleStatus, ScheduleType } from '../../../generated/prisma';
+
+import { ScheduleReferenceFileDto } from './schedule-reference-file.dto';
 
 /**
  * 일정 수정 요청 본문을 검증한다. 모든 필드는 선택이며 전달된 필드만 업데이트된다.
@@ -57,6 +60,20 @@ export class UpdateScheduleBodyDto {
   @IsOptional()
   @IsString({ message: stringValidationMessage })
   memo?: string;
+
+  @ApiPropertyOptional({ description: '일정 관련 외부 링크 목록 (전달 시 전체 교체)', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true, message: stringValidationMessage })
+  @IsNotEmpty({ each: true, message: notemptyValidationMessage })
+  externalLinks?: string[];
+
+  @ApiPropertyOptional({ description: '일정 참고자료 파일 목록 (전달 시 전체 교체)', type: [ScheduleReferenceFileDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleReferenceFileDto)
+  referenceFiles?: ScheduleReferenceFileDto[];
 }
 
 export type UpdateScheduleInput = UpdateScheduleBodyDto;

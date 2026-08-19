@@ -1,4 +1,5 @@
 import type { ScheduleSongItem } from './create-schedule-result.type';
+import type { ScheduleReferenceFileItem } from './schedule-reference-file.type';
 
 export interface ScheduleParticipantDetail {
   participantId: string;
@@ -29,6 +30,8 @@ export interface GetScheduleDetailResult {
     songs: ScheduleSongItem[];
     participants: ScheduleParticipantDetail[];
     memo: string | null;
+    externalLinks: string[];
+    referenceFiles: ScheduleReferenceFileItem[];
     createdByBandMemberId: string;
     isMine: boolean;
     createdAt: string;

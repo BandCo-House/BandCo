@@ -45,7 +45,7 @@ export const RecentSearches = ({
             <button
               type="button"
               onClick={() => onSelectSearch(term)}
-              className="text-start text-sm font-medium text-white transition-opacity hover:opacity-80"
+              className="min-w-0 flex-1 truncate text-start text-sm font-medium text-white transition-opacity hover:opacity-80"
             >
               {term}
             </button>

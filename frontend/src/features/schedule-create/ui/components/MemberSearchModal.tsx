@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
 import { useBandTeams } from '@/entities/team/api/useBandTeams';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import {
   Dialog,
+  AppDialogClose,
   AppDialogContent,
-  DialogClose,
   DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
@@ -76,7 +75,8 @@ export const MemberSearchModal = ({
           이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.
         </DialogDescription>
 
-        <div className="relative z-10 flex items-center gap-8">
+        <AppDialogClose className="top-5 right-5" />
+        <div className="relative z-10 flex items-center gap-8 pr-12">
           <div className="flex flex-1 items-center gap-7 text-xl leading-[1.4] font-semibold">
             <button
               type="button"
@@ -95,13 +95,6 @@ export const MemberSearchModal = ({
               팀 검색
             </button>
           </div>
-          <DialogClose
-            type="button"
-            aria-label="닫기"
-            className="flex size-6 shrink-0 items-center justify-center text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <X aria-hidden="true" className="size-6" />
-          </DialogClose>
         </div>
 
         <Input

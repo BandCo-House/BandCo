@@ -14,11 +14,46 @@
 | 번호 | 메서드 | 경로 | 설명 |
 |------|--------|------|------|
 | #44 | GET | `/notifications/me` | 알림 목록 조회 |
+| - | GET | `/notifications/unread-summary` | 타입별 미읽음 개수 조회 |
 | #45 | PATCH | `/notifications/:notificationId/read` | 단건 알림 읽음 처리 |
 | #46 | PATCH | `/notifications/read-all` | 전체 알림 읽음 처리 |
 | #47 | PATCH | `/notifications/read` | 다건 알림 읽음 처리 |
 | #49 | DELETE | `/notifications/:notificationId` | 단건 알림 삭제 |
 | #50 | DELETE | `/notifications` | 다건 알림 삭제 |
+
+---
+
+## 타입별 미읽음 개수 조회
+
+- Method: `GET`
+- Path: `/notifications/unread-summary`
+- 인증: AccessToken
+
+### Response 200
+
+```json
+{
+  "status": "success",
+  "error": null,
+  "message": "읽지 않은 알림 개수 조회 성공",
+  "data": {
+    "unreadCount": 4,
+    "unreadByType": {
+      "NOTICE": 1,
+      "INVITE": 2,
+      "REMINDER": 1
+    }
+  }
+}
+```
+
+읽지 않은 알림이 없는 타입도 값 `0`으로 포함한다.
+
+### Error
+
+| 코드 | 사유 |
+|------|------|
+| 401 | 인증 실패 |
 
 ---
 
