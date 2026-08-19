@@ -276,6 +276,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   key={key}
                   type="button"
                   data-active={isActive}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() =>
                     navigate({ to: '/notifications', search: { tab: key } })
                   }

@@ -17,7 +17,7 @@ export const NotificationBellLink = ({ className }: { className?: string }) => {
   return (
     <Link
       to="/notifications"
-      search={{ tab: 'INVITE' }}
+      search={{ tab: 'NOTICE' }}
       aria-label={count > 0 ? badgeLabel : '알림'}
       className={cn(
         'relative inline-flex size-9 items-center justify-center rounded-lg text-grey-100 focus-visible:outline-2 focus-visible:outline-primary',

@@ -81,6 +81,7 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
           onClick={tab.onClick}
           data-variant={variant}
           data-active={isActive}
+          aria-current={isActive ? 'page' : undefined}
           className={styleClass}
         >
           {tab.label}
@@ -93,6 +94,7 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
           size="sm"
           data-variant={variant}
           data-active={isActive}
+          aria-current={isActive ? 'page' : undefined}
           className={styleClass}
           onClick={tab.onClick}
         >
