@@ -129,8 +129,14 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       return;
     }
 
+    // 읽음 처리는 부차적 side effect이므로 실패해도 이동은 막지 않는다.
     if (!isRead) {
-      await markAsReadMutation.mutateAsync({ notificationId, type });
+      try {
+        await markAsReadMutation.mutateAsync({ notificationId, type });
+      } catch (error) {
+        console.error('알림 읽음 처리 실패:', error);
+        toast.error('읽음 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
+      }
     }
     if (targetPath) {
       navigate({ to: targetPath as never });
