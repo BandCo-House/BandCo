@@ -99,3 +99,25 @@ export const removeTeamMember = async (
   return data.data ?? data;
 };
 
+/**
+ * 팀을 생성한다. (POST /bands/:bandId/teams)
+ */
+export interface CreateTeamRequest {
+  name: string;
+  description?: string;
+  teamCoverUrl?: string;
+}
+
+export const createTeam = async (
+  bandId: string,
+  body: CreateTeamRequest,
+): Promise<{ teamId: string; name: string }> => {
+  const data = await apiPost<{
+    data: { team: { teamId?: string; id?: string; name: string } };
+  }>(`/bands/${bandId}/teams`, body);
+  const team = (data as any)?.data?.team ?? (data as any)?.team ?? data;
+  return {
+    teamId: team.teamId ?? team.id,
+    name: team.name,
+  };
+};

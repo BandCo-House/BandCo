@@ -2,15 +2,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, useParams, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Trash2, Check } from 'lucide-react';
+import { Trash2, Check, Loader2 } from 'lucide-react';
 import { TeamDetailView } from '@/features/team-detail/ui/TeamDetailView';
-import { useTeamDetail, useTeamMembers } from '@/entities/team/api/queries';
+import { useTeamMemberEdit } from '@/features/team-detail/model/useTeamMemberEdit';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  teamKeys,
+  useTeamDetail,
+  useTeamMembers,
+  useAddTeamMember,
+  useRemoveTeamMember,
+} from '@/entities/team/api/queries';
 import { deleteTeam } from '@/entities/team/api/team-api';
 import {
   updateTeamHeader,
   useTeamHeaderState,
 } from '@/entities/team/model/team-header-state';
-import type { TeamMember } from '@/entities/team/model/types';
+
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 
 const searchSchema = z.object({
   mode: z.enum(['read', 'edit']).optional(),
@@ -40,18 +49,21 @@ function HeaderTitle() {
 
 /** 최상단 공통 RouteHeader에 바인딩되는 옵저버 우측 액션 렌더러 */
 function HeaderRightAction() {
-  const { isEditing, onDeleteTeam, onSaveMembers } = useTeamHeaderState();
+  const { isEditing, isSaving, onDeleteTeam, onSaveMembers } = useTeamHeaderState();
 
   if (isEditing) {
     return (
       <button
         type="button"
         onClick={() => onSaveMembers?.()}
+        disabled={isSaving}
         aria-label="저장"
-        className="flex items-center gap-1.5 typo-xs-m text-grey-300 hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 typo-xs-m text-grey-300 hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <span>저장</span>
-        <Check className="h-4 w-4 text-secondary" />
+        <span>{isSaving ? '저장 중...' : '저장'}</span>
+        {isSaving
+          ? <Loader2 className="h-4 w-4 animate-spin" />
+          : <Check className="h-4 w-4 text-secondary" />}
       </button>
     );
   }
@@ -77,38 +89,67 @@ function BandTeamDetailRoutePage() {
   const isEditing = search.mode === 'edit';
 
   const { data: team, isLoading: teamLoading } = useTeamDetail(teamId);
-  const { data: initialMembers = [], refetch: refetchMembers } = useTeamMembers(teamId);
+  const { data: initialMembers = [] } = useTeamMembers(teamId);
 
-  const [members, setMembers] = useState<TeamMember[]>(initialMembers);
+  const {
+    currentMembers,
+    searchModalOpen,
+    setSearchModalOpen,
+    handleToggleMember,
+    handleOpenSearchForSession,
+    handleOpenSearchForNewMember,
+  } = useTeamMemberEdit({ propMembers: initialMembers });
 
-  useEffect(() => {
-    setMembers(initialMembers);
-  }, [initialMembers]);
+  const { mutateAsync: addMember } = useAddTeamMember(teamId);
+  const { mutateAsync: removeMember } = useRemoveTeamMember(teamId);
+  const queryClient = useQueryClient();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleDeleteTeam = useCallback(async () => {
     try {
       await deleteTeam(teamId);
       toast.success('팀이 삭제되었습니다.');
+      setIsDeleteOpen(false);
+      await queryClient.invalidateQueries({ queryKey: teamKeys.all });
       navigate({
         to: '/band/$bandId/settings',
         params: { bandId },
+        search: { tab: 'teams' },
       });
     } catch {
       toast.error('팀 삭제 실패');
     }
-  }, [teamId, bandId, navigate]);
+  }, [teamId, bandId, navigate, queryClient]);
 
-  const handleSaveMembers = useCallback(
-    (updatedMembers: TeamMember[]) => {
-      setMembers(updatedMembers);
+  const handleSaveMembers = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const originalIds = new Set(initialMembers.map((m) => m.bandMemberId));
+      const updatedIds = new Set(currentMembers.map((m) => m.bandMemberId));
+
+      // 제거된 멤버: 원본에 있고 편집 후에 없는 것
+      const toRemove = initialMembers.filter(
+        (m) => !updatedIds.has(m.bandMemberId),
+      );
+      // 추가된 멤버: 편집 후에 있고 원본에 없는 것
+      const toAdd = currentMembers.filter(
+        (m) => !originalIds.has(m.bandMemberId),
+      );
+
+      await Promise.all([
+        ...toRemove.map((m) => removeMember(m.teamMemberId)),
+        ...toAdd.map((m) => addMember(m.bandMemberId)),
+      ]);
+
       toast.success('팀원 설정이 저장되었습니다.');
-      refetchMembers();
-      navigate({
-        search: {},
-      });
-    },
-    [refetchMembers, navigate],
-  );
+      navigate({ search: {} });
+    } catch {
+      toast.error('팀원 저장에 실패했어요.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [initialMembers, currentMembers, addMember, removeMember, navigate]);
 
   const handleToggleEdit = useCallback(() => {
     navigate({
@@ -116,23 +157,23 @@ function BandTeamDetailRoutePage() {
     });
   }, [navigate]);
 
-  // 펍섭(옵저버) 상태를 페이지 상태와 동기화 (알람 패턴과 동일)
+  // 펍섭(옵저버) 상태를 페이지 상태와 동기화
   useEffect(() => {
     updateTeamHeader({
       isEditing,
-      onDeleteTeam: handleDeleteTeam,
-      onSaveMembers: () => handleSaveMembers(members),
+      isSaving,
+      onDeleteTeam: () => setIsDeleteOpen(true),
+      onSaveMembers: () => void handleSaveMembers(),
       onToggleEdit: handleToggleEdit,
     });
   }, [
     isEditing,
-    members,
-    handleDeleteTeam,
+    isSaving,
     handleSaveMembers,
     handleToggleEdit,
   ]);
 
-  // 언마운트 시 헤더 상태 클린업 (알람 NotificationList 패턴 100% 동일 적용)
+  // 언마운트 시 헤더 상태 클린업
   useEffect(() => {
     return () => {
       updateTeamHeader({
@@ -155,13 +196,26 @@ function BandTeamDetailRoutePage() {
   return (
     <div className="pb-12 pt-0">
       <TeamDetailView
+        key={isEditing ? 'edit' : 'read'}
         team={team}
-        members={members.length > 0 ? members : initialMembers}
+        members={isEditing ? currentMembers : initialMembers}
         isEditing={isEditing}
         onToggleEdit={handleToggleEdit}
-        onSaveMembers={handleSaveMembers}
-        onDeleteTeam={handleDeleteTeam}
+        onOpenSearchForSession={handleOpenSearchForSession}
+        onOpenSearchForNewMember={handleOpenSearchForNewMember}
+        searchModalOpen={searchModalOpen}
+        setSearchModalOpen={setSearchModalOpen}
+        handleToggleMember={handleToggleMember}
         bandId={bandId}
+      />
+
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        title="팀을 삭제하시겠습니까?"
+        description="삭제된 팀은 복구가 불가능합니다."
+        confirmLabel="삭제"
+        onConfirm={handleDeleteTeam}
       />
     </div>
   );

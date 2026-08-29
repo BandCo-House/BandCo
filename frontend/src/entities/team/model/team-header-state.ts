@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
  */
 export type TeamHeaderState = {
   isEditing: boolean;
+  isSaving?: boolean;
   onDeleteTeam?: () => void;
   onSaveMembers?: () => void;
   onToggleEdit?: () => void;
@@ -13,6 +14,7 @@ export type TeamHeaderState = {
 
 let headerState: TeamHeaderState = {
   isEditing: false,
+  isSaving: false,
 };
 
 const headerListeners = new Set<() => void>();

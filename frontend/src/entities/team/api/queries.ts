@@ -1,8 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  addTeamMember,
+  createTeam,
   getBandTeams,
   getTeamDetail,
   getTeamMembers,
+  removeTeamMember,
+  type CreateTeamRequest,
   type GetBandTeamsParams,
 } from './team-api';
 
@@ -50,3 +54,42 @@ export const useTeamMembers = (teamId: string) =>
     queryFn: () => getTeamMembers(teamId),
     enabled: Boolean(teamId),
   });
+
+/**
+ * 팀 멤버 추가 훅 (POST /teams/:teamId/members)
+ */
+export const useAddTeamMember = (teamId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bandMemberId: string) => addTeamMember(teamId, bandMemberId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: teamKeys.members(teamId) });
+    },
+  });
+};
+
+/**
+ * 팀 멤버 제거 훅 (DELETE /teams/:teamId/members/:teamMemberId)
+ */
+export const useRemoveTeamMember = (teamId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (teamMemberId: string) => removeTeamMember(teamId, teamMemberId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: teamKeys.members(teamId) });
+    },
+  });
+};
+
+/**
+ * 팀 생성 훅 (POST /bands/:bandId/teams)
+ */
+export const useCreateTeam = (bandId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateTeamRequest) => createTeam(bandId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: teamKeys.list(bandId) });
+    },
+  });
+};

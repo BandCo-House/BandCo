@@ -40,6 +40,14 @@ export const teamDetailSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
+/** 팀 멤버 스킬 스키마 */
+export const teamMemberSkillSchema = z.object({
+  skillTypeId: z.string(),
+  skillName: z.string(),
+  skillLevel: z.string().default('BEGINNER'),
+  isPrimary: z.boolean().default(false),
+});
+
 /** 팀 멤버(GET /teams/:teamId/members) item 스키마 */
 export const teamMemberSchema = z.object({
   teamMemberId: z.string(),
@@ -51,6 +59,7 @@ export const teamMemberSchema = z.object({
   }),
   teamRole: z.string().default('MEMBER'),
   joinedAt: z.string().optional(),
-  sessionName: z.string().optional(), // 백엔드 확장 및 UI용 세션명
+  skills: z.array(teamMemberSkillSchema).default([]),
+  sessionName: z.string().optional(), // UI용 세션명 호환
 });
 

@@ -18,6 +18,13 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
   onOpenSearchForSession,
   onOpenSearchForNewMember,
 }) => {
+  const getSessionName = (member: TeamMember, defaultIndex?: number) => {
+    if (member.skills && member.skills.length > 0) {
+      return member.skills.map((s) => s.skillName).join(', ');
+    }
+    if (member.sessionName) return member.sessionName;
+    return defaultIndex !== undefined ? `세션${defaultIndex + 1}` : '세션';
+  };
   return (
     <div className="rounded-[20px] border border-[#28272a] bg-[#65637a]/48 p-5 shadow-sm backdrop-blur-md w-full">
       {/* 카드 헤더 */}
@@ -45,7 +52,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(97,117,158,0.56)] px-3 py-1 shadow-xs"
             >
               <span className="typo-base-sb text-[#ECFCAB] font-semibold text-base">
-                {member.sessionName || '세션'}:
+                {getSessionName(member)}:
               </span>
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8 rounded-full shrink-0">
@@ -75,7 +82,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               {/* 좌측 세션명 + 라임 #ECFCAB 밑줄 */}
               <div className="flex-1 border-b border-[#ECFCAB] h-[54px] flex items-center px-3 py-4">
                 <span className="typo-base-sb text-grey-50 font-semibold text-base">
-                  {member.sessionName || `세션${idx + 1}`}
+                  {getSessionName(member, idx)}
                 </span>
               </div>
 
@@ -100,7 +107,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
                 type="button"
                 onClick={() => onOpenSearchForSession(idx)}
                 className="flex items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] shrink-0 h-10 w-10 text-[#ECFCAB] hover:bg-[#61759E]/80 transition-colors"
-                aria-label={`${member.sessionName} 멤버 변경`}
+                aria-label={`${getSessionName(member, idx)} 멤버 변경`}
               >
                 <Search className="h-6 w-6" />
               </button>
