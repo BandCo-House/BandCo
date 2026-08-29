@@ -30,7 +30,7 @@ export function useReceivedInvite({
       toast.success('초대를 수락했습니다!');
       const promises = [
         queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
-        queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: bandKeys.all }),
       ];
       if (notificationId) {
         promises.push(
@@ -52,9 +52,9 @@ export function useReceivedInvite({
     mutationFn: () => declineInvite(inviteId),
     onSuccess: async () => {
       toast.success('초대를 거절했습니다.');
+      // 거절은 밴드 소속·목록을 바꾸지 않으므로 밴드 쿼리는 무효화하지 않는다.
       const promises = [
         queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
-        queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
       ];
       if (notificationId) {
         promises.push(

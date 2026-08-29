@@ -35,6 +35,14 @@ describe('ScheduleCreateModal', () => {
     expect(screen.getByRole('button', { name: '추가' })).toBeDisabled();
   });
 
+  it('합주곡 필드에서 라이브러리에 곡을 바로 추가할 수 있다', () => {
+    renderModal();
+
+    expect(
+      screen.getByRole('button', { name: '합주곡 추가하기' }),
+    ).toBeInTheDocument();
+  });
+
   it('회의로 전환하면 회의 필드로 바뀐다', async () => {
     const user = userEvent.setup();
     renderModal();

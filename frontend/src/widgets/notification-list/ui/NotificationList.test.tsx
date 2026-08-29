@@ -57,6 +57,18 @@ describe('NotificationList', () => {
     expect(await screen.findByText('공지사항 알림')).toBeInTheDocument();
   });
 
+  it('활성 탭에만 aria-current="page"를 부여해 스크린리더에 현재 탭을 알린다', () => {
+    renderWithClient(<NotificationList tab="INVITE" />);
+
+    expect(screen.getByRole('button', { name: /초대장/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(
+      screen.getByRole('button', { name: /공지사항/ }),
+    ).not.toHaveAttribute('aria-current');
+  });
+
   it('비활성 탭에 안 읽은 알림이 있을 경우 #D6705C 색상의 dot 배지를 표시한다', async () => {
     server.use(
       http.get(`${API_URL}/notifications/unread-summary`, () => {

@@ -17,6 +17,12 @@ import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
 import { acceptInvite } from '@/features/invite-accept/api/invite-api';
 import { declineInvite } from '@/features/invite-decline/api/invite-api';
 import { bandKeys } from '@/entities/band/api/useBands';
+import { cn } from '@/shared/lib/utils';
+import { useShowOnScrollUp } from '@/shared/lib/use-scroll-direction';
+import {
+  slidingIndicatorClass,
+  useSlidingIndicator,
+} from '@/shared/lib/use-sliding-indicator';
 import { NotificationCard } from './NotificationCard';
 
 type TabType = 'NOTICE' | 'INVITE' | 'REMINDER';
@@ -34,7 +40,6 @@ type NotificationListProps = {
 /**
  * 알림 탭바 + 목록 + 로딩/에러/빈 상태 + 더보기 버튼을 조합한 위젯.
  * 편집 모드 상태와 모든 mutation 로직을 캡슐화한다.
- * 탭 변경 시 key prop 패턴으로 편집 상태를 자동 초기화한다.
  */
 export const NotificationList = ({ tab }: NotificationListProps) => {
   const navigate = useNavigate();
@@ -42,6 +47,19 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 탭이 바뀌면 이전 탭의 선택을 버린다. 클릭 핸들러에만 두면 뒤로가기·앞으로가기·
+  // URL 직접 이동이 그 경로를 타지 않아, 화면에 없는 알림이 선택된 채 삭제될 수 있다.
+  const [renderedTab, setRenderedTab] = useState(tab);
+  if (renderedTab !== tab) {
+    setRenderedTab(tab);
+    setIsEditMode(false);
+    setSelectedIds(new Set());
+  }
+
+  const showTabBar = useShowOnScrollUp();
+  const { containerRef: tabContainerRef, indicatorRef: tabIndicatorRef } =
+    useSlidingIndicator(tab);
 
   const {
     data,
@@ -99,7 +117,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
         // 쿼리 캐시 갱신
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
-          queryClient.invalidateQueries({ queryKey: bandKeys.lists() }),
+          queryClient.invalidateQueries({ queryKey: bandKeys.all }),
         ]);
 
         // 가입 완료된 밴드 상세 페이지로 리다이렉션
@@ -111,8 +129,14 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       return;
     }
 
+    // 읽음 처리는 부차적 side effect이므로 실패해도 이동은 막지 않는다.
     if (!isRead) {
-      await markAsReadMutation.mutateAsync({ notificationId, type });
+      try {
+        await markAsReadMutation.mutateAsync({ notificationId, type });
+      } catch (error) {
+        console.error('알림 읽음 처리 실패:', error);
+        toast.error('읽음 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
+      }
     }
     if (targetPath) {
       navigate({ to: targetPath as never });
@@ -159,12 +183,17 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       await deleteManyMutation.mutateAsync([notificationId]);
     } catch (error) {
       console.error('알림 삭제 실패:', error);
+      toast.error('알림을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
   };
 
   const handleMarkAllAsRead = () => {
     if (hasUnread) {
-      markAllAsReadMutation.mutate();
+      markAllAsReadMutation.mutate(undefined, {
+        onError: () => {
+          toast.error('읽음 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
+        },
+      });
     }
   };
 
@@ -178,8 +207,11 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       setIsEditMode(false);
     } catch (error) {
       console.error('알림 삭제 실패:', error);
+      toast.error('알림을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
-  }, [selectedIds, deleteManyMutation]);
+    // 의존성은 mutation 객체가 아니라 실제로 쓰는 mutateAsync 참조여야 한다
+    // (객체를 넣으면 React Compiler가 수동 메모이제이션을 보존하지 못한다).
+  }, [selectedIds, deleteManyMutate]);
 
   const handleCancelEdit = useCallback(() => {
     setSelectedIds(new Set());
@@ -224,10 +256,28 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   return (
     <div data-testid="notifications-page" className="w-full pb-16">
       {/* 통합 sticky 헤더 (탭 바 + 요약/모두읽음 바) */}
-      <div className="sticky top-[64px] z-30 -mx-5 -mt-8 bg-gradient-top/70 px-5 backdrop-blur-sm">
+      <div
+        inert={!showTabBar}
+        className={cn(
+          'sticky top-[64px] z-30 -mx-5 -mt-8 px-5 pb-4',
+          'transition-[transform,opacity] duration-300 ease-out',
+          !showTabBar && '-translate-y-full opacity-0',
+        )}
+      >
         {/* 탭 네비게이션 */}
         <div className="pt-2 pb-0">
-          <div className="flex w-full gap-4 px-5">
+          <div
+            ref={tabContainerRef}
+            className="relative flex w-full gap-4 px-5"
+          >
+            <span
+              ref={tabIndicatorRef}
+              aria-hidden="true"
+              className={cn(
+                slidingIndicatorClass,
+                'rounded-[20px] bg-primary shadow-sm',
+              )}
+            />
             {TAB_CONFIGS.map(({ key, label }) => {
               const isActive = tab === key;
               const hasUnreadForTab =
@@ -237,13 +287,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                 <button
                   key={key}
                   type="button"
+                  data-active={isActive}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() =>
                     navigate({ to: '/notifications', search: { tab: key } })
                   }
-                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-all duration-200 ${
+                  className={`relative z-10 flex h-8.5 flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-colors duration-200 ${
                     isActive
-                      ? 'h-8.5 bg-primary typo-base-b text-black shadow-sm'
-                      : 'h-7.5 bg-transparent text-[13px] leading-4.5 font-bold text-primary'
+                      ? 'typo-base-b text-black'
+                      : 'text-[13px] leading-4.5 font-bold text-primary'
                   }`}
                 >
                   {label}
@@ -255,10 +307,8 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
             })}
           </div>
         </div>
-
-        {/* 모두 읽음 버튼 바 */}
         {!isLoading && !isError && hasNotifications && !isEditMode && (
-          <div className="mt-2 flex items-center justify-end px-5 pb-4">
+          <div className="mt-2 flex items-center justify-end px-5">
             <button
               type="button"
               onClick={handleMarkAllAsRead}
@@ -289,11 +339,9 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
           </p>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="flex h-[110px] w-full flex-col justify-center gap-0.5 rounded-lg p-4">
-          <h4 className="text-[12px] leading-[17px] font-medium text-[#ECFCAB]">
-            새로운 알림이 없습니다.
-          </h4>
-          <p className="text-[12px] leading-[17px] font-medium text-[#9D9D9F]">
+        <div className="flex h-[110px] w-full flex-col justify-center gap-1 rounded-2xl p-4">
+          <h4 className="typo-sm-b text-primary">새로운 알림이 없습니다.</h4>
+          <p className="typo-xs-m text-grey-300">
             밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요.
           </p>
         </div>
@@ -316,10 +364,19 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                 )
               }
               onMarkAsRead={(id) =>
-                markAsReadMutation.mutate({
-                  notificationId: id,
-                  type: noti.type,
-                })
+                markAsReadMutation.mutate(
+                  {
+                    notificationId: id,
+                    type: noti.type,
+                  },
+                  {
+                    onError: () => {
+                      toast.error(
+                        '읽음 처리에 실패했어요. 잠시 후 다시 시도해주세요.',
+                      );
+                    },
+                  },
+                )
               }
             />
           ))}

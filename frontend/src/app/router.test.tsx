@@ -50,7 +50,7 @@ const createRouterForHistoryTest = (entries: string[], user: UserAccess) => {
 };
 
 describe('앱 라우터', () => {
-  it('루트 경로에서 MyBands 페이지를 렌더링한다', async () => {
+  it('루트 경로에서 홈 페이지를 렌더링한다', async () => {
     const router = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
@@ -58,7 +58,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
   it('로그아웃 사용자가 루트 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
@@ -108,7 +108,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
   it('로그아웃 사용자가 온보딩 경로로 접근하면 로그인 페이지로 리다이렉트된다', async () => {
@@ -159,7 +159,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
   it('관리자 사용자가 관리자 경로로 접근하면 관리자 페이지를 렌더링한다', async () => {
@@ -207,14 +207,14 @@ describe('앱 라우터', () => {
     expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
   });
 
-  it('루트 경로에서는 단순 헤더 제목을 렌더링해야 한다', async () => {
+  it('루트 경로에서는 헤더에 BandCo 워드마크를 렌더링해야 한다', async () => {
     const rootRouter = createRouterForTest('/', {
       isLoggedIn: true,
       isAdmin: false,
     });
 
     const { unmount } = renderWithRouter(rootRouter);
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'BandCo' })).toBeInTheDocument();
     unmount();
   });
@@ -227,8 +227,8 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
-    expect(screen.getByTestId('my-bands-page').parentElement).toHaveClass(
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
+    expect(screen.getByTestId('home-page').parentElement).toHaveClass(
       'mx-auto',
       'w-full',
       'max-w-7xl',
@@ -277,7 +277,7 @@ describe('앱 라우터', () => {
     await screen.findByText('마이페이지');
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(await screen.findByTestId('my-bands-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
   it('팀 상세의 뒤로가기는 해당 곡의 팀 목록으로 이동한다', async () => {

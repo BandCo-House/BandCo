@@ -1,6 +1,8 @@
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
+import { LinkAttachmentItem } from '@/entities/link/ui/LinkAttachmentItem';
 import type { ScheduleDetail } from '@/entities/schedule/model/types';
+import { AttachmentItem } from '@/shared/ui/attachment-item';
 import { formatClockTime, formatDotDate } from '@/shared/lib/date';
 import { MemberCard } from './components/MemberCard';
 
@@ -35,6 +37,9 @@ export const ScheduleDetailView = ({
   const timeRange = detail.startAt
     ? `${formatClockTime(detail.startAt)}-${formatClockTime(detail.endAt)}`
     : '-';
+
+  const hasReferenceFiles = detail.referenceFiles.length > 0;
+  const hasExternalLinks = detail.externalLinks.length > 0;
 
   return (
     <div className="flex flex-col">
@@ -74,6 +79,35 @@ export const ScheduleDetailView = ({
           </div>
         )}
       </section>
+
+      {/* 첨부(참고 자료·외부 링크). 있을 때만 노출한다. */}
+      {(hasReferenceFiles || hasExternalLinks) && (
+        <>
+          <div aria-hidden className="h-px w-full bg-grey-50/10" />
+          <section className="flex flex-col gap-5 pt-5 pb-8">
+            {hasReferenceFiles && (
+              <div className="flex flex-col gap-2">
+                <h2 className="typo-xl-sb text-grey-50">참고 자료</h2>
+                {detail.referenceFiles.map((file) => (
+                  <AttachmentItem
+                    key={file.id}
+                    name={file.fileName}
+                    href={file.fileUrl}
+                  />
+                ))}
+              </div>
+            )}
+            {hasExternalLinks && (
+              <div className="flex flex-col gap-2">
+                <h2 className="typo-xl-sb text-grey-50">외부 링크</h2>
+                {detail.externalLinks.map((url) => (
+                  <LinkAttachmentItem key={url} url={url} />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 };

@@ -36,6 +36,8 @@ const makeDetail = (
     },
   ],
   memo: '안건 조율',
+  externalLinks: [],
+  referenceFiles: [],
   createdByBandMemberId: 'member-1',
   isMine: true,
   createdAt: '2026-03-01T00:00:00.000Z',
@@ -99,6 +101,39 @@ describe('toScheduleRequest', () => {
     expect(req.songIds).toBeUndefined();
     expect(req.participantBandMemberIds).toEqual(['member-1', 'member-2']);
   });
+
+  it('외부 링크는 그대로 싣고, 업로드가 끝난 참고자료를 페이로드에 넣는다', () => {
+    const req = toScheduleRequest(
+      {
+        ...baseForm(),
+        title: '합주 A',
+        placeId: 'place-1',
+        songId: 'band-song-1',
+        externalLinks: ['https://example.com/'],
+      },
+      [{ fileUrl: 'https://cdn/x.pdf', fileName: '악보.pdf' }],
+    );
+
+    expect(req.externalLinks).toEqual(['https://example.com/']);
+    expect(req.referenceFiles).toEqual([
+      { fileUrl: 'https://cdn/x.pdf', fileName: '악보.pdf' },
+    ]);
+  });
+
+  it('회의는 참고자료를 싣지 않는다(합주 전용)', () => {
+    const req = toScheduleRequest(
+      {
+        ...baseForm(),
+        scheduleType: 'MEETING',
+        title: '정기 회의',
+        placeId: 'place-2',
+        participantBandMemberIds: ['member-1'],
+      },
+      [{ fileUrl: 'https://cdn/x.pdf', fileName: '악보.pdf' }],
+    );
+
+    expect(req.referenceFiles).toEqual([]);
+  });
 });
 
 describe('isFormValid', () => {
@@ -158,6 +193,8 @@ describe('detailToForm', () => {
         },
       ],
       memo: '안건 조율',
+      externalLinks: [],
+      referenceFiles: [],
       createdByBandMemberId: 'member-1',
       isMine: true,
       createdAt: '2026-03-01T00:00:00.000Z',
@@ -190,5 +227,30 @@ describe('detailToForm', () => {
     );
     expect(form.startTime).toBe('14:30');
     expect(form.endTime).toBe('15:45');
+  });
+
+  it('상세의 참고자료는 uploaded draft로, 외부 링크는 그대로 되돌린다', () => {
+    const form = detailToForm(
+      makeDetail({
+        externalLinks: ['https://example.com/'],
+        referenceFiles: [
+          {
+            id: 'ref-1',
+            fileUrl: 'https://cdn/score.pdf',
+            fileName: '악보.pdf',
+            createdAt: '2026-03-01T00:00:00.000Z',
+          },
+        ],
+      }),
+    );
+
+    expect(form.externalLinks).toEqual(['https://example.com/']);
+    expect(form.referenceFiles).toEqual([
+      {
+        kind: 'uploaded',
+        fileUrl: 'https://cdn/score.pdf',
+        fileName: '악보.pdf',
+      },
+    ]);
   });
 });

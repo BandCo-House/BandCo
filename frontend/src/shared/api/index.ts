@@ -7,7 +7,7 @@ export {
   apiDelete,
 } from './client';
 
-export { uploadImage } from './upload';
+export { uploadFile } from './upload';
 
 export { getApiErrorMessage } from './error';
 

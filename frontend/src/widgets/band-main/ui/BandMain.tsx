@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from '@tanstack/react-router';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
 import {
   SegmentedToggle,
@@ -29,6 +29,7 @@ const FILTER_PARAMS: Record<
 
 export const BandMain = () => {
   const { bandId } = useParams({ from: '/band/$bandId/' });
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [filter, setFilter] = useState<SpaceFilter>('mine');
   const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
@@ -37,18 +38,24 @@ export const BandMain = () => {
     FILTER_PARAMS[filter],
   );
 
-  // 멤버 초대/새 일정은 별도 컨텍스트가 필요해 시각만 우선 구현한다.
-  // TODO: 기존 band-invite / schedule-create 모달과 연결.
+  // 멤버 초대는 전용 모달 대신 초대 UI가 이미 있는 밴드 설정으로 보낸다.
   const fabActions: SpeedDialAction[] = [
-    { label: '멤버 초대' },
+    {
+      label: '멤버 초대',
+      onClick: () =>
+        navigate({
+          to: '/band/$bandId/settings',
+          params: { bandId },
+          search: { tab: 'basic' },
+        }),
+    },
     { label: '새 합주', onClick: () => setIsSpaceModalOpen(true) },
-    { label: '새 일정' },
   ];
 
   const hasSpaces = !!spaces && spaces.length > 0;
 
   return (
-    <div className="flex flex-col gap-6 pt-4">
+    <div className="flex flex-col gap-6 pt-8">
       <div className="flex flex-col gap-6 px-8">
         <BandNoticeSection bandId={bandId} />
         <WeekDatePicker value={selectedDate} onChange={setSelectedDate} />

@@ -36,6 +36,8 @@ const createScheduleResult: CreateScheduleResult = {
   participantCount: 0,
   teamId: null,
   memo: null,
+  externalLinks: [],
+  referenceFiles: [],
   createdAt: '2026-05-29T00:00:00.000Z',
 };
 
@@ -51,6 +53,8 @@ const updateScheduleResult: UpdateScheduleResult = {
   songIds: [SONG_ID],
   participantCount: 2,
   memo: null,
+  externalLinks: [],
+  referenceFiles: [],
   updatedAt: '2026-05-29T01:00:00.000Z',
 };
 
@@ -77,6 +81,8 @@ const scheduleDetailResult: GetScheduleDetailResult = {
       },
     ],
     memo: null,
+    externalLinks: [],
+    referenceFiles: [],
     createdByBandMemberId: BAND_MEMBER_ID,
     isMine: true,
     createdAt: '2026-05-29T00:00:00.000Z',

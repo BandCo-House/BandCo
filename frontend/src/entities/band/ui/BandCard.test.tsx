@@ -29,7 +29,9 @@ describe('BandCard', () => {
     expect(screen.getByText('우리 밴드')).toBeInTheDocument();
     expect(screen.getByText('5명')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '우리 밴드 상세 보기' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: '우리 밴드 상세 보기' }),
+    );
 
     expect(navigate).toHaveBeenCalledWith({
       to: '/band/$bandId',

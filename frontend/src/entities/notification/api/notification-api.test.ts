@@ -3,7 +3,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { apiClient } from '@/shared/api';
 import {
   getNotificationList,
-  getUnreadNotificationBadge,
+  getNotificationUnreadSummary,
   deleteManyNotifications,
 } from './notification-api';
 
@@ -13,67 +13,36 @@ afterEach(() => {
   mock.reset();
 });
 
-describe('getUnreadNotificationBadge 어댑터', () => {
-  it('GET /notifications/me?where__is_read=false&where__type=INVITE&take=10 요청을 하여 10개 미만일 때 개수를 반환한다', async () => {
-    mock
-      .onGet('/notifications/me', {
-        params: { where__is_read: false, where__type: 'INVITE', take: 10 },
-      })
-      .reply(200, {
-        status: 'success',
-        error: null,
-        message: '성공',
-        data: {
-          items: Array.from({ length: 5 }, (_, i) => ({
-            notificationId: `uuid-${i}`,
-            type: 'INVITE',
-            title: '초대',
-            description: '설명',
-            isRead: false,
-            targetPath: '',
-            createdAt: '',
-          })),
-          meta: { count: 5, take: 10, next: null },
-        },
-      });
+describe('getNotificationUnreadSummary 어댑터', () => {
+  it('GET /notifications/unread-summary 응답을 schema로 검증해 전체·타입별 개수를 반환한다', async () => {
+    mock.onGet('/notifications/unread-summary').reply(200, {
+      status: 'success',
+      error: null,
+      message: '읽지 않은 알림 개수 조회 성공',
+      data: {
+        unreadCount: 4,
+        unreadByType: { NOTICE: 1, INVITE: 2, REMINDER: 1 },
+      },
+    });
 
-    await expect(getUnreadNotificationBadge()).resolves.toEqual({
-      count: 5,
-      hasMore: false,
+    await expect(getNotificationUnreadSummary()).resolves.toEqual({
+      unreadCount: 4,
+      unreadByType: { NOTICE: 1, INVITE: 2, REMINDER: 1 },
     });
   });
 
-  it('10개 이상 데이터가 있어 next 필드가 존재하면 hasMore를 true로 반환한다', async () => {
-    mock
-      .onGet('/notifications/me', {
-        params: { where__is_read: false, where__type: 'INVITE', take: 10 },
-      })
-      .reply(200, {
-        status: 'success',
-        error: null,
-        message: '성공',
-        data: {
-          items: Array.from({ length: 10 }, (_, i) => ({
-            notificationId: `uuid-${i}`,
-            type: 'INVITE',
-            title: '초대',
-            description: '설명',
-            isRead: false,
-            targetPath: '',
-            createdAt: '',
-          })),
-          meta: {
-            count: 10,
-            take: 10,
-            next: '/notifications/me?cursor__id=some-id',
-          },
-        },
-      });
-
-    await expect(getUnreadNotificationBadge()).resolves.toEqual({
-      count: 10,
-      hasMore: true,
+  it('타입 카운트가 누락되면 reject된다', async () => {
+    mock.onGet('/notifications/unread-summary').reply(200, {
+      status: 'success',
+      error: null,
+      message: '읽지 않은 알림 개수 조회 성공',
+      data: {
+        unreadCount: 1,
+        unreadByType: { INVITE: 1 },
+      },
     });
+
+    await expect(getNotificationUnreadSummary()).rejects.toThrow();
   });
 });
 

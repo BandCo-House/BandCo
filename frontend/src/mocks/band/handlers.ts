@@ -3,7 +3,20 @@ import { http, HttpResponse } from 'msw';
 import { API_URL } from '../config';
 import type { CreateBandResponse } from '@/entities/band/model/schema';
 
+const generatedTestBands: Band[] = Array.from({ length: 50 }, (_, index) => ({
+  id: `test-band-uuid-${index + 1}`,
+  name: `홍대 밴드 ${index + 1}`,
+  description: `무한 스크롤 테스트용 밴드 ${index + 1} 설명입니다.`,
+  visibility: true,
+  inviteCode: `BAND${index + 1}`,
+  myRole: 'MEMBER' as const,
+  joinedAt: new Date(Date.now() - index * 86400000).toISOString(),
+  createdAt: new Date(Date.now() - index * 86400000).toISOString(),
+  memberCount: (index % 10) + 1,
+}));
+
 let mockBands: Band[] = [
+  ...generatedTestBands,
   {
     id: 'a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1',
     name: '합주하자',
@@ -226,6 +239,9 @@ let mockBands: Band[] = [
   },
 ];
 
+// 밴드 커버는 Band 목록 타입에 없어 mock에서만 따로 기억한다(수정 후 재조회 확인용).
+const mockCoverImgUrls = new Map<string, string | null>();
+
 export const bandHandlers = [
   // 밴드 목록 조회 Mock
   http.get(`${API_URL}/bands`, () => {
@@ -253,6 +269,175 @@ export const bandHandlers = [
     });
   }),
 
+  // 밴드 검색 Mock (GET /bands/search)
+  // '/bands/me' 및 '/bands/:bandId'보다 위에 선언
+  http.get(`${API_URL}/bands/search`, ({ request }) => {
+    const url = new URL(request.url);
+    const keyword = url.searchParams.get('where__name__contain') || '';
+    const take = Number(url.searchParams.get('take') || 20);
+    const cursorId = url.searchParams.get('cursor__id');
+
+    const filtered = mockBands.filter(
+      (b) =>
+        b.visibility &&
+        (b.name.toLowerCase().includes(keyword.toLowerCase()) ||
+          (b.description &&
+            b.description.toLowerCase().includes(keyword.toLowerCase()))),
+    );
+
+    let startIndex = 0;
+    if (cursorId) {
+      const foundIndex = filtered.findIndex((b) => b.id === cursorId);
+      if (foundIndex !== -1) {
+        startIndex = foundIndex + 1;
+      }
+    }
+
+    const sliced = filtered.slice(startIndex, startIndex + take);
+    const hasMore = startIndex + take < filtered.length;
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 검색 완료',
+      data: {
+        items: sliced.map((band) => ({
+          ...band,
+          bandId: band.id,
+          bandMaster: {
+            userId: '11111111-1111-1111-1111-111111111111',
+            nickname: '밴드마스터',
+          },
+          coverImgUrl: null,
+          bandMasterUserId: '11111111-1111-1111-1111-111111111111',
+          genres: [
+            { id: 'genre-rock', name: '록' },
+            { id: 'genre-indie', name: '인디' },
+          ],
+        })),
+        meta: {
+          count: sliced.length,
+          take,
+          cursor:
+            hasMore && sliced.length > 0
+              ? {
+                  id: sliced[sliced.length - 1].id,
+                  createdAt: sliced[sliced.length - 1].createdAt,
+                }
+              : null,
+          next: null,
+        },
+      },
+    });
+  }),
+
+  // 밴드 초대 링크 발급·재발급 Mock (POST /bands/:bandId/invite-link)
+  // ':bandId' 핸들러보다 앞에 둬야 하위 경로가 가로채이지 않는다.
+  http.post(`${API_URL}/bands/:bandId/invite-link`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+    const found = mockBands.find((band) => band.id === bandId) ?? mockBands[0];
+    // 서버는 매 발급마다 새 코드를 만들고 이전 코드를 무효화한다.
+    const inviteCode = `${found.inviteCode ?? 'BANDCO01'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
+
+    return HttpResponse.json(
+      {
+        status: 'success',
+        error: null,
+        message: '밴드 초대 링크를 발급했습니다.',
+        data: {
+          bandId,
+          inviteCode,
+          expiredAt: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        },
+      },
+      { status: 201 },
+    );
+  }),
+
+  // 밴드 초대 링크 폐기 Mock (DELETE /bands/:bandId/invite-link)
+  http.delete(`${API_URL}/bands/:bandId/invite-link`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 초대 링크를 폐기했습니다.',
+      data: { bandId, revokedAt: new Date().toISOString() },
+    });
+  }),
+
+  // 초대 코드로 밴드 가입 Mock (POST /invite-links/:code/join)
+  http.post(`${API_URL}/invite-links/:code/join`, () => {
+    return HttpResponse.json(
+      {
+        status: 'success',
+        error: null,
+        message: '밴드에 가입했습니다.',
+        data: {
+          bandId: mockBands[0].id,
+          userId: 'user-001',
+          memberId: 'band-member-1',
+          joinedAt: new Date().toISOString(),
+        },
+      },
+      { status: 201 },
+    );
+  }),
+
+  // 밴드 정보 수정 Mock (PATCH /bands/:bandId)
+  http.patch(`${API_URL}/bands/:bandId`, async ({ params, request }) => {
+    const { bandId } = params as { bandId: string };
+    const body = (await request.json()) as {
+      name?: string;
+      description?: string | null;
+      visibility?: boolean;
+      coverImgUrl?: string | null;
+    };
+    const index = mockBands.findIndex((band) => band.id === bandId);
+    const target = index >= 0 ? mockBands[index] : mockBands[0];
+    const updated = {
+      ...target,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.description !== undefined
+        ? { description: body.description }
+        : {}),
+      ...(body.visibility !== undefined ? { visibility: body.visibility } : {}),
+    };
+    if (index >= 0) mockBands[index] = updated;
+    if (body.coverImgUrl !== undefined)
+      mockCoverImgUrls.set(bandId, body.coverImgUrl);
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 정보 수정 성공',
+      // 백엔드 UpdateBandResult는 감싸지 않은 평평한 객체이고 id 대신 bandId를 준다.
+      data: {
+        bandId: updated.id,
+        name: updated.name,
+        description: updated.description,
+        visibility: updated.visibility,
+        coverImgUrl: mockCoverImgUrls.get(bandId) ?? null,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }),
+
+  // 밴드 나가기 Mock (DELETE /bands/:bandId/me)
+  http.delete(`${API_URL}/bands/:bandId/me`, ({ params }) => {
+    const { bandId } = params as { bandId: string };
+    mockBands = mockBands.filter((band) => band.id !== bandId);
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 나가기 완료',
+      data: { bandId },
+    });
+  }),
+
   // 밴드 상세 조회 Mock (GET /bands/:bandId)
   // '/bands/me' 뒤에 둬야 :bandId가 me를 가로채지 않는다.
   http.get(`${API_URL}/bands/:bandId`, ({ params }) => {
@@ -269,7 +454,7 @@ export const bandHandlers = [
           name: found.name,
           description: found.description,
           visibility: found.visibility,
-          coverImgUrl: null,
+          coverImgUrl: mockCoverImgUrls.get(bandId) ?? null,
           bandMasterUserId: '11111111-1111-1111-1111-111111111111',
           genres: [
             { id: 'genre-rock', name: '록' },

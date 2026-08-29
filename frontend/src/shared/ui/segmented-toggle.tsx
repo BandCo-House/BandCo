@@ -1,10 +1,16 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { cn } from '@/shared/lib/utils';
+import {
+  slidingIndicatorClass,
+  useSlidingIndicator,
+} from '@/shared/lib/use-sliding-indicator';
 import { useFieldRequired } from './field-context';
 
 export interface SegmentedOption<T extends string> {
   value: T;
   label: string;
+  /** 선택됐을 때 기본 강조색(primary) 대신 쓸 채움 스타일. 밴드 공개 여부의 '비공개'처럼 중립 표현이 필요할 때. */
+  selectedClassName?: string;
 }
 
 interface SegmentedToggleProps<T extends string> {
@@ -36,6 +42,8 @@ export const SegmentedToggle = <T extends string>({
   const isTab = variant === 'tab';
   const fieldRequired = useFieldRequired();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { containerRef, indicatorRef } = useSlidingIndicator(value);
+  const activeOption = options.find((option) => option.value === value);
 
   const moveSelection = (currentIndex: number, delta: number) => {
     if (options.length === 0) return;
@@ -59,16 +67,28 @@ export const SegmentedToggle = <T extends string>({
 
   return (
     <div
+      ref={containerRef}
       role="group"
       aria-label={label}
       aria-required={fieldRequired || undefined}
       className={cn(
         'flex items-center gap-2',
         isTab &&
-          'w-fit rounded-full field-border border-white/24 bg-grey-500/24 p-2',
+          'relative w-fit rounded-full field-border border-white/24 bg-grey-500/24 p-2',
         className,
       )}
     >
+      {isTab && (
+        <span
+          ref={indicatorRef}
+          aria-hidden="true"
+          className={cn(
+            slidingIndicatorClass,
+            'rounded-full bg-primary',
+            activeOption?.selectedClassName,
+          )}
+        />
+      )}
       {options.map((option, index) => {
         const isActive = option.value === value;
         return (
@@ -79,6 +99,7 @@ export const SegmentedToggle = <T extends string>({
             }}
             type="button"
             aria-pressed={isActive}
+            data-active={isActive}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => handleKeyDown(event, index)}
@@ -86,13 +107,16 @@ export const SegmentedToggle = <T extends string>({
               'rounded-full transition-colors',
               isTab
                 ? cn(
-                    'min-w-[77px] px-5 py-4 typo-sm-sb',
-                    isActive ? 'bg-primary text-gradient-top' : 'text-grey-100',
+                    'relative z-10 min-w-[77px] px-5 py-4 typo-sm-sb',
+                    isActive ? 'text-gradient-top' : 'text-grey-100',
                   )
                 : cn(
                     'px-4 py-2 typo-sm-sb',
                     isActive
-                      ? 'bg-primary text-primary-dark'
+                      ? cn(
+                          'bg-primary text-primary-dark',
+                          option.selectedClassName,
+                        )
                       : 'border border-grey-400 text-grey-100',
                   ),
             )}

@@ -3,9 +3,11 @@ import { toWheelDate } from '@/shared/ui/wheel-date';
 import type {
   CreateScheduleRequest,
   ScheduleDetail,
+  ScheduleReferenceFileInput,
   ScheduleStatus,
   ScheduleType,
 } from '@/entities/schedule/model/types';
+import { type ReferenceFileDraft, toUploadedDraft } from './reference-files';
 
 export type { ScheduleType } from '@/entities/schedule/model/types';
 
@@ -22,6 +24,10 @@ export interface ScheduleFormState {
   /** 참여자 bandMemberId 배열(합주·회의 공통). */
   participantBandMemberIds: string[];
   memo: string;
+  /** 외부 링크(canonical URL). 합주·회의 공통. */
+  externalLinks: string[];
+  /** 참고자료 파일 draft. 합주 전용. local은 제출 시 업로드된다. */
+  referenceFiles: ReferenceFileDraft[];
   /** 원본 상태. 생성 시 PLANNED, 수정 진입 시 detail.status를 왕복해 PATCH가 상태를 덮어쓰지 않게 한다. */
   status: ScheduleStatus;
 }
@@ -44,6 +50,8 @@ export const createEmptyForm = (initialDate?: Date): ScheduleFormState => ({
   songId: null,
   participantBandMemberIds: [],
   memo: '',
+  externalLinks: [],
+  referenceFiles: [],
   status: 'PLANNED',
 });
 
@@ -70,13 +78,19 @@ const resolveEndAt = (startAt: string, rawEndAt: string): string =>
     ? new Date(new Date(rawEndAt).getTime() + ONE_DAY_MS).toISOString()
     : rawEndAt;
 
-/** 폼 상태 → 생성/수정 요청 페이로드. status는 폼이 보관한 원본 상태를 그대로 싣는다. */
+/**
+ * 폼 상태 → 생성/수정 요청 페이로드. status는 폼이 보관한 원본 상태를 그대로 싣는다.
+ * 참고자료는 업로드가 끝난 결과(`{ fileUrl, fileName }[]`)를 인자로 받는다 — 매핑은
+ * 순수하게 두고, 파일 업로드(부수효과)는 호출부가 제출 직전에 처리한다.
+ */
 export const toScheduleRequest = (
   form: ScheduleFormState,
+  referenceFiles: ScheduleReferenceFileInput[] = [],
 ): CreateScheduleRequest => {
   const startAt = combineDateTime(form.date, form.startTime);
   const endAt = resolveEndAt(startAt, combineDateTime(form.date, form.endTime));
   const memo = form.memo.trim();
+  const isPractice = form.scheduleType === 'PRACTICE';
 
   return {
     title: form.title.trim(),
@@ -86,13 +100,14 @@ export const toScheduleRequest = (
     status: form.status,
     placeId: form.placeId ?? undefined,
     memo: memo || undefined,
-    songIds:
-      form.scheduleType === 'PRACTICE' && form.songId
-        ? [form.songId]
-        : undefined,
+    songIds: isPractice && form.songId ? [form.songId] : undefined,
     participantBandMemberIds: form.participantBandMemberIds.length
       ? form.participantBandMemberIds
       : undefined,
+    // 빈 배열도 그대로 보낸다 — 전체 교체 방식이라 "모두 삭제"를 표현해야 한다.
+    externalLinks: form.externalLinks,
+    // 참고자료는 합주 전용. 회의로 바꾸면 남아 있던 파일이 실리지 않게 막는다.
+    referenceFiles: isPractice ? referenceFiles : [],
   };
 };
 
@@ -115,6 +130,8 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
     songId: detail.songs[0]?.songId ?? null,
     participantBandMemberIds: detail.participants.map((p) => p.bandMemberId),
     memo: detail.memo ?? '',
+    externalLinks: detail.externalLinks,
+    referenceFiles: detail.referenceFiles.map(toUploadedDraft),
     status: detail.status,
   };
 };

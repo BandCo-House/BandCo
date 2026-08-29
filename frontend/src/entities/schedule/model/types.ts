@@ -2,6 +2,18 @@
 export type ScheduleType = 'PRACTICE' | 'MEETING';
 export type ScheduleStatus = 'PLANNED' | 'DONE' | 'CANCELED';
 
+/** 일정 참고자료(요청). storage 업로드 후 받은 objectUrl과 원본 파일명을 함께 보낸다. */
+export interface ScheduleReferenceFileInput {
+  fileUrl: string;
+  fileName: string;
+}
+
+/** 일정 참고자료(상세 응답). 서버가 식별자·생성시각을 붙여 돌려준다. */
+export interface ScheduleReferenceFile extends ScheduleReferenceFileInput {
+  id: string;
+  createdAt: string;
+}
+
 export interface CreateScheduleRequest {
   title: string;
   scheduleType: ScheduleType;
@@ -15,6 +27,10 @@ export interface CreateScheduleRequest {
   teamId?: string;
   // 참가자는 userId가 아니라 bandMemberId로 보낸다.
   participantBandMemberIds?: string[];
+  // 외부 링크. 프론트가 canonical URL로 정규화해 보낸다. 전체 교체 방식.
+  externalLinks?: string[];
+  // 참고자료 파일(업로드 후 objectUrl + 원본 파일명). 전체 교체 방식.
+  referenceFiles?: ScheduleReferenceFileInput[];
 }
 
 // 수정(PATCH /schedules/:id)은 모든 필드 optional이며 teamId를 받지 않는다.
@@ -36,6 +52,8 @@ export interface CreateScheduleResult {
   participantCount: number;
   teamId: string | null;
   memo: string | null;
+  externalLinks: string[];
+  referenceFiles: ScheduleReferenceFile[];
   createdAt: string;
 }
 
@@ -115,6 +133,8 @@ export interface ScheduleDetail {
   songs: ScheduleSong[];
   participants: ScheduleParticipantDetail[];
   memo: string | null;
+  externalLinks: string[];
+  referenceFiles: ScheduleReferenceFile[];
   createdByBandMemberId: string;
   isMine: boolean;
   createdAt: string;

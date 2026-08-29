@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -32,20 +33,18 @@ export function ProfileMusicSearchDialog({
   onSelect,
 }: ProfileMusicSearchDialogProps) {
   const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [results, setResults] = useState<ProfileMusicPreview[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const debouncedQuery = useDebouncedValue(query);
 
   const hasQuery = useMemo(() => query.trim().length > 0, [query]);
-  const shouldShowResults = open && debouncedQuery.trim().length > 0;
+  // 닫을 때 query만 비우면 debounce된 값은 300ms 더 남는다.
+  // 그 사이 다시 열면 이전 검색어로 조회되므로 현재 입력이 비면 검색어도 없는 것으로 본다.
+  const keyword = hasQuery ? debouncedQuery.trim() : '';
+  const shouldShowResults = open && keyword.length > 0;
 
   useEffect(() => {
-    const timerId = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(timerId);
-  }, [query]);
-
-  useEffect(() => {
-    if (!open || !debouncedQuery.trim()) return;
+    if (!open || !keyword) return;
 
     let ignore = false;
 
@@ -54,7 +53,7 @@ export function ProfileMusicSearchDialog({
 
       setIsLoading(true);
 
-      searchProfileMusic(debouncedQuery)
+      searchProfileMusic(keyword)
         .then((items) => {
           if (!ignore) setResults(items);
         })
@@ -69,12 +68,11 @@ export function ProfileMusicSearchDialog({
     return () => {
       ignore = true;
     };
-  }, [debouncedQuery, open]);
+  }, [keyword, open]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       setQuery('');
-      setDebouncedQuery('');
       setResults([]);
       setIsLoading(false);
     }

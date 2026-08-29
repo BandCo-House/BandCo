@@ -13,7 +13,7 @@ export const useDeleteManyNotifications = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationQueries.list() });
       queryClient.invalidateQueries({
-        queryKey: notificationQueries.unreadBadge(),
+        queryKey: notificationQueries.unreadSummary(),
       });
     },
   });

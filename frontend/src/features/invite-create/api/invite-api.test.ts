@@ -14,7 +14,7 @@ describe('invite create 어댑터', () => {
   it('밴드 초대를 생성한다', async () => {
     const requestBody = { inviteeEmail: 'member@example.com' };
 
-    mock.onPost('/bands/band-1/invites', requestBody).reply(200, {
+    mock.onPost('/bands/band-1/invitations', requestBody).reply(200, {
       success: true,
       data: {
         id: 'invite-1',

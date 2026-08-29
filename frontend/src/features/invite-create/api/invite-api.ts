@@ -5,7 +5,8 @@ export interface CreateInviteRequest {
   inviteeEmail: string;
 }
 
+/** 밴드 초대 전송(POST /bands/:bandId/invitations). */
 export const createInvite = (
   bandId: string,
   data: CreateInviteRequest,
-): Promise<Invite> => apiPost<Invite>(`/bands/${bandId}/invites`, data);
+): Promise<Invite> => apiPost<Invite>(`/bands/${bandId}/invitations`, data);

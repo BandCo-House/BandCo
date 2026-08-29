@@ -19,7 +19,9 @@ export const useBandCreate = (): UseBandCreateResult => {
   const mutation = useMutation({
     mutationFn: createBand,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: bandKeys.lists() });
+      // 내 밴드 목록(['bands','me'])까지 갱신하려면 all(['bands'])을 무효화해야 한다.
+      // lists()(['bands','list'])는 아무도 구독하지 않는 죽은 키다.
+      await queryClient.invalidateQueries({ queryKey: bandKeys.all });
     },
   });
 

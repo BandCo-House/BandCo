@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { requireLogin } from '@/app/router-guards';
-import {
-  useGenreOptions,
-  usePartOptions,
-} from '@/features/onboarding/api/useOnboardingOptions';
+import { useGenres } from '@/entities/genre/api/useGenres';
+import { useSkillTypes } from '@/entities/skill/api/useSkillTypes';
+import type { OnboardingOption } from '@/features/onboarding/model/onboarding-options';
 import {
   OnboardingFlow,
   type OnboardingResult,
@@ -30,8 +30,14 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const auth = useAuth();
   const { name } = Route.useSearch();
-  const genreOptionsQuery = useGenreOptions();
-  const partOptionsQuery = usePartOptions();
+  // 장르·파트는 공용 목록(/common/*)을 쓰고, 온보딩 선택지 형태로만 옮긴다.
+  const genreOptionsQuery = useGenres();
+  const partOptionsQuery = useSkillTypes();
+
+  const toOptions = (
+    items: { id: string; name: string }[] | undefined,
+  ): OnboardingOption[] | undefined =>
+    items?.map(({ id, name }) => ({ id, label: name }));
 
   /**
    * 온보딩 완료 또는 건너뛰기 후 홈으로 이동한다.
@@ -57,6 +63,9 @@ function OnboardingPage() {
       }
     } catch (error) {
       console.error('온보딩 결과 저장에 실패했습니다.', error);
+      toast.error(
+        '온보딩 정보를 저장하지 못했어요. 프로필에서 다시 설정할 수 있어요.',
+      );
     } finally {
       await navigate({ to: '/' });
     }
@@ -97,8 +106,8 @@ function OnboardingPage() {
   return (
     <OnboardingFlow
       userName={name}
-      genres={genreOptionsQuery.data}
-      parts={partOptionsQuery.data}
+      genres={toOptions(genreOptionsQuery.data)}
+      parts={toOptions(partOptionsQuery.data)}
       onComplete={handleComplete}
     />
   );
