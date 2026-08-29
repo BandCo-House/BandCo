@@ -143,8 +143,11 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
     if (!title) return null;
 
     // 타이틀이 함수(컴포넌트 렌더러)면 기본 h1 스타일을 무시하고 통째로 렌더링한다.
+    // title()로 직접 호출하면 내부 훅이 RouteHeader 스코프에 등록돼
+    // 렌더 간 훅 수가 달라지는 버그가 생기므로 <Title />로 렌더링한다.
     if (typeof title === 'function') {
-      return <div className="min-w-0 flex-1">{title()}</div>;
+      const Title = title;
+      return <div className="min-w-0 flex-1"><Title /></div>;
     }
 
     return (
@@ -193,13 +196,15 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
 
         {header.renderRight || rightContent ? (
           <div className="flex min-w-0 items-center justify-end gap-2">
-            {header.renderRight ? header.renderRight() : rightContent}
+            {header.renderRight
+              ? (() => { const Right = header.renderRight!; return <Right />; })()
+              : rightContent}
           </div>
         ) : null}
       </div>
 
       {header.renderBottom ? (
-        <div className="w-full">{header.renderBottom()}</div>
+        (() => { const Bottom = header.renderBottom!; return <div className="w-full"><Bottom /></div>; })()
       ) : null}
     </header>
   );
