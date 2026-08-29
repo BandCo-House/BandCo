@@ -4,12 +4,20 @@ export interface TeamMemberUserInfo {
   profileImageUrl: string | null;
 }
 
+export interface TeamMemberSkillInfo {
+  skillTypeId: string;
+  skillName: string;
+  skillLevel: string;
+  isPrimary: boolean;
+}
+
 export interface TeamMemberListItem {
   teamMemberId: string;
   bandMemberId: string;
   user: TeamMemberUserInfo;
   teamRole: string;
   joinedAt: string;
+  skills: TeamMemberSkillInfo[];
 }
 
 export interface TeamMemberListCursor {
