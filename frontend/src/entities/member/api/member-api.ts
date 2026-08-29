@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { apiGet } from '@/shared/api';
+import { apiDelete, apiGet, apiPatch } from '@/shared/api';
 import { bandMemberListItemSchema } from '../model/schema';
-import type { BandMemberListItem } from '../model/types';
+import type { BandMemberListItem, BandMemberRole } from '../model/types';
 
 export interface GetBandMembersParams {
   order__joined_at?: 'asc' | 'desc';
@@ -29,4 +29,26 @@ export const getBandMembers = async (
 ): Promise<BandMemberListItem[]> => {
   const data = await apiGet<unknown>(`/bands/${bandId}/users`, { params });
   return bandMemberResponseSchema.parse(data).members;
+};
+
+/** 밴드 멤버의 권한(BM | ADMIN | MEMBER)을 변경한다. */
+export const updateBandMemberRole = async (
+  bandId: string,
+  userId: string,
+  role: BandMemberRole,
+): Promise<{ bandId: string; userId: string; role: BandMemberRole }> => {
+  return apiPatch<{ bandId: string; userId: string; role: BandMemberRole }>(
+    `/bands/${bandId}/users/${userId}`,
+    { role },
+  );
+};
+
+/** 밴드 멤버를 강퇴한다. */
+export const kickBandMember = async (
+  bandId: string,
+  userId: string,
+): Promise<{ bandId: string; userId: string; removed: boolean }> => {
+  return apiDelete<{ bandId: string; userId: string; removed: boolean }>(
+    `/bands/${bandId}/users/${userId}`,
+  );
 };
