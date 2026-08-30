@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "backend/**"
+      - ".github/workflows/backend-deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +23,8 @@ env:
   CONTAINER_NAME: bandco-nest
   CONTAINER_PORT: 3000
   HOST_PORT: ${{ vars.BACKEND_HOST_PORT || '3000' }}
+  AWS_REGION: ap-northeast-2
+  BACKEND_SECRET_ID: bandco/prod/backend
 
 jobs:
   build-and-push:
@@ -57,8 +60,44 @@ jobs:
     name: Deploy backend
     runs-on: ubuntu-latest
     needs: build-and-push
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Load backend environment
+        id: backend-env
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          secret_json="$(aws secretsmanager get-secret-value \
+            --secret-id "$BACKEND_SECRET_ID" \
+            --region "$AWS_REGION" \
+            --query SecretString \
+            --output text)"
+
+          jq -e '
+            type == "object" and
+            has("DATABASE_URL") and
+            has("JWT_SECRET") and
+            has("BCRYPT_SALT_ROUNDS") and
+            has("AWS_REGION") and
+            has("AWS_STORAGE_BUCKET")
+          ' <<< "$secret_json" > /dev/null
+
+          backend_env="$(jq -r 'to_entries[] | "\(.key)=\(.value | tostring)"' <<< "$secret_json")"
+          backend_env_base64="$(printf '%s\n' "$backend_env" | base64 -w 0)"
+
+          echo "::add-mask::$backend_env_base64"
+          echo "content=$backend_env_base64" >> "$GITHUB_OUTPUT"
+
       - name: Deploy through SSH
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         env:
@@ -68,14 +107,22 @@ jobs:
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           HOST_PORT: ${{ env.HOST_PORT }}
           CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
+          BACKEND_ENV_BASE64: ${{ steps.backend-env.outputs.content }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          envs: IMAGE,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,CONTAINER_NAME,HOST_PORT,CONTAINER_PORT
+          envs: IMAGE,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,CONTAINER_NAME,HOST_PORT,CONTAINER_PORT,BACKEND_ENV_BASE64
           script: |
             set -e
+
+            TEMP_ENV_FILE=/home/ubuntu/.env.tmp
+            ENV_FILE=/home/ubuntu/.env
+
+            printf '%s' "$BACKEND_ENV_BASE64" | base64 --decode > "$TEMP_ENV_FILE"
+            chmod 600 "$TEMP_ENV_FILE"
+            mv "$TEMP_ENV_FILE" "$ENV_FILE"
 
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker pull "$IMAGE"
@@ -86,6 +133,6 @@ jobs:
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
-              --env-file /root/.env \
+              --env-file "$ENV_FILE" \
               -p "$HOST_PORT:$CONTAINER_PORT" \
               "$IMAGE"

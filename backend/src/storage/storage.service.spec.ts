@@ -5,17 +5,14 @@ import { StorageService } from './storage.service';
 
 jest.mock('@aws-sdk/s3-request-presigner');
 
-const TEST_ENDPOINT = 'https://kr.object.ncloudstorage.com';
+const TEST_REGION = 'ap-northeast-2';
 const TEST_BUCKET = 'test-bucket';
 
 const mockConfigService = {
   getOrThrow: jest.fn((key: string) => {
     const config: Record<string, string> = {
-      NCP_OBJECT_STORAGE_ENDPOINT: TEST_ENDPOINT,
-      NCP_REGION: 'kr-standard',
-      NCP_BUCKET_NAME: TEST_BUCKET,
-      NCP_ACCESS_KEY: 'test-access-key',
-      NCP_SECRET_KEY: 'test-secret-key',
+      AWS_REGION: TEST_REGION,
+      AWS_STORAGE_BUCKET: TEST_BUCKET,
     };
     if (key in config) return config[key];
     throw new Error(`Unknown config key: ${key}`);
@@ -38,7 +35,7 @@ describe('StorageService', () => {
 
       expect(result).toEqual({
         presignedUrl: 'https://presigned.example.com/signed',
-        objectUrl: `${TEST_ENDPOINT}/${TEST_BUCKET}/profiles/test.jpg`,
+        objectUrl: `https://${TEST_BUCKET}.s3.${TEST_REGION}.amazonaws.com/profiles/test.jpg`,
       });
     });
 
