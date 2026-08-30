@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { requireLogin } from '@/app/router-guards';
 import { useGenres } from '@/entities/genre/api/useGenres';
 import { useSkillTypes } from '@/entities/skill/api/useSkillTypes';
@@ -62,6 +63,9 @@ function OnboardingPage() {
       }
     } catch (error) {
       console.error('온보딩 결과 저장에 실패했습니다.', error);
+      toast.error(
+        '온보딩 정보를 저장하지 못했어요. 프로필에서 다시 설정할 수 있어요.',
+      );
     } finally {
       await navigate({ to: '/' });
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { joinBandByInviteCode } from '@/entities/band/api/band-api';
 import { bandKeys } from '@/entities/band/api/useBands';
 
@@ -19,15 +20,20 @@ export const useInviteAccept = ({ onSuccess }: UseInviteAcceptOptions) => {
   const mutation = useMutation({
     mutationFn: () => joinBandByInviteCode(code.trim()),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: bandKeys.lists() });
+      // 내 밴드 목록(['bands','me'])까지 갱신하려면 all(['bands'])을 무효화해야 한다.
+      // lists()(['bands','list'])는 아무도 구독하지 않는 죽은 키라 새로고침되지 않는다.
+      await queryClient.invalidateQueries({ queryKey: bandKeys.all });
       onSuccess?.();
+    },
+    onError: () => {
+      toast.error('밴드 가입에 실패했어요. 초대 코드를 다시 확인해주세요.');
     },
   });
 
   return {
     code,
     setCode,
-    submit: () => void mutation.mutateAsync(),
+    submit: () => mutation.mutate(),
     isLoading: mutation.isPending,
     isDisabled: code.trim().length === 0,
     error: mutation.error ? mutation.error.message : null,
