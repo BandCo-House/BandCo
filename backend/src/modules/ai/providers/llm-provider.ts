@@ -1,7 +1,12 @@
 import type { LlmStructuredRequest } from '../types/llm-request.type';
 import type { LlmStructuredResponse } from '../types/llm-response.type';
 
-export const LLM_PROVIDERS = Symbol('LLM_PROVIDERS');
+export const LLM_PROVIDER_GROUPS = Symbol('LLM_PROVIDER_GROUPS');
+
+export interface LlmProviderGroup {
+  readonly name: string;
+  readonly credentials: LlmProvider[];
+}
 
 /**
  * provider 교체와 fallback이 잦을 것으로 보고, 호출부가 알아야 하는 표면을 이 한 개로 제한한다.
