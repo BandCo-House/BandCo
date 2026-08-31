@@ -17,7 +17,10 @@ import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env' : ['.env.development', '.env'],
+    }),
     PrismaModule,
     StorageModule,
     BandSpacesModule,

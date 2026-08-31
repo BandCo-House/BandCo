@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && sh ./scripts/copy-generated-prisma.sh && tsc-alias -p tsconfig.build.json",
+    "env:pull:dev": "sh ./scripts/pull-development-env.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint \"src/**/*.ts\"",
