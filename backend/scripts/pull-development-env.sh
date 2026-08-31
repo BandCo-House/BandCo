@@ -43,6 +43,20 @@ jq -e '
   nonempty("AWS_STORAGE_BUCKET") and
   nonempty("AWS_ACCESS_KEY_ID") and
   nonempty("AWS_SECRET_ACCESS_KEY") and
+  nonempty("LLM_PROVIDERS") and
+  (. as $secret |
+    [$secret.LLM_PROVIDERS
+      | split(",")[]
+      | gsub("^\\s+|\\s+$"; "")
+      | ascii_upcase
+      | gsub("-"; "_")
+      | . as $prefix
+      | select(
+          ((($secret[$prefix + "_API_KEY"] // "") | tostring | length) > 0 or
+            (($secret[$prefix + "_API_KEYS"] // "") | tostring | length) > 0) and
+          ($prefix == "GEMINI" or (($secret[$prefix + "_MODEL"] // "") | tostring | length) > 0)
+        )
+    ] | length > 0) and
   all(keys[]; test("^[A-Z][A-Z0-9_]*$"))
 ' <<EOF >/dev/null
 $secret_json
