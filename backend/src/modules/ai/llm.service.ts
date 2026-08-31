@@ -1,19 +1,21 @@
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 
-import { LLM_PROVIDERS, type LlmProvider } from './providers/llm-provider';
+import { LLM_PROVIDER_GROUPS, type LlmProvider, type LlmProviderGroup } from './providers/llm-provider';
 import type { LlmStructuredRequest } from './types/llm-request.type';
 import type { LlmStructuredResponse } from './types/llm-response.type';
-import { type AiConfig, getAiConfig } from './ai.config';
+import { AI_CONFIG, type AiConfig } from './ai.config';
 import { LlmRateLimitError, LlmUnavailableError } from './llm.errors';
 
 @Injectable()
 export class LlmService {
   private readonly logger = new Logger(LlmService.name);
-  private readonly config: AiConfig;
+  private readonly keyCursorByProvider = new Map<string, number>();
+  private providerCursor = 0;
 
-  constructor(@Inject(LLM_PROVIDERS) private readonly providers: LlmProvider[]) {
-    this.config = getAiConfig();
-  }
+  constructor(
+    @Inject(LLM_PROVIDER_GROUPS) private readonly providerGroups: LlmProviderGroup[],
+    @Inject(AI_CONFIG) private readonly config: AiConfig,
+  ) {}
 
   /**
    * 등록된 provider를 우선순위대로 시도해 구조화 응답을 얻는다.
@@ -23,12 +25,14 @@ export class LlmService {
    * @returns {Promise<LlmStructuredResponse>} 가장 먼저 성공한 provider의 응답
    */
   async generateStructured(request: LlmStructuredRequest): Promise<LlmStructuredResponse> {
-    if (this.providers.length === 0) {
+    if (this.providerGroups.length === 0) {
       throw new ServiceUnavailableException('사용 가능한 AI provider가 설정되지 않았습니다.');
     }
 
-    for (const provider of this.providers) {
-      const response = await this.tryProvider(provider, request);
+    const groups = this.selectProviderGroups();
+
+    for (const group of groups) {
+      const response = await this.tryProviderGroup(group, request);
 
       if (response !== null) {
         return response;
@@ -36,6 +40,50 @@ export class LlmService {
     }
 
     throw new ServiceUnavailableException('AI 응답을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  }
+
+  /** provider rotation이 켜지면 요청마다 시작 provider를 한 칸 옮기고, 꺼지면 첫 provider만 사용한다. */
+  private selectProviderGroups(): LlmProviderGroup[] {
+    if (!this.config.providerRotationEnabled || this.providerGroups.length <= 1) {
+      return this.providerGroups.slice(0, 1);
+    }
+
+    const normalizedIndex = this.providerCursor % this.providerGroups.length;
+    const ordered = [...this.providerGroups.slice(normalizedIndex), ...this.providerGroups.slice(0, normalizedIndex)];
+
+    this.providerCursor = normalizedIndex + 1;
+
+    return ordered;
+  }
+
+  /** 같은 provider의 credential을 설정된 순서에 따라 시도한다. */
+  private async tryProviderGroup(group: LlmProviderGroup, request: LlmStructuredRequest): Promise<LlmStructuredResponse | null> {
+    const credentials = this.selectCredentials(group);
+
+    for (const provider of credentials) {
+      const response = await this.tryProvider(provider, request);
+
+      if (response !== null) {
+        return response;
+      }
+    }
+
+    return null;
+  }
+
+  /** rotation이 켜지면 요청마다 시작 credential을 한 칸 옮기고, 꺼지면 첫 credential만 사용한다. */
+  private selectCredentials(group: LlmProviderGroup): LlmProvider[] {
+    if (!this.config.keyRotationEnabled || group.credentials.length <= 1) {
+      return group.credentials.slice(0, 1);
+    }
+
+    const startIndex = this.keyCursorByProvider.get(group.name) ?? 0;
+    const normalizedIndex = startIndex % group.credentials.length;
+    const ordered = [...group.credentials.slice(normalizedIndex), ...group.credentials.slice(0, normalizedIndex)];
+
+    this.keyCursorByProvider.set(group.name, normalizedIndex + 1);
+
+    return ordered;
   }
 
   /**
@@ -52,7 +100,7 @@ export class LlmService {
         return await provider.generateStructured(request, this.config.requestTimeoutMs);
       } catch (error) {
         if (error instanceof LlmRateLimitError) {
-          this.logger.warn(`[${provider.name}] 호출량 제한으로 다음 provider로 전환합니다.`);
+          this.logger.warn(`[${provider.name}] 호출량 제한으로 다음 호출 대상으로 전환합니다.`);
           return null;
         }
 
@@ -63,7 +111,7 @@ export class LlmService {
           continue;
         }
 
-        this.logger.warn(`[${provider.name}] 호출에 실패해 다음 provider로 전환합니다: ${toMessage(error)}`);
+        this.logger.warn(`[${provider.name}] 호출에 실패해 다음 호출 대상으로 전환합니다: ${toMessage(error)}`);
         return null;
       }
     }
