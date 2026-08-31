@@ -6,6 +6,7 @@ import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api
 import type { AuthUser } from '../users/repositoreis/user.repository';
 
 import { AskAssistantBodyDto } from './dto/ask-assistant.dto';
+import { AssistantRateLimitGuard } from './rate-limit/assistant-rate-limit.guard';
 import type { AssistantAnswer } from './types/assistant-answer.type';
 import { AssistantService } from './assistant.service';
 
@@ -33,7 +34,7 @@ export class AssistantController {
   }
 
   @Post('bands/:bandId/assistant/query')
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AssistantRateLimitGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '자연어로 밴드 데이터 조회' })
   @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
@@ -42,6 +43,7 @@ export class AssistantController {
   @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 403, description: '권한 없음' })
   @ApiResponse({ status: 404, description: '추천 질문을 찾을 수 없음' })
+  @ApiResponse({ status: 429, description: '질문 요청 횟수 초과' })
   @ApiResponse({ status: 503, description: 'AI 응답 생성 실패' })
   async askAssistant(
     @Req() req: AuthenticatedRequest,
