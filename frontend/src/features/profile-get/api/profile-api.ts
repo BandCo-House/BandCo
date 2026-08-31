@@ -1,6 +1,6 @@
 import { apiGet } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
-import { profileSchema } from '@/entities/profile/model/schema';
+import { profileResponseSchema } from '@/entities/profile/model/schema';
 
 export const getUserProfile = (userId: string): Promise<Profile> => {
   const normalizedUserId = userId.trim();
@@ -9,5 +9,5 @@ export const getUserProfile = (userId: string): Promise<Profile> => {
   }
   return apiGet<unknown>(
     `/users/${encodeURIComponent(normalizedUserId)}/profiles`,
-  ).then((result) => profileSchema.parse(result));
+  ).then((result) => profileResponseSchema.parse(result));
 };

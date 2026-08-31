@@ -28,7 +28,7 @@ describe('BandList', () => {
 
   it('로딩 중일 때 로딩 상태를 표시한다', async () => {
     server.use(
-      http.get('/api/bands', async () => {
+      http.get('/api/bands/me', async () => {
         await delay('infinite');
         return HttpResponse.json({});
       }),
@@ -40,14 +40,19 @@ describe('BandList', () => {
 
   it('밴드가 없을 때 빈 상태를 표시한다', async () => {
     server.use(
-      http.get('/api/bands', () => {
+      http.get('/api/bands/me', () => {
         return HttpResponse.json({
           status: 'success',
           error: null,
           message: '내 밴드 목록 조회 성공',
           data: {
-            totalCount: 0,
-            bands: [],
+            items: [],
+            meta: {
+              count: 0,
+              take: 20,
+              cursor: null,
+              next: null,
+            },
           },
         });
       }),

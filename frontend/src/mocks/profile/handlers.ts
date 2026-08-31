@@ -110,6 +110,23 @@ const mockProfiles: Record<string, Profile> = {
   },
 };
 
+const createProfileResponseData = (profile: Profile) => {
+  const profileMusic = profile.profile?.profileMusic ?? null;
+  const profileDetail = profile.profile
+    ? {
+        nickname: profile.profile.nickname,
+        selfDescription: profile.profile.selfDescription,
+        avatarUrl: profile.profile.avatarUrl,
+      }
+    : null;
+
+  return {
+    ...profile,
+    profile: profileDetail,
+    profileMusic,
+  };
+};
+
 export const profileHandlers = [
   http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
     const url = new URL(request.url);
@@ -143,9 +160,11 @@ export const profileHandlers = [
       );
     }
 
-    return HttpResponse.json<ApiResponse<Profile>>({
-      success: true,
-      data: userProfile,
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '유저 프로필 조회 성공',
+      data: createProfileResponseData(userProfile),
     });
   }),
 
@@ -246,9 +265,11 @@ export const profileHandlers = [
         }));
       }
 
-      return HttpResponse.json<ApiResponse<Profile>>({
-        success: true,
-        data: current,
+      return HttpResponse.json({
+        status: 'success',
+        error: null,
+        message: '유저 프로필 수정 성공',
+        data: createProfileResponseData(current),
       });
     },
   ),

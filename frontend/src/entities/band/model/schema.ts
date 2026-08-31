@@ -73,12 +73,22 @@ export const bandInviteLinkSchema = z.object({
 });
 
 export const bandListResponseSchema = z.object({
-  status: z.enum(['success', 'error']),
-  error: z.string().nullable(),
+  status: z.literal('success'),
+  error: z.null(),
   message: z.string(),
   data: z.object({
-    totalCount: z.number().int().nonnegative(),
     items: z.array(bandSchema),
+    meta: z.object({
+      count: z.number().int().nonnegative(),
+      take: z.number().int().positive(),
+      cursor: z
+        .object({
+          createdAt: z.string(),
+          id: z.string(),
+        })
+        .nullable(),
+      next: z.string().nullable(),
+    }),
   }),
 });
 
