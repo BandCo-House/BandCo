@@ -66,7 +66,15 @@ describe('② Response Interceptor — 401 토큰 갱신', () => {
 
     mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply((config) => {
       refreshAuth = config.headers?.Authorization ?? '';
-      return [200, { accessToken: 'new-access-token' }];
+      return [
+        201,
+        {
+          status: 'success',
+          error: null,
+          message: '액세스 토큰 재발급 성공',
+          data: { accessToken: 'new-access-token' },
+        },
+      ];
     });
 
     const res = await apiClient.get('/teams');
@@ -86,7 +94,10 @@ describe('② Response Interceptor — 401 토큰 갱신', () => {
     });
 
     mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply(200, {
-      accessToken: 'new-access-token',
+      status: 'success',
+      error: null,
+      message: '액세스 토큰 재발급 성공',
+      data: { accessToken: 'new-access-token' },
     });
 
     await apiClient.get('/teams');
@@ -119,7 +130,15 @@ describe('③ 동시 요청 큐 (processQueue)', () => {
     });
     mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply(() => {
       refreshCount++;
-      return [200, { accessToken: 'new-token' }];
+      return [
+        201,
+        {
+          status: 'success',
+          error: null,
+          message: '액세스 토큰 재발급 성공',
+          data: { accessToken: 'new-token' },
+        },
+      ];
     });
 
     const [teams, schedules, notifications] = await Promise.all([

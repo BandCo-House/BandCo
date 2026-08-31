@@ -98,10 +98,23 @@ export class AuthService {
     return { email, password };
   }
 
+  /**
+   * 토큰을 검증한다.
+   *
+   * jsonwebtoken이 던지는 오류는 Nest 예외가 아니라서 그대로 두면 500으로 나간다.
+   * 그러면 클라이언트가 401로 인식하지 못해 토큰을 정리하지도, 로그인 화면으로 보내지도 못한다.
+   *
+   * @param {string} token - 검증할 JWT
+   * @returns {unknown} 검증에 성공한 payload
+   */
   verifyToken(token: string) {
-    return this.jwtService.verify(token, {
-      secret: this.jwtSecret,
-    });
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.jwtSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('유효하지 않거나 만료된 토큰입니다.');
+    }
   }
 
   extractTokenFromHeader(rawToken: string, isBearer: boolean) {

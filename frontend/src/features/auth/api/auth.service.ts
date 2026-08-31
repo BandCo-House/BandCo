@@ -2,14 +2,14 @@ import { apiClient } from '@/shared/api/client';
 import { type TokenResponse } from '@/shared/api/types';
 import { type SignupReq } from '../model/auth.schema';
 
-type BackendEmailCheckResponse = {
+type BackendSuccessResponse<T> = {
   status: 'success';
   error: null;
   message: string;
-  data: {
-    email: string;
-  };
+  data: T;
 };
+
+type BackendEmailCheckResponse = BackendSuccessResponse<{ email: string }>;
 
 export type EmailDuplicateCheckResponse = {
   duplicated: boolean;
@@ -23,12 +23,12 @@ export type EmailDuplicateCheckResponse = {
 export const registerEmail = async (
   data: SignupReq,
 ): Promise<TokenResponse> => {
-  const response = await apiClient.post<TokenResponse>(
+  const response = await apiClient.post<BackendSuccessResponse<TokenResponse>>(
     '/auth/register/email',
     data,
   );
 
-  return response.data;
+  return response.data.data;
 };
 
 /**
@@ -60,7 +60,7 @@ export const loginEmail = async (
   // email:password 형태를 base64로 인코딩
   const credentials = btoa(`${email}:${password}`);
 
-  const response = await apiClient.post<TokenResponse>(
+  const response = await apiClient.post<BackendSuccessResponse<TokenResponse>>(
     '/auth/login/email',
     {},
     {
@@ -70,5 +70,5 @@ export const loginEmail = async (
     },
   );
 
-  return response.data;
+  return response.data.data;
 };

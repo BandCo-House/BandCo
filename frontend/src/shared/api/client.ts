@@ -40,6 +40,13 @@ apiClient.interceptors.request.use(
 
 let isRefreshing = false;
 
+type BackendSuccessResponse<T> = {
+  status: 'success';
+  error: null;
+  message: string;
+  data: T;
+};
+
 // 토큰 갱신 대기 중인 요청 큐 (갱신 중 동시 요청들을 모아뒀다가 한번에 재시도)
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -63,7 +70,9 @@ function processQueue(error: unknown, token: string | null = null): void {
 export const refreshAccessToken = async (
   refreshToken: string,
 ): Promise<string> => {
-  const { data } = await apiClient.post<{ accessToken: string }>(
+  const response = await apiClient.post<
+    BackendSuccessResponse<{ accessToken: string }>
+  >(
     ACCESS_TOKEN_REFRESH_ENDPOINT,
     {},
     {
@@ -73,7 +82,7 @@ export const refreshAccessToken = async (
     },
   );
 
-  return data.accessToken;
+  return response.data.data.accessToken;
 };
 
 /**
@@ -82,7 +91,9 @@ export const refreshAccessToken = async (
 export const refreshRefreshToken = async (
   refreshToken: string,
 ): Promise<string> => {
-  const { data } = await apiClient.post<{ refreshToken: string }>(
+  const response = await apiClient.post<
+    BackendSuccessResponse<{ refreshToken: string }>
+  >(
     REFRESH_TOKEN_REFRESH_ENDPOINT,
     {},
     {
@@ -92,7 +103,7 @@ export const refreshRefreshToken = async (
     },
   );
 
-  return data.refreshToken;
+  return response.data.data.refreshToken;
 };
 
 apiClient.interceptors.response.use(

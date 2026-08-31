@@ -22,6 +22,18 @@ const mockTokenResponse: TokenResponse = {
 };
 
 /**
+ * 백엔드 공통 성공 응답 형식으로 인증 결과를 감싼다.
+ */
+const createSuccessResponse = <T>(message: string, data: T) => {
+  return {
+    status: 'success' as const,
+    error: null,
+    message,
+    data,
+  };
+};
+
+/**
  * 백엔드 auth 컨트롤러의 이메일 확인 성공 응답을 생성한다.
  */
 const createEmailCheckResponse = (email: string, duplicated: boolean) => {
@@ -78,7 +90,9 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json<TokenResponse>(mockTokenResponse);
+    return HttpResponse.json(
+      createSuccessResponse('회원가입 성공', mockTokenResponse),
+    );
   }),
 
   http.post('*/auth/email', async ({ request }) => {
@@ -99,7 +113,11 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json({ accessToken: 'mock-rotated-access-token' });
+    return HttpResponse.json(
+      createSuccessResponse('액세스 토큰 재발급 성공', {
+        accessToken: 'mock-rotated-access-token',
+      }),
+    );
   }),
 
   http.post('*/auth/token/refresh', ({ request }) => {
@@ -117,7 +135,11 @@ export const authHandlers = [
       '.eyJpZCI6InVzZXItMDAxIiwiZW1haWwiOiJtZW1iZXJAZXhhbXBsZS5jb20iLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6NDEwMjQ0NDgwMH0' +
       '.mock-signature';
 
-    return HttpResponse.json({ refreshToken: mockRotatedRefreshToken });
+    return HttpResponse.json(
+      createSuccessResponse('리프레시 토큰 재발급 성공', {
+        refreshToken: mockRotatedRefreshToken,
+      }),
+    );
   }),
 
   // 이메일 로그인 (Basic Auth)
@@ -125,7 +147,9 @@ export const authHandlers = [
     const authHeader = request.headers.get('Authorization');
 
     if (authHeader?.startsWith('Basic ')) {
-      return HttpResponse.json<TokenResponse>(mockTokenResponse);
+      return HttpResponse.json(
+        createSuccessResponse('로그인 성공', mockTokenResponse),
+      );
     }
 
     return createUnauthorizedResponse(
