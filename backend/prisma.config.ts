@@ -3,12 +3,10 @@ import { loadEnvFile } from 'node:process';
 
 import { defineConfig } from 'prisma/config';
 
-if (existsSync('.env')) {
-  loadEnvFile('.env');
-}
-
 if (existsSync('.env.development')) {
   loadEnvFile('.env.development');
+} else if (existsSync('.env')) {
+  loadEnvFile('.env');
 }
 
 /**
