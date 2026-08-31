@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './database/prisma';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { BandsModule } from './modules/bands/bands.module';
 import { BandSpacesModule } from './modules/bandspaces/bandspaces.module';
 import { CommonModule } from './modules/common/common.module';
@@ -34,6 +35,7 @@ import { StorageModule } from './storage/storage.module';
     LinkPreviewsModule,
     PlacesModule,
     TeamsModule,
+    AssistantModule,
   ],
 })
 export class AppModule {}
