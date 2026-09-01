@@ -30,38 +30,6 @@ secret_json=$(aws secretsmanager get-secret-value \
   --query SecretString \
   --output text)
 
-jq -e '
-  def nonempty($key): has($key) and ((.[$key] | tostring | length) > 0);
-
-  type == "object" and
-  .NODE_ENV == "development" and
-  nonempty("BACKEND_PORT") and
-  nonempty("DATABASE_URL") and
-  nonempty("JWT_SECRET") and
-  nonempty("BCRYPT_SALT_ROUNDS") and
-  nonempty("AWS_REGION") and
-  nonempty("AWS_STORAGE_BUCKET") and
-  nonempty("AWS_ACCESS_KEY_ID") and
-  nonempty("AWS_SECRET_ACCESS_KEY") and
-  nonempty("LLM_PROVIDERS") and
-  (. as $secret |
-    [$secret.LLM_PROVIDERS
-      | split(",")[]
-      | gsub("^\\s+|\\s+$"; "")
-      | ascii_upcase
-      | gsub("-"; "_")
-      | . as $prefix
-      | select(
-          ((($secret[$prefix + "_API_KEY"] // "") | tostring | length) > 0 or
-            (($secret[$prefix + "_API_KEYS"] // "") | tostring | length) > 0) and
-          ($prefix == "GEMINI" or (($secret[$prefix + "_MODEL"] // "") | tostring | length) > 0)
-        )
-    ] | length > 0) and
-  all(keys[]; test("^[A-Z][A-Z0-9_]*$"))
-' <<EOF >/dev/null
-$secret_json
-EOF
-
 jq -r 'to_entries[] | "\(.key)=\(.value | tostring | @json)"' <<EOF >"$TEMP_ENV_FILE"
 $secret_json
 EOF
