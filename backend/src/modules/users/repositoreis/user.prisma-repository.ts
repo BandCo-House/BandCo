@@ -2,10 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { parseToPrismaQuery } from 'src/common/query';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
-import { Prisma, type User } from 'src/generated/prisma';
+import { type OAuthProvider, Prisma, type User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
+import type { CreateOAuthUserInput, OAuthLinkUser } from '../types/oauth-user.type';
 import type { ProfileMusicTrack } from '../types/profile-music.type';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
@@ -86,6 +87,79 @@ export class UsersPrismaRepository implements UsersRepository {
         data: {
           userId: user.id,
           nickname,
+        },
+      });
+
+      return user;
+    };
+
+    return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  async findUserByOAuth(provider: OAuthProvider, providerUserId: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null> {
+    const client = tx ?? this.prisma;
+    const account = await client.userOAuthAccount.findUnique({
+      where: { provider_providerUserId: { provider, providerUserId } },
+      select: {
+        user: {
+          select: { id: true, email: true, deletedAt: true, status: true },
+        },
+      },
+    });
+
+    if (!account) return null;
+
+    // 연결은 남아 있어도 탈퇴·비활성 유저는 인증 대상에서 제외한다
+    if (account.user.deletedAt !== null || account.user.status !== 'ACTIVE') return null;
+
+    return mapAuthUser(account.user);
+  }
+
+  async findUserForOAuthLink(email: string, tx?: Prisma.TransactionClient): Promise<OAuthLinkUser | null> {
+    const client = tx ?? this.prisma;
+    // 탈퇴 계정과 신규 가입을 구분해야 하므로 deletedAt 조건 없이 조회한다
+    const user = await client.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, deletedAt: true },
+    });
+
+    if (!user?.email) return null;
+
+    return { id: user.id, email: user.email, deletedAt: user.deletedAt };
+  }
+
+  async createOAuthAccount(
+    userId: string,
+    provider: OAuthProvider,
+    providerUserId: string,
+    email: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.userOAuthAccount.create({
+      data: { userId, provider, providerUserId, email },
+    });
+  }
+
+  async createUserWithOAuth(input: CreateOAuthUserInput, tx?: Prisma.TransactionClient): Promise<User> {
+    const run = async (client: Prisma.TransactionClient) => {
+      const user = await client.user.create({
+        data: { email: input.email },
+      });
+
+      await client.userProfile.create({
+        data: {
+          userId: user.id,
+          nickname: input.nickname,
+        },
+      });
+
+      await client.userOAuthAccount.create({
+        data: {
+          userId: user.id,
+          provider: input.provider,
+          providerUserId: input.providerUserId,
+          email: input.email,
         },
       });
 

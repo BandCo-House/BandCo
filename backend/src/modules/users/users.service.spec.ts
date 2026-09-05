@@ -7,6 +7,7 @@ import type { DeezerTrackApiResponse } from 'src/modules/songs/types/deezer-trac
 import type { GetUsersQuery } from './dto/get-users-query.dto';
 import type { ProfileMusicRepository } from './repositoreis/profile-music.repository';
 import type { UsersRepository } from './repositoreis/user.repository';
+import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { GetUsersResult } from './types/user-list.type';
 import type { GetUserProfileResult } from './types/user-profile.type';
@@ -79,6 +80,23 @@ const repositoryStub: UsersRepository = {
   async softDeleteUser(userId) {
     return userId === 'user-001' ? mockDeleteResult : null;
   },
+  async findUserByOAuth(_provider, providerUserId) {
+    return providerUserId === 'google-sub-001' ? mockUser : null;
+  },
+  async findUserForOAuthLink(email) {
+    return email === 'test@example.com' ? { id: 'user-001', email: 'test@example.com', deletedAt: null } : null;
+  },
+  async createOAuthAccount() {},
+  async createUserWithOAuth(input) {
+    return { ...mockUser, email: input.email } as User;
+  },
+};
+
+const oauthInput: CreateOAuthUserInput = {
+  provider: 'GOOGLE',
+  providerUserId: 'google-sub-001',
+  email: 'new@example.com',
+  nickname: '구글유저',
 };
 
 const profileMusicRepositoryStub: ProfileMusicRepository = {
@@ -178,6 +196,72 @@ describe('UsersService', () => {
       await service.createUserWithEmail('new@example.com', 'hashed', '홍길동', tx);
 
       expect(createSpy).toHaveBeenCalledWith('new@example.com', 'hashed', '홍길동', tx);
+      createSpy.mockRestore();
+    });
+  });
+
+  describe('linkOAuthAccount', () => {
+    it('repository에 연결 생성을 위임하고 인자와 tx를 그대로 전달한다', async () => {
+      const createSpy = jest.spyOn(repositoryStub, 'createOAuthAccount');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.linkOAuthAccount('user-001', 'GOOGLE', 'google-sub-001', 'test@example.com', tx);
+
+      expect(createSpy).toHaveBeenCalledWith('user-001', 'GOOGLE', 'google-sub-001', 'test@example.com', tx);
+      createSpy.mockRestore();
+    });
+
+    it('연결 중 P2002가 발생하면 BadRequestException으로 변환한다', async () => {
+      const conflict = new Prisma.PrismaClientKnownRequestError('unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      });
+      const createSpy = jest.spyOn(repositoryStub, 'createOAuthAccount').mockRejectedValueOnce(conflict);
+
+      await expect(service.linkOAuthAccount('user-001', 'GOOGLE', 'google-sub-001', 'test@example.com')).rejects.toThrow(BadRequestException);
+      createSpy.mockRestore();
+    });
+
+    it('P2002 이외의 오류는 그대로 전파한다', async () => {
+      const unexpected = new Error('db down');
+      const createSpy = jest.spyOn(repositoryStub, 'createOAuthAccount').mockRejectedValueOnce(unexpected);
+
+      await expect(service.linkOAuthAccount('user-001', 'GOOGLE', 'google-sub-001', 'test@example.com')).rejects.toThrow(unexpected);
+      createSpy.mockRestore();
+    });
+  });
+
+  describe('createUserWithGoogle', () => {
+    it('생성된 유저를 반환한다', async () => {
+      await expect(service.createUserWithGoogle(oauthInput)).resolves.toEqual({ ...mockUser, email: 'new@example.com' });
+    });
+
+    it('입력과 tx를 repository에 그대로 전달한다', async () => {
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithOAuth');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.createUserWithGoogle(oauthInput, tx);
+
+      expect(createSpy).toHaveBeenCalledWith(oauthInput, tx);
+      createSpy.mockRestore();
+    });
+
+    it('생성 중 P2002가 발생하면 BadRequestException으로 변환한다', async () => {
+      const conflict = new Prisma.PrismaClientKnownRequestError('unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      });
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithOAuth').mockRejectedValueOnce(conflict);
+
+      await expect(service.createUserWithGoogle(oauthInput)).rejects.toThrow(BadRequestException);
+      createSpy.mockRestore();
+    });
+
+    it('P2002 이외의 오류는 그대로 전파한다', async () => {
+      const unexpected = new Error('db down');
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithOAuth').mockRejectedValueOnce(unexpected);
+
+      await expect(service.createUserWithGoogle(oauthInput)).rejects.toThrow(unexpected);
       createSpy.mockRestore();
     });
   });

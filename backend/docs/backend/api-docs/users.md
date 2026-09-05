@@ -10,6 +10,7 @@ Notion "유저 api" 데이터베이스는 `src/auth`(인증)와 `src/modules/use
 > - `src/auth/auth.controller.ts`, `src/modules/users/users.controller.ts` 코드를 1차 소스로 삼아 작성. 번호는 Notion "유저 api" DB 기준 유지.
 > - `#48 비밀번호 찾기`는 Notion에는 존재하나 코드에 미구현 — 이번 문서에서 제외. 구현 후 추가한다.
 > - `#65 이메일 중복 확인`: `팀 관리` DB에도 동일 번호(#65)가 팀 멤버 추가 기능에 부여되어 있어 Notion 번호 체계에 충돌이 있다. 두 문서 모두 각자 소속 DB의 번호를 그대로 사용한다(교차 수정은 이번 범위 밖).
+> - [설계자 보완 2026-09-01] `#70 Google 로그인` 신규 추가 (기존 최대 #69 + 1). Notion "유저 api" DB에는 아직 미등록 — 수동 등록 필요.
 
 ## API 목록
 
@@ -17,6 +18,7 @@ Notion "유저 api" 데이터베이스는 `src/auth`(인증)와 `src/modules/use
 |------|--------|------|------|
 | #1 | POST | `/auth/register/email` | 이메일 회원가입 |
 | #2 | POST | `/auth/login/email` | 이메일 로그인 |
+| #70 | POST | `/auth/login/google` | Google 로그인 |
 | #4 | GET | `/users` | 유저 목록 조회 |
 | #6 | DELETE | `/users/:userId` | 회원 탈퇴 |
 | #7 | POST | `/auth/token/access` | 액세스 토큰 재발급 |
@@ -100,6 +102,46 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | 코드 | 사유 |
 |------|------|
 | 401 | `Authorization` 헤더 없음, 잘못된 Basic 토큰 형식, 존재하지 않는 유저, 비밀번호 불일치 |
+
+---
+
+## #70 Google 로그인
+
+- Method: `POST`
+- Path: `/auth/login/google`
+- 인증: 없음 (공개)
+
+### Request Body
+
+```json
+{
+  "idToken": "eyJhbGciOi..."
+}
+```
+
+`idToken`은 프론트가 Google Identity Services(GIS)에서 받은 ID 토큰이다.
+서버는 서명·만료·audience(`GOOGLE_CLIENT_ID`)를 검증한 뒤, Google 계정이 연결된 유저로 로그인한다.
+연결된 유저가 없으면 동일 이메일 유저에 자동 연결하고, 그것도 없으면 신규 가입 후 로그인한다.
+
+### Response 201
+
+```json
+{
+  "success": true,
+  "message": "로그인 성공",
+  "data": {
+    "accessToken": "eyJhbGciOi...",
+    "refreshToken": "eyJhbGciOi..."
+  }
+}
+```
+
+### Error
+
+| 코드 | 사유 |
+|------|------|
+| 400 | `idToken` 누락 또는 문자열이 아님 |
+| 401 | 유효하지 않은 Google 토큰, 이메일 미인증 Google 계정, 탈퇴한 계정 |
 
 ---
 
