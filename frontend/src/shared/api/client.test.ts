@@ -181,3 +181,22 @@ describe('④ 로그아웃 처리', () => {
     expect(window.location.href).toBe('/login');
   });
 });
+
+// ────────────────────────────────────────────────────────────
+describe('⑤ 로그인 요청의 401', () => {
+  it('로그인 요청이 401이면 토큰 갱신을 시도하지 않고 그대로 reject되며 /login 이동도 없다', async () => {
+    let refreshCount = 0;
+
+    mock
+      .onPost('/auth/login/email')
+      .reply(401, { message: '비밀번호가 일치하지 않습니다.' });
+    mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply(() => {
+      refreshCount++;
+      return [200, { accessToken: 'new-access-token' }];
+    });
+
+    await expect(apiClient.post('/auth/login/email', {})).rejects.toThrow();
+    expect(refreshCount).toBe(0);
+    expect(window.location.href).not.toBe('/login');
+  });
+});

@@ -8,6 +8,7 @@ import {
   ACCESS_TOKEN_REFRESH_ENDPOINT,
   API_BASE_URL,
   API_TIMEOUT,
+  LOGIN_ENDPOINT_PREFIX,
   REFRESH_TOKEN_REFRESH_ENDPOINT,
 } from './config';
 import { type ApiResponse } from './types';
@@ -102,6 +103,11 @@ apiClient.interceptors.response.use(
 
     // 401이 아니거나 config가 없으면 그대로 에러 반환
     if (!originalRequest || error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // 로그인 요청의 401은 자격 증명 오류이므로 토큰 갱신·로그인 이동 없이 호출자에게 돌려준다.
+    if (originalRequest.url?.includes(LOGIN_ENDPOINT_PREFIX)) {
       return Promise.reject(error);
     }
 
