@@ -18,6 +18,7 @@ import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
 import { compressProfileImage } from '@/features/profile-update/model/image-compression';
+import { uploadFile } from '@/shared/api/upload';
 import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
 import {
   AppDialogBody,
@@ -160,21 +161,15 @@ function ProfileRoutePage() {
       };
 
       if (avatarFile) {
-        const formData = new FormData();
-        formData.append(
-          'profile',
-          new Blob([JSON.stringify(profilePayload)], {
-            type: 'application/json',
-          }),
-        );
-        formData.append('avatar', avatarFile);
-        await updateUserProfile(targetUserId, formData);
+        const uploadedAvatarUrl = await uploadFile(avatarFile, 'profiles');
+        profilePayload.avatarUrl = uploadedAvatarUrl;
       } else {
         profilePayload.avatarUrl = validatedData.avatarUrl || null;
-        await updateUserProfile(targetUserId, {
-          profile: profilePayload,
-        });
       }
+
+      await updateUserProfile(targetUserId, {
+        profile: profilePayload,
+      });
 
       queryClient.invalidateQueries({
         queryKey: ['user-profiles', 'detail', targetUserId],
