@@ -35,6 +35,15 @@ export function TagSelectBottomSheet({
   isLoading = false,
 }: TagSelectBottomSheetProps) {
   const currentSelectionRef = useRef<string[]>(selectedIds);
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  // Controlled open prop 변경 감지: 열리는 순간 최신 selectedIds로 ref 즉시 동기화
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      currentSelectionRef.current = selectedIds;
+    }
+  }
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {

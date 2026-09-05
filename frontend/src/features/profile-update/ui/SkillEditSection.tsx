@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
 import { Plus, X } from 'lucide-react';
@@ -21,12 +21,18 @@ export function SkillEditSection({
 }: SkillEditSectionProps) {
   const queryClient = useQueryClient();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const isUpdatingRef = useRef(false);
 
   // 시트가 열릴 때만 Lazy Loading으로 전체 악기 파트 목록 로드
   const skillsQuery = useSkillTypes(isSheetOpen);
   const availableSkills = skillsQuery.data || [];
 
   const handleSaveSkills = async (newSkillIds: string[]) => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+    setIsUpdating(true);
+
     const queryKey = ['user-profiles', 'detail', userId];
     await queryClient.cancelQueries({ queryKey });
     const previousProfile = queryClient.getQueryData<Profile>(queryKey);
@@ -68,11 +74,17 @@ export function SkillEditSection({
       }
       toast.error('파트 저장 도중 에러가 발생했습니다.');
     } finally {
+      isUpdatingRef.current = false;
+      setIsUpdating(false);
       queryClient.invalidateQueries({ queryKey });
     }
   };
 
   const removeSkill = async (skillTypeId: string) => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+    setIsUpdating(true);
+
     const queryKey = ['user-profiles', 'detail', userId];
     await queryClient.cancelQueries({ queryKey });
     const previousProfile = queryClient.getQueryData<Profile>(queryKey);
@@ -101,6 +113,8 @@ export function SkillEditSection({
       }
       toast.error('파트 삭제 도중 에러가 발생했습니다.');
     } finally {
+      isUpdatingRef.current = false;
+      setIsUpdating(false);
       queryClient.invalidateQueries({ queryKey });
     }
   };
@@ -125,8 +139,9 @@ export function SkillEditSection({
               <button
                 type="button"
                 aria-label={`${skill.skillName} 삭제`}
+                disabled={isUpdating}
                 onClick={() => removeSkill(skill.skillTypeId)}
-                className="-my-2 -mr-3 ml-1 rounded-full p-2 text-grey-300 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
+                className="-my-2 -mr-3 ml-1 rounded-full p-2 text-grey-300 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
                 <X className="size-3.5" />
               </button>
@@ -136,8 +151,9 @@ export function SkillEditSection({
         {isMe && (
           <Button
             onClick={() => setIsSheetOpen(true)}
+            disabled={isUpdating}
             size="icon"
-            className="size-9 cursor-pointer bg-surface-1/40"
+            className="size-9 cursor-pointer bg-surface-1"
             aria-label="플레이 파트 수정"
           >
             <Plus className="size-4 text-primary" />

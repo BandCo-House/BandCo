@@ -116,4 +116,42 @@ describe('TagSelectBottomSheet', () => {
     expect(handleSave).not.toHaveBeenCalled();
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it('외부에서 selectedIds가 변경된 후 시트가 열리고 변경 없이 닫히면 이전 값이 저장되지 않는다 (회귀 방지)', async () => {
+    const user = userEvent.setup();
+    const handleSave = vi.fn();
+    const handleOpenChange = vi.fn();
+
+    // 1. 처음에는 ['1', '2']로 닫혀있는 상태로 렌더링
+    const { rerender } = render(
+      <TagSelectBottomSheet
+        open={false}
+        onOpenChange={handleOpenChange}
+        title="플레이 파트"
+        items={mockItems}
+        selectedIds={['1', '2']}
+        onSave={handleSave}
+      />,
+    );
+
+    // 2. 외부에서 2번이 삭제되어 selectedIds가 ['1']로 바뀌고 시트가 열림 (open=true)
+    rerender(
+      <TagSelectBottomSheet
+        open={true}
+        onOpenChange={handleOpenChange}
+        title="플레이 파트"
+        items={mockItems}
+        selectedIds={['1']}
+        onSave={handleSave}
+      />,
+    );
+
+    // 3. 아무 변경 없이 닫기 클릭
+    const closeButton = screen.getByRole('button', { name: /닫기|close/i });
+    await user.click(closeButton);
+
+    // 4. 이전 값인 ['1', '2']가 다시 저장되지 않아야 함
+    expect(handleSave).not.toHaveBeenCalled();
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
 });

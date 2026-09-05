@@ -11,7 +11,7 @@ export const storageHandlers = [
       folder: string;
       contentType: string;
     };
-    const key = `${body.folder}/${Date.now()}`;
+    const key = `${body.folder}/${Date.now()}-${crypto.randomUUID()}`;
 
     return HttpResponse.json<
       ApiResponse<{ presignedUrl: string; objectUrl: string }>
