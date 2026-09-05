@@ -43,6 +43,7 @@ jq -e '
   nonempty("AWS_STORAGE_BUCKET") and
   nonempty("AWS_ACCESS_KEY_ID") and
   nonempty("AWS_SECRET_ACCESS_KEY") and
+  nonempty("GOOGLE_CLIENT_ID") and
   all(keys[]; test("^[A-Z][A-Z0-9_]*$"))
 ' <<EOF >/dev/null
 $secret_json
