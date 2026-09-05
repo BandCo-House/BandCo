@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SocialLoginSection } from './social-login-section';
 
 describe('SocialLoginSection', () => {
@@ -12,5 +12,15 @@ describe('SocialLoginSection', () => {
     expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Naver' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kakao' })).toBeInTheDocument();
+  });
+
+  it('Google 자격증명 콜백이 주어지면 비활성 Google 버튼 대신 GIS 버튼 영역을 렌더링해야 한다', () => {
+    render(<SocialLoginSection onGoogleCredential={vi.fn()} />);
+
+    expect(
+      screen.queryByRole('button', { name: 'Google' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('google-login')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Naver' })).toBeDisabled();
   });
 });
