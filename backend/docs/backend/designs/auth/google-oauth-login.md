@@ -140,6 +140,8 @@ findUserForOAuthLink(
       - 활성 유저: usersService.linkOAuthAccount(userId, GOOGLE, sub, email) 후 로그인
         (요구사항: 동일 이메일이면 기존 계정에 자동 연결)
       - 탈퇴 유저(deletedAt 존재): UnauthorizedException('탈퇴한 계정입니다.')  ← 결정 (b)
+      - 비활성 유저(status !== ACTIVE): UnauthorizedException('비활성화된 계정입니다.')  ← 리뷰 반영 (2026-09-06)
+      - Gmail도 hd(Workspace)도 아닌 이메일: UnauthorizedException — email_verified만으로는 Google이 소유권을 보증하지 않으므로 기존 계정 자동 연결 금지. 기존 계정이 없으면 신규 가입은 허용  ← 리뷰 반영 (2026-09-06)
       - 없음: usersService.createUserWithGoogle({ provider, sub, email, nickname }) 후 로그인
         (nickname = Google 프로필 name, 없으면 email의 @ 앞부분)
 4. loginUser(email, id)로 accessToken/refreshToken 쌍 반환 — 이메일 로그인과 동일 응답 형태

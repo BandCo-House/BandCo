@@ -127,7 +127,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 ```json
 {
-  "success": true,
+  "status": "success",
+  "error": null,
   "message": "로그인 성공",
   "data": {
     "accessToken": "eyJhbGciOi...",
@@ -141,7 +142,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | 코드 | 사유 |
 |------|------|
 | 400 | `idToken` 누락 또는 문자열이 아님 |
-| 401 | 유효하지 않은 Google 토큰, 이메일 미인증 Google 계정, 탈퇴한 계정 |
+| 401 | 유효하지 않은 Google 토큰, 이메일 미인증 Google 계정, 탈퇴한 계정, 비활성화된 계정, Gmail·Workspace(hd)가 아닌 이메일로 기존 계정 자동 연결 시도 |
 
 ---
 

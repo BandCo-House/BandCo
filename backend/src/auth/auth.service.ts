@@ -6,8 +6,20 @@ import { PrismaService } from 'src/database/prisma/prisma.service';
 import type { Prisma } from 'src/generated/prisma';
 import { UsersService } from 'src/modules/users/users.service';
 
-import { JwtPayload } from './types/auth.types';
+import { GoogleUserPayload, JwtPayload } from './types/auth.types';
 import { GoogleAuthClient } from './google-auth.client';
+
+const GMAIL_DOMAIN = '@gmail.com';
+
+/**
+ * Google이 이메일 소유권을 보증하는 계정인지 판단한다.
+ *
+ * Gmail 주소이거나 hd(hosted domain) 클레임이 있는 Workspace 계정만 해당한다. 그 외 도메인은
+ * email_verified가 true여도 가입 시점의 검증일 뿐이라 기존 계정 자동 연결 근거로 쓰지 않는다.
+ * @see https://developers.google.com/identity/sign-in/web/backend-auth
+ */
+const isGoogleAuthoritativeEmail = ({ email, hostedDomain }: GoogleUserPayload): boolean =>
+  email.toLowerCase().endsWith(GMAIL_DOMAIN) || hostedDomain !== null;
 
 @Injectable()
 export class AuthService {
@@ -39,7 +51,8 @@ export class AuthService {
    * Google ID 토큰으로 로그인한다.
    *
    * 이미 연결된 유저면 그대로 로그인하고, 연결이 없으면 동일 이메일 유저에
-   * 자동 연결하며, 그것도 없으면 신규 유저를 생성한다. 조회→연결/생성이
+   * 자동 연결하며(Google이 소유권을 보증하는 Gmail·Workspace 이메일에 한함),
+   * 그것도 없으면 신규 유저를 생성한다. 조회→연결/생성이
    * 동시 요청과 겹치지 않도록 하나의 트랜잭션 안에서 처리한다.
    *
    * @param {string} idToken - Google Identity Services에서 받은 ID 토큰
@@ -59,11 +72,17 @@ export class AuthService {
       const linkedUser = await this.usersService.getUserByOAuth('GOOGLE', googleUser.sub, client);
       if (linkedUser) return linkedUser;
 
-      // 2) 동일 이메일 유저가 있으면 자동 연결한다 (탈퇴 계정은 차단)
+      // 2) 동일 이메일 유저가 있으면 자동 연결한다 (탈퇴·비활성 계정, 소유권 미보증 이메일은 차단)
       const emailUser = await this.usersService.getUserForOAuthLink(googleUser.email, client);
       if (emailUser) {
         if (emailUser.deletedAt !== null) {
           throw new UnauthorizedException('탈퇴한 계정입니다.');
+        }
+        if (emailUser.status !== 'ACTIVE') {
+          throw new UnauthorizedException('비활성화된 계정입니다.');
+        }
+        if (!isGoogleAuthoritativeEmail(googleUser)) {
+          throw new UnauthorizedException('이 Google 계정의 이메일은 기존 계정에 자동 연결할 수 없습니다. 이메일 로그인을 이용해 주세요.');
         }
         await this.usersService.linkOAuthAccount(emailUser.id, 'GOOGLE', googleUser.sub, googleUser.email, client);
         return { id: emailUser.id, email: emailUser.email };

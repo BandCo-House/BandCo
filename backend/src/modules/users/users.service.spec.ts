@@ -84,7 +84,7 @@ const repositoryStub: UsersRepository = {
     return providerUserId === 'google-sub-001' ? mockUser : null;
   },
   async findUserForOAuthLink(email) {
-    return email === 'test@example.com' ? { id: 'user-001', email: 'test@example.com', deletedAt: null } : null;
+    return email === 'test@example.com' ? { id: 'user-001', email: 'test@example.com', deletedAt: null, status: 'ACTIVE' } : null;
   },
   async createOAuthAccount() {},
   async createUserWithOAuth(input) {
@@ -197,6 +197,51 @@ describe('UsersService', () => {
 
       expect(createSpy).toHaveBeenCalledWith('new@example.com', 'hashed', '홍길동', tx);
       createSpy.mockRestore();
+    });
+  });
+
+  describe('getUserByOAuth', () => {
+    it('연결된 유저를 반환한다', async () => {
+      await expect(service.getUserByOAuth('GOOGLE', 'google-sub-001')).resolves.toEqual(mockUser);
+    });
+
+    it('연결이 없으면 null을 반환한다', async () => {
+      await expect(service.getUserByOAuth('GOOGLE', 'unknown-sub')).resolves.toBeNull();
+    });
+
+    it('provider·providerUserId·tx를 repository에 그대로 전달한다', async () => {
+      const findSpy = jest.spyOn(repositoryStub, 'findUserByOAuth');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.getUserByOAuth('GOOGLE', 'google-sub-001', tx);
+
+      expect(findSpy).toHaveBeenCalledWith('GOOGLE', 'google-sub-001', tx);
+      findSpy.mockRestore();
+    });
+  });
+
+  describe('getUserForOAuthLink', () => {
+    it('탈퇴 여부와 상태를 포함한 이메일 유저를 반환한다', async () => {
+      await expect(service.getUserForOAuthLink('test@example.com')).resolves.toEqual({
+        id: 'user-001',
+        email: 'test@example.com',
+        deletedAt: null,
+        status: 'ACTIVE',
+      });
+    });
+
+    it('이메일 유저가 없으면 null을 반환한다', async () => {
+      await expect(service.getUserForOAuthLink('none@example.com')).resolves.toBeNull();
+    });
+
+    it('email과 tx를 repository에 그대로 전달한다', async () => {
+      const findSpy = jest.spyOn(repositoryStub, 'findUserForOAuthLink');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.getUserForOAuthLink('test@example.com', tx);
+
+      expect(findSpy).toHaveBeenCalledWith('test@example.com', tx);
+      findSpy.mockRestore();
     });
   });
 

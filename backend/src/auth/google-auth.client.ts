@@ -43,6 +43,7 @@ export class GoogleAuthClient {
       email: payload.email,
       emailVerified: payload.email_verified === true,
       name: payload.name ?? null,
+      hostedDomain: payload.hd ?? null,
     };
   }
 }

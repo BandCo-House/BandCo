@@ -1,4 +1,4 @@
-import type { OAuthProvider } from 'src/generated/prisma';
+import type { OAuthProvider, UserStatus } from 'src/generated/prisma';
 
 /** OAuth 신규 유저 생성 입력값 */
 export type CreateOAuthUserInput = {
@@ -8,9 +8,10 @@ export type CreateOAuthUserInput = {
   nickname: string;
 };
 
-/** 동일 이메일 자동 연결 판단용 유저. 탈퇴 계정을 구분해야 하므로 deletedAt을 포함한다. */
+/** 동일 이메일 자동 연결 판단용 유저. 탈퇴·비활성 계정을 구분해야 하므로 deletedAt과 status를 포함한다. */
 export type OAuthLinkUser = {
   id: string;
   email: string;
   deletedAt: Date | null;
+  status: UserStatus;
 };

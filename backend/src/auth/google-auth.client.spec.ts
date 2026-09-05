@@ -28,18 +28,21 @@ describe('GoogleAuthClient', () => {
 
   describe('verifyIdToken', () => {
     it('검증 성공 시 payload를 GoogleUserPayload로 매핑한다', async () => {
-      const verify = jest.fn().mockResolvedValue(createTicket({ sub: 'sub-001', email: 'g@u.com', email_verified: true, name: '구글유저' }));
+      const verify = jest
+        .fn()
+        .mockResolvedValue(createTicket({ sub: 'sub-001', email: 'g@u.com', email_verified: true, name: '구글유저', hd: 'u.com' }));
 
       await expect(createClient(verify).verifyIdToken('id-token')).resolves.toEqual({
         sub: 'sub-001',
         email: 'g@u.com',
         emailVerified: true,
         name: '구글유저',
+        hostedDomain: 'u.com',
       });
       expect(verify).toHaveBeenCalledWith({ idToken: 'id-token', audience: TEST_CLIENT_ID });
     });
 
-    it('email_verified와 name이 없으면 각각 false와 null로 매핑한다', async () => {
+    it('email_verified·name·hd가 없으면 각각 false·null·null로 매핑한다', async () => {
       const verify = jest.fn().mockResolvedValue(createTicket({ sub: 'sub-001', email: 'g@u.com' }));
 
       await expect(createClient(verify).verifyIdToken('id-token')).resolves.toEqual({
@@ -47,6 +50,7 @@ describe('GoogleAuthClient', () => {
         email: 'g@u.com',
         emailVerified: false,
         name: null,
+        hostedDomain: null,
       });
     });
 

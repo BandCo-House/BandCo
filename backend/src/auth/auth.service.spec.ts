@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -210,11 +210,13 @@ describe('AuthService', () => {
   });
 
   describe('loginWithGoogle', () => {
+    // hd가 있는 Workspace 계정 — Google이 이메일 소유권을 보증하므로 기존 계정 자동 연결 대상
     const googlePayload = {
       sub: 'google-sub-001',
       email: 'g@u.com',
       emailVerified: true,
       name: '구글유저',
+      hostedDomain: 'u.com',
     };
 
     beforeEach(() => {
@@ -232,7 +234,7 @@ describe('AuthService', () => {
 
     it('동일 이메일의 활성 유저가 있으면 자동 연결 후 로그인한다', async () => {
       mockUsersService.getUserByOAuth.mockResolvedValue(null);
-      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: null });
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: null, status: 'ACTIVE' });
 
       await expect(service.loginWithGoogle('id-token')).resolves.toEqual({ accessToken: 'access', refreshToken: 'refresh' });
       expect(mockUsersService.linkOAuthAccount).toHaveBeenCalledWith('uid', 'GOOGLE', 'google-sub-001', 'g@u.com', mockTransactionClient);
@@ -278,15 +280,67 @@ describe('AuthService', () => {
 
     it('탈퇴한 유저의 이메일이면 UnauthorizedException을 던진다', async () => {
       mockUsersService.getUserByOAuth.mockResolvedValue(null);
-      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: new Date() });
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: new Date(), status: 'INACTIVE' });
 
       await expect(service.loginWithGoogle('id-token')).rejects.toThrow('탈퇴한 계정입니다.');
       expect(mockUsersService.linkOAuthAccount).not.toHaveBeenCalled();
     });
 
+    it('비활성화된 유저의 이메일이면 UnauthorizedException을 던진다', async () => {
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: null, status: 'INACTIVE' });
+
+      await expect(service.loginWithGoogle('id-token')).rejects.toThrow('비활성화된 계정입니다.');
+      expect(mockUsersService.linkOAuthAccount).not.toHaveBeenCalled();
+    });
+
+    it('Gmail 계정이면 hd 없이도 기존 계정에 자동 연결한다', async () => {
+      mockGoogleAuthClient.verifyIdToken.mockResolvedValue({ ...googlePayload, email: 'g@gmail.com', hostedDomain: null });
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@gmail.com', deletedAt: null, status: 'ACTIVE' });
+
+      await expect(service.loginWithGoogle('id-token')).resolves.toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+      expect(mockUsersService.linkOAuthAccount).toHaveBeenCalledWith('uid', 'GOOGLE', 'google-sub-001', 'g@gmail.com', mockTransactionClient);
+    });
+
+    it('Gmail도 Workspace(hd)도 아닌 이메일이면 기존 계정에 자동 연결하지 않고 UnauthorizedException을 던진다', async () => {
+      mockGoogleAuthClient.verifyIdToken.mockResolvedValue({ ...googlePayload, email: 'g@naver.com', hostedDomain: null });
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@naver.com', deletedAt: null, status: 'ACTIVE' });
+
+      await expect(service.loginWithGoogle('id-token')).rejects.toThrow(UnauthorizedException);
+      expect(mockUsersService.linkOAuthAccount).not.toHaveBeenCalled();
+    });
+
+    it('Gmail도 Workspace도 아닌 이메일이라도 기존 계정이 없으면 신규 유저를 생성한다', async () => {
+      mockGoogleAuthClient.verifyIdToken.mockResolvedValue({ ...googlePayload, email: 'g@naver.com', hostedDomain: null });
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue(null);
+      mockUsersService.createUserWithGoogle.mockResolvedValue({ id: 'new-uid', email: 'g@naver.com' });
+
+      await expect(service.loginWithGoogle('id-token')).resolves.toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+      expect(mockUsersService.createUserWithGoogle).toHaveBeenCalledWith(expect.objectContaining({ email: 'g@naver.com' }), mockTransactionClient);
+    });
+
+    it('연결 중 UsersService가 BadRequestException을 던지면 그대로 전파한다', async () => {
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: null, status: 'ACTIVE' });
+      mockUsersService.linkOAuthAccount.mockRejectedValueOnce(new BadRequestException('이미 연결된 OAuth 계정입니다.'));
+
+      await expect(service.loginWithGoogle('id-token')).rejects.toThrow(BadRequestException);
+    });
+
+    it('신규 생성 중 UsersService가 BadRequestException을 던지면 그대로 전파한다', async () => {
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue(null);
+      mockUsersService.createUserWithGoogle.mockRejectedValueOnce(new BadRequestException('이미 존재하는 이메일입니다.'));
+
+      await expect(service.loginWithGoogle('id-token')).rejects.toThrow(BadRequestException);
+    });
+
     it('조회와 연결을 같은 transaction client로 실행한다', async () => {
       mockUsersService.getUserByOAuth.mockResolvedValue(null);
-      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: null });
+      mockUsersService.getUserForOAuthLink.mockResolvedValue({ id: 'uid', email: 'g@u.com', deletedAt: null, status: 'ACTIVE' });
 
       await service.loginWithGoogle('id-token');
 

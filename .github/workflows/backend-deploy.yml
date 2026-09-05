@@ -90,7 +90,7 @@ jobs:
             has("BCRYPT_SALT_ROUNDS") and
             has("AWS_REGION") and
             has("AWS_STORAGE_BUCKET") and
-            has("GOOGLE_CLIENT_ID")
+            ((.GOOGLE_CLIENT_ID | type) == "string" and (.GOOGLE_CLIENT_ID | length) > 0)
           ' <<< "$secret_json" > /dev/null
 
           backend_env="$(jq -r 'to_entries[] | "\(.key)=\(.value | tostring)"' <<< "$secret_json")"

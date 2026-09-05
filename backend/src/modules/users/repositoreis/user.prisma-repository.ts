@@ -120,12 +120,12 @@ export class UsersPrismaRepository implements UsersRepository {
     // 탈퇴 계정과 신규 가입을 구분해야 하므로 deletedAt 조건 없이 조회한다
     const user = await client.user.findUnique({
       where: { email },
-      select: { id: true, email: true, deletedAt: true },
+      select: { id: true, email: true, deletedAt: true, status: true },
     });
 
     if (!user?.email) return null;
 
-    return { id: user.id, email: user.email, deletedAt: user.deletedAt };
+    return { id: user.id, email: user.email, deletedAt: user.deletedAt, status: user.status };
   }
 
   async createOAuthAccount(

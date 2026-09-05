@@ -96,17 +96,17 @@ describe('UsersPrismaRepository', () => {
   });
 
   describe('findUserForOAuthLink', () => {
-    it('탈퇴 여부와 무관하게 이메일 유저를 deletedAt과 함께 반환한다', async () => {
+    it('탈퇴 여부와 무관하게 이메일 유저를 deletedAt·status와 함께 반환한다', async () => {
       const deletedAt = new Date('2026-08-01T00:00:00.000Z');
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-001', email: 'test@example.com', deletedAt });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-001', email: 'test@example.com', deletedAt, status: 'INACTIVE' });
 
       const result = await repository.findUserForOAuthLink('test@example.com');
 
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
-        select: { id: true, email: true, deletedAt: true },
+        select: { id: true, email: true, deletedAt: true, status: true },
       });
-      expect(result).toEqual({ id: 'user-001', email: 'test@example.com', deletedAt });
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com', deletedAt, status: 'INACTIVE' });
     });
 
     it('존재하지 않으면 null을 반환한다', async () => {
