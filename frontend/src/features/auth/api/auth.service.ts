@@ -23,12 +23,7 @@ export type EmailDuplicateCheckResponse = {
 export const registerEmail = async (
   data: SignupReq,
 ): Promise<TokenResponse> => {
-  const response = await apiClient.post<TokenResponse>(
-    '/auth/register/email',
-    data,
-  );
-
-  return response.data;
+  return apiPost<TokenResponse>('/auth/register/email', data);
 };
 
 /**
@@ -60,7 +55,7 @@ export const loginEmail = async (
   // email:password 형태를 base64로 인코딩
   const credentials = btoa(`${email}:${password}`);
 
-  const response = await apiClient.post<TokenResponse>(
+  return apiPost<TokenResponse>(
     '/auth/login/email',
     {},
     {
@@ -69,8 +64,6 @@ export const loginEmail = async (
       },
     },
   );
-
-  return response.data;
 };
 
 /**

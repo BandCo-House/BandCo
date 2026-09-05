@@ -11,3 +11,6 @@ export const REFRESH_TOKEN_REFRESH_ENDPOINT = '/auth/token/refresh';
 export const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   '249941930834-a9800i1uti9nhgqfeivs8b9lv0mqboip.apps.googleusercontent.com';
+
+// 로그인 요청의 401은 자격 증명 오류라 토큰 갱신 대상이 아니다. 응답 인터셉터가 이 prefix로 구분한다.
+export const LOGIN_ENDPOINT_PREFIX = '/auth/login/';
