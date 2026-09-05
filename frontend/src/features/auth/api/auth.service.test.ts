@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { checkEmailDuplicate, loginEmail, registerEmail } from './auth.service';
+import {
+  checkEmailDuplicate,
+  loginEmail,
+  loginGoogle,
+  registerEmail,
+} from './auth.service';
 
 describe('authService', () => {
   describe('registerEmail', () => {
@@ -30,6 +35,19 @@ describe('authService', () => {
       const response = await loginEmail(loginData.email, loginData.password);
 
       expect(response.accessToken).toContain('eyJhbGciOiJIUzI1NiJ9');
+    });
+  });
+
+  describe('loginGoogle', () => {
+    it('ID 토큰으로 로그인하면 응답 envelope의 data에서 토큰 쌍을 반환해야 한다', async () => {
+      const response = await loginGoogle('google-id-token');
+
+      expect(response.accessToken).toContain('eyJhbGciOiJIUzI1NiJ9');
+      expect(response.refreshToken).toContain('eyJhbGciOiJIUzI1NiJ9');
+    });
+
+    it('ID 토큰이 비어 있으면 에러를 던져야 한다', async () => {
+      await expect(loginGoogle('')).rejects.toThrow();
     });
   });
 

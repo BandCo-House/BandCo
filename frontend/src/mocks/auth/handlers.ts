@@ -132,4 +132,27 @@ export const authHandlers = [
       '길이 또는 prefix가 잘못된 토큰 형식입니다.',
     );
   }),
+
+  // Google 로그인 (ID 토큰) — 백엔드 ApiSuccessResponse envelope 형태로 응답한다.
+  http.post('*/auth/login/google', async ({ request }) => {
+    const body = (await request.json()) as { idToken?: string };
+
+    if (!body.idToken) {
+      return HttpResponse.json(
+        {
+          message: 'idToken must be a string',
+          error: 'Bad Request',
+          statusCode: 400,
+        },
+        { status: 400 },
+      );
+    }
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '로그인 성공',
+      data: mockTokenResponse,
+    });
+  }),
 ];
