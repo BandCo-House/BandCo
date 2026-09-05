@@ -57,14 +57,17 @@ export function TagSelectBottomSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="inset-x-0 bottom-0 mx-auto flex h-[60vh] max-h-[60vh] w-full max-w-[648px] flex-col gap-0 rounded-t-3xl border-t border-grey-50/15 bg-[#12131E] p-6 text-grey-50 shadow-2xl backdrop-blur-2xl"
+        className="fixed bottom-0 left-0 right-[var(--removed-body-scroll-bar-size,0px)] mx-auto flex h-[60vh] max-h-[60vh] w-full max-w-[648px] flex-col gap-0 rounded-t-3xl border-t border-grey-50/15 bg-[#12131E] p-6 text-grey-50 shadow-2xl backdrop-blur-2xl"
       >
         <SheetHeader className="flex flex-row items-center justify-between p-0">
           <SheetTitle className="typo-lg-b text-grey-50">{title}</SheetTitle>
           <SheetDescription className="sr-only">
             {title} 선택 바텀시트
           </SheetDescription>
-          <AppSheetClose aria-label="닫기" />
+          <AppSheetClose
+            aria-label="닫기"
+            className="static size-9 text-grey-200 hover:text-white"
+          />
         </SheetHeader>
 
         {open && (
