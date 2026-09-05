@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
-import { Plus, X, Loader2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useSkillTypes } from '@/entities/skill';
-import { updateUserProfile, type SkillLevel } from '../api/profile-api';
+import { updateUserProfile } from '../api/profile-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select';
+import { TagSelectBottomSheet } from './TagSelectBottomSheet';
 
 export interface SkillEditSectionProps {
   isMe: boolean;
@@ -26,65 +20,88 @@ export function SkillEditSection({
   skills,
 }: SkillEditSectionProps) {
   const queryClient = useQueryClient();
-  const [isAdding, setIsAdding] = useState(false);
-  const [newSkillId, setNewSkillId] = useState<string | null>(null);
-  const [newSkillLevel, setNewSkillLevel] = useState<SkillLevel>('BEGINNER');
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // isAdding이 true가 될 때만 Lazy Loading API 트리거
-  const skillsQuery = useSkillTypes(isAdding);
+  // 시트가 열릴 때만 Lazy Loading으로 전체 악기 파트 목록 로드
+  const skillsQuery = useSkillTypes(isSheetOpen);
   const availableSkills = skillsQuery.data || [];
 
-  // 데이터 로딩 완료 시 첫 번째 항목의 id를 자연스럽게 기본 파생 상태(Derived State 🌟)로 제공
-  const selectedSkillId = newSkillId || availableSkills[0]?.id || '';
+  const handleSaveSkills = async (newSkillIds: string[]) => {
+    const queryKey = ['user-profiles', 'detail', userId];
+    await queryClient.cancelQueries({ queryKey });
+    const previousProfile = queryClient.getQueryData<Profile>(queryKey);
 
-  const addSkill = async () => {
-    const exists = skills.some((s) => s.skillTypeId === selectedSkillId);
-    if (exists) {
-      toast.warning('이미 등록된 플레이 파트입니다.');
-      return;
+    const updatedSkills = newSkillIds.map((id, index) => {
+      const existing = skills.find((s) => s.skillTypeId === id);
+      return {
+        skillTypeId: id,
+        level: existing?.level ?? 'BEGINNER',
+        isPrimary: index === 0,
+      };
+    });
+
+    // 낙관적 업데이트: 화면에 즉시 반영
+    if (previousProfile) {
+      const optimisticSkills = newSkillIds.map((id, index) => {
+        const existing = skills.find((s) => s.skillTypeId === id);
+        const meta = availableSkills.find((item) => item.id === id);
+        return {
+          skillTypeId: id,
+          skillName: meta?.name ?? existing?.skillName ?? '',
+          level: existing?.level ?? 'BEGINNER',
+          isPrimary: index === 0,
+        };
+      });
+
+      queryClient.setQueryData<Profile>(queryKey, {
+        ...previousProfile,
+        skills: optimisticSkills,
+      });
     }
-    const skillObj = availableSkills.find((s) => s.id === selectedSkillId);
-    if (!skillObj) return;
-
-    const updatedSkills = [
-      ...skills.map((s) => ({
-        skillTypeId: s.skillTypeId,
-        level: s.level,
-        isPrimary: s.isPrimary,
-      })),
-      { skillTypeId: selectedSkillId, level: newSkillLevel, isPrimary: false },
-    ];
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      queryClient.invalidateQueries({
-        queryKey: ['user-profiles', 'detail', userId],
-      });
-      toast.success('플레이 파트가 추가되었습니다.');
-      setNewSkillId(null);
-      setIsAdding(false);
+      toast.success('플레이 파트가 저장되었습니다.');
     } catch {
-      toast.error('파트 추가 도중 에러가 발생했습니다.');
+      if (previousProfile) {
+        queryClient.setQueryData(queryKey, previousProfile);
+      }
+      toast.error('파트 저장 도중 에러가 발생했습니다.');
+    } finally {
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 
   const removeSkill = async (skillTypeId: string) => {
+    const queryKey = ['user-profiles', 'detail', userId];
+    await queryClient.cancelQueries({ queryKey });
+    const previousProfile = queryClient.getQueryData<Profile>(queryKey);
+
     const updatedSkills = skills
       .filter((s) => s.skillTypeId !== skillTypeId)
-      .map((s) => ({
+      .map((s, index) => ({
         skillTypeId: s.skillTypeId,
         level: s.level,
-        isPrimary: s.isPrimary,
+        isPrimary: index === 0,
       }));
+
+    if (previousProfile) {
+      queryClient.setQueryData<Profile>(queryKey, {
+        ...previousProfile,
+        skills: skills.filter((s) => s.skillTypeId !== skillTypeId),
+      });
+    }
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      queryClient.invalidateQueries({
-        queryKey: ['user-profiles', 'detail', userId],
-      });
       toast.success('플레이 파트가 삭제되었습니다.');
     } catch {
+      if (previousProfile) {
+        queryClient.setQueryData(queryKey, previousProfile);
+      }
       toast.error('파트 삭제 도중 에러가 발생했습니다.');
+    } finally {
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 
@@ -116,12 +133,12 @@ export function SkillEditSection({
             )}
           </span>
         ))}
-        {isMe && !isAdding && (
+        {isMe && (
           <Button
-            onClick={() => setIsAdding(true)}
+            onClick={() => setIsSheetOpen(true)}
             size="icon"
             className="size-9 cursor-pointer bg-surface-1/40"
-            aria-label="플레이 파트 추가"
+            aria-label="플레이 파트 수정"
           >
             <Plus className="size-4 text-primary" />
           </Button>
@@ -133,70 +150,15 @@ export function SkillEditSection({
         )}
       </div>
 
-      {isAdding && isMe && (
-        <div className="absolute top-full right-4 left-4 z-40 -mt-2 flex flex-col gap-2 rounded-md border border-grey-50/20 bg-surface-3 p-3 shadow-2xl backdrop-blur-xl">
-          {skillsQuery.isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-4 typo-xs-m text-grey-200">
-              <Loader2 className="size-4 animate-spin text-primary" />
-              <span>악기 파트 목록을 불러오는 중...</span>
-            </div>
-          ) : (
-            <>
-              <div className="flex gap-2">
-                <Select value={selectedSkillId} onValueChange={setNewSkillId}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="파트 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSkills.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={newSkillLevel}
-                  onValueChange={(value) =>
-                    setNewSkillLevel(value as SkillLevel)
-                  }
-                >
-                  <SelectTrigger className="w-28">
-                    <SelectValue placeholder="레벨" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BEGINNER">초보자</SelectItem>
-                    <SelectItem value="INTERMEDIATE">중급자</SelectItem>
-                    <SelectItem value="ADVANCED">전문가</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="mt-1 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={addSkill}
-                  variant="neutral"
-                  className="flex-1 py-2 typo-sm-sb"
-                >
-                  추가
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setNewSkillId(null);
-                    setIsAdding(false);
-                  }}
-                  className="rounded-full border-grey-50/40 text-grey-100 hover:bg-white/12"
-                >
-                  취소
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      <TagSelectBottomSheet
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        title="플레이 파트"
+        items={availableSkills}
+        selectedIds={skills.map((s) => s.skillTypeId)}
+        isLoading={skillsQuery.isLoading}
+        onSave={handleSaveSkills}
+      />
     </section>
   );
 }

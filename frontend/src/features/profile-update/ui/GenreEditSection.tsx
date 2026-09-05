@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import type { Profile } from '@/entities/profile/model/types';
 import { Button } from '@/shared/ui/button';
-import { Plus, X, Loader2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useGenres } from '@/entities/genre';
 import { updateUserProfile } from '../api/profile-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select';
+import { TagSelectBottomSheet } from './TagSelectBottomSheet';
 
 export interface GenreEditSectionProps {
   isMe: boolean;
@@ -26,56 +20,73 @@ export function GenreEditSection({
   favoriteGenres,
 }: GenreEditSectionProps) {
   const queryClient = useQueryClient();
-  const [isAdding, setIsAdding] = useState(false);
-  const [newGenreId, setNewGenreId] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // isAdding이 true일 때만 지연 쿼리 패칭 발동
-  const genresQuery = useGenres(isAdding);
+  // 시트가 열릴 때만 Lazy Loading으로 전체 장르 목록 로드
+  const genresQuery = useGenres(isSheetOpen);
   const availableGenres = genresQuery.data || [];
 
-  // 데이터 로딩 완료 시 첫 번째 항목의 id를 자연스럽게 기본 파생 상태(Derived State 🌟)로 제공
-  const selectedGenreId = newGenreId || availableGenres[0]?.id || '';
+  const handleSaveGenres = async (newGenreIds: string[]) => {
+    const queryKey = ['user-profiles', 'detail', userId];
+    await queryClient.cancelQueries({ queryKey });
+    const previousProfile = queryClient.getQueryData<Profile>(queryKey);
 
-  const addGenre = async () => {
-    const exists = favoriteGenres.some((g) => g.genreId === selectedGenreId);
-    if (exists) {
-      toast.warning('이미 등록된 선호 장르입니다.');
-      return;
+    // 낙관적 업데이트
+    if (previousProfile) {
+      const optimisticGenres = newGenreIds.map((id) => {
+        const existing = favoriteGenres.find((g) => g.genreId === id);
+        const meta = availableGenres.find((item) => item.id === id);
+        return {
+          genreId: id,
+          name: meta?.name ?? existing?.name ?? '',
+        };
+      });
+
+      queryClient.setQueryData<Profile>(queryKey, {
+        ...previousProfile,
+        favoriteGenres: optimisticGenres,
+      });
     }
-    const genreObj = availableGenres.find((g) => g.id === selectedGenreId);
-    if (!genreObj) return;
-
-    const updatedGenres = [
-      ...favoriteGenres.map((g) => g.genreId),
-      selectedGenreId,
-    ];
 
     try {
-      await updateUserProfile(userId, { favoriteGenres: updatedGenres });
-      queryClient.invalidateQueries({
-        queryKey: ['user-profiles', 'detail', userId],
-      });
-      toast.success('선호 장르가 추가되었습니다.');
-      setNewGenreId(null);
-      setIsAdding(false);
+      await updateUserProfile(userId, { favoriteGenres: newGenreIds });
+      toast.success('선호 장르가 저장되었습니다.');
     } catch {
-      toast.error('장르 추가 도중 에러가 발생했습니다.');
+      if (previousProfile) {
+        queryClient.setQueryData(queryKey, previousProfile);
+      }
+      toast.error('장르 저장 도중 에러가 발생했습니다.');
+    } finally {
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 
   const removeGenre = async (genreId: string) => {
+    const queryKey = ['user-profiles', 'detail', userId];
+    await queryClient.cancelQueries({ queryKey });
+    const previousProfile = queryClient.getQueryData<Profile>(queryKey);
+
     const updatedGenres = favoriteGenres
       .filter((g) => g.genreId !== genreId)
       .map((g) => g.genreId);
 
+    if (previousProfile) {
+      queryClient.setQueryData<Profile>(queryKey, {
+        ...previousProfile,
+        favoriteGenres: favoriteGenres.filter((g) => g.genreId !== genreId),
+      });
+    }
+
     try {
       await updateUserProfile(userId, { favoriteGenres: updatedGenres });
-      queryClient.invalidateQueries({
-        queryKey: ['user-profiles', 'detail', userId],
-      });
       toast.success('선호 장르가 삭제되었습니다.');
     } catch {
+      if (previousProfile) {
+        queryClient.setQueryData(queryKey, previousProfile);
+      }
       toast.error('장르 삭제 도중 에러가 발생했습니다.');
+    } finally {
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 
@@ -107,10 +118,10 @@ export function GenreEditSection({
             )}
           </span>
         ))}
-        {isMe && !isAdding && (
+        {isMe && (
           <Button
-            aria-label="선호 장르 추가"
-            onClick={() => setIsAdding(true)}
+            aria-label="선호 장르 수정"
+            onClick={() => setIsSheetOpen(true)}
             size="icon"
             className="size-9 cursor-pointer bg-surface-1/40"
           >
@@ -124,52 +135,15 @@ export function GenreEditSection({
         )}
       </div>
 
-      {isAdding && isMe && (
-        <div className="absolute top-full right-4 left-4 z-40 -mt-2 flex flex-col gap-2 rounded-md border border-grey-50/20 bg-surface-3 p-3 shadow-2xl backdrop-blur-xl">
-          {genresQuery.isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-4 typo-xs-m text-grey-200">
-              <Loader2 className="size-4 animate-spin text-primary" />
-              <span>장르 목록을 불러오는 중...</span>
-            </div>
-          ) : (
-            <>
-              <Select value={selectedGenreId} onValueChange={setNewGenreId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="장르 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableGenres.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="mt-1 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={addGenre}
-                  variant="neutral"
-                  className="flex-1 py-2 typo-sm-sb"
-                >
-                  추가
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setNewGenreId(null);
-                    setIsAdding(false);
-                  }}
-                  className="rounded-full border-grey-50/40 text-grey-100 hover:bg-white/12"
-                >
-                  취소
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      <TagSelectBottomSheet
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        title="선호 장르"
+        items={availableGenres}
+        selectedIds={favoriteGenres.map((g) => g.genreId)}
+        isLoading={genresQuery.isLoading}
+        onSave={handleSaveGenres}
+      />
     </section>
   );
 }
