@@ -145,7 +145,7 @@ describe('BandMemberSettings', () => {
   });
 
   it('헤더 저장 버튼과 연동되어 변경사항 저장 시 updateBandMemberRole이 호출된다', async () => {
-    const updateSpy = vi.spyOn(memberApi, 'updateBandMemberRole');
+    vi.spyOn(memberApi, 'updateBandMemberRole');
     const queryClient = createQueryClient();
 
     render(

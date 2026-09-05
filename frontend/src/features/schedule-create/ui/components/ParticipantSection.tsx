@@ -96,7 +96,7 @@ export const ParticipantSection = ({
           <Checkbox
             className="size-5"
             checked={selected.has(member.bandMemberId)}
-            onCheckedChange={() => toggle(member.bandMemberId)}
+            onCheckedChange={() => toggle(member)}
           />
           <span className="typo-sm-b text-grey-50">{member.nickname}</span>
           {badgeFor(member.role) && (

@@ -44,7 +44,6 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
       {/* 2. 팀원 목록 카드 (피그마 100% 매칭) */}
       <TeamMemberListSection
         members={members}
-        bandId={bandId}
         isEditing={isEditing}
         onToggleEdit={onToggleEdit}
         onOpenSearchForSession={onOpenSearchForSession}
