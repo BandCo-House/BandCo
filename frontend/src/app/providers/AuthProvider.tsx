@@ -16,20 +16,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserAccess>(() => {
     const accessToken = getAccessToken();
     const refreshToken = getRefreshToken();
-    
+
     const userId = getUserIdFromToken(accessToken);
     const isAccessExpired = isTokenExpired(accessToken);
     const isRefreshExpired = isTokenExpired(refreshToken);
-    
+
     const isAccessInvalid = !accessToken || isAccessExpired;
     const isRefreshInvalid = !refreshToken || isRefreshExpired;
 
-    if (isAccessInvalid && isRefreshInvalid && (Boolean(accessToken) || Boolean(refreshToken))) {
+    if (
+      isAccessInvalid &&
+      isRefreshInvalid &&
+      (Boolean(accessToken) || Boolean(refreshToken))
+    ) {
       clearTokens();
     }
 
-    const isLoggedIn = !!userId && (!isAccessExpired || (!!refreshToken && !isRefreshExpired));
-    
+    const isLoggedIn =
+      !!userId && (!isAccessExpired || (!!refreshToken && !isRefreshExpired));
+
     return {
       isLoggedIn,
       isAdmin: false,

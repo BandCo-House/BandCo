@@ -22,6 +22,18 @@ const mockTokenResponse: TokenResponse = {
 };
 
 /**
+ * 백엔드 ApiSuccessResponse envelope 형태의 토큰 발급 응답을 생성한다.
+ */
+const createTokenResponse = (message: string) => {
+  return HttpResponse.json({
+    status: 'success',
+    error: null,
+    message,
+    data: mockTokenResponse,
+  });
+};
+
+/**
  * 백엔드 auth 컨트롤러의 이메일 확인 성공 응답을 생성한다.
  */
 const createEmailCheckResponse = (email: string, duplicated: boolean) => {
@@ -78,7 +90,7 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json<TokenResponse>(mockTokenResponse);
+    return createTokenResponse('회원가입 성공');
   }),
 
   http.post('*/auth/email', async ({ request }) => {
@@ -125,11 +137,29 @@ export const authHandlers = [
     const authHeader = request.headers.get('Authorization');
 
     if (authHeader?.startsWith('Basic ')) {
-      return HttpResponse.json<TokenResponse>(mockTokenResponse);
+      return createTokenResponse('로그인 성공');
     }
 
     return createUnauthorizedResponse(
       '길이 또는 prefix가 잘못된 토큰 형식입니다.',
     );
+  }),
+
+  // Google 로그인 (ID 토큰) — 백엔드 ApiSuccessResponse envelope 형태로 응답한다.
+  http.post('*/auth/login/google', async ({ request }) => {
+    const body = (await request.json()) as { idToken?: string };
+
+    if (!body.idToken) {
+      return HttpResponse.json(
+        {
+          message: 'idToken must be a string',
+          error: 'Bad Request',
+          statusCode: 400,
+        },
+        { status: 400 },
+      );
+    }
+
+    return createTokenResponse('로그인 성공');
   }),
 ];

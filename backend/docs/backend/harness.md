@@ -110,7 +110,7 @@ QA 리포트
 | Claude 하네스 | Codex 적용 |
 |--------------|------------|
 | `CLAUDE.md` 규칙 | `AGENTS.md`에 반영 |
-| Stop 훅 `sh ./scripts/verify.sh` | `codex-stop-verify.js`에서 백엔드 변경 시 실행 |
+| Stop 훅 `sh ./scripts/verify.sh` (Claude 측은 2026-09-06 제거, `verify.sh` 수동 실행으로 전환) | `codex-stop-verify.js`에서 백엔드 변경 시 실행 |
 | 위험 명령 차단 | `rules/default.rules` + `codex-pre-tool-use.js` |
 | 구현 후 테스트/API 문서 알림 | `codex-post-tool-use.js`의 `additionalContext` |
 

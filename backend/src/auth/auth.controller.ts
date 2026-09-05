@@ -4,6 +4,7 @@ import { ApiBasicAuth, ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from 
 import { type ApiSuccessResponse, createSuccessResponse } from '../common/api-response';
 
 import { CheckEmailDto } from './dto/check-email.dto';
+import { LoginGoogleDto } from './dto/login-google.dto';
 import { RegisterEmailDto } from './dto/register-email.dto';
 import { BasicTokenGuard } from './guard/basic-token.guard';
 import { RefreshTokenGuard } from './guard/bearer-token.guard';
@@ -48,6 +49,16 @@ export class AuthController {
     // BasicTokenGuard가 인증을 마치고 req.user에 담은 유저로 토큰을 발급한다.
     const { email, id } = req.user;
     const tokens = this.authService.loginUser(email, id);
+    return createSuccessResponse('로그인 성공', tokens);
+  }
+
+  @Post('login/google')
+  @ApiOperation({ summary: 'Google 로그인' })
+  @ApiResponse({ status: 201, description: '로그인 성공 (신규 가입·기존 연결 모두 동일 응답)' })
+  @ApiResponse({ status: 400, description: '유효성 검사 실패 (idToken 누락)' })
+  @ApiResponse({ status: 401, description: '유효하지 않은 Google 토큰 | 이메일 미인증 Google 계정 | 탈퇴한 계정' })
+  async loginGoogle(@Body() { idToken }: LoginGoogleDto): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
+    const tokens = await this.authService.loginWithGoogle(idToken);
     return createSuccessResponse('로그인 성공', tokens);
   }
 

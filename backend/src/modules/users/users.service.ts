@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from 'src/generated/prisma';
+import { type OAuthProvider, Prisma } from 'src/generated/prisma';
 import { DeezerTrackClient } from 'src/modules/songs/deezer-track.client';
 import type { DeezerTrackApiResponse } from 'src/modules/songs/types/deezer-track-api-response.type';
 
@@ -7,6 +7,7 @@ import type { GetUsersQuery } from './dto/get-users-query.dto';
 import type { UpdateUserProfileData } from './dto/update-user-profile.dto';
 import { PROFILE_MUSIC_REPOSITORY, ProfileMusicRepository } from './repositoreis/profile-music.repository';
 import { USERS_REPOSITORY, UsersRepository } from './repositoreis/user.repository';
+import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 
 function toDeezerProfileMusicTrack(track: DeezerTrackApiResponse): ProfileMusicTrack {
@@ -60,6 +61,48 @@ export class UsersService {
     }
     try {
       return await this.usersRepository.createUserWithEmail(email, passwordHash, nickname, tx);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('이미 존재하는 이메일입니다.');
+      }
+      throw error;
+    }
+  }
+
+  async getUserByOAuth(provider: OAuthProvider, providerUserId: string, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.findUserByOAuth(provider, providerUserId, tx);
+  }
+
+  async getUserForOAuthLink(email: string, tx?: Prisma.TransactionClient) {
+    return this.usersRepository.findUserForOAuthLink(email, tx);
+  }
+
+  /**
+   * 기존 유저에 OAuth 계정을 연결한다.
+   *
+   * 동시 로그인 요청으로 같은 OAuth 계정이 중복 연결될 수 있어,
+   * 유니크 제약 위반(P2002)을 BadRequestException으로 변환한다.
+   */
+  async linkOAuthAccount(userId: string, provider: OAuthProvider, providerUserId: string, email: string, tx?: Prisma.TransactionClient) {
+    try {
+      await this.usersRepository.createOAuthAccount(userId, provider, providerUserId, email, tx);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('이미 연결된 OAuth 계정입니다.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * OAuth 유저와 프로필, OAuth 계정 연결을 함께 생성한다.
+   *
+   * 사전 조회와 생성 사이에 동시 요청이 끼어들 수 있어,
+   * User.email 유니크 제약 위반(P2002)을 BadRequestException으로 변환한다.
+   */
+  async createUserWithGoogle(input: CreateOAuthUserInput, tx?: Prisma.TransactionClient) {
+    try {
+      return await this.usersRepository.createUserWithOAuth(input, tx);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new BadRequestException('이미 존재하는 이메일입니다.');

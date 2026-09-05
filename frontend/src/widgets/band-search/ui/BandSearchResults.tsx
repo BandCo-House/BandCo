@@ -91,7 +91,7 @@ export const BandSearchResults = ({
           >
             {/* Left: Poster Card (Figma Node 1604:15779) */}
             <div className="flex w-[120.9px] shrink-0 flex-col items-center gap-2 rounded-[10.6px] border border-[rgba(220,226,249,0.4)] bg-white p-[4px] pb-3 shadow-sm">
-              <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[10.6px] bg-[#c6c6c8] font-['SUIT'] font-bold text-base text-[#1b1b32]">
+              <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[10.6px] bg-[#c6c6c8] font-['SUIT'] text-base font-bold text-[#1b1b32]">
                 {hasValidImage ? (
                   <img
                     src={band.coverImgUrl!}
@@ -104,7 +104,7 @@ export const BandSearchResults = ({
                 )}
               </div>
 
-              <p className="w-full truncate px-1 text-center font-['SUIT'] text-[12px] font-semibold leading-[1.4] text-black">
+              <p className="w-full truncate px-1 text-center font-['SUIT'] text-[12px] leading-[1.4] font-semibold text-black">
                 {band.name}
               </p>
             </div>
