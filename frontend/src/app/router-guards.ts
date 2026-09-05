@@ -8,11 +8,7 @@ export type RouterContext = {
 
 type UserGuardPredicate = (user: UserAccess) => boolean;
 
-const PUBLIC_ONLY_PATHS = new Set([
-  '/login',
-  '/signup',
-  '/forgot-password',
-]);
+const PUBLIC_ONLY_PATHS = new Set(['/login', '/signup', '/forgot-password']);
 
 /**
  * 라우터 진입 전 사용자 상태 동기화 지점
@@ -29,7 +25,7 @@ export const syncAuthenticatedUser = async (
  */
 export const isPublicGuestPath = (location: ParsedLocation): boolean => {
   const { pathname, search } = location;
-  
+
   // 프로필 페이지이면서 검색 파라미터에 userId가 존재하는 경우 (방문자 모드) 예외 허용
   const searchObj = (search ?? {}) as Record<string, unknown>;
   if (
@@ -38,7 +34,7 @@ export const isPublicGuestPath = (location: ParsedLocation): boolean => {
   ) {
     return true;
   }
-  
+
   return PUBLIC_ONLY_PATHS.has(pathname);
 };
 
