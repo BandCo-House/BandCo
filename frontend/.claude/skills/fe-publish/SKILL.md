@@ -24,12 +24,12 @@ figma.com/design/{fileKey}/{name}?node-id=1-2  →  fileKey={fileKey}, nodeId=1:
 
 읽기 전용 도구만 사용한다. 디자인을 Figma에 쓰는 `use_figma`는 사용하지 않는다.
 
-| 목적            | 도구                                           |
-| --------------- | ---------------------------------------------- |
-| 코드·구조·스크린샷 | `mcp__claude_ai_Figma__get_design_context`     |
-| 시각 확인       | `mcp__claude_ai_Figma__get_screenshot`         |
-| 변수(색/spacing) | `mcp__claude_ai_Figma__get_variable_defs`      |
-| 레이어 개요     | `mcp__claude_ai_Figma__get_metadata`           |
+| 목적               | 도구                                       |
+| ------------------ | ------------------------------------------ |
+| 코드·구조·스크린샷 | `mcp__claude_ai_Figma__get_design_context` |
+| 시각 확인          | `mcp__claude_ai_Figma__get_screenshot`     |
+| 변수(색/spacing)   | `mcp__claude_ai_Figma__get_variable_defs`  |
+| 레이어 개요        | `mcp__claude_ai_Figma__get_metadata`       |
 
 `get_design_context`가 돌려주는 코드는 **참고용**이다. 그대로 붙이지 말고 아래 단계로 우리 코드에 맞게 옮긴다.
 
@@ -54,11 +54,11 @@ figma.com/design/{fileKey}/{name}?node-id=1-2  →  fileKey={fileKey}, nodeId=1:
 
 트리의 각 노드를 기존 자산과 매칭하고, 매칭되지 않는 것만 새로 만든다. **우선순위 순으로 적용한다.**
 
-| 우선순위 | 처리                                                                                  |
-| :------: | ------------------------------------------------------------------------------------- |
-|    1     | `src/shared/ui` 기존 primitive 재사용 (button/input/dialog/sheet/select/avatar 등)    |
-|    2     | 기존 `widgets`·`entities` 컴포넌트 재사용 또는 조합 (`page-header`, `BandCard` 등)     |
-|    3     | 없는 primitive는 shadcn에서 받아와 스타일 최소화 + 토큰 변수 활용                       |
+| 우선순위 | 처리                                                                                       |
+| :------: | ------------------------------------------------------------------------------------------ |
+|    1     | `src/shared/ui` 기존 primitive 재사용 (button/input/dialog/sheet/select/avatar 등)         |
+|    2     | 기존 `widgets`·`entities` 컴포넌트 재사용 또는 조합 (`page-header`, `BandCard` 등)         |
+|    3     | 없는 primitive는 shadcn에서 받아와 스타일 최소화 + 토큰 변수 활용                          |
 |    4     | 그래도 없으면 신규 컴포넌트 작성 — 스타일은 최소, 색·spacing은 토큰, 반복은 props로 일반화 |
 
 아이콘은 `src/assets/icons/*.svg?react`를 우선 쓰고 없으면 lucide-react를 쓴다. 없는 아이콘은 사용자에게 요청한다.
@@ -73,15 +73,15 @@ Figma의 raw hex/px를 직접 쓰지 않는다. 토큰 체계로 매핑한다.
 - `src/index.css`의 `@theme inline`이 변수를 Tailwind 클래스로 노출한다.
 - 따라서 Tailwind 유틸 클래스로 적용한다.
 
-| Figma 값                    | 매핑 결과 (Tailwind 클래스)            |
-| --------------------------- | -------------------------------------- |
-| 배경 `#020119` (primary)    | `bg-primary`                           |
-| 본문 텍스트                 | `text-foreground`                      |
-| 카드/surface                | `bg-card`, `bg-primary-surface`        |
-| 강조색 `#e1fc73`            | `bg-secondary` / `text-secondary`      |
-| 위험 액션                   | `text-destructive`, `bg-destructive`   |
-| 라운드 999px                | `rounded-full`                         |
-| 라운드 16px                 | `rounded-2xl`                          |
+| Figma 값                 | 매핑 결과 (Tailwind 클래스)          |
+| ------------------------ | ------------------------------------ |
+| 배경 `#020119` (primary) | `bg-primary`                         |
+| 본문 텍스트              | `text-foreground`                    |
+| 카드/surface             | `bg-card`, `bg-primary-surface`      |
+| 강조색 `#e1fc73`         | `bg-secondary` / `text-secondary`    |
+| 위험 액션                | `text-destructive`, `bg-destructive` |
+| 라운드 999px             | `rounded-full`                       |
+| 라운드 16px              | `rounded-2xl`                        |
 
 매칭되는 토큰이 없으면 임의 hex를 박지 말고 사용자에게 토큰 추가가 필요한지 확인한다. 토큰 추가가 필요하면 `tokens/tokens.json`을 출처로 다루고 `pnpm --dir frontend run tokens:build`로 재생성한다.
 
