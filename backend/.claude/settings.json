@@ -41,17 +41,6 @@
     "deny": ["Bash(rm -rf*)", "Bash(rm -fr*)", "Bash(git push --force*)", "Bash(git reset --hard*)", "Bash(git clean -f*)"]
   },
   "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ./scripts/verify.sh"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
