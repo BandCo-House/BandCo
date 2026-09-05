@@ -89,7 +89,8 @@ jobs:
             has("JWT_SECRET") and
             has("BCRYPT_SALT_ROUNDS") and
             has("AWS_REGION") and
-            has("AWS_STORAGE_BUCKET")
+            has("AWS_STORAGE_BUCKET") and
+            has("GOOGLE_CLIENT_ID")
           ' <<< "$secret_json" > /dev/null
 
           backend_env="$(jq -r 'to_entries[] | "\(.key)=\(.value | tostring)"' <<< "$secret_json")"
