@@ -68,7 +68,7 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 
 - 작업은 항상 현재 하네스 규칙을 기준으로 수행한다.
 - 변경 후 검증은 반드시 통과해야 하며, 통과하지 못하면 결과를 확정하지 않고 수정 또는 중단한다.
-- Stop 훅과 최종 검증은 `sh ./scripts/verify.sh`를 실행한다.
+- 최종 검증은 작업 완료를 보고하기 전에 `sh ./scripts/verify.sh`를 수동으로 실행한다. Stop 훅으로 자동 실행하지 않는다.
 - 검증에 실패하면 작업을 완료 상태로 만들지 않는다.
 - 하네스 규칙과 기존 코드가 충돌하면, **하네스를 우선 적용**하고 충돌 지점을 현재 작업 범위에서 최소 변경으로 정리한다.
 
@@ -166,3 +166,4 @@ pnpm run commit                  # Commitizen 인터랙티브 커밋
 | 2026-06-01 | v2.0 be-qa agent 체크리스트 확장 (DTO/타입·Soft Delete·Prisma·네이밍·Swagger) | be-qa agent | skill 대비 누락된 검증 항목 동기화 |
 | 2026-06-01 | v2.0 Swagger 데코레이터 의무화 (@ApiTags·@ApiOperation·@ApiResponse·@ApiProperty) | conventions.md, be-designer, be-design, be-qa | Swagger 도입으로 명세 명확화 |
 | 2026-06-01 | v2.0 API 넘버링 보존·참조 규칙 추가, Notion 출처 URL 제거 | be-api-sync, be-design, pr.md | Notion #N 번호를 PR·설계에서 참조 가능하도록 |
+| 2026-09-06 | Stop 훅 제거, 최종 검증을 `verify.sh` 수동 실행으로 전환 | .claude/settings.json, CLAUDE.md, docs/backend/harness.md | 응답 종료마다 전체 검증이 자동 실행되던 부담 제거 |
