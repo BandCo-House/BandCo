@@ -90,6 +90,7 @@ P1·P2·P3는 서로 독립이라 바로 시작할 수 있다. P4는 FE 팀원�
 
 | ID | 내용 | 조치 |
 |----|------|------|
-| B4 | **토큰 재발급 응답 언랩 누락**: BE `POST /auth/token/access`·`/auth/token/refresh`는 `createSuccessResponse`로 감싸 `{ data: { accessToken } }`를 주는데, FE `refreshAccessToken`/`refreshRefreshToken`은 본문에서 `accessToken`을 바로 읽어 `undefined`를 저장했다. 액세스 토큰 만료 후 첫 401에서 `Bearer undefined`로 재시도해 다시 401 → 재발급 → 실패가 반복된다. MSW 목이 원시 `{ accessToken }`을 돌려줘 dev에서는 드러나지 않았다 | FE `client.ts`에서 `data.data.accessToken` 읽도록 수정, 목·테스트를 envelope로 교체 |
+| B5 | **토큰 재발급 응답 언랩 누락**: BE `POST /auth/token/access`·`/auth/token/refresh`는 `createSuccessResponse`로 감싸 `{ data: { accessToken } }`를 주는데, FE `refreshAccessToken`/`refreshRefreshToken`은 본문에서 `accessToken`을 바로 읽어 `undefined`를 저장했다. 액세스 토큰 만료 후 첫 401에서 `Bearer undefined`로 재시도해 다시 401 → 재발급 → 실패가 반복된다. MSW 목이 원시 `{ accessToken }`을 돌려줘 dev에서는 드러나지 않았다 | FE `client.ts`에서 `data.data.accessToken` 읽도록 수정, 목·테스트를 envelope로 교체 |
+| B6 | **만료·변조 토큰에 500 응답**: `AuthService.verifyToken`이 `jwtService.verify`의 `TokenExpiredError`·`JsonWebTokenError`를 감싸지 않아 가드에서 500으로 떨어졌다. 프론트 인터셉터는 401에서만 재발급하므로 액세스 토큰(5분) 만료 뒤 모든 요청이 "서버 오류"가 됐다(B5와 겹쳐 재발급 자체가 시작되지 못했다). 운영 브라우저 스모크 테스트(밴드 생성)에서 발견 | BE `verifyToken`에서 401 `만료된 토큰입니다.`/`유효하지 않은 토큰입니다.`로 변환, spec 2건 추가 |
 
 MSW 헬퍼(`ok()`/`fail()`)는 만들지 않았다. 핸들러마다 봉투 리터럴을 그대로 쓰는 편이 grep이 쉽고 백엔드 형태와 1:1로 대응돼 규칙(`frontend/AGENTS.md` MSW 표)으로만 고정했다.
