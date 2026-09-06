@@ -1,5 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
+import { PrismaService } from '../../database/prisma';
+import type { Prisma } from '../../generated/prisma';
 import { NotificationType } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -18,36 +20,34 @@ import type { RemoveBandSpaceMemberResult } from './types/remove-bandspace-membe
 import type { UpdateBandSpaceResult } from './types/update-band-space-result.type';
 import type { UpdateBandSpaceMemberRoleResult } from './types/update-bandspace-member-role-result.type';
 
+const BAND_NOT_FOUND_MESSAGE = '요청한 밴드를 찾을 수 없습니다.';
+const SPACE_NOT_FOUND_MESSAGE = '요청한 합주 공간을 찾을 수 없습니다.';
+const NOT_BAND_MEMBER_MESSAGE = '해당 밴드의 멤버가 아닙니다.';
+
 @Injectable()
 export class BandSpacesService {
   constructor(
     @Inject(BAND_SPACES_REPOSITORY) private readonly bandSpacesRepository: BandSpacesRepository,
+    private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async addBandSpaceMember(spaceId: string, input: AddBandSpaceMemberInput): Promise<AddBandSpaceMemberResult> {
-    const { spaceName, userId, ...result } = await this.bandSpacesRepository.addBandSpaceMember(spaceId, input);
-
-    await this.notificationsService.createNotification({
-      userId,
-      type: NotificationType.NOTICE,
-      title: '합주 공간에 추가되었습니다',
-      description: spaceName,
-      targetPath: `/bandspaces/${spaceId}`,
+  /**
+   * 밴드 멤버가 요청한 합주 공간을 생성한다. 요청자가 생성자이자 LEADER 멤버가 된다.
+   * 밴드가 없으면 404, 요청자가 밴드 멤버가 아니면 403.
+   */
+  async createBandSpace(bandId: string, userId: string, input: CreateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<CreateBandSpaceResult> {
+    const result = await this.runInTransaction(tx, async client => {
+      const requesterBandMemberId = await this.resolveBandMemberId(bandId, userId, client);
+      return this.bandSpacesRepository.createBandSpace(bandId, requesterBandMemberId, input, client);
     });
 
-    return result;
-  }
-
-  async createBandSpace(bandId: string, input: CreateBandSpaceInput): Promise<CreateBandSpaceResult> {
-    const result = await this.bandSpacesRepository.createBandSpace(bandId, input);
-
-    const memberUserIds = await this.bandSpacesRepository.findBandMemberUserIds(bandId);
+    const memberUserIds = await this.bandSpacesRepository.findBandMemberUserIds(bandId, tx);
 
     if (memberUserIds.length > 0) {
       await this.notificationsService.createManyNotifications(
-        memberUserIds.map(userId => ({
-          userId,
+        memberUserIds.map(memberUserId => ({
+          userId: memberUserId,
           type: NotificationType.NOTICE,
           title: '새 합주 공간이 생성되었습니다',
           description: result.name,
@@ -59,34 +59,76 @@ export class BandSpacesService {
     return result;
   }
 
-  async getBandSpaces(bandId: string, query: GetBandSpacesQuery): Promise<GetBandSpacesResult> {
-    return this.bandSpacesRepository.findBandSpaces(bandId, query);
+  /** 밴드 멤버에게 합주 공간 목록을 돌려준다. isMine·onlyMine·myMembership은 요청자 기준이다. */
+  async getBandSpaces(bandId: string, userId: string, query: GetBandSpacesQuery, tx?: Prisma.TransactionClient): Promise<GetBandSpacesResult> {
+    const requesterBandMemberId = await this.resolveBandMemberId(bandId, userId, tx);
+
+    return this.bandSpacesRepository.findBandSpaces(bandId, requesterBandMemberId, query, tx);
   }
 
-  async getBandSpaceDetail(spaceId: string): Promise<GetBandSpaceDetailResult> {
-    const spaceDetail = await this.bandSpacesRepository.findDetailByBandSpaceId(spaceId);
+  async getBandSpaceDetail(spaceId: string, userId: string, tx?: Prisma.TransactionClient): Promise<GetBandSpaceDetailResult> {
+    await this.assertSpaceBandMember(spaceId, userId, tx);
+
+    const spaceDetail = await this.bandSpacesRepository.findDetailByBandSpaceId(spaceId, tx);
 
     if (spaceDetail === undefined) {
-      throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+      throw new NotFoundException(SPACE_NOT_FOUND_MESSAGE);
     }
 
     return spaceDetail;
   }
 
-  async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput): Promise<UpdateBandSpaceResult> {
-    return this.bandSpacesRepository.updateBandSpace(spaceId, input);
+  async updateBandSpace(spaceId: string, userId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult> {
+    return this.runInTransaction(tx, async client => {
+      await this.assertSpaceBandMember(spaceId, userId, client);
+      return this.bandSpacesRepository.updateBandSpace(spaceId, input, client);
+    });
   }
 
-  async deleteBandSpace(spaceId: string): Promise<DeleteBandSpaceResult> {
-    return this.bandSpacesRepository.deleteBandSpace(spaceId);
+  async deleteBandSpace(spaceId: string, userId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandSpaceResult> {
+    return this.runInTransaction(tx, async client => {
+      await this.assertSpaceBandMember(spaceId, userId, client);
+      return this.bandSpacesRepository.deleteBandSpace(spaceId, client);
+    });
+  }
+
+  async addBandSpaceMember(
+    spaceId: string,
+    userId: string,
+    input: AddBandSpaceMemberInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AddBandSpaceMemberResult> {
+    const {
+      spaceName,
+      userId: addedUserId,
+      ...result
+    } = await this.runInTransaction(tx, async client => {
+      await this.assertSpaceBandMember(spaceId, userId, client);
+      return this.bandSpacesRepository.addBandSpaceMember(spaceId, input, client);
+    });
+
+    await this.notificationsService.createNotification({
+      userId: addedUserId,
+      type: NotificationType.NOTICE,
+      title: '합주 공간에 추가되었습니다',
+      description: spaceName,
+      targetPath: `/bandspaces/${spaceId}`,
+    });
+
+    return result;
   }
 
   async updateBandSpaceMemberRole(
     spaceId: string,
+    userId: string,
     memberId: string,
     input: UpdateBandSpaceMemberRoleInput,
+    tx?: Prisma.TransactionClient,
   ): Promise<UpdateBandSpaceMemberRoleResult> {
-    const { spaceName, ...result } = await this.bandSpacesRepository.updateBandSpaceMemberRole(spaceId, memberId, input);
+    const { spaceName, ...result } = await this.runInTransaction(tx, async client => {
+      await this.assertSpaceBandMember(spaceId, userId, client);
+      return this.bandSpacesRepository.updateBandSpaceMemberRole(spaceId, memberId, input, client);
+    });
 
     await this.notificationsService.createNotification({
       userId: result.userId,
@@ -99,8 +141,16 @@ export class BandSpacesService {
     return result;
   }
 
-  async removeBandSpaceMember(spaceId: string, memberId: string): Promise<RemoveBandSpaceMemberResult> {
-    const { recipientUserId, spaceName, ...result } = await this.bandSpacesRepository.removeBandSpaceMember(spaceId, memberId);
+  async removeBandSpaceMember(
+    spaceId: string,
+    userId: string,
+    memberId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<RemoveBandSpaceMemberResult> {
+    const { recipientUserId, spaceName, ...result } = await this.runInTransaction(tx, async client => {
+      await this.assertSpaceBandMember(spaceId, userId, client);
+      return this.bandSpacesRepository.removeBandSpaceMember(spaceId, memberId, client);
+    });
 
     await this.notificationsService.createNotification({
       userId: recipientUserId,
@@ -110,5 +160,42 @@ export class BandSpacesService {
     });
 
     return result;
+  }
+
+  /** 외부 tx가 있으면 그대로 쓰고, 없으면 새 트랜잭션을 연다. */
+  private runInTransaction<T>(tx: Prisma.TransactionClient | undefined, run: (client: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  /** 밴드가 있는지(404) 확인한 뒤 요청자의 밴드 멤버 id를 돌려준다(멤버가 아니면 403). */
+  private async resolveBandMemberId(bandId: string, userId: string, client?: Prisma.TransactionClient): Promise<string> {
+    const band = await this.bandSpacesRepository.findBandById(bandId, client);
+
+    if (band === null) {
+      throw new NotFoundException(BAND_NOT_FOUND_MESSAGE);
+    }
+
+    return this.resolveMembership(bandId, userId, client);
+  }
+
+  /** 공간이 있는지(404) 확인한 뒤 요청자가 그 공간이 속한 밴드의 멤버인지(403) 확인한다. */
+  private async assertSpaceBandMember(spaceId: string, userId: string, client?: Prisma.TransactionClient): Promise<void> {
+    const bandId = await this.bandSpacesRepository.findBandIdBySpaceId(spaceId, client);
+
+    if (bandId === null) {
+      throw new NotFoundException(SPACE_NOT_FOUND_MESSAGE);
+    }
+
+    await this.resolveMembership(bandId, userId, client);
+  }
+
+  private async resolveMembership(bandId: string, userId: string, client?: Prisma.TransactionClient): Promise<string> {
+    const bandMember = await this.bandSpacesRepository.findBandMemberByBandIdAndUserId(bandId, userId, client);
+
+    if (bandMember === null) {
+      throw new ForbiddenException(NOT_BAND_MEMBER_MESSAGE);
+    }
+
+    return bandMember.id;
   }
 }
