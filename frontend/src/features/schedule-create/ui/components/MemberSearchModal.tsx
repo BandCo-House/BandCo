@@ -13,6 +13,7 @@ import {
 import { Input } from '@/shared/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { cn } from '@/shared/lib/utils';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface MemberSearchModalProps {
   open: boolean;
@@ -24,6 +25,8 @@ interface MemberSearchModalProps {
   onToggleMember: (member: BandMemberListItem) => void;
   /** 팀 행 탭 시 그 팀 전체를 참여자로 넣는다. */
   onSelectTeam?: (teamId: string) => void;
+  /** 팀 조회가 도는 중. 응답을 기다리는 동안 팀 행을 잠근다. */
+  isSelectingTeam?: boolean;
 }
 
 type Tab = 'member' | 'team';
@@ -55,11 +58,14 @@ export const MemberSearchModal = ({
   selectedIds,
   onToggleMember,
   onSelectTeam,
+  isSelectingTeam = false,
 }: MemberSearchModalProps) => {
   const [tab, setTab] = useState<Tab>('member');
   const [query, setQuery] = useState('');
 
-  const { data: members = [] } = useBandMembers(bandId);
+  const { data: members = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
   const { data: teams = [] } = useBandTeams(bandId, {}, { enabled: open });
 
   const keyword = query.trim();
@@ -149,7 +155,7 @@ export const MemberSearchModal = ({
                       </span>
                     </span>
                     {primarySession(member) && (
-                      <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
+                      <span className="px-1.5 typo-xs-r text-grey-200">
                         {primarySession(member)}
                       </span>
                     )}
@@ -174,17 +180,18 @@ export const MemberSearchModal = ({
                   <button
                     type="button"
                     onClick={() => onSelectTeam(team.teamId)}
-                    className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors"
+                    disabled={isSelectingTeam}
+                    className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="typo-sm-sb text-grey-50">{team.name}</span>
-                    <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
+                    <span className="px-1.5 typo-xs-r text-grey-200">
                       {team.memberCount}명
                     </span>
                   </button>
                 ) : (
                   <div className="flex flex-1 items-center gap-2.5 px-3 py-2">
                     <span className="typo-sm-sb text-grey-50">{team.name}</span>
-                    <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
+                    <span className="px-1.5 typo-xs-r text-grey-200">
                       {team.memberCount}명
                     </span>
                   </div>

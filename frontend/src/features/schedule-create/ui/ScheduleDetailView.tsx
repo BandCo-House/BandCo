@@ -5,6 +5,7 @@ import type { ScheduleDetail } from '@/entities/schedule/model/types';
 import { AttachmentItem } from '@/shared/ui/attachment-item';
 import { formatClockTime, formatDotDate } from '@/shared/lib/date';
 import { MemberCard } from './components/MemberCard';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface ScheduleDetailViewProps {
   detail: ScheduleDetail;
@@ -29,7 +30,9 @@ export const ScheduleDetailView = ({
   detail,
   bandId,
 }: ScheduleDetailViewProps) => {
-  const { data: members = [] } = useBandMembers(bandId);
+  const { data: members = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
   const skillsByMemberId = new Map(
     members.map((m) => [m.bandMemberId, m.skills.map((s) => s.skillName)]),
   );

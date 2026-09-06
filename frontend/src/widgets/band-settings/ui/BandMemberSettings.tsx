@@ -18,6 +18,7 @@ import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { setBandSettingsSaveAction } from '../model/save-action-store';
 import { BandGeneralMemberSection } from './BandGeneralMemberSection';
 import { BandLeaderSection } from './BandLeaderSection';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface BandMemberSettingsProps {
   bandId: string;
@@ -27,7 +28,9 @@ export const BandMemberSettings: React.FC<BandMemberSettingsProps> = ({
   bandId,
 }) => {
   const queryClient = useQueryClient();
-  const { data: rawMembers = [], isLoading } = useBandMembers(bandId);
+  const { data: rawMembers = [], isLoading } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
   const { data: teams = [] } = useBandTeams(bandId);
 
   const [roleDrafts, setRoleDrafts] = useState<Map<string, BandMemberRole>>(

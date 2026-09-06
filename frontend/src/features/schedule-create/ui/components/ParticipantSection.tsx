@@ -186,6 +186,7 @@ export const ParticipantSection = ({
         selectedIds={value}
         onToggleMember={toggle}
         onSelectTeam={(teamId) => void selectTeam(teamId)}
+        isSelectingTeam={isAddingTeam}
       />
     </section>
   );
