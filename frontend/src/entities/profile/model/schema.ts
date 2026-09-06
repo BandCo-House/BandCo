@@ -30,6 +30,7 @@ export const profileUserDetailSchema = z.object({
 export const profileDetailSchema = z.object({
   nickname: z.string(),
   selfDescription: z.string().nullable(),
+  profileMusic: profileMusicSchema.nullable(),
   avatarUrl: z.string().nullable(),
 });
 
@@ -45,11 +46,9 @@ export const userFavoriteGenreDetailSchema = z.object({
   name: z.string(),
 });
 
-// 백엔드 GetUserProfileResult는 profileMusic을 profile 안이 아니라 최상위에 둔다.
 export const profileSchema = z.object({
   user: profileUserDetailSchema,
   profile: profileDetailSchema.nullable(),
-  profileMusic: profileMusicSchema.nullable(),
   skills: z.array(userSkillDetailSchema),
   favoriteGenres: z.array(userFavoriteGenreDetailSchema),
 });

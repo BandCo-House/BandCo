@@ -209,7 +209,7 @@ function ProfileRoutePage() {
     setEditForm({
       nickname: profile?.profile?.nickname || '',
       selfDescription: profile?.profile?.selfDescription || '',
-      profileMusic: profile?.profileMusic ?? null,
+      profileMusic: profile?.profile?.profileMusic ?? null,
       avatarUrl: profile?.profile?.avatarUrl || '',
     });
     setAvatarFile(null);

@@ -40,9 +40,9 @@ describe('profile update 어댑터', () => {
       profile: {
         nickname: 'devjun',
         selfDescription: '기타 좋아함',
+        profileMusic: null,
         avatarUrl: null,
       },
-      profileMusic: null,
       skills: [
         {
           skillTypeId: 'electric-guitar',
@@ -108,9 +108,9 @@ describe('profile update 어댑터', () => {
       profile: {
         nickname: 'devjun',
         selfDescription: '기타 좋아함',
+        profileMusic: null,
         avatarUrl: 'https://example.com/avatar.jpg',
       },
-      profileMusic: null,
       skills: [
         {
           skillTypeId: 'electric-guitar',
@@ -159,9 +159,9 @@ describe('profile update 어댑터', () => {
       profile: {
         nickname: '특수문자수정',
         selfDescription: null,
+        profileMusic: null,
         avatarUrl: null,
       },
-      profileMusic: null,
       skills: [],
       favoriteGenres: [],
     };
