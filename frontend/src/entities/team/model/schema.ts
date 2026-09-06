@@ -62,4 +62,3 @@ export const teamMemberSchema = z.object({
   skills: z.array(teamMemberSkillSchema).default([]),
   sessionName: z.string().optional(), // UI용 세션명 호환
 });
-

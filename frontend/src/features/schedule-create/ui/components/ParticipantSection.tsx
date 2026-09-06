@@ -126,9 +126,7 @@ export const ParticipantSection = ({
                 sessions={member.skills.map((s) => s.skillName)}
                 badge={badgeFor(member.role)}
                 className={cn(!special && 'min-h-[92px]')}
-                onRemove={
-                  special ? undefined : () => toggle(member)
-                }
+                onRemove={special ? undefined : () => toggle(member)}
               />
             );
           })}

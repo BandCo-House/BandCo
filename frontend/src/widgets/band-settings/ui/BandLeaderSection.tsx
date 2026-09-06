@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { BandMemberListItem, BandMemberRole } from '@/entities/member/model/types';
+import type {
+  BandMemberListItem,
+  BandMemberRole,
+} from '@/entities/member/model/types';
 import type { BandTeamListItem } from '@/entities/team/model/types';
 import { MemberSearchModal } from '@/features/schedule-create/ui/components/MemberSearchModal';
 import { Checkbox } from '@/shared/ui/checkbox';
@@ -36,8 +39,8 @@ export const BandLeaderSection: React.FC<BandLeaderSectionProps> = ({
       const matchedMember =
         leader?.userId === team.teamLeader?.userId
           ? leader
-          : subLeaders.find((s) => s.userId === team.teamLeader?.userId) ??
-            generalMembers.find((m) => m.userId === team.teamLeader?.userId);
+          : (subLeaders.find((s) => s.userId === team.teamLeader?.userId) ??
+            generalMembers.find((m) => m.userId === team.teamLeader?.userId));
 
       return {
         team,
@@ -60,13 +63,15 @@ export const BandLeaderSection: React.FC<BandLeaderSectionProps> = ({
     <div className="flex flex-col gap-2.5">
       {/* 헤더 행: "리더 멤버" + [ ] 팀 리더 멤버 보기 */}
       <div className="flex items-center justify-between">
-        <h3 className="typo-base-sb text-grey-100 font-semibold text-base">
+        <h3 className="typo-base-sb text-base font-semibold text-grey-100">
           리더 멤버
         </h3>
-        <label className="flex items-center gap-2 cursor-pointer typo-xs-m text-grey-200">
+        <label className="flex cursor-pointer items-center gap-2 typo-xs-m text-grey-200">
           <Checkbox
             checked={showTeamLeaders}
-            onCheckedChange={(checked) => onToggleShowTeamLeaders(Boolean(checked))}
+            onCheckedChange={(checked) =>
+              onToggleShowTeamLeaders(Boolean(checked))
+            }
             className="size-4"
           />
           <span>팀 리더 멤버 보기</span>

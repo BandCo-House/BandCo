@@ -147,7 +147,11 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
     // 렌더 간 훅 수가 달라지는 버그가 생기므로 <Title />로 렌더링한다.
     if (typeof title === 'function') {
       const Title = title;
-      return <div className="min-w-0 flex-1"><Title /></div>;
+      return (
+        <div className="min-w-0 flex-1">
+          <Title />
+        </div>
+      );
     }
 
     return (
@@ -197,15 +201,25 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
         {header.renderRight || rightContent ? (
           <div className="flex min-w-0 items-center justify-end gap-2">
             {header.renderRight
-              ? (() => { const Right = header.renderRight!; return <Right />; })()
+              ? (() => {
+                  const Right = header.renderRight!;
+                  return <Right />;
+                })()
               : rightContent}
           </div>
         ) : null}
       </div>
 
-      {header.renderBottom ? (
-        (() => { const Bottom = header.renderBottom!; return <div className="w-full"><Bottom /></div>; })()
-      ) : null}
+      {header.renderBottom
+        ? (() => {
+            const Bottom = header.renderBottom!;
+            return (
+              <div className="w-full">
+                <Bottom />
+              </div>
+            );
+          })()
+        : null}
     </header>
   );
 };
