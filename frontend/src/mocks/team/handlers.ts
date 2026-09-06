@@ -363,6 +363,53 @@ export const teamHandlers = [
   }),
 
   // POST /teams/:teamId/members
+  http.patch(
+    `${API_URL}/teams/:teamId/members/:teamMemberId`,
+    async ({ params, request }) => {
+      const { teamId, teamMemberId } = params as {
+        teamId: string;
+        teamMemberId: string;
+      };
+      const body = (await request.json()) as { skillTypeId?: string | null };
+      const store = getTeamMembers(teamId);
+      const member = store.find((m) => m.teamMemberId === teamMemberId);
+
+      if (!member) {
+        return HttpResponse.json(
+          {
+            status: 'fail',
+            error: { code: 'NOT_FOUND', details: { statusCode: 404 } },
+            message: '해당 팀에서 대상 멤버를 찾을 수 없습니다.',
+            data: {},
+          },
+          { status: 404 },
+        );
+      }
+
+      member.skillType = body.skillTypeId
+        ? {
+            skillTypeId: body.skillTypeId,
+            name: SESSION_SKILL_NAMES[body.skillTypeId] ?? '세션',
+          }
+        : null;
+
+      return HttpResponse.json({
+        status: 'success',
+        error: null,
+        message: '팀 멤버 세션 변경 성공',
+        data: {
+          teamMemberId: member.teamMemberId,
+          teamId,
+          bandMemberId: member.bandMemberId,
+          user: member.user,
+          teamRole: member.teamRole,
+          joinedAt: member.joinedAt,
+          skillType: member.skillType,
+        },
+      });
+    },
+  ),
+
   http.post(`${API_URL}/teams/:teamId/members`, async ({ params, request }) => {
     const { teamId } = params as { teamId: string };
     const body = (await request.json()) as {
