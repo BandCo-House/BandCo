@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 import { getTeamMembers } from '@/entities/team/api/team-api';
 import { teamKeys } from '@/entities/team/api/queries';
 import type { BandMemberListItem } from '@/entities/member/model/types';
@@ -38,7 +39,11 @@ export const ParticipantSection = ({
 }: ParticipantSectionProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { data: members = [] } = useBandMembers(bandId);
+  // take를 안 주면 백엔드 기본값이 20이라 21번째 멤버부터 조회에서 빠진다.
+  // 그러면 카드가 안 그려져 해제할 수도 없는 참여자가 생긴다.
+  const { data: members = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
 
   const memberById = new Map(members.map((m) => [m.bandMemberId, m]));
   const specialMembers = members.filter((m) => isSpecial(m.role));
@@ -77,6 +82,9 @@ export const ParticipantSection = ({
     ...picked.filter((m) => isSpecial(m.role)),
     ...picked.filter((m) => !isSpecial(m.role)),
   ];
+  // 멤버 목록에서 못 찾은 참여자(삭제된 멤버 등). 카드를 안 그리면 화면에는
+  // 없는데 저장 페이로드에는 실려 나가고, 해제할 방법도 없다.
+  const unresolvedIds = value.filter((id) => !memberById.has(id));
 
   return (
     // Field로 감싸지 않는 커스텀 레이아웃이라 그룹 자체에 필수 의미를 부여한다.
@@ -138,7 +146,7 @@ export const ParticipantSection = ({
       ))}
 
       {/* 선택된 참여자 카드 */}
-      {orderedCards.length > 0 && (
+      {(orderedCards.length > 0 || unresolvedIds.length > 0) && (
         <div className="grid grid-cols-2 gap-4">
           {orderedCards.map((member) => {
             const special = isSpecial(member.role);
@@ -153,6 +161,14 @@ export const ParticipantSection = ({
               />
             );
           })}
+          {unresolvedIds.map((id) => (
+            <MemberCard
+              key={id}
+              name="알 수 없는 멤버"
+              className="min-h-[92px]"
+              onRemove={() => onChange(value.filter((v) => v !== id))}
+            />
+          ))}
         </div>
       )}
 

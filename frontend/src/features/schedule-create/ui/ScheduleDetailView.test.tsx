@@ -53,10 +53,23 @@ describe('ScheduleDetailView', () => {
     renderDetail(createDetail({ scheduleType: 'MEETING', memo: '안건 정리' }));
 
     expect(screen.queryByText('밤편지')).not.toBeInTheDocument();
-    expect(screen.queryByText('안건 정리')).not.toBeInTheDocument();
   });
 
-  it('합주여도 곡·메모가 모두 없으면 빈 카드를 남기지 않는다', () => {
+  it('회의 메모(안건)도 상세에 보인다', () => {
+    // 메모를 곡 카드 안에 두면 회의에서 통째로 사라진다.
+    renderDetail(createDetail({ scheduleType: 'MEETING', memo: '안건 정리' }));
+
+    expect(screen.getByText('안건 정리')).toBeInTheDocument();
+  });
+
+  it('합주 메모도 곡과 함께 보인다', () => {
+    renderDetail(createDetail({ memo: '인트로 파트 집중' }));
+
+    expect(screen.getByText('밤편지')).toBeInTheDocument();
+    expect(screen.getByText('인트로 파트 집중')).toBeInTheDocument();
+  });
+
+  it('합주여도 실을 곡이 없으면 빈 카드를 남기지 않는다', () => {
     renderDetail(createDetail({ songs: [], memo: null }));
 
     expect(document.querySelector('.bg-primary')).toBeNull();

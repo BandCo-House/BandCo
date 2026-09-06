@@ -52,8 +52,24 @@ cors_json=$(jq -n --arg origins "$ALLOWED_ORIGINS" '{
 
 echo "대상 버킷: $BUCKET ($AWS_REGION)"
 echo
-echo "현재 설정 (없으면 NoSuchCORSConfiguration):"
-aws s3api get-bucket-cors --bucket "$BUCKET" --region "$AWS_REGION" || true
+echo "현재 설정:"
+# CORS가 아직 없는 버킷은 NoSuchCORSConfiguration으로 떨어진다 — 정상이므로 넘어간다.
+# 그 밖의 실패(권한 없음·세션 만료 등)까지 삼키면, 되돌릴 값을 못 본 채로 전체 교체를
+# 진행하게 된다. 그때는 멈춘다.
+if current_cors=$(aws s3api get-bucket-cors --bucket "$BUCKET" --region "$AWS_REGION" 2>&1); then
+  echo "$current_cors"
+else
+  case "$current_cors" in
+    *NoSuchCORSConfiguration*)
+      echo "(설정 없음)"
+      ;;
+    *)
+      echo "$current_cors" >&2
+      echo "현재 CORS 설정을 읽지 못했습니다. 되돌릴 값을 확인할 수 없어 중단합니다." >&2
+      exit 1
+      ;;
+  esac
+fi
 echo
 echo "적용할 설정:"
 echo "$cors_json"

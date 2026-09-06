@@ -41,11 +41,9 @@ export const ScheduleDetailView = ({
   const hasReferenceFiles = detail.referenceFiles.length > 0;
   const hasExternalLinks = detail.externalLinks.length > 0;
 
-  // 곡은 합주 전용이라 회의에는 이 카드를 띄우지 않는다. 합주여도 실을 내용이
-  // 없으면(곡·메모 모두 없음) 빈 카드만 남으므로 그때도 접는다.
+  // 곡은 합주 전용이라 회의에는 이 카드를 띄우지 않는다. 실을 곡이 없으면 접는다.
   const isPractice = detail.scheduleType === 'PRACTICE';
-  const showSongCard =
-    isPractice && (detail.songs.length > 0 || Boolean(detail.memo));
+  const showSongCard = isPractice && detail.songs.length > 0;
 
   return (
     <div className="flex flex-col">
@@ -58,11 +56,13 @@ export const ScheduleDetailView = ({
               <p className="typo-sm-sb text-grey-400">{song.artistName}</p>
             </div>
           ))}
-          {detail.memo ? (
-            <p className="typo-base-b text-grey-400">{detail.memo}</p>
-          ) : null}
         </div>
       )}
+
+      {/* 메모는 합주·회의 공통이다. 곡 카드 안에 두면 회의 안건이 어디에도 안 보인다. */}
+      {detail.memo ? (
+        <p className="pt-3 typo-base-r text-grey-100">{detail.memo}</p>
+      ) : null}
 
       {/* 날짜 / 시간 / 장소 */}
       <div className="flex items-center justify-center gap-3 py-8">

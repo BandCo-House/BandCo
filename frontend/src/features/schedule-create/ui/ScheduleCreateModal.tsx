@@ -74,7 +74,8 @@ export const ScheduleCreateModal = ({
     }
   }
 
-  const { data: detail } = useScheduleDetail(scheduleId);
+  const { data: detail, isError: isDetailError } =
+    useScheduleDetail(scheduleId);
   const { mutate: create, isPending: isCreating } = useCreateSchedule(spaceId);
   const { mutate: update, isPending: isUpdating } =
     useUpdateSchedule(scheduleId);
@@ -172,6 +173,12 @@ export const ScheduleCreateModal = ({
             />
           ) : detail ? (
             <ScheduleDetailView detail={detail} bandId={bandId} />
+          ) : isDetailError ? (
+            // 일정 카드를 눌러 바로 상세로 들어오는 경로가 생겨, 조회가 실패하면
+            // 로딩 문구가 영원히 남는다. 실패는 실패라고 말하고 닫을 수 있게 한다.
+            <p className="py-10 text-center typo-sm-r text-grey-300">
+              일정을 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+            </p>
           ) : (
             <p className="py-10 text-center typo-sm-r text-grey-300">
               일정을 불러오는 중이에요…
@@ -192,6 +199,8 @@ export const ScheduleCreateModal = ({
           <ScheduleActionBar
             secondaryLabel="수정"
             onSecondary={handleStartEdit}
+            // detail이 없으면 handleStartEdit이 조용히 아무 일도 안 한다.
+            secondaryDisabled={!detail}
             primaryLabel="확인"
             onPrimary={onClose}
           />
