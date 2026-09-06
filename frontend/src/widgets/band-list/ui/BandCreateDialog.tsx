@@ -103,7 +103,13 @@ export const BandCreateDialog = ({
                   alt="선택한 커버 미리보기"
                   className="size-full rounded-md border border-grey-50 object-cover opacity-80"
                 />
-                <ThumbnailRemoveButton label="커버 제거" onClick={clearCover} />
+                {/* 업로드 중에 지우면 이미 시작된 업로드 결과가 그대로 실려
+                    지운 커버가 저장된다. 끝날 때까지 잠근다. */}
+                <ThumbnailRemoveButton
+                  label="커버 제거"
+                  onClick={clearCover}
+                  disabled={isLoading}
+                />
               </div>
             ) : (
               <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
