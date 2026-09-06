@@ -14,7 +14,7 @@ import {
 } from '../model/schema';
 
 export const getBands = async (): Promise<Band[]> => {
-  const response = await apiClient.get('/bands');
+  const response = await apiClient.get('/bands/me');
   const parsed = bandListResponseSchema.parse(response.data);
   return parsed.data.items;
 };
