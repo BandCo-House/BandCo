@@ -255,9 +255,10 @@ export class UsersPrismaRepository implements UsersRepository {
             nickname: user.profile.nickname,
             selfDescription: user.profile.selfDescription,
             avatarUrl: user.profile.avatarUrl,
+            // 수정 요청(profile.profileMusic)과 같은 위치로 응답한다
+            profileMusic: user.profileMusic ? (user.profileMusic.trackData as unknown as ProfileMusicTrack) : null,
           }
         : null,
-      profileMusic: user.profileMusic ? (user.profileMusic.trackData as unknown as ProfileMusicTrack) : null,
       skills: user.userSkills.map(s => ({
         skillTypeId: s.skillTypeId,
         skillName: s.skillType.name,
