@@ -11,13 +11,12 @@ afterEach(() => {
 });
 
 describe('getBands 어댑터', () => {
-  it('GET /bands 응답을 schema로 검증한 뒤 bands를 반환한다', async () => {
-    mock.onGet('/bands').reply(200, {
+  it('GET /bands/me 응답을 schema로 검증한 뒤 bands를 반환한다', async () => {
+    mock.onGet('/bands/me').reply(200, {
       status: 'success',
       error: null,
       message: '내 밴드 목록 조회 성공',
       data: {
-        totalCount: 1,
         items: [
           {
             id: 'band-1',
@@ -31,6 +30,12 @@ describe('getBands 어댑터', () => {
             memberCount: 10,
           },
         ],
+        meta: {
+          count: 1,
+          take: 20,
+          cursor: null,
+          next: null,
+        },
       },
     });
 
@@ -50,12 +55,11 @@ describe('getBands 어댑터', () => {
   });
 
   it('필수 필드가 누락되면 reject된다', async () => {
-    mock.onGet('/bands').reply(200, {
+    mock.onGet('/bands/me').reply(200, {
       status: 'success',
       error: null,
       message: '내 밴드 목록 조회 성공',
       data: {
-        totalCount: 1,
         items: [
           {
             id: 'band-1',

@@ -72,13 +72,27 @@ export const bandInviteLinkSchema = z.object({
   expiredAt: z.string(),
 });
 
+export const bandListMetaSchema = z.object({
+  count: z.number().int().nonnegative(),
+  take: z.number().int().nonnegative(),
+  cursor: z
+    .object({
+      id: z.string(),
+      createdAt: z.string(),
+    })
+    .nullable()
+    .optional(),
+  next: z.string().nullable().optional(),
+});
+
 export const bandListResponseSchema = z.object({
-  status: z.enum(['success', 'error']),
-  error: z.string().nullable(),
-  message: z.string(),
+  status: z.enum(['success', 'error']).optional(),
+  error: z.unknown().nullable().optional(),
+  message: z.string().optional(),
   data: z.object({
-    totalCount: z.number().int().nonnegative(),
+    totalCount: z.number().int().nonnegative().optional(),
     items: z.array(bandSchema),
+    meta: bandListMetaSchema.optional(),
   }),
 });
 

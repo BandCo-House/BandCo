@@ -21,7 +21,7 @@ const createWrapper = () => {
 describe('useBandSearch', () => {
   it('bandSearchOptions가 올바른 QueryKey 및 Options 팩토리를 생성한다', () => {
     const options = bandSearchOptions('합주', 10);
-    expect(options.queryKey).toEqual(['bands', 'search', '합주']);
+    expect(options.queryKey).toEqual(['bands', 'search', '합주', 10]);
     expect(options.staleTime).toBe(30000);
   });
 

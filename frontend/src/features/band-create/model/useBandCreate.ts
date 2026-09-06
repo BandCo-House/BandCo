@@ -49,6 +49,12 @@ export const useBandCreate = (): UseBandCreateResult => {
       }
 
       if (err instanceof Error) {
+        if (err.name === 'ZodError') {
+          return {
+            success: false,
+            message: '서버 응답 형식이 올바르지 않습니다.',
+          };
+        }
         return { success: false, message: err.message };
       }
 
