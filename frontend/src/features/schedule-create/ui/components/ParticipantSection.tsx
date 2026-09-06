@@ -38,6 +38,9 @@ export const ParticipantSection = ({
   onChange,
 }: ParticipantSectionProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // 팀 조회가 끝나기 전에 다른 팀을 또 고르면, 두 호출이 같은 렌더의 value를
+  // 캡처해 나중에 끝난 쪽이 먼저 추가된 팀원을 덮어쓴다. 한 번에 하나만 처리한다.
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
   const queryClient = useQueryClient();
   // take를 안 주면 백엔드 기본값이 20이라 21번째 멤버부터 조회에서 빠진다.
   // 그러면 카드가 안 그려져 해제할 수도 없는 참여자가 생긴다.
@@ -59,6 +62,8 @@ export const ParticipantSection = ({
 
   // 팀 멤버는 목록 응답에 없어 고를 때 한 번 가져온다. fetchQuery라 캐시가 있으면 재요청하지 않는다.
   const selectTeam = async (teamId: string) => {
+    if (isAddingTeam) return;
+    setIsAddingTeam(true);
     try {
       const teamMembers = await queryClient.fetchQuery({
         queryKey: teamKeys.members(teamId),
@@ -71,6 +76,8 @@ export const ParticipantSection = ({
       setIsModalOpen(false);
     } catch {
       toast.error('팀 멤버를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsAddingTeam(false);
     }
   };
 

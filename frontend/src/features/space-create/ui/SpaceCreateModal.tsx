@@ -98,7 +98,7 @@ export const SpaceCreateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[85vh] flex-col gap-10 p-5 text-grey-50">
+      <AppDialogContent className="flex max-h-[85dvh] flex-col gap-10 p-5 text-grey-50">
         <AppDialogClose
           className="top-5 right-5"
           aria-label="합주 공간 만들기 닫기"

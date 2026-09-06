@@ -73,7 +73,7 @@ export const MemberSearchModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[70vh] flex-col gap-8 px-5 pt-5 pb-8 text-grey-50">
+      <AppDialogContent className="flex max-h-[70dvh] flex-col gap-8 px-5 pt-5 pb-8 text-grey-50">
         <DialogTitle className="sr-only">멤버·팀 검색</DialogTitle>
         <DialogDescription className="sr-only">
           이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.
@@ -168,16 +168,27 @@ export const MemberSearchModal = ({
                 key={team.teamId}
                 className="flex items-center justify-between gap-2"
               >
-                <button
-                  type="button"
-                  onClick={() => onSelectTeam?.(team.teamId)}
-                  className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors"
-                >
-                  <span className="typo-sm-sb text-grey-50">{team.name}</span>
-                  <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
-                    {team.memberCount}명
-                  </span>
-                </button>
+                {/* 팀을 고르는 화면이 아닌 호출부(팀 상세·팀 생성 등)에서는 눌리는
+                    컨트롤로 만들지 않는다 — 포커스만 먹고 아무 일도 안 하게 된다. */}
+                {onSelectTeam ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectTeam(team.teamId)}
+                    className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors"
+                  >
+                    <span className="typo-sm-sb text-grey-50">{team.name}</span>
+                    <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
+                      {team.memberCount}명
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex flex-1 items-center gap-2.5 px-3 py-2">
+                    <span className="typo-sm-sb text-grey-50">{team.name}</span>
+                    <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
+                      {team.memberCount}명
+                    </span>
+                  </div>
+                )}
                 <RowLink label="상세보기" />
               </div>
             ))
