@@ -64,10 +64,14 @@ export interface TeamsRepository {
     teamLeaderBandMemberId: string | null;
   } | null>;
 
-  /** 팀 멤버십 확인 (팀 내 특정 밴드 멤버 조회) */
+  /**
+   * 팀 멤버십 확인 (팀 내 특정 밴드 멤버 + 세션 조회).
+   * 한 사람이 팀 안에서 여러 세션을 맡을 수 있어 세션까지 같아야 같은 배정이다.
+   */
   findTeamMemberByTeamAndBandMember(
     teamId: string,
     bandMemberId: string,
+    skillTypeId?: string | null,
     tx?: Prisma.TransactionClient,
   ): Promise<{
     id: string;
@@ -101,7 +105,10 @@ export interface TeamsRepository {
   findMyTeams(userId: string, query: GetMyTeamsQuery, tx?: Prisma.TransactionClient): Promise<GetMyTeamsResult>;
 
   /** 팀 멤버 추가 */
-  addTeamMember(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+  addTeamMember(teamId: string, bandMemberId: string, skillTypeId?: string | null, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+
+  /** 존재하는 skillType ID만 추려 돌려준다. 세션 배정 검증용. */
+  findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
 
   /** 팀 삭제 (hard delete, TeamMember cascade) */
   deleteTeam(teamId: string, tx?: Prisma.TransactionClient): Promise<DeleteTeamResult>;

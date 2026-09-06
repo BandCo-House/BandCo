@@ -264,11 +264,14 @@ export class TeamsPrismaRepository implements TeamsRepository {
   async findTeamMemberByTeamAndBandMember(
     teamId: string,
     bandMemberId: string,
+    skillTypeId?: string | null,
     tx?: Prisma.TransactionClient,
   ): Promise<{ id: string; teamRole: string } | null> {
     const client = tx ?? this.prisma;
-    return client.teamMember.findUnique({
-      where: { teamId_bandMemberId: { teamId, bandMemberId } },
+    // 한 사람이 팀 안에서 여러 세션을 맡을 수 있어 (팀, 멤버)는 더 이상 유일하지 않다.
+    // 세션까지 같아야 같은 배정으로 본다.
+    return client.teamMember.findFirst({
+      where: { teamId, bandMemberId, skillTypeId: skillTypeId ?? null },
       select: { id: true, teamRole: true },
     });
   }
@@ -357,6 +360,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         bandMemberId: true,
         teamRole: true,
         joinedAt: true,
+        skillType: { select: { id: true, name: true } },
         bandMember: {
           select: {
             userId: true,
@@ -389,6 +393,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
     const items: TeamMemberListItem[] = rows.map(member => ({
       teamMemberId: member.id,
       bandMemberId: member.bandMemberId,
+      skillType: member.skillType ? { skillTypeId: member.skillType.id, name: member.skillType.name } : null,
       user: {
         userId: member.bandMember.userId,
         nickname: member.bandMember.user?.profile?.nickname ?? '',
@@ -592,7 +597,12 @@ export class TeamsPrismaRepository implements TeamsRepository {
     };
   }
 
-  async addTeamMember(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult> {
+  async addTeamMember(
+    teamId: string,
+    bandMemberId: string,
+    skillTypeId?: string | null,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AddTeamMemberResult> {
     const client = tx ?? this.prisma;
 
     const teamMember = await client.teamMember.create({
@@ -600,6 +610,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         teamId,
         bandMemberId,
         teamRole: 'MEMBER',
+        skillTypeId: skillTypeId ?? null,
       },
       select: {
         id: true,
@@ -607,6 +618,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         bandMemberId: true,
         teamRole: true,
         joinedAt: true,
+        skillType: { select: { id: true, name: true } },
         bandMember: {
           select: {
             userId: true,
@@ -631,7 +643,18 @@ export class TeamsPrismaRepository implements TeamsRepository {
       },
       teamRole: teamMember.teamRole,
       joinedAt: teamMember.joinedAt.toISOString(),
+      skillType: teamMember.skillType ? { skillTypeId: teamMember.skillType.id, name: teamMember.skillType.name } : null,
     };
+  }
+
+  async findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    if (skillTypeIds.length === 0) return [];
+    const rows = await client.skillType.findMany({
+      where: { id: { in: skillTypeIds } },
+      select: { id: true },
+    });
+    return rows.map(row => row.id);
   }
 
   async deleteTeam(teamId: string, tx?: Prisma.TransactionClient): Promise<DeleteTeamResult> {

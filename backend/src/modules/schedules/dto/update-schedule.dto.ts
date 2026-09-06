@@ -10,6 +10,7 @@ import { uuidValidationMessage } from 'src/common/validation-message/uuid-valida
 import { trimStringValue } from '../../../common/validation/transform.util';
 import { ScheduleStatus, ScheduleType } from '../../../generated/prisma';
 
+import { ScheduleParticipantInputDto } from './schedule-participant.dto';
 import { ScheduleReferenceFileDto } from './schedule-reference-file.dto';
 
 /**
@@ -52,10 +53,21 @@ export class UpdateScheduleBodyDto {
   @IsUUID('4', { each: true, message: uuidValidationMessage })
   songIds?: string[];
 
+  @ApiPropertyOptional({ description: '참여자 밴드 멤버 ID 목록 (deprecated — participants를 쓴다)', type: [String] })
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true, message: uuidValidationMessage })
   participantBandMemberIds?: string[];
+
+  @ApiPropertyOptional({
+    description: '참여자 목록(세션 포함, 전달 시 전체 교체). participantBandMemberIds와 함께 오면 이쪽이 우선한다.',
+    type: [ScheduleParticipantInputDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleParticipantInputDto)
+  participants?: ScheduleParticipantInputDto[];
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })

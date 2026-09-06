@@ -227,7 +227,13 @@ export class TeamsService {
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<AddTeamMemberResult>} 추가된 팀 멤버 정보
    */
-  async addTeamMember(userId: string, teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult> {
+  async addTeamMember(
+    userId: string,
+    teamId: string,
+    bandMemberId: string,
+    skillTypeId?: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AddTeamMemberResult> {
     const run = async (client: Prisma.TransactionClient): Promise<AddTeamMemberResult> => {
       const team = await this.teamsRepository.findTeamForUpdate(teamId, client);
       if (!team) {
@@ -245,16 +251,24 @@ export class TeamsService {
         throw new BadRequestException('같은 밴드의 멤버만 팀에 추가할 수 있습니다.');
       }
 
-      const existing = await this.teamsRepository.findTeamMemberByTeamAndBandMember(teamId, bandMemberId, client);
+      if (skillTypeId !== undefined) {
+        const existingSkillTypeIds = await this.teamsRepository.findExistingSkillTypeIds([skillTypeId], client);
+        if (existingSkillTypeIds.length === 0) {
+          throw new BadRequestException('존재하지 않는 세션입니다.');
+        }
+      }
+
+      // 한 사람이 팀 안에서 보컬·기타를 겸할 수 있으므로 세션까지 같아야 중복이다.
+      const existing = await this.teamsRepository.findTeamMemberByTeamAndBandMember(teamId, bandMemberId, skillTypeId ?? null, client);
       if (existing) {
-        throw new ConflictException('이미 팀 멤버입니다.');
+        throw new ConflictException('이미 같은 세션으로 등록된 팀 멤버입니다.');
       }
 
       try {
-        return await this.teamsRepository.addTeamMember(teamId, bandMemberId, client);
+        return await this.teamsRepository.addTeamMember(teamId, bandMemberId, skillTypeId ?? null, client);
       } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-          throw new ConflictException('이미 팀 멤버입니다.');
+          throw new ConflictException('이미 같은 세션으로 등록된 팀 멤버입니다.');
         }
         throw e;
       }

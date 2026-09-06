@@ -2,11 +2,12 @@ import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundEx
 
 import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
-import { NotificationType } from '../../generated/prisma';
+import { NotificationType, ScheduleType } from '../../generated/prisma';
 import { NotificationsService } from '../notifications/notifications.service';
 
 import type { CreateScheduleInput } from './dto/create-schedule.dto';
 import type { GetSchedulesQuery } from './dto/get-schedules-query.dto';
+import type { ScheduleParticipantInput } from './dto/schedule-participant.dto';
 import type { UpdateScheduleInput } from './dto/update-schedule.dto';
 import { SCHEDULES_REPOSITORY, type SchedulesRepository } from './repositories/schedules.repository';
 import type { GetBandSchedulesResult } from './types/band-schedule-list-item.type';
@@ -23,6 +24,54 @@ export class SchedulesService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  /**
+   * 참여자 입력을 한 가지 모양으로 정리한다.
+   *
+   * 신규 `participants`(세션 포함)와 구형 `participantBandMemberIds`를 함께 받는다.
+   * 백엔드가 프론트보다 먼저 배포되므로 운영 중인 구형 클라이언트가 계속 동작해야 한다.
+   * 둘 다 오면 표현력이 큰 `participants`를 택한다.
+   *
+   * @param {ScheduleParticipantInput[] | undefined} participants - 신규 형식 참여자 목록
+   * @param {string[] | undefined} participantBandMemberIds - 구형 형식 참여자 ID 목록
+   * @returns {ScheduleParticipantInput[] | undefined} 정규화된 목록. 둘 다 없으면 undefined(수정에서 "건드리지 않음")
+   */
+  private normalizeParticipants(
+    participants: ScheduleParticipantInput[] | undefined,
+    participantBandMemberIds: string[] | undefined,
+  ): ScheduleParticipantInput[] | undefined {
+    if (participants !== undefined) return participants;
+    if (participantBandMemberIds !== undefined) return participantBandMemberIds.map(bandMemberId => ({ bandMemberId }));
+    return undefined;
+  }
+
+  /**
+   * 세션 배정이 유효한지 확인한다.
+   *
+   * @param {ScheduleParticipantInput[] | undefined} participants - 정규화된 참여자 목록
+   * @param {ScheduleType} scheduleType - 저장될 최종 일정 유형
+   * @param {Prisma.TransactionClient} client - 상위 트랜잭션 client
+   * @throws {BadRequestException} 회의에 세션을 배정했거나 존재하지 않는 세션을 지정한 경우
+   */
+  private async validateParticipantSessions(
+    participants: ScheduleParticipantInput[] | undefined,
+    scheduleType: ScheduleType,
+    client: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (participants === undefined) return;
+
+    const skillTypeIds = [...new Set(participants.map(participant => participant.skillTypeId).filter((id): id is string => id !== undefined))];
+    if (skillTypeIds.length === 0) return;
+
+    if (scheduleType === ScheduleType.MEETING) {
+      throw new BadRequestException('회의 일정에는 세션을 배정할 수 없습니다.');
+    }
+
+    const existingIds = await this.schedulesRepository.findExistingSkillTypeIds(skillTypeIds, client);
+    if (existingIds.length !== skillTypeIds.length) {
+      throw new BadRequestException('존재하지 않는 세션이 포함되어 있습니다.');
+    }
+  }
 
   /** 밴드 공간에 일정을 생성한다. 공간 존재 및 멤버 여부를 확인한 후 시간 범위를 검증한다. */
   async createSchedule(
@@ -47,7 +96,10 @@ export class SchedulesService {
         if (!team) throw new BadRequestException('해당 밴드에 속한 팀이 아닙니다.');
       }
 
-      return this.schedulesRepository.createSchedule(bandSpaceId, bandMember.id, input, client);
+      const participants = this.normalizeParticipants(input.participants, input.participantBandMemberIds);
+      await this.validateParticipantSessions(participants, input.scheduleType, client);
+
+      return this.schedulesRepository.createSchedule(bandSpaceId, bandMember.id, { ...input, participants: participants ?? [] }, client);
     };
 
     const result = await (tx ? run(tx) : this.prisma.$transaction(run));
@@ -85,7 +137,13 @@ export class SchedulesService {
         throw new BadRequestException('종료 시간은 시작 시간보다 이후여야 합니다.');
       }
 
-      return this.schedulesRepository.updateSchedule(scheduleId, input, client);
+      const participants = this.normalizeParticipants(input.participants, input.participantBandMemberIds);
+      // 합주를 회의로 바꾸면서 세션을 함께 보내면 저장 뒤 무효한 편성이 남는다.
+      // 검증 기준은 요청값이 아니라 저장될 최종 유형이다.
+      const scheduleType = (input.scheduleType ?? existing.schedule.scheduleType) as ScheduleType;
+      await this.validateParticipantSessions(participants, scheduleType, client);
+
+      return this.schedulesRepository.updateSchedule(scheduleId, { ...input, participants }, client);
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);

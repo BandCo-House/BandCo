@@ -9,19 +9,19 @@ datasource db {
 }
 
 model User {
-  id                  String            @id @default(uuid()) @db.Uuid
-  email               String?           @unique @db.VarChar(255)
-  passwordHash        String?           @map("password_hash") @db.VarChar(255)
-  status              UserStatus        @default(ACTIVE)
-  lastLoginAt         DateTime?         @map("last_login_at") @db.Timestamptz(6)
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  deletedAt           DateTime?         @map("deleted_at") @db.Timestamptz(6)
-  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String             @id @default(uuid()) @db.Uuid
+  email               String?            @unique @db.VarChar(255)
+  passwordHash        String?            @map("password_hash") @db.VarChar(255)
+  status              UserStatus         @default(ACTIVE)
+  lastLoginAt         DateTime?          @map("last_login_at") @db.Timestamptz(6)
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt           DateTime?          @map("deleted_at") @db.Timestamptz(6)
+  updatedAt           DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   blacklistedBands    BandBlacklist[]
-  receivedInvitations BandInvitation[]  @relation("BandInvitationInvitee")
+  receivedInvitations BandInvitation[]   @relation("BandInvitationInvitee")
   joinRequests        BandJoinRequest[]
   bandMemberships     BandMember[]
-  managedBands        Band[]            @relation("BandManager")
+  managedBands        Band[]             @relation("BandManager")
   favoriteGenres      FavoriteGenre[]
   notifications       Notification[]
   oauthAccounts       UserOAuthAccount[]
@@ -47,10 +47,12 @@ model UserOAuthAccount {
 }
 
 model SkillType {
-  id         String      @id @default(uuid()) @db.Uuid
-  name       String      @db.VarChar(40)
-  songSkills SongSkill[]
-  userSkills UserSkill[]
+  id                   String                @id @default(uuid()) @db.Uuid
+  name                 String                @db.VarChar(40)
+  scheduleParticipants ScheduleParticipant[]
+  songSkills           SongSkill[]
+  teamMembers          TeamMember[]
+  userSkills           UserSkill[]
 
   @@map("skill_types")
 }
@@ -390,13 +392,17 @@ model ScheduleParticipant {
   id               String            @id @default(uuid()) @db.Uuid
   scheduleId       String            @map("schedule_id") @db.Uuid
   bandMemberId     String            @map("band_member_id") @db.Uuid
+  /// 이 일정에서 맡은 세션. 합주 전용이라 회의 참여자는 null이다.
+  /// 한 사람이 보컬·기타를 겸할 수 있어 (일정, 멤버) 조합이 여러 행으로 나뉜다.
+  skillTypeId      String?           @map("skill_type_id") @db.Uuid
   attendanceStatus AttendanceStatus? @map("attendance_status")
   note             String?
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   bandMember       BandMember        @relation(fields: [bandMemberId], references: [id], onDelete: Cascade)
   schedule         Schedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  skillType        SkillType?        @relation(fields: [skillTypeId], references: [id], onDelete: SetNull)
 
-  @@unique([scheduleId, bandMemberId])
+  @@unique([scheduleId, bandMemberId, skillTypeId])
   @@map("schedule_participants")
 }
 
@@ -444,12 +450,16 @@ model TeamMember {
   id           String         @id @default(uuid()) @db.Uuid
   teamId       String         @map("team_id") @db.Uuid
   bandMemberId String         @map("band_member_id") @db.Uuid
+  /// 이 팀에서 맡은 세션. 미배정이면 null.
+  /// 개인이 가진 스킬(UserSkill)과 다른 값이다 — 팀 안에서 실제로 맡은 자리를 뜻한다.
+  skillTypeId  String?        @map("skill_type_id") @db.Uuid
   joinedAt     DateTime       @default(now()) @map("joined_at") @db.Timestamptz(6)
   teamRole     TeamMemberRole @default(MEMBER) @map("team_role")
   bandMember   BandMember     @relation(fields: [bandMemberId], references: [id], onDelete: Cascade)
   team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  skillType    SkillType?     @relation(fields: [skillTypeId], references: [id], onDelete: SetNull)
 
-  @@unique([teamId, bandMemberId])
+  @@unique([teamId, bandMemberId, skillTypeId])
   @@map("team_members")
 }
 

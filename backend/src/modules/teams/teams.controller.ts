@@ -172,7 +172,7 @@ export class TeamsController {
     @Param('teamId') teamId: string,
     @Body() input: AddTeamMemberBodyDto,
   ): Promise<ApiSuccessResponse<AddTeamMemberResult>> {
-    const result = await this.teamsService.addTeamMember(request.user.id, teamId, input.bandMemberId);
+    const result = await this.teamsService.addTeamMember(request.user.id, teamId, input.bandMemberId, input.skillTypeId);
     return createSuccessResponse('팀 멤버 추가 성공', result);
   }
 

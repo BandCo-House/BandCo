@@ -1,6 +1,8 @@
 # teams API
 
 > 최종 동기화: 2026-06-28
+>
+> ⚠️ 변환 노트: [설계자 보완 2026-09-06] 팀 세션 편성 추가 — `POST /teams/{teamId}/members` 요청에 `skillTypeId?` 추가(같은 멤버를 다른 세션으로 여러 번 추가 가능), 팀 멤버 응답에 `skillType: { skillTypeId, name } | null` 추가. 기존 `skills`(개인 보유 스킬)와 다른 값이다.
 
 ---
 
