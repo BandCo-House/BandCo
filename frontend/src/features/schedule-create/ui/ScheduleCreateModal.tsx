@@ -28,6 +28,8 @@ interface ScheduleCreateModalProps {
   spaceId: string;
   bandId: string;
   initialDate?: Date;
+  /** 기존 일정을 눌러 연 경우의 일정 ID. 주면 폼 대신 상세로 연다. */
+  initialScheduleId?: string | null;
 }
 
 /**
@@ -41,6 +43,7 @@ export const ScheduleCreateModal = ({
   spaceId,
   bandId,
   initialDate,
+  initialScheduleId = null,
 }: ScheduleCreateModalProps) => {
   const [view, setView] = useState<'form' | 'detail'>('form');
   const [mode, setMode] = useState<'create' | 'edit'>('create');
@@ -59,14 +62,14 @@ export const ScheduleCreateModal = ({
     setForm(seed);
   }
 
-  // 모달을 열 때마다 생성 모드로 초기화한다.
+  // 모달을 열 때마다 초기화한다. 기존 일정을 눌러 연 경우엔 상세부터 보여준다.
   const [prevOpen, setPrevOpen] = useState(isOpen);
   if (isOpen !== prevOpen) {
     setPrevOpen(isOpen);
     if (isOpen) {
-      setView('form');
+      setView(initialScheduleId ? 'detail' : 'form');
       setMode('create');
-      setScheduleId(null);
+      setScheduleId(initialScheduleId);
       setSeed(createEmptyForm(initialDate));
     }
   }
