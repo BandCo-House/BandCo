@@ -13,6 +13,7 @@ import type { GetMyTeamsResult } from '../types/get-my-teams-result.type';
 import type { GetTeamMembersResult } from '../types/get-team-members-result.type';
 import type { GetTeamResult } from '../types/get-team-result.type';
 import type { RemoveTeamMemberResult } from '../types/remove-team-member-result.type';
+import type { UpdateTeamMemberSessionResult } from '../types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from '../types/update-team-result.type';
 
 export const TEAMS_REPOSITORY = Symbol('TEAMS_REPOSITORY');
@@ -106,6 +107,12 @@ export interface TeamsRepository {
 
   /** 팀 멤버 추가 */
   addTeamMember(teamId: string, bandMemberId: string, skillTypeId?: string | null, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+
+  /**
+   * 팀 멤버의 세션 배정을 바꾼다. 세션 변경은 행을 지웠다 다시 만들 일이 아니다.
+   * null이면 미배정으로 되돌린다.
+   */
+  updateTeamMemberSession(teamMemberId: string, skillTypeId: string | null, tx?: Prisma.TransactionClient): Promise<UpdateTeamMemberSessionResult>;
 
   /**
    * 팀 안에서 그 사람이 가진 세션 배정 행 수를 센다.

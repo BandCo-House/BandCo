@@ -17,6 +17,7 @@ import type { GetMyTeamsResult, MyTeamListItem } from '../types/get-my-teams-res
 import type { GetTeamMembersResult, TeamMemberListItem } from '../types/get-team-members-result.type';
 import type { GetTeamResult } from '../types/get-team-result.type';
 import type { RemoveTeamMemberResult } from '../types/remove-team-member-result.type';
+import type { UpdateTeamMemberSessionResult } from '../types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from '../types/update-team-result.type';
 
 import type { CreateTeamRepositoryInput, TeamsRepository } from './teams.repository';
@@ -499,6 +500,51 @@ export class TeamsPrismaRepository implements TeamsRepository {
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  async updateTeamMemberSession(
+    teamMemberId: string,
+    skillTypeId: string | null,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UpdateTeamMemberSessionResult> {
+    const client = tx ?? this.prisma;
+
+    const teamMember = await client.teamMember.update({
+      where: { id: teamMemberId },
+      data: { skillTypeId },
+      select: {
+        id: true,
+        teamId: true,
+        bandMemberId: true,
+        teamRole: true,
+        joinedAt: true,
+        skillType: { select: { id: true, name: true } },
+        bandMember: {
+          select: {
+            userId: true,
+            user: {
+              select: {
+                profile: { select: { nickname: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      teamMemberId: teamMember.id,
+      teamId: teamMember.teamId,
+      bandMemberId: teamMember.bandMemberId,
+      user: {
+        userId: teamMember.bandMember.userId,
+        nickname: teamMember.bandMember.user?.profile?.nickname ?? '',
+        profileImageUrl: teamMember.bandMember.user?.profile?.avatarUrl ?? null,
+      },
+      teamRole: teamMember.teamRole,
+      joinedAt: teamMember.joinedAt.toISOString(),
+      skillType: teamMember.skillType ? { skillTypeId: teamMember.skillType.id, name: teamMember.skillType.name } : null,
+    };
   }
 
   async countTeamMemberAssignments(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number> {

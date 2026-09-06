@@ -19,6 +19,7 @@ import type { GetMyTeamsResult } from './types/get-my-teams-result.type';
 import type { GetTeamMembersResult } from './types/get-team-members-result.type';
 import type { GetTeamResult } from './types/get-team-result.type';
 import type { RemoveTeamMemberResult } from './types/remove-team-member-result.type';
+import type { UpdateTeamMemberSessionResult } from './types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from './types/update-team-result.type';
 
 @Injectable()
@@ -205,6 +206,59 @@ export class TeamsService {
       }
 
       return this.teamsRepository.removeTeamMember(teamMemberId, teamId, client);
+    };
+
+    return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  /**
+   * 팀 멤버의 세션 배정을 바꾼다.
+   *
+   * 세션만 바꾸는 건 UPDATE 한 번이면 된다. 제거 후 재추가로 흉내 내면 중간에
+   * 실패했을 때 멀쩡히 있던 사람이 팀에서 빠진다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} teamId - 대상 팀 ID
+   * @param {string} teamMemberId - 대상 팀 멤버 ID
+   * @param {string | null} skillTypeId - 배정할 세션. null이면 미배정으로 되돌린다
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UpdateTeamMemberSessionResult>} 갱신된 팀 멤버
+   */
+  async updateTeamMemberSession(
+    userId: string,
+    teamId: string,
+    teamMemberId: string,
+    skillTypeId: string | null,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UpdateTeamMemberSessionResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<UpdateTeamMemberSessionResult> => {
+      const team = await this.teamsRepository.findTeamForUpdate(teamId, client);
+      if (!team) {
+        throw new NotFoundException('팀을 찾을 수 없습니다.');
+      }
+
+      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+
+      const targetMember = await this.teamsRepository.findTeamMemberById(teamMemberId, client);
+      if (!targetMember || targetMember.teamId !== teamId) {
+        throw new NotFoundException('해당 팀에서 대상 멤버를 찾을 수 없습니다.');
+      }
+
+      if (skillTypeId !== null) {
+        const existingSkillTypeIds = await this.teamsRepository.findExistingSkillTypeIds([skillTypeId], client);
+        if (existingSkillTypeIds.length === 0) {
+          throw new BadRequestException('존재하지 않는 세션입니다.');
+        }
+      }
+
+      // 같은 사람이 같은 세션을 두 번 맡을 수는 없다. 자기 자신은 findTeamMemberByTeamAndBandMember가
+      // 함께 잡으므로 id로 걸러낸다.
+      const duplicated = await this.teamsRepository.findTeamMemberByTeamAndBandMember(teamId, targetMember.bandMemberId, skillTypeId, client);
+      if (duplicated && duplicated.id !== teamMemberId) {
+        throw new ConflictException('이미 같은 세션으로 등록된 팀 멤버입니다.');
+      }
+
+      return this.teamsRepository.updateTeamMemberSession(teamMemberId, skillTypeId, client);
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);
