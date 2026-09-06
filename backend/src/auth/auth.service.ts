@@ -168,10 +168,21 @@ export class AuthService {
     return { email, password };
   }
 
+  /**
+   * JWT 서명·만료를 검증한다.
+   * 만료·변조·형식 오류를 401로 돌려야 클라이언트가 토큰 재발급을 시도할 수 있다. 감싸지 않으면 500이 된다.
+   */
   verifyToken(token: string) {
-    return this.jwtService.verify(token, {
-      secret: this.jwtSecret,
-    });
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.jwtSecret,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('만료된 토큰입니다.');
+      }
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
   }
 
   extractTokenFromHeader(rawToken: string, isBearer: boolean) {
