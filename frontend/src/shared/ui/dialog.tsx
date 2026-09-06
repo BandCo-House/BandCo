@@ -267,7 +267,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      // 모달 제목 공용 스타일(20px/600/140%/grey-100). 20px SemiBold 유틸이 없어 직접 지정.
+      // 모달 제목 공용 스타일. 시트 제목(sheet.tsx)과 같은 typo-lg-sb를 쓴다.
       className={cn('typo-lg-sb text-grey-100', className)}
       {...props}
     />

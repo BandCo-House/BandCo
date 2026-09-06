@@ -249,7 +249,9 @@ export const SignupForm = ({
     formData.email.length > 0 &&
     formData.password.length > 0 &&
     passwordConfirm.length > 0;
-  const canAttemptSubmit = isRequiredFieldsFilled && isRequiredTermsChecked;
+  // 약관 동의는 여기 넣지 않는다. 넣으면 버튼이 disabled로 막혀 handleSubmit이
+  // 돌지 않고, 사용자는 왜 못 누르는지 알 수 없다. 누르게 두고 스낵바로 알린다.
+  const canAttemptSubmit = isRequiredFieldsFilled;
 
   /**
    * 입력 필드의 id를 기준으로 회원가입 폼 상태를 갱신한다.

@@ -265,7 +265,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                     <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
                       <Avatar className="size-8 rounded-full">
                         <AvatarImage src={member.avatarUrl ?? undefined} />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className="typo-xs-sb">
                           {member.nickname.slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>

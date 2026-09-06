@@ -96,7 +96,7 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
                   src={member.user.profileImageUrl || undefined}
                   alt={member.user.nickname}
                 />
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="typo-xs-sb">
                   {member.user.nickname.slice(0, 2)}
                 </AvatarFallback>
               </Avatar>

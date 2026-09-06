@@ -49,7 +49,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
               src={member.avatarUrl || undefined}
               alt={member.nickname}
             />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="typo-xs-sb">
               {member.nickname.slice(0, 2)}
             </AvatarFallback>
           </Avatar>

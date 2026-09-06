@@ -60,7 +60,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
                     src={member.user.profileImageUrl || undefined}
                     alt={member.user.nickname}
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className="typo-xs-sb">
                     {member.user.nickname.slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
@@ -93,7 +93,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
                     src={member.user.profileImageUrl || undefined}
                     alt={member.user.nickname}
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className="typo-xs-sb">
                     {member.user.nickname.slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>

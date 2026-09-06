@@ -1,6 +1,7 @@
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthContext } from '@/app/providers/auth-context';
@@ -94,31 +95,34 @@ describe('알림 탭 (pill)', () => {
   });
 
   it('탭 전환은 히스토리를 쌓지 않는다 — 알림은 여러 화면에서 들어오므로 뒤로가기가 들어온 화면으로 가야 한다', async () => {
+    const user = userEvent.setup();
     const router = renderAt('/notifications?tab=NOTICE');
-    await screen.findByRole('link', { name: /초대장/ });
+    const inviteTab = await screen.findByRole('link', { name: /초대장/ });
 
     const lengthBefore = router.history.length;
-    await router.navigate({
-      to: '/notifications',
-      search: { tab: 'INVITE' },
-      replace: true,
-    });
+    // router.navigate가 아니라 실제 링크를 클릭한다. 직접 호출하면
+    // RouteTabs의 replace 설정이 사라져도 테스트가 통과한다.
+    await user.click(inviteTab);
 
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ tab: 'INVITE' }),
+    );
     expect(router.history.length).toBe(lengthBefore);
   });
 });
 
 describe('밴드 메인 탭 (underline)', () => {
   it('히스토리를 쌓는다 — 탭마다 다른 라우트이므로 push가 맞다', async () => {
+    const user = userEvent.setup();
     const router = renderAt('/band/band-1');
-    await screen.findByRole('navigation', { name: '밴드 메인 탭' });
+    const archiveTab = await screen.findByRole('link', { name: '아카이브' });
 
     const lengthBefore = router.history.length;
-    await router.navigate({
-      to: '/band/$bandId/archive',
-      params: { bandId: 'band-1' },
-    });
+    await user.click(archiveTab);
 
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/band/band-1/archive'),
+    );
     expect(router.history.length).toBe(lengthBefore + 1);
   });
 });
