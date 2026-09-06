@@ -155,6 +155,7 @@ function createTeamsRepositoryStub(options?: {
   onRemoveTeamMember?: (teamMemberId: string, teamId: string, tx: unknown) => void;
   onAddTeamMember?: (teamId: string, bandMemberId: string, tx: unknown) => void;
   onAddTeamMemberWithSkill?: (teamId: string, bandMemberId: string, skillTypeId: string | null) => void;
+  teamMemberAssignmentCount?: number;
   onDeleteTeam?: (teamId: string, tx: unknown) => void;
 }): TeamsRepository {
   return {
@@ -212,6 +213,9 @@ function createTeamsRepositoryStub(options?: {
     },
     async findExistingSkillTypeIds(skillTypeIds, _tx) {
       return skillTypeIds.filter(id => id === VOCAL_SKILL_ID);
+    },
+    async countTeamMemberAssignments(_teamId, _bandMemberId, _tx) {
+      return options?.teamMemberAssignmentCount ?? 1;
     },
     async deleteTeam(teamId, tx) {
       options?.onDeleteTeam?.(teamId, tx);
@@ -631,6 +635,32 @@ describe('TeamsService', () => {
 
       await expect(service.removeTeamMember(USER_ID, TEAM_ID, OTHER_TEAM_MEMBER_ID, externalTx as never)).resolves.toBeDefined();
       expect(capturedTx).toBe(externalTx);
+    });
+
+    it('리더라도 세션 배정이 더 남아 있으면 그 배정만 제거할 수 있다', async () => {
+      // teamRole은 사람 단위인데 행은 세션마다 나뉜다. 남은 배정이 있으면
+      // 팀에서 빠지는 게 아니라 그 세션만 비우는 것이다.
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'LEADER' },
+          teamMemberAssignmentCount: 2,
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.removeTeamMember(USER_ID, TEAM_ID, TEAM_MEMBER_ID)).resolves.toBeDefined();
+    });
+
+    it('리더의 마지막 배정은 제거할 수 없다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'LEADER' },
+          teamMemberAssignmentCount: 1,
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.removeTeamMember(USER_ID, TEAM_ID, TEAM_MEMBER_ID)).rejects.toThrow(BadRequestException);
     });
   });
 

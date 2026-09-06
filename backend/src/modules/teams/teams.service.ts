@@ -195,8 +195,13 @@ export class TeamsService {
         throw new NotFoundException('해당 팀에서 대상 멤버를 찾을 수 없습니다.');
       }
 
+      // 리더도 세션 배정이 여러 개일 수 있다. 남은 배정이 있으면 팀에서 빠지는 게
+      // 아니라 그 세션만 비우는 것이므로 막지 않는다. 마지막 배정일 때만 막는다.
       if (targetMember.teamRole === 'LEADER') {
-        throw new BadRequestException('팀 리더는 자기 자신을 제거할 수 없습니다. 리더 변경 후 제거하세요.');
+        const remaining = await this.teamsRepository.countTeamMemberAssignments(teamId, targetMember.bandMemberId, client);
+        if (remaining <= 1) {
+          throw new BadRequestException('팀 리더는 자기 자신을 제거할 수 없습니다. 리더 변경 후 제거하세요.');
+        }
       }
 
       return this.teamsRepository.removeTeamMember(teamMemberId, teamId, client);

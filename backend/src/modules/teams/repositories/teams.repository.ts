@@ -107,6 +107,12 @@ export interface TeamsRepository {
   /** 팀 멤버 추가 */
   addTeamMember(teamId: string, bandMemberId: string, skillTypeId?: string | null, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
 
+  /**
+   * 팀 안에서 그 사람이 가진 세션 배정 행 수를 센다.
+   * 리더의 마지막 배정인지(=팀에서 빠지는지) 판단할 때 쓴다.
+   */
+  countTeamMemberAssignments(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number>;
+
   /** 존재하는 skillType ID만 추려 돌려준다. 세션 배정 검증용. */
   findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
 

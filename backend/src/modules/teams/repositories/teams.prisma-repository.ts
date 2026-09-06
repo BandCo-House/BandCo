@@ -452,10 +452,20 @@ export class TeamsPrismaRepository implements TeamsRepository {
         data: { teamRole: 'MEMBER' },
       });
 
-      await client.teamMember.update({
+      // teamRole은 사람 단위 속성인데 행은 세션마다 나뉜다. 지정된 한 행만 올리면
+      // 겸업하는 리더가 LEADER 행과 MEMBER 행을 동시에 갖게 되고, 어느 행을 먼저
+      // 읽느냐에 따라 역할이 뒤집힌다. 그 사람의 행을 전부 올린다.
+      const target = await client.teamMember.findUnique({
         where: { id: newLeaderTeamMemberId },
-        data: { teamRole: 'LEADER' },
+        select: { bandMemberId: true },
       });
+
+      if (target !== null) {
+        await client.teamMember.updateMany({
+          where: { teamId, bandMemberId: target.bandMemberId },
+          data: { teamRole: 'LEADER' },
+        });
+      }
 
       const newLeaderMember = await client.teamMember.findUnique({
         where: { id: newLeaderTeamMemberId },
@@ -489,6 +499,11 @@ export class TeamsPrismaRepository implements TeamsRepository {
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  async countTeamMemberAssignments(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number> {
+    const client = tx ?? this.prisma;
+    return client.teamMember.count({ where: { teamId, bandMemberId } });
   }
 
   async removeTeamMember(teamMemberId: string, teamId: string, tx?: Prisma.TransactionClient): Promise<RemoveTeamMemberResult> {
