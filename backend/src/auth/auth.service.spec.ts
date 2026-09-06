@@ -151,6 +151,24 @@ describe('AuthService', () => {
       expect(service.verifyToken('some.token')).toEqual(payload);
       expect(mockJwtService.verify).toHaveBeenCalledWith('some.token', { secret: TEST_JWT_SECRET });
     });
+
+    it('만료된 토큰이면 UnauthorizedException(만료된 토큰입니다.)을 던진다', () => {
+      mockJwtService.verify.mockImplementationOnce(() => {
+        const error = new Error('jwt expired');
+        error.name = 'TokenExpiredError';
+        throw error;
+      });
+      expect(() => service.verifyToken('expired.token')).toThrow(new UnauthorizedException('만료된 토큰입니다.'));
+    });
+
+    it('서명이 맞지 않거나 형식이 잘못된 토큰이면 UnauthorizedException(유효하지 않은 토큰입니다.)을 던진다', () => {
+      mockJwtService.verify.mockImplementationOnce(() => {
+        const error = new Error('invalid signature');
+        error.name = 'JsonWebTokenError';
+        throw error;
+      });
+      expect(() => service.verifyToken('bad.token')).toThrow(new UnauthorizedException('유효하지 않은 토큰입니다.'));
+    });
   });
 
   describe('authenticateWithEmailAndPassword', () => {
