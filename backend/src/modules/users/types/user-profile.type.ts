@@ -13,6 +13,8 @@ export interface UserProfileDetail {
   nickname: string;
   selfDescription: string | null;
   avatarUrl: string | null;
+  /** 프로필 음악. 수정 요청(profile.profileMusic)과 같은 위치로 응답한다 */
+  profileMusic: ProfileMusicTrack | null;
 }
 
 export type { ProfileMusicTrack };
@@ -32,7 +34,6 @@ export interface UserFavoriteGenreDetail {
 export interface GetUserProfileResult {
   user: UserProfileUserDetail;
   profile: UserProfileDetail | null;
-  profileMusic: ProfileMusicTrack | null;
   skills: UserSkillDetail[];
   favoriteGenres: UserFavoriteGenreDetail[];
 }

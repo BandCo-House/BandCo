@@ -360,8 +360,17 @@ describe('UsersPrismaRepository', () => {
       expect(result?.user.id).toBe('user-001');
       expect(result?.user.createdAt).toBe('2026-01-01T00:00:00.000Z');
       expect(result?.profile?.nickname).toBe('testuser');
+      expect(result?.profile?.profileMusic).toBeNull();
+      expect(result).not.toHaveProperty('profileMusic');
       expect(result?.skills[0]).toEqual({ skillTypeId: 'skill-001', skillName: 'GUITAR', level: 'ADVANCED', isPrimary: true });
       expect(result?.favoriteGenres[0]).toEqual({ genreId: 'genre-001', name: 'ROCK' });
+    });
+
+    it('프로필 음악이 있으면 profile.profileMusic으로 매핑한다', async () => {
+      const trackData = { externalTrackId: '12345', sourceType: 'DEEZER', title: 'Blinding Lights' };
+      mockPrisma.user.findUnique.mockResolvedValue({ ...userRecord, profileMusic: { trackData } });
+      const result = await repository.findUserProfileById('user-001');
+      expect(result?.profile?.profileMusic).toEqual(trackData);
     });
 
     it('profile이 없으면 profile 필드가 null이다', async () => {

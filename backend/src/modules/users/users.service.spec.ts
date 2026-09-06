@@ -29,8 +29,7 @@ const mockProfileMusic: ProfileMusicTrack = {
 
 const mockProfile: GetUserProfileResult = {
   user: { id: 'user-001', email: 'test@example.com', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00.000Z' },
-  profile: { nickname: 'testuser', selfDescription: null, avatarUrl: null },
-  profileMusic: null,
+  profile: { nickname: 'testuser', selfDescription: null, avatarUrl: null, profileMusic: null },
   skills: [],
   favoriteGenres: [],
 };
