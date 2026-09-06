@@ -25,7 +25,8 @@ export class StorageService {
    *
    * 브라우저가 이 URL로 직접 PUT 하므로 요청 origin이 버킷 CORS 허용 목록에 있어야 한다.
    * 없는 origin이면 preflight가 403으로 막혀 업로드만 실패하고 서버 로그에는 아무것도
-   * 남지 않는다. 규칙 조회·적용: `pnpm run storage:cors:apply`
+   * 남지 않는다 — 업로드만 안 될 때 여기부터 의심한다.
+   * 이 버킷은 Lightsail Object Storage라 설정은 `aws lightsail get-buckets --include-cors`로 본다.
    *
    * @param key 업로드할 오브젝트 키 (예: profiles/uuid.jpg)
    * @param contentType 파일 MIME 타입 (예: image/jpeg)
