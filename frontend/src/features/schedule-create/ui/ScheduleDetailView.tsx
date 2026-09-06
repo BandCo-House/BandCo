@@ -24,7 +24,7 @@ const InfoItem = ({
   </div>
 );
 
-/** 일정 상세(디자인5: 회의 상세). 제목 카드 · 날짜/시간/장소 · 참여자 카드. */
+/** 일정 상세. 합주곡 카드(합주 전용) · 날짜/시간/장소 · 참여자 카드. */
 export const ScheduleDetailView = ({
   detail,
   bandId,
@@ -41,15 +41,28 @@ export const ScheduleDetailView = ({
   const hasReferenceFiles = detail.referenceFiles.length > 0;
   const hasExternalLinks = detail.externalLinks.length > 0;
 
+  // 곡은 합주 전용이라 회의에는 이 카드를 띄우지 않는다. 합주여도 실을 내용이
+  // 없으면(곡·메모 모두 없음) 빈 카드만 남으므로 그때도 접는다.
+  const isPractice = detail.scheduleType === 'PRACTICE';
+  const showSongCard =
+    isPractice && (detail.songs.length > 0 || Boolean(detail.memo));
+
   return (
     <div className="flex flex-col">
-      {/* 제목 + 메모 카드 (primary) */}
-      <div className="flex flex-col gap-1 rounded-xl bg-primary p-4 shadow-[0px_3px_6px_2px_rgba(6,22,59,0.16)]">
-        <p className="typo-xl-sb text-gradient-top">{detail.title}</p>
-        {detail.memo ? (
-          <p className="typo-base-b text-grey-400">{detail.memo}</p>
-        ) : null}
-      </div>
+      {/* 합주곡 + 메모 카드 (primary). 일정 제목은 상단 헤더가 이미 보여준다. */}
+      {showSongCard && (
+        <div className="flex flex-col gap-1 rounded-xl bg-primary p-4 shadow-[0px_3px_6px_2px_rgba(6,22,59,0.16)]">
+          {detail.songs.map((song) => (
+            <div key={song.songId} className="flex flex-col">
+              <p className="typo-xl-sb text-gradient-top">{song.title}</p>
+              <p className="typo-sm-sb text-grey-400">{song.artistName}</p>
+            </div>
+          ))}
+          {detail.memo ? (
+            <p className="typo-base-b text-grey-400">{detail.memo}</p>
+          ) : null}
+        </div>
+      )}
 
       {/* 날짜 / 시간 / 장소 */}
       <div className="flex items-center justify-center gap-3 py-8">
