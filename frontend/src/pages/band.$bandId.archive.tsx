@@ -13,7 +13,7 @@ export const Route = createFileRoute('/band/$bandId/archive')({
 function BandArchiveRoutePage() {
   return (
     <>
-      <span className="sr-only">BandArchivePage</span>
+      <span data-testid="band-archive-page" className="hidden" />
       <ComingSoon />
     </>
   );

@@ -24,7 +24,7 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
 function BandPerformanceRoutePage() {
   return (
     <div>
-      <span className="sr-only">BandPerformancePage</span>
+      <span data-testid="band-performance-page" className="hidden" />
       <SpaceCalendar />
     </div>
   );

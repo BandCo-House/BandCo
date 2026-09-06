@@ -18,7 +18,7 @@ function BandNoticeDetailRoutePage() {
   const { noticeId } = useParams({ from: '/band/$bandId/notices/$noticeId' });
   return (
     <div className="py-10 text-center">
-      <span className="sr-only">BandNoticeDetailPage</span>
+      <span data-testid="band-notice-detail-page" className="hidden" />
       <p className="typo-base-r text-grey-100">공지 {noticeId}입니다</p>
     </div>
   );

@@ -17,6 +17,11 @@ interface WheelDatePickerProps {
   /** 선택 가능한 연도 범위. 기본: 올해-10 ~ 올해+10. */
   minYear?: number;
   maxYear?: number;
+  /**
+   * 이 피커가 무엇을 고르는지 알린다(예: 시작·종료).
+   * 피커를 둘 이상 세로로 쌓으면 라벨 없이는 시각·스크린리더 양쪽 다 구분할 수 없다.
+   */
+  label?: string;
   className?: string;
 }
 
@@ -29,6 +34,7 @@ export const WheelDatePicker = ({
   onChange,
   minYear,
   maxYear,
+  label,
   className,
 }: WheelDatePickerProps) => {
   const thisYear = new Date().getFullYear();
@@ -44,37 +50,47 @@ export const WheelDatePicker = ({
 
   return (
     <div
-      className={cn('flex items-center justify-center', className)}
-      // 가운데 선택 줄을 은은하게 강조하는 마스크(위아래 페이드).
-      style={{
-        maskImage:
-          'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
-        WebkitMaskImage:
-          'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
-      }}
+      role={label ? 'group' : undefined}
+      aria-label={label}
+      className={cn('flex items-center gap-2', className)}
     >
-      <WheelColumn
-        label="년"
-        items={years}
-        value={value.year}
-        onChange={(year) => commit({ ...value, year })}
-      />
-      <WheelColumn
-        label="월"
-        items={months}
-        value={value.month}
-        onChange={(month) => commit({ ...value, month })}
-        format={pad2}
-      />
-      <span className="px-1 typo-base-sb text-grey-100">월</span>
-      <WheelColumn
-        label="일"
-        items={days}
-        value={value.day}
-        onChange={(day) => commit({ ...value, day })}
-        format={pad2}
-      />
-      <span className="px-1 typo-base-sb text-grey-100">일</span>
+      {label && (
+        <span className="w-7 shrink-0 typo-xs-sb text-grey-200">{label}</span>
+      )}
+      <div
+        className="flex flex-1 items-center justify-center"
+        // 가운데 선택 줄을 은은하게 강조하는 마스크(위아래 페이드).
+        // 라벨은 이 밖에 둔다 — 안에 있으면 마스크에 같이 흐려진다.
+        style={{
+          maskImage:
+            'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
+          WebkitMaskImage:
+            'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
+        }}
+      >
+        <WheelColumn
+          label="년"
+          items={years}
+          value={value.year}
+          onChange={(year) => commit({ ...value, year })}
+        />
+        <WheelColumn
+          label="월"
+          items={months}
+          value={value.month}
+          onChange={(month) => commit({ ...value, month })}
+          format={pad2}
+        />
+        <span className="px-1 typo-base-sb text-grey-100">월</span>
+        <WheelColumn
+          label="일"
+          items={days}
+          value={value.day}
+          onChange={(day) => commit({ ...value, day })}
+          format={pad2}
+        />
+        <span className="px-1 typo-base-sb text-grey-100">일</span>
+      </div>
     </div>
   );
 };
