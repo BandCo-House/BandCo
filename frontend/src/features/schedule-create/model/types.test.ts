@@ -33,6 +33,7 @@ const makeDetail = (
       avatarUrl: null,
       attendanceStatus: null,
       note: null,
+      skillType: null,
     },
   ],
   memo: '안건 조율',
@@ -52,7 +53,9 @@ describe('toScheduleRequest', () => {
       title: '  합주 A  ',
       placeId: 'place-1',
       songId: 'band-song-1',
-      participantBandMemberIds: ['member-1'],
+      sessionAssignments: [
+        { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+      ],
       memo: '   ',
     });
 
@@ -62,7 +65,7 @@ describe('toScheduleRequest', () => {
       status: 'PLANNED',
       placeId: 'place-1',
       songIds: ['band-song-1'],
-      participantBandMemberIds: ['member-1'],
+      participants: [{ bandMemberId: 'member-1', skillTypeId: 'skill-1' }],
     });
     expect(req.memo).toBeUndefined();
     expect(new Date(req.endAt).getTime()).toBeGreaterThan(
@@ -99,7 +102,10 @@ describe('toScheduleRequest', () => {
 
     expect(req.scheduleType).toBe('MEETING');
     expect(req.songIds).toBeUndefined();
-    expect(req.participantBandMemberIds).toEqual(['member-1', 'member-2']);
+    expect(req.participants).toEqual([
+      { bandMemberId: 'member-1' },
+      { bandMemberId: 'member-2' },
+    ]);
   });
 
   it('외부 링크는 그대로 싣고, 업로드가 끝난 참고자료를 페이로드에 넣는다', () => {
@@ -137,13 +143,14 @@ describe('toScheduleRequest', () => {
 });
 
 describe('isFormValid', () => {
-  it('합주는 이름·장소·곡·참여자가 모두 있어야 유효하다', () => {
+  it('합주는 이름·장소·곡·세션 편성이 모두 있어야 유효하다', () => {
     const form = baseForm();
     expect(isFormValid(form)).toBe(false);
-    // 참여자가 없으면 곡이 있어도 무효.
+    // 세션 편성이 없으면 곡이 있어도 무효.
     expect(
       isFormValid({ ...form, title: '합주', placeId: 'p', songId: 's' }),
     ).toBe(false);
+    // 합주는 참여자 목록이 아니라 세션 편성을 본다.
     expect(
       isFormValid({
         ...form,
@@ -151,6 +158,17 @@ describe('isFormValid', () => {
         placeId: 'p',
         songId: 's',
         participantBandMemberIds: ['member-1'],
+      }),
+    ).toBe(false);
+    expect(
+      isFormValid({
+        ...form,
+        title: '합주',
+        placeId: 'p',
+        songId: 's',
+        sessionAssignments: [
+          { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+        ],
       }),
     ).toBe(true);
   });
@@ -166,6 +184,82 @@ describe('isFormValid', () => {
     expect(
       isFormValid({ ...form, participantBandMemberIds: ['member-1'] }),
     ).toBe(true);
+  });
+});
+
+describe('세션 편성', () => {
+  it('합주는 세션 편성을 participants로 싣는다(같은 사람도 세션마다 한 번씩)', () => {
+    const req = toScheduleRequest({
+      ...baseForm(),
+      title: '합주 A',
+      placeId: 'place-1',
+      songId: 'band-song-1',
+      sessionAssignments: [
+        { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+        { skillTypeId: 'skill-2', bandMemberId: 'member-1' },
+        { skillTypeId: 'skill-3', bandMemberId: 'member-2' },
+      ],
+    });
+
+    expect(req.participants).toEqual([
+      { bandMemberId: 'member-1', skillTypeId: 'skill-1' },
+      { bandMemberId: 'member-1', skillTypeId: 'skill-2' },
+      { bandMemberId: 'member-2', skillTypeId: 'skill-3' },
+    ]);
+  });
+
+  it('합주는 세션 편성이 비면 유효하지 않다', () => {
+    const base = {
+      ...baseForm(),
+      title: '합주 A',
+      placeId: 'place-1',
+      songId: 'band-song-1',
+    };
+
+    expect(isFormValid({ ...base, sessionAssignments: [] })).toBe(false);
+    expect(
+      isFormValid({
+        ...base,
+        sessionAssignments: [{ skillTypeId: 'skill-1', bandMemberId: 'm-1' }],
+      }),
+    ).toBe(true);
+  });
+
+  it('상세의 세션이 붙은 참여자는 편성으로, 겸업은 참여자 목록에서 한 번만 센다', () => {
+    const detail = makeDetail({
+      scheduleType: 'PRACTICE',
+      participants: [
+        {
+          participantId: 'p1',
+          bandMemberId: 'member-1',
+          userId: 'user-1',
+          nickname: '김민수',
+          avatarUrl: null,
+          attendanceStatus: null,
+          note: null,
+          skillType: { skillTypeId: 'skill-1', name: '보컬' },
+        },
+        {
+          participantId: 'p2',
+          bandMemberId: 'member-1',
+          userId: 'user-1',
+          nickname: '김민수',
+          avatarUrl: null,
+          attendanceStatus: null,
+          note: null,
+          skillType: { skillTypeId: 'skill-2', name: '기타' },
+        },
+      ],
+    });
+
+    const form = detailToForm(detail);
+
+    expect(form.sessionAssignments).toEqual([
+      { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+      { skillTypeId: 'skill-2', bandMemberId: 'member-1' },
+    ]);
+    // 행은 2개지만 사람은 1명이다.
+    expect(form.participantBandMemberIds).toEqual(['member-1']);
   });
 });
 
@@ -190,6 +284,7 @@ describe('detailToForm', () => {
           avatarUrl: null,
           attendanceStatus: null,
           note: null,
+          skillType: null,
         },
       ],
       memo: '안건 조율',

@@ -11,6 +11,12 @@ import { type ReferenceFileDraft, toUploadedDraft } from './reference-files';
 
 export type { ScheduleType } from '@/entities/schedule/model/types';
 
+/** 세션 편성 한 칸. 세션 하나에 멤버 한 명. */
+export interface ScheduleSessionAssignment {
+  skillTypeId: string;
+  bandMemberId: string;
+}
+
 /** 합주/회의 공용 폼 상태. 합주 전용(songId)과 참여자는 유형에 따라 취사선택된다. */
 export interface ScheduleFormState {
   scheduleType: ScheduleType;
@@ -21,8 +27,13 @@ export interface ScheduleFormState {
   placeId: string | null;
   /** 합주(PRACTICE) 전용. 백엔드는 배열로 받으므로 전송 시 [songId]로 감싼다. */
   songId: string | null;
-  /** 참여자 bandMemberId 배열(합주·회의 공통). */
+  /** 참여자 bandMemberId 배열. 회의 전용 — 합주는 sessionAssignments가 참여자를 정한다. */
   participantBandMemberIds: string[];
+  /**
+   * 합주 전용 세션 편성. (세션, 멤버) 한 쌍이 카드 한 장이다.
+   * 한 사람이 보컬·기타를 겸하면 같은 bandMemberId가 세션별로 여러 번 들어간다.
+   */
+  sessionAssignments: ScheduleSessionAssignment[];
   memo: string;
   /** 외부 링크(canonical URL). 합주·회의 공통. */
   externalLinks: string[];
@@ -49,6 +60,7 @@ export const createEmptyForm = (initialDate?: Date): ScheduleFormState => ({
   placeId: null,
   songId: null,
   participantBandMemberIds: [],
+  sessionAssignments: [],
   memo: '',
   externalLinks: [],
   referenceFiles: [],
@@ -101,9 +113,13 @@ export const toScheduleRequest = (
     placeId: form.placeId ?? undefined,
     memo: memo || undefined,
     songIds: isPractice && form.songId ? [form.songId] : undefined,
-    participantBandMemberIds: form.participantBandMemberIds.length
-      ? form.participantBandMemberIds
-      : undefined,
+    // 합주는 세션 편성이 곧 참여자다. 회의는 세션 없이 사람만 싣는다.
+    participants: isPractice
+      ? form.sessionAssignments.map((assignment) => ({
+          bandMemberId: assignment.bandMemberId,
+          skillTypeId: assignment.skillTypeId,
+        }))
+      : form.participantBandMemberIds.map((bandMemberId) => ({ bandMemberId })),
     // 빈 배열도 그대로 보낸다 — 전체 교체 방식이라 "모두 삭제"를 표현해야 한다.
     externalLinks: form.externalLinks,
     // 참고자료는 합주 전용. 회의로 바꾸면 남아 있던 파일이 실리지 않게 막는다.
@@ -128,7 +144,17 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
     endTime: hhmm(end),
     placeId: detail.place?.placeId ?? null,
     songId: detail.songs[0]?.songId ?? null,
-    participantBandMemberIds: detail.participants.map((p) => p.bandMemberId),
+    // 세션이 붙은 항목은 편성으로, 안 붙은 항목은 참여자로 되돌린다.
+    // 겸업하는 사람은 참여자 목록에서 한 번만 세도록 중복을 제거한다.
+    participantBandMemberIds: [
+      ...new Set(detail.participants.map((p) => p.bandMemberId)),
+    ],
+    sessionAssignments: detail.participants
+      .filter((p) => p.skillType !== null)
+      .map((p) => ({
+        skillTypeId: p.skillType!.skillTypeId,
+        bandMemberId: p.bandMemberId,
+      })),
     memo: detail.memo ?? '',
     externalLinks: detail.externalLinks,
     referenceFiles: detail.referenceFiles.map(toUploadedDraft),
@@ -140,8 +166,9 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
 export const isFormValid = (form: ScheduleFormState): boolean => {
   if (form.title.trim().length === 0) return false;
   if (!form.placeId) return false;
-  // 참여자는 합주·회의 공통 필수. 합주는 곡도 필수.
-  if (form.participantBandMemberIds.length === 0) return false;
-  if (form.scheduleType === 'PRACTICE') return !!form.songId;
-  return true;
+  // 합주는 곡과 세션 편성이, 회의는 참여자가 필수다.
+  if (form.scheduleType === 'PRACTICE') {
+    return !!form.songId && form.sessionAssignments.length > 0;
+  }
+  return form.participantBandMemberIds.length > 0;
 };

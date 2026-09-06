@@ -201,12 +201,50 @@ const BAND_PLACES = [
 ];
 
 const BAND_SONGS = [
-  { songId: 'band-song-1', title: '좋은 날', artistName: '아이유' },
-  { songId: 'band-song-2', title: '봄날', artistName: '방탄소년단' },
-  { songId: 'band-song-3', title: 'Dynamite', artistName: '방탄소년단' },
-  { songId: 'band-song-4', title: '밤편지', artistName: '아이유' },
-  { songId: 'band-song-5', title: '건널목', artistName: 'Whiteusedsocks' },
-  { songId: 'band-song-6', title: 'Attention', artistName: '뉴진스' },
+  {
+    songId: 'band-song-1',
+    title: '좋은 날',
+    artistName: '아이유',
+    key: 'C_MAJOR',
+  },
+  {
+    songId: 'band-song-2',
+    title: '봄날',
+    artistName: '방탄소년단',
+    key: 'F_SHARP_MINOR',
+  },
+  {
+    songId: 'band-song-3',
+    title: 'Dynamite',
+    artistName: '방탄소년단',
+    key: null,
+  },
+  {
+    songId: 'band-song-4',
+    title: '밤편지',
+    artistName: '아이유',
+    key: 'A_MINOR',
+  },
+  {
+    songId: 'band-song-5',
+    title: '건널목',
+    artistName: 'Whiteusedsocks',
+    key: null,
+  },
+  {
+    songId: 'band-song-6',
+    title: 'Attention',
+    artistName: '뉴진스',
+    key: 'G_MAJOR',
+  },
+];
+
+// skill/handlers.ts의 skillTypeId와 맞춘다(세션 편성 확인용).
+const SESSION_SKILL_TYPES = [
+  { skillTypeId: 'skill-1', name: '보컬' },
+  { skillTypeId: 'skill-2', name: '기타' },
+  { skillTypeId: 'skill-3', name: '베이스' },
+  { skillTypeId: 'skill-4', name: '드럼' },
 ];
 
 // team/handlers.ts의 팀과 teamId를 맞춰 상세 필터의 "연습 팀" 선택이 실제로 걸리게 한다.
@@ -250,18 +288,29 @@ const scheduleStore = new Map<string, ScheduleDetail>();
 /** 테스트 간 생성/수정 일정이 새지 않도록 스토어를 비운다(test setup afterEach에서 호출). */
 export const resetScheduleStore = () => scheduleStore.clear();
 
+const skillTypeById = new Map(
+  SESSION_SKILL_TYPES.map((skill) => [skill.skillTypeId, skill]),
+);
+
 const buildParticipants = (
-  ids: string[] = [],
+  inputs: { bandMemberId: string; skillTypeId?: string }[] = [],
   scheduleId: string,
 ): ScheduleParticipantDetail[] =>
-  ids.map((mid, index) => {
+  inputs.map((input, index) => {
+    const mid = input.bandMemberId;
     const member = membersById.get(mid);
+    const skill = input.skillTypeId
+      ? skillTypeById.get(input.skillTypeId)
+      : undefined;
     return {
       participantId: `${scheduleId}-p${index + 1}`,
       bandMemberId: mid,
       userId: member?.userId ?? mid,
       nickname: member?.nickname ?? '멤버',
       avatarUrl: member?.avatarUrl ?? null,
+      skillType: skill
+        ? { skillTypeId: skill.skillTypeId, name: skill.name }
+        : null,
       attendanceStatus: null,
       note: MEMBER_GEAR[mid] ?? null,
     };
@@ -303,7 +352,7 @@ const buildDetail = (
     status: body.status,
     place: place ? { ...place, address: '' } : null,
     songs: resolveSongs(body.songIds),
-    participants: buildParticipants(body.participantBandMemberIds, scheduleId),
+    participants: buildParticipants(body.participants, scheduleId),
     memo: body.memo ?? null,
     externalLinks: body.externalLinks ?? [],
     referenceFiles: buildReferenceFiles(body.referenceFiles, scheduleId),
@@ -339,8 +388,15 @@ const buildFallbackDetail = (scheduleId: string): ScheduleDetail => {
       updatedAt: now,
     };
   }
-  const participantIds = BAND_MEMBERS.slice(0, item.participantCount).map(
-    (m) => m.bandMemberId,
+  // 합주는 세션을 순환 배정해 세션 편성 화면을 확인할 수 있게 한다.
+  const participantInputs = BAND_MEMBERS.slice(0, item.participantCount).map(
+    (m, index) => ({
+      bandMemberId: m.bandMemberId,
+      skillTypeId:
+        item.scheduleType === 'PRACTICE'
+          ? SESSION_SKILL_TYPES[index % SESSION_SKILL_TYPES.length].skillTypeId
+          : undefined,
+    }),
   );
   return {
     scheduleId,
@@ -352,7 +408,7 @@ const buildFallbackDetail = (scheduleId: string): ScheduleDetail => {
     status: item.status,
     place: item.place ? { ...item.place, address: '' } : null,
     songs: item.songs,
-    participants: buildParticipants(participantIds, scheduleId),
+    participants: buildParticipants(participantInputs, scheduleId),
     memo: item.memo,
     externalLinks: [],
     referenceFiles: [],
@@ -467,8 +523,8 @@ export const scheduleHandlers = [
             ? resolveSongs(body.songIds)
             : existing.songs,
         participants:
-          body.participantBandMemberIds !== undefined
-            ? buildParticipants(body.participantBandMemberIds, scheduleId)
+          body.participants !== undefined
+            ? buildParticipants(body.participants, scheduleId)
             : existing.participants,
         memo: body.memo !== undefined ? (body.memo ?? null) : existing.memo,
         // 전체 교체: 배열이 오면 그 값으로 통째 교체, 안 오면 기존 유지.
