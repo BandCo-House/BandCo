@@ -83,7 +83,7 @@ export function ReceivedInviteSheet({
           <SheetTitle className="typo-lg-sb text-gradient-top">
             밴드 초대장
           </SheetTitle>
-          <div className="flex flex-col typo-sm-m text-gradient-top">
+          <div className="flex flex-col typo-sm-sb text-gradient-top">
             <span>{inviter}님이 회원님을</span>
             <span>{band}에 초대했습니다</span>
           </div>
@@ -91,14 +91,14 @@ export function ReceivedInviteSheet({
 
         {/* 밴드 요약 정보 카드 */}
         <div className="mt-8 flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto">
-          <span className="text-center typo-xs-r text-[#9D9D9F]">
+          <span className="text-center typo-xs-r text-grey-300">
             {band}
             {getKoreanParticle(band, '은/는')} 이런 밴드에요
           </span>
 
           <div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6 shadow-sm">
             {bandDescription && (
-              <p className="border-b border-[#DFDFE1] pb-4 text-center typo-sm-m text-[#555568]">
+              <p className="border-b border-[#DFDFE1] pb-4 text-center typo-sm-sb text-[#555568]">
                 "{bandDescription}"
               </p>
             )}
@@ -106,11 +106,11 @@ export function ReceivedInviteSheet({
             {/* 동적 통계 요약 (멤버 수) */}
             <div className="flex w-full items-center justify-center px-6">
               <div className="flex flex-col items-center gap-1">
-                <Users className="h-4 w-4 text-[#9D9D9F]" />
+                <Users className="h-4 w-4 text-grey-300" />
                 <span className="typo-lg-sb text-gradient-top">
                   {memberCount != null ? memberCount : '-'}
                 </span>
-                <span className="typo-xs-r text-[#9D9D9F]">멤버</span>
+                <span className="typo-xs-r text-grey-300">멤버</span>
               </div>
             </div>
           </div>
@@ -119,11 +119,11 @@ export function ReceivedInviteSheet({
         {/* 하단 액션 버튼 그룹 또는 처리 완료 상태 표시 */}
         <div className="mt-6 flex w-full shrink-0 justify-center gap-3">
           {noti.reference?.status === 'DECLINED' ? (
-            <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-[#9D9D9F] select-none">
+            <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
               이미 거절한 초대장입니다
             </div>
           ) : noti.reference?.status === 'ACCEPTED' ? (
-            <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-[#9D9D9F] select-none">
+            <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
               이미 수락한 초대장입니다
             </div>
           ) : (

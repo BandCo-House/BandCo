@@ -67,9 +67,7 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-between">
-          <span className="truncate typo-sm-b font-bold text-grey-50">
-            {team.name}
-          </span>
+          <span className="truncate typo-sm-b text-grey-50">{team.name}</span>
           <ChevronRight className="h-5 w-5 text-grey-300 transition-transform group-hover/card:translate-x-0.5 group-hover/card:text-white" />
         </div>
       </div>
@@ -102,7 +100,7 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
                   {member.user.nickname.slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <span className="typo-sm-m text-xs text-grey-50">
+              <span className="typo-sm-sb text-grey-50">
                 {member.user.nickname}
               </span>
             </div>

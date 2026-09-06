@@ -69,9 +69,7 @@ export const BandTeamSettings: React.FC<BandTeamSettingsProps> = ({
     <div className="flex w-full flex-col gap-4 px-5 py-4 text-foreground">
       {/* 1. 상단 액션 바 (총 N개의 팀 + 팀 추가 / 팀 삭제 버튼) */}
       <div className="flex items-center justify-between">
-        <h2 className="typo-base-sb text-base font-semibold text-grey-100">
-          총 {teams.length}개의 팀
-        </h2>
+        <h2 className="typo-base-sb text-grey-100">총 {teams.length}개의 팀</h2>
 
         {hasSelected ? (
           <button
@@ -94,7 +92,7 @@ export const BandTeamSettings: React.FC<BandTeamSettingsProps> = ({
           <Link
             to="/band/$bandId/team/create"
             params={{ bandId }}
-            className="inline-flex items-center justify-center rounded-[24px] bg-primary px-4 py-2.5 typo-sm-sb text-gray-900 transition-opacity hover:opacity-90"
+            className="inline-flex items-center justify-center rounded-[24px] bg-primary px-4 py-2.5 typo-sm-sb text-grey-600 transition-opacity hover:opacity-90"
           >
             팀 추가
           </Link>

@@ -32,7 +32,7 @@ export function ForgotPasswordPage() {
           <h1 className="text-[3rem] font-extrabold tracking-tight text-grey-50">
             BandCo
           </h1>
-          <p className="mt-5 typo-base-m text-grey-200">
+          <p className="mt-5 typo-base-sb text-grey-200">
             가입한 이메일로 비밀번호 재설정 안내를 보내드립니다.
           </p>
         </div>
@@ -63,7 +63,7 @@ export function ForgotPasswordPage() {
             재설정 메일 보내기
           </Button>
           {message ? (
-            <p aria-live="polite" className="px-4 typo-sm-m text-foreground">
+            <p aria-live="polite" className="px-4 typo-sm-sb text-foreground">
               {message}
             </p>
           ) : null}
@@ -72,7 +72,7 @@ export function ForgotPasswordPage() {
         <div className="mt-8">
           <Link
             to="/login"
-            className="block w-full px-2 py-1 text-center typo-base-m text-grey-200 transition-colors hover:text-grey-50 hover:underline focus-visible:text-grey-50 focus-visible:underline"
+            className="block w-full px-2 py-1 text-center typo-base-sb text-grey-200 transition-colors hover:text-grey-50 hover:underline focus-visible:text-grey-50 focus-visible:underline"
           >
             로그인으로 돌아가기
           </Link>

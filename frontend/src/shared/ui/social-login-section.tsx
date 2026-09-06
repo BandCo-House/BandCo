@@ -92,7 +92,7 @@ export const SocialLoginSection = ({
 }: SocialLoginSectionProps) => {
   return (
     <section className={cn('flex flex-col', className)}>
-      <div className="flex items-center gap-4 typo-xs-m text-grey-200">
+      <div className="flex items-center gap-4 typo-xs-sb text-grey-200">
         <span className="h-px flex-1 bg-overlay-40" />
         <p className="shrink-0">SNS 계정으로 빠르게 로그인할 수 있어요</p>
         <span className="h-px flex-1 bg-overlay-40" />

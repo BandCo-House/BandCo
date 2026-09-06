@@ -111,7 +111,7 @@ export function ProfileMusicSearchDialog({
 
           <div className="flex min-h-64 flex-col gap-5 pt-8">
             {isLoading && (
-              <p className="typo-sm-m text-grey-200">검색 중입니다.</p>
+              <p className="typo-sm-sb text-grey-200">검색 중입니다.</p>
             )}
             {!isLoading &&
               shouldShowResults &&
@@ -137,7 +137,7 @@ export function ProfileMusicSearchDialog({
                 </button>
               ))}
             {!isLoading && shouldShowResults && results.length === 0 && (
-              <p className="typo-sm-m text-grey-200">검색 결과가 없습니다.</p>
+              <p className="typo-sm-sb text-grey-200">검색 결과가 없습니다.</p>
             )}
           </div>
         </AppDialogBody>

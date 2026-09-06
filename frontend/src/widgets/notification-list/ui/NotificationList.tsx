@@ -313,7 +313,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
               type="button"
               onClick={handleMarkAllAsRead}
               disabled={markAllAsReadMutation.isPending || !hasUnread}
-              className="rounded-full border border-grey-300 px-4 py-1.5 typo-xs-m text-grey-300 transition-all hover:bg-grey-300 hover:text-black disabled:opacity-40"
+              className="rounded-full border border-grey-300 px-4 py-1.5 typo-xs-sb text-grey-300 transition-all hover:bg-grey-300 hover:text-black disabled:opacity-40"
             >
               모두 읽음
             </button>
@@ -331,7 +331,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
         </div>
       ) : isError ? (
         <div className="flex min-h-[400px] flex-col items-center justify-center py-20 text-center">
-          <p className="typo-base-m text-red-500">
+          <p className="typo-base-sb text-red-500">
             알림 목록을 불러오지 못했습니다.
           </p>
           <p className="mt-2 typo-sm-r text-muted-foreground">
@@ -341,7 +341,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
       ) : notifications.length === 0 ? (
         <div className="flex h-[110px] w-full flex-col justify-center gap-1 rounded-2xl p-4">
           <h4 className="typo-sm-b text-primary">새로운 알림이 없습니다.</h4>
-          <p className="typo-xs-m text-grey-300">
+          <p className="typo-xs-sb text-grey-300">
             밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요.
           </p>
         </div>
@@ -390,7 +390,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
             type="button"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="flex w-full max-w-xs items-center justify-center gap-2 rounded-full border border-border py-2.5 typo-sm-m text-foreground disabled:opacity-40"
+            className="flex w-full max-w-xs items-center justify-center gap-2 rounded-full border border-border py-2.5 typo-sm-sb text-foreground disabled:opacity-40"
           >
             {isFetchingNextPage ? (
               <>

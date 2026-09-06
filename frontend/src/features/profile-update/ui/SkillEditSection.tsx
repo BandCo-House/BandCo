@@ -160,7 +160,7 @@ export function SkillEditSection({
           </Button>
         )}
         {skills.length === 0 && (
-          <span className="typo-sm-r text-slate-400">
+          <span className="typo-sm-r text-grey-300">
             등록된 플레이 파트가 없습니다.
           </span>
         )}

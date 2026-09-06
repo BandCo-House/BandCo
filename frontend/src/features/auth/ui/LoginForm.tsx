@@ -67,7 +67,7 @@ const AuthRoundedInput = ({
         aria-invalid={hasError}
       />
       {errorMessage ? (
-        <p className="ml-4 text-xs text-destructive">{errorMessage}</p>
+        <p className="ml-4 typo-sm-r text-destructive">{errorMessage}</p>
       ) : null}
     </div>
   );
@@ -191,7 +191,7 @@ export const LoginForm = ({
       />
 
       <SplitLinkRow
-        className="mt-20 typo-base-m"
+        className="mt-20 typo-base-sb"
         left={
           <AuthRowLink onClick={() => undefined}>개인정보처리방침</AuthRowLink>
         }

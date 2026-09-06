@@ -95,13 +95,13 @@ export const SongSearchModal = ({
         }}
         className="flex w-full items-center gap-2 rounded-md px-3 py-4 text-left focus-visible:outline-2 focus-visible:outline-primary"
       >
-        <span className="min-w-0 flex-[6] truncate typo-sm-m text-grey-50">
+        <span className="min-w-0 flex-[6] truncate typo-sm-sb text-grey-50">
           {track.title}
         </span>
-        <span className="min-w-0 flex-[4] truncate typo-sm-m text-grey-200">
+        <span className="min-w-0 flex-[4] truncate typo-sm-sb text-grey-200">
           {track.artistName}
         </span>
-        <span className="shrink-0 typo-sm-m text-grey-200">
+        <span className="shrink-0 typo-sm-sb text-grey-200">
           {formatSongLength(Math.round(track.durationMs / 1000))}
         </span>
       </button>

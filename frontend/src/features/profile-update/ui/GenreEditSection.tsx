@@ -145,7 +145,7 @@ export function GenreEditSection({
           </Button>
         )}
         {favoriteGenres.length === 0 && (
-          <span className="typo-sm-r text-slate-400">
+          <span className="typo-sm-r text-grey-300">
             등록된 선호 장르가 없습니다.
           </span>
         )}

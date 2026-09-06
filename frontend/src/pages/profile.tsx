@@ -232,10 +232,10 @@ function ProfileRoutePage() {
 
   if (loading && !profile) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
+      <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-12 animate-spin rounded-full border-4 border-violet-500 border-t-transparent"></div>
-          <span className="typo-md-m text-violet-400">
+          <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <span className="typo-sm-r text-grey-300">
             프로필 정보를 불러오는 중입니다.
           </span>
         </div>
@@ -245,8 +245,8 @@ function ProfileRoutePage() {
 
   if (!profile) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
-        <span className="typo-lg-b text-rose-500">
+      <div className="flex h-[80vh] items-center justify-center">
+        <span className="typo-sm-r text-destructive">
           존재하지 않는 유저 프로필입니다.
         </span>
       </div>

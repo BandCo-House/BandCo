@@ -162,7 +162,7 @@ export const SpaceCreateModal = ({
             </div>
             {/* 주변에 다른 요소가 없어 absolute로 띄워 레이아웃을 밀지 않는다. */}
             {endBeforeStart && (
-              <p className="absolute top-full mt-1 typo-xs-m text-destructive">
+              <p className="absolute top-full mt-1 typo-sm-r text-destructive">
                 종료 날짜는 시작 날짜 이후여야 해요.
               </p>
             )}

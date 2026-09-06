@@ -83,7 +83,7 @@ export function ProfileCard({
       <div className="absolute top-0 left-0 z-10 h-full w-full bg-linear-to-b from-[#020119] via-[#020119]/10 via-45% to-[#020119]" />
 
       <div className="relative z-50 flex min-h-9 w-full items-center justify-between px-5 py-3">
-        <h1 className="flex min-h-9 items-center gap-2 typo-lg-b font-semibold text-grey-50">
+        <h1 className="flex min-h-9 items-center gap-2 typo-lg-b text-grey-50">
           {isMe && isEditing && (
             <button
               type="button"
@@ -103,7 +103,7 @@ export function ProfileCard({
         {isMe && (
           <button
             onClick={isEditing ? onSave : onToggleEdit}
-            className="flex min-h-9 cursor-pointer items-center justify-center gap-2.5 px-3 py-2 typo-sm-m transition-colors hover:text-white"
+            className="flex min-h-9 cursor-pointer items-center justify-center gap-2.5 px-3 py-2 typo-sm-sb transition-colors hover:text-white"
           >
             {isEditing ? (
               <>
@@ -153,7 +153,7 @@ export function ProfileCard({
               <button
                 type="button"
                 onClick={isEditing ? onOpenMusicSearch : undefined}
-                className="mt-5.5 mr-34 ml-auto flex max-w-52 items-center justify-end gap-1.5 typo-sm-m text-grey-100"
+                className="mt-5.5 mr-34 ml-auto flex max-w-52 items-center justify-end gap-1.5 typo-sm-sb text-grey-100"
               >
                 <span className="truncate">{profileMusicTitle}</span>
                 {profileMusicArtist && (
@@ -171,7 +171,7 @@ export function ProfileCard({
                   <>
                     <label
                       htmlFor="nickname-input"
-                      className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
+                      className="shrink-0 cursor-pointer typo-sm-b text-grey-50"
                     >
                       닉네임
                     </label>
@@ -195,7 +195,7 @@ export function ProfileCard({
                   <>
                     <label
                       htmlFor="description-input"
-                      className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
+                      className="shrink-0 cursor-pointer typo-sm-b text-grey-50"
                     >
                       소개
                     </label>

@@ -110,10 +110,10 @@ const SignupInput = ({
         {action}
       </div>
       {helperText && !errorMessage ? (
-        <p className="typo-xs-m text-grey-200">{helperText}</p>
+        <p className="typo-sm-r text-grey-200">{helperText}</p>
       ) : null}
       {errorMessage ? (
-        <p className="typo-xs-m text-destructive">{errorMessage}</p>
+        <p className="typo-sm-r text-destructive">{errorMessage}</p>
       ) : null}
     </div>
   );
@@ -136,11 +136,11 @@ const TermsCheckboxRow = ({
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
       />
-      <span className="min-w-0 flex-1 typo-sm-m">{children}</span>
+      <span className="min-w-0 flex-1 typo-sm-sb">{children}</span>
       {showMore ? (
         <button
           type="button"
-          className="inline-flex items-center gap-1 px-1 typo-sm-m"
+          className="inline-flex items-center gap-1 px-1 typo-sm-sb"
         >
           더보기
           <ArrowRightIcon aria-hidden="true" className="size-5" />
@@ -181,7 +181,7 @@ const EmailDuplicateResult = ({ status }: EmailDuplicateResultProps) => {
           'flex h-14 items-center justify-center overflow-hidden rounded-full transition-transform duration-300 ease-out',
           isVisible ? 'scale-100' : 'pointer-events-none scale-90',
           isDuplicated
-            ? 'border border-primary px-6 typo-base-m text-foreground'
+            ? 'border border-primary px-6 typo-base-sb text-foreground'
             : 'w-14 border border-primary bg-transparent text-primary',
         )}
       >
@@ -203,7 +203,7 @@ const PasswordConfirmAction = ({
 }: PasswordConfirmActionProps) => {
   if (!isPasswordConfirmed) {
     return (
-      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-primary px-6 typo-base-m text-foreground">
+      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-primary px-6 typo-base-sb text-foreground">
         불일치
       </div>
     );
@@ -395,7 +395,7 @@ export const SignupForm = ({
                 size="sm"
                 disabled={emailDuplicateStatus === 'checking'}
                 onClick={handleEmailDuplicateCheck}
-                className="mb-1 h-14 shrink-0 rounded-full border-primary px-6 typo-base-m text-foreground"
+                className="mb-1 h-14 shrink-0 rounded-full border-primary px-6 typo-base-sb text-foreground"
               >
                 {emailDuplicateStatus === 'checking' ? '확인 중' : '중복 확인'}
               </Button>

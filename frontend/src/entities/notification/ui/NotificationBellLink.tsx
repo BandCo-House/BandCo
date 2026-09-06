@@ -28,7 +28,7 @@ export const NotificationBellLink = ({ className }: { className?: string }) => {
       {count > 0 && (
         <span
           aria-hidden="true"
-          className="absolute -top-0.5 -right-0.5 inline-flex min-w-5 items-center justify-center rounded-md bg-primary px-1 typo-xs-m text-secondary"
+          className="absolute -top-0.5 -right-0.5 inline-flex min-w-5 items-center justify-center rounded-md bg-primary px-1 typo-xs-sb text-secondary"
         >
           {badgeText}
         </span>

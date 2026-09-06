@@ -121,7 +121,7 @@ function TagSelectContent({
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center gap-2 py-12 typo-sm-m text-grey-300">
+      <div className="flex flex-1 items-center justify-center gap-2 py-12 typo-sm-sb text-grey-300">
         <Loader2 className="size-5 animate-spin text-primary" />
         <span>목록을 불러오는 중...</span>
       </div>
@@ -149,7 +149,7 @@ function TagSelectContent({
               )}
             >
               {isSelected && (
-                <span className="typo-xs-b mr-1.5 flex size-5 items-center justify-center rounded-full bg-[#12131E] text-white">
+                <span className="mr-1.5 flex size-5 items-center justify-center rounded-full bg-[#12131E] typo-xs-sb text-white">
                   {selectedIndex + 1}
                 </span>
               )}
