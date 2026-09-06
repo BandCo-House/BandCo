@@ -65,7 +65,7 @@ const GoogleLoginButton = ({
       >
         <img src={googleLogo} alt="" className="h-6 w-6" />
       </span>
-      <div className="absolute inset-0 origin-top-left scale-140 opacity-0">
+      <div className="absolute top-0 left-0 h-10 w-10 origin-top-left scale-140 opacity-0">
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
           <GoogleLogin
             type="icon"
