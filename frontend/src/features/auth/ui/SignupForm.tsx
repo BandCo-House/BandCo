@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import CheckIcon from '@/assets/icons/check.svg?react';
 import { checkEmailDuplicate } from '../api/auth.service';
@@ -40,9 +41,7 @@ type TermsState = {
 };
 
 type EmailDuplicateStatus = 'idle' | 'checking' | 'available' | 'duplicated';
-type SignupFormErrors = Partial<
-  Record<keyof SignupReq | 'requiredTerms', string>
->;
+type SignupFormErrors = Partial<Record<keyof SignupReq, string>>;
 
 interface TermsCheckboxRowProps {
   id: keyof TermsState;
@@ -356,11 +355,12 @@ export const SignupForm = ({
       nextErrors.email = '이미 사용 중인 이메일입니다.';
     }
 
+    // 약관 동의는 특정 입력칸에 붙지 않는 폼 단위 경고라 스낵바로 알린다.
     if (!isRequiredTermsChecked) {
-      nextErrors.requiredTerms = '필수 이용약관에 동의해주세요.';
+      toast.error('필수 이용약관에 동의해주세요.');
     }
 
-    if (Object.keys(nextErrors).length > 0) {
+    if (Object.keys(nextErrors).length > 0 || !isRequiredTermsChecked) {
       setErrors(nextErrors);
       return;
     }
@@ -462,9 +462,6 @@ export const SignupForm = ({
               개인정보 수집 및 이용 동의(필수)
             </TermsCheckboxRow>
           </div>
-          {errors.requiredTerms ? (
-            <p className="typo-xs-m text-destructive">{errors.requiredTerms}</p>
-          ) : null}
         </section>
 
         <Button

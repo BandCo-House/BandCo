@@ -27,9 +27,7 @@ export const BandCreateDialog = ({
   const {
     form,
     preview,
-    fieldError,
     isLoading,
-    error,
     isSubmitDisabled,
     handleOpenChange,
     handleCoverChange,
@@ -144,11 +142,6 @@ export const BandCreateDialog = ({
               />
             </div>
           </div>
-
-          {fieldError ? (
-            <p className="typo-sm-r text-destructive">{fieldError}</p>
-          ) : null}
-          {error ? <p className="typo-sm-r text-destructive">{error}</p> : null}
         </AppDialogBody>
 
         <AppDialogFooter>
