@@ -251,7 +251,8 @@ export class TeamsService {
         throw new BadRequestException('같은 밴드의 멤버만 팀에 추가할 수 있습니다.');
       }
 
-      if (skillTypeId !== undefined) {
+      // @IsOptional()이 null도 통과시킨다. null을 그대로 넘기면 `in: [null]`로 500이 된다.
+      if (skillTypeId != null) {
         const existingSkillTypeIds = await this.teamsRepository.findExistingSkillTypeIds([skillTypeId], client);
         if (existingSkillTypeIds.length === 0) {
           throw new BadRequestException('존재하지 않는 세션입니다.');

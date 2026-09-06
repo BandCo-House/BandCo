@@ -17,7 +17,7 @@ const SCHEDULE_ID = '22222222-2222-4222-8222-222222222222';
 const BAND_ID = '33333333-3333-4333-8333-333333333333';
 const BAND_MEMBER_ID = '44444444-4444-4444-8444-444444444444';
 const TEAM_ID = '77777777-7777-4777-8777-777777777777';
-const VOCAL_SKILL_ID = '66666666-6666-4666-8666-666666666666';
+const VOCAL_SKILL_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const GUITAR_SKILL_ID = '99999999-9999-4999-8999-999999999999';
 const UNKNOWN_SKILL_ID = '88888888-8888-4888-8888-888888888888';
 const USER_ID = '66666666-6666-4666-8666-666666666666';
@@ -427,6 +427,23 @@ describe('SchedulesService', () => {
       });
 
       expect(captured).toEqual([]);
+    });
+
+    it('skillTypeId가 null이면 세션 배정으로 보지 않는다', async () => {
+      // @IsOptional()이 null을 통과시키므로 Service까지 null이 온다.
+      // 걸러내지 않으면 회의에서 헛된 400, 합주에서는 `in: [null]`로 500이 난다.
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.createSchedule(BAND_SPACE_ID, USER_ID, {
+          title: '회의',
+          scheduleType: ScheduleType.MEETING,
+          startAt: '2026-06-01T14:00:00+09:00',
+          endAt: '2026-06-01T16:00:00+09:00',
+          status: ScheduleStatus.PLANNED,
+          participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: null as never }],
+        }),
+      ).resolves.toBeDefined();
     });
 
     it('createSchedule 내부 호출이 같은 tx로 처리된다', async () => {

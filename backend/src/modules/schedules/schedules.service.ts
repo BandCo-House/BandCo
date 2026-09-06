@@ -63,7 +63,9 @@ export class SchedulesService {
   ): Promise<void> {
     if (participants === undefined) return;
 
-    const skillTypeIds = [...new Set(participants.map(participant => participant.skillTypeId).filter((id): id is string => id !== undefined))];
+    // @IsOptional()이 null도 통과시키므로 undefined뿐 아니라 null도 걸러야 한다.
+    // 남기면 회의에서 헛된 400이 뜨고, 합주에서는 Prisma가 `in: [null]`을 받아 500이 된다.
+    const skillTypeIds = [...new Set(participants.map(participant => participant.skillTypeId).filter((id): id is string => id != null))];
     if (skillTypeIds.length === 0) return;
 
     if (scheduleType === ScheduleType.MEETING) {

@@ -138,9 +138,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
             },
           },
         },
-        _count: {
-          select: { members: true },
-        },
+        // _count는 TeamMember 행 수라 세션 편성이 붙으면 겸업자가 여러 번 세어진다.
+        // 사람 수가 필요하므로 bandMemberId만 받아 중복을 제거한다.
+        members: { select: { bandMemberId: true } },
       },
       orderBy,
       take: query.take + 1,
@@ -154,7 +154,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
       description: team.description,
       status: team.status,
       teamCoverUrl: team.teamCoverUrl,
-      memberCount: team._count.members,
+      memberCount: this.countDistinctMembers(team.members),
       teamLeader: team.teamLeaderBandMember
         ? {
             userId: team.teamLeaderBandMember.userId,
@@ -223,9 +223,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
             },
           },
         },
-        _count: {
-          select: { members: true },
-        },
+        // _count는 TeamMember 행 수라 세션 편성이 붙으면 겸업자가 여러 번 세어진다.
+        // 사람 수가 필요하므로 bandMemberId만 받아 중복을 제거한다.
+        members: { select: { bandMemberId: true } },
       },
     });
 
@@ -244,7 +244,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
           }
         : null,
-      memberCount: team._count.members,
+      memberCount: this.countDistinctMembers(team.members),
       createdAt: team.createdAt.toISOString(),
       updatedAt: team.updatedAt.toISOString(),
     };
@@ -316,7 +316,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             },
           },
         },
-        _count: { select: { members: true } },
+        members: { select: { bandMemberId: true } },
       },
     });
 
@@ -333,7 +333,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
           }
         : null,
-      memberCount: team._count.members,
+      memberCount: this.countDistinctMembers(team.members),
       updatedAt: team.updatedAt.toISOString(),
     };
   }
@@ -513,11 +513,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     const client = tx ?? this.prisma;
     const { orderBy } = parseToPrismaQuery(query);
 
+    // 세션 편성이 붙으면 한 팀에 대한 TeamMember 행이 여러 개다. 그냥 두면 같은 팀이
+    // 목록에 두 번 나온다. 메모리에서 접으면 take+1로 다음 페이지를 판별하는 규칙이
+    // 깨지므로(접힌 만큼 줄어 hasNext가 false가 된다) DB에서 팀 단위로 자른다.
     const myTeamMembers = await client.teamMember.findMany({
       where: {
         bandMember: { userId },
         ...this.createMyTeamsCursorWhere(query),
       },
+      distinct: ['teamId'],
       select: {
         id: true,
         teamRole: true,
@@ -542,7 +546,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
                 },
               },
             },
-            _count: { select: { members: true } },
+            members: {
+              select: { bandMemberId: true, teamRole: true, bandMember: { select: { userId: true } } },
+            },
           },
         },
       },
@@ -560,8 +566,10 @@ export class TeamsPrismaRepository implements TeamsRepository {
       description: member.team.description,
       status: member.team.status,
       teamCoverUrl: member.team.teamCoverUrl,
-      myTeamRole: member.teamRole,
-      memberCount: member.team._count.members,
+      // distinct가 남긴 행이 꼭 리더 행은 아니다. 겸업하는 리더가 MEMBER로 뜨지 않게
+      // 그 팀에 있는 내 행 전체를 보고 판단한다.
+      myTeamRole: this.resolveMyTeamRole(member.team.members, userId, member.teamRole),
+      memberCount: this.countDistinctMembers(member.team.members),
       teamLeader: member.team.teamLeaderBandMember
         ? {
             userId: member.team.teamLeaderBandMember.userId,
@@ -645,6 +653,32 @@ export class TeamsPrismaRepository implements TeamsRepository {
       joinedAt: teamMember.joinedAt.toISOString(),
       skillType: teamMember.skillType ? { skillTypeId: teamMember.skillType.id, name: teamMember.skillType.name } : null,
     };
+  }
+
+  /**
+   * 팀 멤버 행에서 사람 수를 센다.
+   * 세션 편성 때문에 한 사람이 여러 행으로 나뉘므로 행 수를 그대로 쓰면 안 된다.
+   *
+   * @param {{ bandMemberId: string }[]} members - 팀 멤버 행 목록
+   * @returns {number} 중복을 제거한 사람 수
+   */
+  private countDistinctMembers(members: { bandMemberId: string }[]): number {
+    return new Set(members.map(member => member.bandMemberId)).size;
+  }
+
+  /**
+   * 팀 안에서 내 역할을 고른다. 세션마다 행이 나뉘어 같은 사람이 LEADER 행과
+   * MEMBER 행을 함께 가질 수 있으므로 LEADER가 하나라도 있으면 그것을 택한다.
+   *
+   * @param {{ teamRole: string; bandMember: { userId: string } }[]} members - 팀 멤버 행 목록
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} fallback - 내 행을 못 찾았을 때 쓸 값
+   * @returns {string} 팀에서의 내 역할
+   */
+  private resolveMyTeamRole(members: { teamRole: string; bandMember: { userId: string } }[], userId: string, fallback: string): string {
+    const mine = members.filter(member => member.bandMember.userId === userId);
+    if (mine.length === 0) return fallback;
+    return mine.some(member => member.teamRole === 'LEADER') ? 'LEADER' : mine[0].teamRole;
   }
 
   async findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {

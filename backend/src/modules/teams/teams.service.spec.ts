@@ -729,6 +729,12 @@ describe('TeamsService', () => {
       await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, UNKNOWN_SKILL_ID)).rejects.toThrow(BadRequestException);
     });
 
+    it('skillTypeId가 null이면 세션 검증을 건너뛴다', async () => {
+      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberById: otherBandMemberRecord }), createPrismaServiceStub());
+
+      await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, null as never)).resolves.toBeDefined();
+    });
+
     it('동시 요청으로 P2002가 발생하면 ConflictException으로 변환한다', async () => {
       const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: '0' });
       const repository = createTeamsRepositoryStub({
