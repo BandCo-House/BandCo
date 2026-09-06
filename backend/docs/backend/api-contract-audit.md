@@ -94,3 +94,25 @@ P1·P2·P3는 서로 독립이라 바로 시작할 수 있다. P4는 FE 팀원�
 | B6 | **만료·변조 토큰에 500 응답**: `AuthService.verifyToken`이 `jwtService.verify`의 `TokenExpiredError`·`JsonWebTokenError`를 감싸지 않아 가드에서 500으로 떨어졌다. 프론트 인터셉터는 401에서만 재발급하므로 액세스 토큰(5분) 만료 뒤 모든 요청이 "서버 오류"가 됐다(B5와 겹쳐 재발급 자체가 시작되지 못했다). 운영 브라우저 스모크 테스트(밴드 생성)에서 발견 | BE `verifyToken`에서 401 `만료된 토큰입니다.`/`유효하지 않은 토큰입니다.`로 변환, spec 2건 추가 |
 
 MSW 헬퍼(`ok()`/`fail()`)는 만들지 않았다. 핸들러마다 봉투 리터럴을 그대로 쓰는 편이 grep이 쉽고 백엔드 형태와 1:1로 대응돼 규칙(`frontend/AGENTS.md` MSW 표)으로만 고정했다.
+
+### 운영 브라우저 스모크 테스트 (2026-09-06, band-co.vercel.app, Google 로그인 계정)
+
+| 흐름 | 결과 |
+|------|------|
+| 프로필 조회·수정, 프로필 음악 검색(`q`)·저장(`profile.profileMusic`) | 통과 |
+| 액세스 토큰(5분) 만료 → 401 → 재발급 → 재시도 | B6 배포 후 통과. 로그인 페이지로 튕기지 않음 |
+| 밴드 생성, 밴드 설정 저장(PATCH), 초대 링크 발급·폐기 | 통과 |
+| 팀 생성(`CreateTeamResult` 평면) → 팀 상세·팀원 목록(`{ teamId, items, meta }`) → 팀 삭제 | 통과 |
+| 라이브러리 합주곡 검색·추가, 연습 장소 추가 | 통과 |
+| 알림 목록·읽지 않은 알림 요약 | 통과(빈 목록) |
+| 합주 공간 생성 | **실패(500)** → B7 |
+| 일정 생성 | 미검증(합주 공간 선행 필요) |
+| 다른 유저 초대 | 미검증(실사용자에게 알림이 가므로 제외) |
+
+| ID | 내용 | 조치 |
+|----|------|------|
+| B7 | **합주 공간 모듈이 데모 밴드 멤버 ID를 하드코딩**: `bandspaces.prisma-repository.ts`의 `DEMO_BAND_MEMBER_ID`(`11111111-…`)를 생성자·LEADER 멤버·목록 `isMine`/`onlyMine`/`myMembership`에 사용한다. 운영 DB에 그 멤버가 없어 `POST /bands/:id/bandspaces`가 FK 오류로 500. 컨트롤러에 가드도 없다(api-docs #28~#32는 401/403을 정의) | 조치 완료(2026-09-06): 전 라우트 `AccessTokenGuard`, 요청자의 밴드 멤버를 `bandId+userId`로 조회(밴드·공간 없음 404, 멤버 아님 403), 생성자·LEADER·`isMine`·`onlyMine`·`myMembership`에 사용. `be-orchestrate` 설계 문서: `docs/backend/designs/bandspaces/requester-band-member.md` |
+| D1 | **장르·스킬 마스터 데이터 없음**: 운영 `GET /common/genres`·`/common/skills`가 빈 배열. `prisma/seed.ts`에도 마스터 데이터가 없어 프로필의 선호 장르·플레이 파트를 아무도 설정할 수 없다 | 마스터 데이터 시드(장르·스킬 목록) 정의 필요. 공용 DB라 dev도 동일 |
+| D2 | **밴드 공지 API 없음**: 프론트 밴드 홈 공지 위젯이 `GET /bands/:id/notices`를 호출하나 백엔드에 모듈이 없다(404). 화면은 "공지를 불러오지 못했어요"로 처리 | 기능 미구현. 백엔드 notices 모듈 또는 프론트 위젯 숨김 중 택일 |
+
+테스트 데이터: 밴드 "스모크테스트 밴드 (삭제 예정)"(`c5886b71-9f0d-42ad-8d21-74d8fdac2b98`, 합주곡 1·연습 장소 1)은 B7 재검증용으로 남겨 두었다. `DELETE /bands/:bandId`(soft delete)로 정리한다.
