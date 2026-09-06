@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { SearchBandItem } from '@/entities/band/model/types';
+import { EmptyState } from '@/shared/ui/empty-state';
 
 interface BandSearchResultsProps {
   bands: SearchBandItem[];
@@ -60,19 +61,21 @@ export const BandSearchResults = ({
 
   if (isError) {
     return (
-      <div className="flex h-40 w-full flex-col items-center justify-center gap-1">
-        <p className="typo-sm-sb text-grey-100">검색 중 오류가 발생했습니다.</p>
-        <p className="typo-sm-r text-grey-300">잠시 후 다시 시도해 주세요.</p>
-      </div>
+      <EmptyState
+        className="h-40"
+        title="검색 중 오류가 발생했습니다."
+        description="잠시 후 다시 시도해 주세요."
+      />
     );
   }
 
   if (bands.length === 0) {
     return (
-      <div className="flex h-40 w-full flex-col items-center justify-center gap-1">
-        <p className="typo-sm-sb text-grey-100">검색 결과가 없습니다.</p>
-        <p className="typo-sm-r text-grey-300">다른 검색어로 시도해 보세요.</p>
-      </div>
+      <EmptyState
+        className="h-40"
+        title="검색 결과가 없습니다."
+        description="다른 검색어로 시도해 보세요."
+      />
     );
   }
 

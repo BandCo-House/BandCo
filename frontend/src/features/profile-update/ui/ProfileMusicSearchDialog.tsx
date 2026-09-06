@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
+import { EmptyState } from '@/shared/ui/empty-state';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -137,7 +138,7 @@ export function ProfileMusicSearchDialog({
                 </button>
               ))}
             {!isLoading && shouldShowResults && results.length === 0 && (
-              <p className="typo-sm-sb text-grey-200">검색 결과가 없습니다.</p>
+              <EmptyState title="검색 결과가 없습니다." />
             )}
           </div>
         </AppDialogBody>

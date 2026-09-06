@@ -15,6 +15,7 @@ import { acceptInvite } from '@/features/invite-accept/api/invite-api';
 import { declineInvite } from '@/features/invite-decline/api/invite-api';
 import { bandKeys } from '@/entities/band/api/useBands';
 import { NotificationCard } from './NotificationCard';
+import { EmptyState } from '@/shared/ui/empty-state';
 
 type TabType = 'NOTICE' | 'INVITE' | 'REMINDER';
 
@@ -233,7 +234,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   }, []);
 
   return (
-    <div data-testid="notifications-page" className="w-full pb-16">
+    <div data-testid="notifications-page" className="-mt-8 w-full pt-4 pb-16">
       {!isLoading && !isError && hasNotifications && !isEditMode && (
         <div className="mb-2 flex items-center justify-end">
           <button
@@ -265,12 +266,10 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
           </p>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="flex h-[110px] w-full flex-col justify-center gap-1 rounded-2xl p-4">
-          <h4 className="typo-sm-b text-primary">새로운 알림이 없습니다.</h4>
-          <p className="typo-xs-sb text-grey-300">
-            밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요.
-          </p>
-        </div>
+        <EmptyState
+          title="새로운 알림이 없습니다."
+          description="밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요."
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {notifications.map((noti) => (

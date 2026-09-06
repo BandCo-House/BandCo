@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
+import { EmptyState } from '@/shared/ui/empty-state';
 
 interface SongSearchModalProps {
   open: boolean;
@@ -21,8 +22,6 @@ interface SongSearchModalProps {
   /** 검색 결과가 없을 때 제목·아티스트를 손으로 채우는 경로. */
   onManualEntry: (query: string) => void;
 }
-
-const STATE_MESSAGE_CLASS = 'py-8 text-center typo-sm-r text-grey-300';
 
 /**
  * 외부 음원에서 합주곡을 검색하는 모달.
@@ -58,19 +57,16 @@ export const SongSearchModal = ({
 
   const renderResults = () => {
     if (!hasKeyword) {
-      return (
-        <p className={STATE_MESSAGE_CLASS}>제목이나 가수로 곡을 검색하세요.</p>
-      );
+      return <EmptyState title="제목이나 가수로 곡을 검색하세요." />;
     }
-    if (isFetching)
-      return <p className={STATE_MESSAGE_CLASS}>검색 중이에요.</p>;
+    if (isFetching) return <EmptyState title="검색 중이에요." />;
     if (isError) {
-      return <p className={STATE_MESSAGE_CLASS}>곡을 검색하지 못했어요.</p>;
+      return <EmptyState title="곡을 검색하지 못했어요." />;
     }
     if (tracks.length === 0) {
       return (
         <div className="flex flex-col items-center gap-3 py-8">
-          <p className="typo-sm-r text-grey-300">검색 결과가 없어요.</p>
+          <EmptyState className="py-0" title="검색 결과가 없어요." />
           <button
             type="button"
             onClick={() => {

@@ -1,4 +1,5 @@
 import { X as XIcon } from 'lucide-react';
+import { EmptyState } from '@/shared/ui/empty-state';
 
 interface RecentSearchesProps {
   searches: string[];
@@ -14,11 +15,7 @@ export const RecentSearches = ({
   onClearAll,
 }: RecentSearchesProps) => {
   if (searches.length === 0) {
-    return (
-      <div className="flex h-32 w-full flex-col items-center justify-center typo-sm-r text-grey-300">
-        최근 검색어가 없습니다.
-      </div>
-    );
+    return <EmptyState className="h-32" title="최근 검색어가 없습니다." />;
   }
 
   return (
