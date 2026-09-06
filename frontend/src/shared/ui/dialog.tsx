@@ -5,6 +5,8 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { CloseButtonContent, closeButtonClass } from '@/shared/ui/close-button';
+import { GlassRim } from '@/shared/ui/glass-rim';
+import { GlowBlob } from '@/shared/ui/glow-blob';
 
 function Dialog({
   ...props
@@ -119,63 +121,6 @@ function DialogFooter({
   );
 }
 
-function AppDialogGlow({ className, ...props }: React.ComponentProps<'svg'>) {
-  const gradientId = React.useId();
-  const filterId = React.useId();
-
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 353 678"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn('pointer-events-none absolute inset-0 z-0', className)}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      {...props}
-    >
-      <g filter={`url(#${filterId})`}>
-        <path
-          d="M354.222 684.439C141.51 721.444 -54.6672 585.939 -147.429 541.939C-240.19 497.939 -433.917 1162.65 -127.171 1226.5C179.575 1290.35 904.543 908.945 926.82 537.628C989.673 -510.001 214.544 94.999 345.197 392.771C393.139 502.038 445.738 668.518 354.222 684.439Z"
-          fill={`url(#${gradientId})`}
-        />
-      </g>
-      <defs>
-        <filter
-          id={filterId}
-          x="-438.551"
-          y="-198.039"
-          width={1514}
-          height="1576.58"
-          filterUnits="userSpaceOnUse"
-          colorInterpolationFilters="sRGB"
-        >
-          <feFlood floodOpacity={0} result="BackgroundImageFix" />
-          <feBlend
-            mode="normal"
-            in="SourceGraphic"
-            in2="BackgroundImageFix"
-            result="shape"
-          />
-          <feGaussianBlur stdDeviation="72.5" result="effect1_foregroundBlur" />
-        </filter>
-        <linearGradient
-          id={gradientId}
-          x1="3.40972"
-          y1={742}
-          x2="663.109"
-          y2="232.642"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0.0511104" stopColor="#E1FC73" stopOpacity="0.2" />
-          <stop offset="0.853476" stopColor="#E1FC73" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
 function AppDialogContent({
   className,
   children,
@@ -197,12 +142,15 @@ function AppDialogContent({
         borderStyle: 'solid',
         borderWidth: '0.5px 1px 2px 0.5px',
         borderColor: 'color-mix(in srgb, var(--surface-1) 40%, transparent)',
-        boxShadow: '0 3px 6px 2px rgba(255, 255, 255, 0.16)',
+        // 바깥 그림자 + 위/아래 안쪽 흰 하이라이트(유리 두께감).
+        boxShadow:
+          '0 3px 6px 2px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(255,255,255,0.3)',
         ...style,
       }}
       {...props}
     >
-      {showGlow && <AppDialogGlow />}
+      <GlassRim />
+      {showGlow && <GlowBlob />}
       {children}
     </DialogContent>
   );
@@ -293,7 +241,6 @@ export {
   AppDialogClose,
   AppDialogContent,
   AppDialogFooter,
-  AppDialogGlow,
   AppDialogHeader,
   DialogClose,
   DialogContent,

@@ -5,6 +5,7 @@ import {
   SheetTitle,
 } from '@/shared/ui/sheet';
 import type { NotificationItem } from '@/entities/notification/model/types';
+import { GlassRim } from '@/shared/ui/glass-rim';
 import { GlowBlob } from '@/shared/ui/glow-blob';
 
 type NotificationCardMenuSheetProps = {
@@ -57,6 +58,7 @@ export const NotificationCardMenuSheet = ({
         <div className="relative flex w-full flex-col overflow-hidden rounded-[20px] border border-b-[2px] border-[rgba(220,226,249,0.4)] bg-white/24 p-0 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px]">
           {/* Glow Background */}
           <GlowBlob className="absolute -top-[500px] right-auto bottom-auto left-0 h-[678px] w-full" />
+          <GlassRim />
           {/* Hidden Header for Accessibility */}
           <SheetHeader className="sr-only">
             <SheetTitle>알림 옵션</SheetTitle>
@@ -109,6 +111,7 @@ export const NotificationCardMenuSheet = ({
           <span className="relative z-10">이전</span>
           {/* Glow Background */}
           <GlowBlob className="absolute -top-[550px] right-auto bottom-auto left-0 h-[678px] w-full" />
+          <GlassRim />
         </button>
       </SheetContent>
     </Sheet>
