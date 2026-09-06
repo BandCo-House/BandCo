@@ -111,7 +111,7 @@ MSW 헬퍼(`ok()`/`fail()`)는 만들지 않았다. 핸들러마다 봉투 리�
 
 | ID | 내용 | 조치 |
 |----|------|------|
-| B7 | **합주 공간 모듈이 데모 밴드 멤버 ID를 하드코딩**: `bandspaces.prisma-repository.ts`의 `DEMO_BAND_MEMBER_ID`(`11111111-…`)를 생성자·LEADER 멤버·목록 `isMine`/`onlyMine`/`myMembership`에 사용한다. 운영 DB에 그 멤버가 없어 `POST /bands/:id/bandspaces`가 FK 오류로 500. 컨트롤러에 가드도 없다(api-docs #28~#32는 401/403을 정의) | 미조치. 수정안: 전 라우트 `AccessTokenGuard`, 요청자의 밴드 멤버를 `bandId+userId`로 조회(없으면 403), 생성자·LEADER·`isMine`·`onlyMine`·`myMembership`에 사용. 설계 승인 후 `be-orchestrate`로 진행 |
+| B7 | **합주 공간 모듈이 데모 밴드 멤버 ID를 하드코딩**: `bandspaces.prisma-repository.ts`의 `DEMO_BAND_MEMBER_ID`(`11111111-…`)를 생성자·LEADER 멤버·목록 `isMine`/`onlyMine`/`myMembership`에 사용한다. 운영 DB에 그 멤버가 없어 `POST /bands/:id/bandspaces`가 FK 오류로 500. 컨트롤러에 가드도 없다(api-docs #28~#32는 401/403을 정의) | 조치 완료(2026-09-06): 전 라우트 `AccessTokenGuard`, 요청자의 밴드 멤버를 `bandId+userId`로 조회(밴드·공간 없음 404, 멤버 아님 403), 생성자·LEADER·`isMine`·`onlyMine`·`myMembership`에 사용. `be-orchestrate` 설계 문서: `docs/backend/designs/bandspaces/requester-band-member.md` |
 | D1 | **장르·스킬 마스터 데이터 없음**: 운영 `GET /common/genres`·`/common/skills`가 빈 배열. `prisma/seed.ts`에도 마스터 데이터가 없어 프로필의 선호 장르·플레이 파트를 아무도 설정할 수 없다 | 마스터 데이터 시드(장르·스킬 목록) 정의 필요. 공용 DB라 dev도 동일 |
 | D2 | **밴드 공지 API 없음**: 프론트 밴드 홈 공지 위젯이 `GET /bands/:id/notices`를 호출하나 백엔드에 모듈이 없다(404). 화면은 "공지를 불러오지 못했어요"로 처리 | 기능 미구현. 백엔드 notices 모듈 또는 프론트 위젯 숨김 중 택일 |
 
