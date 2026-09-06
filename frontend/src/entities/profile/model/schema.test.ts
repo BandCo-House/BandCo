@@ -13,18 +13,18 @@ describe('profileSchema Zod Validation', () => {
       profile: {
         nickname: '김민준',
         selfDescription: '기타리스트입니다',
+        profileMusic: {
+          externalTrackId: 'track-1',
+          sourceType: 'DEEZER',
+          title: 'Bohemian Rhapsody',
+          artistName: 'Queen',
+          albumName: 'A Night at the Opera',
+          albumImageUrl: null,
+          durationMs: 180000,
+          previewUrl: 'https://example.com/song.mp3',
+          sourceUrl: 'https://www.deezer.com/track/track-1',
+        },
         avatarUrl: null,
-      },
-      profileMusic: {
-        externalTrackId: 'track-1',
-        sourceType: 'DEEZER',
-        title: 'Bohemian Rhapsody',
-        artistName: 'Queen',
-        albumName: 'A Night at the Opera',
-        albumImageUrl: null,
-        durationMs: 180000,
-        previewUrl: 'https://example.com/song.mp3',
-        sourceUrl: 'https://www.deezer.com/track/track-1',
       },
       skills: [
         {
@@ -39,26 +39,5 @@ describe('profileSchema Zod Validation', () => {
 
     const parsed = profileSchema.safeParse(validData);
     expect(parsed.success).toBe(true);
-  });
-
-  it('profileMusic이 profile 안에만 있고 최상위에 없으면 실패한다', () => {
-    const nestedOnly = {
-      user: {
-        id: 'user-001',
-        email: 'test@example.com',
-        status: 'ACTIVE',
-        createdAt: '2026-01-01T00:00:00.000Z',
-      },
-      profile: {
-        nickname: '김민준',
-        selfDescription: null,
-        profileMusic: null,
-        avatarUrl: null,
-      },
-      skills: [],
-      favoriteGenres: [],
-    };
-
-    expect(profileSchema.safeParse(nestedOnly).success).toBe(false);
   });
 });
