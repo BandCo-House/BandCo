@@ -145,16 +145,20 @@
   box-shadow: 0px -8px 40px 0px rgba(221, 254, 85, 0.12);
 }
 
-/* ===== Typography ===== */
+/* ===== Typography =====
+   크기 6단계(32/24/18/16/14/12) x 굵기 3단계(700/600/400).
+   28은 24로, medium(500)은 semibold(600)로 흡수했다 — 화면에서 구분이 안 되는데
+   유틸만 늘어나 같은 역할이 자리마다 다른 값을 쓰는 원인이 됐다.
+
+   역할  32 히어로(프로필 이름, 온보딩 대표 문구)
+         24 페이지·모달·상세 제목
+         18 섹션 제목·폼 라벨
+         16 본문·버튼·리스트 주제목
+         14 보조 본문·빈 상태 안내문구·입력 도움말
+         12 캡션·태그·메타(날짜·개수) */
 
 @utility typo-3xl-b {
   font-size: 2rem;
-  line-height: 1.4;
-  font-weight: 700;
-}
-
-@utility typo-2xl-b {
-  font-size: 1.75rem;
   line-height: 1.4;
   font-weight: 700;
 }
@@ -189,12 +193,6 @@
   font-weight: 600;
 }
 
-@utility typo-base-m {
-  font-size: 1rem;
-  line-height: 1.4;
-  font-weight: 500;
-}
-
 @utility typo-base-r {
   font-size: 1rem;
   line-height: 1.4;
@@ -213,12 +211,6 @@
   font-weight: 600;
 }
 
-@utility typo-sm-m {
-  font-size: 0.875rem;
-  line-height: 1.4;
-  font-weight: 500;
-}
-
 @utility typo-sm-r {
   font-size: 0.875rem;
   line-height: 1.4;
@@ -229,12 +221,6 @@
   font-size: 0.75rem;
   line-height: 1.4;
   font-weight: 600;
-}
-
-@utility typo-xs-m {
-  font-size: 0.75rem;
-  line-height: 1.4;
-  font-weight: 500;
 }
 
 @utility typo-xs-r {

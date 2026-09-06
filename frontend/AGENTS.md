@@ -86,8 +86,76 @@
 | icon            | `assets/icons/*.svg?react`를 우선 사용하고 없다면 사용자에게 요청하거나 lucide-react를 사용한다.                                                                                                                                                           |
 | styling         | Tailwind class와 `cn`/`tailwind-merge` 패턴을 사용한다.                                                                                                                                                                                                    |
 | 디자인 토큰     | 토큰 기반 유틸(`rounded-*`, `bg-*`)을 쓰기 전에 `index.css`의 `@theme`에 그 스케일이 **실제로 매핑돼 있는지** 확인한다. 매핑이 없으면 Tailwind 기본값으로 조용히 렌더된다. 토큰 값에 이미 알파가 있으면(`--surface-1: #dce2f966`) `/40`을 덧붙이지 않는다. |
+| 타이포그래피    | 아래 "타이포그래피와 색" 절을 따른다. 크기·굵기는 `typo-*` 유틸로만 지정한다.                                                                                                                                                                              |
+| 텍스트 색       | 아래 "타이포그래피와 색" 절을 따른다. 토큰만 쓰고 hex 리터럴·Tailwind 기본 팔레트는 쓰지 않는다.                                                                                                                                                           |
+| 경고 표시       | 특정 입력칸에 붙는 경고는 인라인 `<p>` + `aria-invalid`/`aria-describedby`로, 어느 칸인지 특정할 수 없는 폼 단위 경고는 `toast.error`로 알린다.                                                                                                            |
 | semantic HTML   | 불필요한 div wrapper를 줄이고 의미 있는 요소를 우선한다.                                                                                                                                                                                                   |
 | responsive      | 텍스트가 모바일에서 넘치지 않게 width, min-width, wrapping, line clamp, overflow 처리를 함께 고려한다.                                                                                                                                                     |
+
+## 타이포그래피와 색
+
+### 조합은 이 표 밖으로 나가지 않는다
+
+`index.css`의 `@utility`에 정의된 것이 전부다. 여기 없는 조합이 필요하면 만들지 말고 **먼저 물어본다.**
+
+| px  | 700 `-b`      | 600 `-sb`      | 400 `-r`      | 쓰는 곳                                          |
+| --- | ------------- | -------------- | ------------- | ------------------------------------------------ |
+| 32  | `typo-3xl-b`  | —              | —             | 히어로 (프로필 이름, 온보딩 대표 문구)           |
+| 24  | —             | `typo-xl-sb`   | —             | 페이지·모달·상세 제목                            |
+| 18  | `typo-lg-b`   | `typo-lg-sb`   | —             | 섹션 제목, 폼 라벨, 시트/다이얼로그 제목         |
+| 16  | `typo-base-b` | `typo-base-sb` | `typo-base-r` | 본문, 버튼, 리스트 행 주제목                     |
+| 14  | `typo-sm-b`   | `typo-sm-sb`   | `typo-sm-r`   | 보조 본문, 빈 상태 안내문구, 도움말, 에러 메시지 |
+| 12  | —             | `typo-xs-sb`   | `typo-xs-r`   | 캡션, 태그, 메타(날짜·개수)                      |
+
+- **500(medium)·20px·28px은 없다.** 흡수된 값이라 되살리지 않는다.
+- **안내문구를 12로 내리지 않는다.** 태그·날짜 같은 메타와 같은 위계가 된다.
+- 그리드 카드 주제목은 18, 리스트 행 주제목은 16이다.
+
+> **`typo-*`와 Tailwind 기본 유틸을 같은 요소에 함께 쓰지 않는다.**
+> `typo-sm-sb text-xs`는 14로 쓴 줄 알아도 병합 순서가 승자를 정해 12로 렌더된다.
+> 에러가 나지 않아 눈으로만 찾아야 하는 종류의 버그다. `text-sm`·`font-bold`·`text-[13px]` 모두 해당한다.
+>
+> 명시도가 더 높은 서드파티 규칙(sonner의 `[data-sonner-toast][data-styled] [data-title]` 등)
+> 위에 얹을 때는 `typo-base-sb!`처럼 `!`를 붙여야 굵기·행간까지 적용된다.
+
+### 색은 토큰만 쓴다
+
+`text-grey-*`, `text-primary`, `text-destructive`, `bg-surface-*` 등. **hex 리터럴과 Tailwind 기본 팔레트(`slate`/`violet`/`gray`/`rose`/`red`)는 쓰지 않는다.**
+
+토큰이 hex 8자리로 정의돼 있어 `rgba()` 리터럴과 같은 값인지 눈에 안 보인다. 박기 전에 대조한다.
+
+| 리터럴                  | 토큰              | 리터럴    | 토큰                 |
+| ----------------------- | ----------------- | --------- | -------------------- |
+| `rgba(220,226,249,0.4)` | `surface-1`       | `#9D9D9F` | `grey-300`           |
+| `rgba(97,117,158,0.56)` | `surface-2`       | `#C6C6C8` | `grey-200`           |
+| `rgba(101,99,122,0.48)` | `surface-3`       | `#DFDFE1` | `grey-100`           |
+| `rgba(39,43,34,0.8)`    | `primary-surface` | `#646468` | `grey-400`           |
+| `#1B1B32`               | `gradient-top`    | `#ECFCAB` | `primary` (다크)     |
+| `#020119`               | `gradient-bottom` | `#D6705C` | `destructive` (다크) |
+
+토큰 값에 이미 알파가 있으면(`--surface-1: #dce2f966`) `/40`을 덧붙이지 않는다. `surface-3`(alpha 0.48)에 `/30` 같은 다른 알파가 필요하면 만들지 말고 물어본다.
+
+### 기존 스펙과 다르면 먼저 알린다
+
+디자인 시안이 위 표나 기존 컴포넌트와 다를 때 **그대로 구현하지 않는다.** 비슷한 것이 이미 있는지 찾아 대조하고, 차이를 알린 뒤 진행 여부를 묻는다.
+
+| 상황                      | 대조 대상                                                                |
+| ------------------------- | ------------------------------------------------------------------------ |
+| 모달·시트 제목            | `shared/ui/dialog.tsx` `DialogTitle`, `shared/ui/sheet.tsx` `SheetTitle` |
+| 빈 상태·결과 없음         | `shared/ui/empty-state.tsx` `EmptyState`                                 |
+| 리스트 카드 주제목        | `entities/band/ui/BandCard.tsx`, `widgets/notification-list`             |
+| 헤더 탭                   | `widgets/page-header/route-tabs.tsx` `RouteTabs`                         |
+| 버튼 크기·굵기            | `shared/ui/button/button-variants.ts`                                    |
+| 새 색·새 크기가 필요할 때 | `index.css` `@utility`, `styles/generated-tokens.css`                    |
+
+보고 형식은 아래처럼 짧게 한다. 임의로 시안을 따르지도, 임의로 기존 값으로 바꾸지도 않는다.
+
+```
+시안: 모달 제목 20px / 600
+기존: DialogTitle이 typo-lg-sb(18px / 600) — 시트 제목과 맞춘 값
+
+20px은 스케일에 없는 값이에요. 18로 맞출까요, 시안대로 20을 새로 추가할까요?
+```
 
 ## 접근성
 

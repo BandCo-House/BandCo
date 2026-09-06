@@ -70,7 +70,7 @@ export const WeekDatePicker = ({
             <span
               key={weekday}
               className={cn(
-                'flex-1 text-center typo-xs-m',
+                'flex-1 text-center typo-xs-sb',
                 index === selectedWeekday ? 'text-grey-50' : 'text-grey-300',
               )}
             >
@@ -93,7 +93,7 @@ export const WeekDatePicker = ({
               >
                 <span
                   className={cn(
-                    'flex size-9 items-center justify-center rounded-full typo-xs-m transition-colors',
+                    'flex size-9 items-center justify-center rounded-full typo-xs-sb transition-colors',
                     isSelected
                       ? 'bg-primary text-primary-dark'
                       : 'text-grey-50 group-hover:bg-overlay-24 group-focus-visible:bg-overlay-24 group-active:bg-overlay-24',

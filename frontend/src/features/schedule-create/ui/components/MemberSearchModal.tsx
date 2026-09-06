@@ -36,7 +36,7 @@ const RowLink = ({ label }: { label: string }) => (
     // TODO: 프로필/팀 상세 라우팅 연동 예정. 지금은 닫기(X)만 동작.
     className="flex shrink-0 items-center gap-2.5 rounded-3xl px-3 py-2 text-grey-200"
   >
-    <span className="typo-sm-m">{label}</span>
+    <span className="typo-sm-sb">{label}</span>
     <ArrowRightIcon aria-hidden="true" className="size-4" />
   </button>
 );
@@ -77,7 +77,7 @@ export const MemberSearchModal = ({
 
         <AppDialogClose className="top-5 right-5" />
         <div className="relative z-10 flex items-center gap-8 pr-12">
-          <div className="flex flex-1 items-center gap-7 text-xl leading-[1.4] font-semibold">
+          <div className="flex flex-1 items-center gap-7 typo-lg-sb">
             <button
               type="button"
               aria-pressed={tab === 'member'}
@@ -140,7 +140,7 @@ export const MemberSearchModal = ({
                           {member.nickname.slice(0, 1)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="typo-sm-m text-grey-50">
+                      <span className="typo-sm-sb text-grey-50">
                         {member.nickname}
                       </span>
                     </span>

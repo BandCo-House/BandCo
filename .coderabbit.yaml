@@ -17,6 +17,45 @@ reviews:
   auto_review:
     enabled: true # 이미 pr이 생성된 후 부분 commit에 대한 추가 리뷰 허용
     drafts: false # 임시 파일은 리뷰하지 않음
+  path_instructions:
+    # 사람 눈으로는 잘 안 걸리는데 봇은 잘 잡는 것들만 적는다.
+    # 나머지 컨벤션은 frontend/AGENTS.md를 그대로 따른다.
+    - path: "frontend/src/**/*.{tsx,ts}"
+      instructions: |
+        타이포그래피 — frontend/AGENTS.md "타이포그래피와 색" 절이 기준이다.
+        - 크기·굵기는 index.css의 typo-* 유틸로만 지정한다.
+        - typo-* 와 Tailwind 기본 유틸(text-sm, text-xs, text-[13px], font-bold,
+          font-semibold, font-medium 등)을 같은 요소에 함께 쓰면 지적한다.
+          병합 순서가 승자를 정해 의도와 다른 크기로 조용히 렌더된다.
+          컴포넌트 기본 className과 소비자가 넘기는 className이 합쳐지는 경우도 포함한다
+          (예: AvatarFallback 기본값이 typo-sm-sb인데 호출부가 text-xs를 넘김).
+        - 스케일에 없는 값(20px, 28px, 10px, 13px, font-weight 500)을 쓰면 지적한다.
+          쓸 수 있는 조합: 32/700, 24/600, 18/700·600, 16/700·600·400,
+          14/700·600·400, 12/600·400.
+        - 빈 상태·도움말·에러 메시지 같은 안내문구를 12로 내리면 지적한다. 14가 기준이다.
+
+        색 — 토큰만 쓴다.
+        - text-*/bg-*/border-* 에 hex 리터럴(text-[#9D9D9F], bg-[rgba(...)])이나
+          Tailwind 기본 팔레트(slate, violet, gray, zinc, rose, red)를 쓰면 지적한다.
+        - 토큰이 hex 8자리로 정의돼 있어 같은 값인지 눈에 안 보인다. 아래는 이미 토큰이 있다.
+          rgba(220,226,249,0.4)=surface-1, rgba(97,117,158,0.56)=surface-2,
+          rgba(101,99,122,0.48)=surface-3, rgba(39,43,34,0.8)=primary-surface,
+          #9D9D9F=grey-300, #C6C6C8=grey-200, #DFDFE1=grey-100, #646468=grey-400,
+          #1B1B32=gradient-top, #020119=gradient-bottom,
+          #ECFCAB=primary(dark), #D6705C=destructive(dark)
+        - 토큰 값에 이미 알파가 있으면(--surface-1: #dce2f966) /40을 덧붙이지 않는다.
+
+        경고 표시 — 특정 입력칸에 붙는 경고는 인라인 <p> + aria-invalid/aria-describedby로,
+        어느 칸인지 특정할 수 없는 폼 단위 경고는 toast.error로 알린다.
+        인라인 경고를 추가하면서 입력칸과 aria로 연결하지 않으면 지적한다.
+
+        죽은 코드 — 조건 때문에 실행될 수 없는 분기를 지적한다.
+        (예: 버튼이 disabled라 실행되지 않는 handleSubmit 안의 toast)
+    - path: "frontend/src/**/*.test.{tsx,ts}"
+      instructions: |
+        테스트가 실제 사용자 경로를 거치는지 본다. 컴포넌트가 렌더한 요소를 클릭하지 않고
+        내부 API를 직접 호출하면(예: 링크 클릭 대신 router.navigate 호출) 그 설정이
+        사라져도 통과하므로 지적한다.
 chat:
   auto_reply: true # PR에 대한 리뷰어의 질문에 자동으로 답변
 

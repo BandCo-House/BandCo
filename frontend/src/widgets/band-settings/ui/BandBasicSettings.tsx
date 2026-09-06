@@ -254,7 +254,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
           type="button"
           onClick={() => setIsLeaveOpen(true)}
           disabled={isLeaving}
-          className="flex items-center gap-2 rounded-full px-4 py-5 typo-xs-m text-destructive focus-visible:outline-2 focus-visible:outline-destructive disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-2 rounded-full px-4 py-5 typo-xs-sb text-destructive focus-visible:outline-2 focus-visible:outline-destructive disabled:cursor-not-allowed disabled:opacity-60"
         >
           <WithdrawIcon aria-hidden="true" className="size-4" />
           밴드 나가기

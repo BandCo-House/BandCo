@@ -63,10 +63,8 @@ export const BandLeaderSection: React.FC<BandLeaderSectionProps> = ({
     <div className="flex flex-col gap-2.5">
       {/* 헤더 행: "리더 멤버" + [ ] 팀 리더 멤버 보기 */}
       <div className="flex items-center justify-between">
-        <h3 className="typo-base-sb text-base font-semibold text-grey-100">
-          리더 멤버
-        </h3>
-        <label className="flex cursor-pointer items-center gap-2 typo-xs-m text-grey-200">
+        <h3 className="typo-base-sb text-grey-100">리더 멤버</h3>
+        <label className="flex cursor-pointer items-center gap-2 typo-xs-sb text-grey-200">
           <Checkbox
             checked={showTeamLeaders}
             onCheckedChange={(checked) =>
@@ -114,10 +112,10 @@ export const BandLeaderSection: React.FC<BandLeaderSectionProps> = ({
           }}
           className="group flex w-full cursor-pointer items-center justify-between rounded-[16px] border border-[#c6c6c8]/40 bg-transparent p-4 shadow-sm backdrop-blur-md transition-all hover:border-[#c6c6c8] hover:bg-white/5"
         >
-          <p className="flex-1 text-center typo-xs-m text-[10px] text-[#ecfcab]">
+          <p className="flex-1 text-center typo-sm-r text-primary">
             새로운 부리더 멤버를 추가해보세요.
           </p>
-          <div className="inline-flex items-center gap-2.5 rounded-full bg-[#c6c6c8] px-4 py-2 typo-sm-m text-xs text-[#646468] transition-colors group-hover:bg-white">
+          <div className="inline-flex items-center gap-2.5 rounded-full bg-[#c6c6c8] px-4 py-2 typo-sm-sb text-grey-400 transition-colors group-hover:bg-white">
             <span>부리더</span>
             <Plus className="size-4" />
           </div>

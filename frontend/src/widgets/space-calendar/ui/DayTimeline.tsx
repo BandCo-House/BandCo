@@ -63,7 +63,7 @@ export const DayTimeline = ({
         }}
       >
         {HOUR_LABELS.map(({ offset, hour }) => (
-          <span key={offset} className="typo-xs-m text-grey-200">
+          <span key={offset} className="typo-xs-sb text-grey-200">
             {`${String(hour).padStart(2, '0')}:00`}
           </span>
         ))}

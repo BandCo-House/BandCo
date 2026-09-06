@@ -57,7 +57,7 @@ const RemovableChip = ({
   onRemove,
 }: RemovableChipProps) => (
   <li className="flex max-w-full items-center gap-1 rounded-full border border-white/24 bg-grey-500/24 py-1 pr-1 pl-3">
-    <span className="min-w-0 truncate typo-sm-m text-grey-100">{label}</span>
+    <span className="min-w-0 truncate typo-sm-sb text-grey-100">{label}</span>
     <button
       type="button"
       aria-label={removeLabel}

@@ -78,7 +78,7 @@ function SearchPage() {
         <div className="relative flex h-[42px] flex-1 items-center rounded-full bg-[rgba(220,226,249,0.4)] focus-within:ring-2 focus-within:ring-primary">
           <SearchIcon
             size={16}
-            className="pointer-events-none absolute left-[14px] text-[#C6C6C8]"
+            className="pointer-events-none absolute left-[14px] text-grey-200"
           />
           <input
             type="search"
@@ -86,14 +86,14 @@ function SearchPage() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="밴드/사용자를 찾아보세요"
-            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] text-sm text-white placeholder-[#C6C6C8] outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] typo-sm-r text-grey-50 placeholder-grey-200 outline-none [&::-webkit-search-cancel-button]:hidden"
           />
 
           {inputValue && (
             <button
               type="button"
               onClick={handleClearInput}
-              className="absolute right-[12px] p-1 text-[#9D9D9F] transition-colors hover:text-white"
+              className="absolute right-[12px] p-1 text-grey-300 transition-colors hover:text-grey-50"
               aria-label="입력 초기화"
             >
               <X size={16} />
@@ -103,7 +103,7 @@ function SearchPage() {
 
         <button
           type="submit"
-          className="flex h-[42px] shrink-0 items-center justify-center rounded-full bg-[#ECFCAB] px-5 text-base font-semibold text-black transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex h-[42px] shrink-0 items-center justify-center rounded-full bg-primary px-5 typo-base-sb text-grey-600 transition-opacity hover:opacity-90 active:opacity-80"
         >
           검색
         </button>

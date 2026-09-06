@@ -11,21 +11,21 @@ export const NotificationHeaderActions = () => {
   if (state.isEditMode) {
     return (
       <div className="flex items-center gap-2">
-        <span className="typo-xs-m text-foreground">
+        <span className="typo-sm-sb text-foreground">
           {state.selectedIds.size}개 선택됨
         </span>
         <button
           type="button"
           onClick={() => state.onDeleteSelected?.()}
           disabled={state.selectedIds.size === 0 || state.isDeletePending}
-          className="rounded-full border border-destructive px-3 py-1 typo-xs-m text-destructive disabled:opacity-40"
+          className="rounded-full border border-destructive px-3 py-1 typo-sm-sb text-destructive disabled:opacity-40"
         >
           {state.selectedIds.size}개 삭제
         </button>
         <button
           type="button"
           onClick={() => state.onCancelEdit?.()}
-          className="typo-xs-m text-grey-300"
+          className="typo-sm-sb text-grey-300"
         >
           취소
         </button>
@@ -40,7 +40,7 @@ export const NotificationHeaderActions = () => {
       <button
         type="button"
         onClick={() => state.onStartEdit?.()}
-        className="flex items-center gap-1.5 rounded-full px-3 py-1.5 typo-xs-m text-grey-300 transition-colors hover:text-foreground"
+        className="flex items-center gap-1.5 rounded-full px-3 py-1.5 typo-sm-sb text-grey-300 transition-colors hover:text-foreground"
         aria-label="편집 모드 활성화"
       >
         휴지통

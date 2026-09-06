@@ -63,7 +63,7 @@ function HeaderRightAction() {
         onClick={() => onSaveMembers?.()}
         disabled={isSaving}
         aria-label="저장"
-        className="flex items-center gap-1.5 typo-xs-m text-grey-300 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex items-center gap-1.5 typo-xs-sb text-grey-300 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span>{isSaving ? '저장 중...' : '저장'}</span>
         {isSaving ? (
@@ -80,7 +80,7 @@ function HeaderRightAction() {
       type="button"
       onClick={() => onDeleteTeam?.()}
       aria-label="팀 삭제"
-      className="flex items-center gap-1.5 typo-xs-m text-grey-300 transition-colors hover:text-destructive"
+      className="flex items-center gap-1.5 typo-xs-sb text-grey-300 transition-colors hover:text-destructive"
     >
       <span>팀 삭제</span>
       <Trash2 className="h-4 w-4" />

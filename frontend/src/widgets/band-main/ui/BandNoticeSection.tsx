@@ -26,15 +26,15 @@ export const BandNoticeSection = ({ bandId }: BandNoticeSectionProps) => {
 
   const renderBody = () => {
     if (isLoading) {
-      return <p className="typo-sm-r text-grey-400">불러오는 중...</p>;
+      return <p className="typo-sm-r text-grey-300">불러오는 중...</p>;
     }
     if (isError) {
       return (
-        <p className="typo-sm-r text-grey-400">공지를 불러오지 못했어요.</p>
+        <p className="typo-sm-r text-grey-300">공지를 불러오지 못했어요.</p>
       );
     }
     if (!notices || notices.length === 0) {
-      return <p className="typo-sm-r text-grey-400">공지사항이 없습니다.</p>;
+      return <p className="typo-sm-r text-grey-300">공지사항이 없습니다.</p>;
     }
     return (
       <ul className="-mx-2 flex flex-col">
@@ -48,7 +48,7 @@ export const BandNoticeSection = ({ bandId }: BandNoticeSectionProps) => {
               <span className="min-w-0 flex-1 truncate typo-sm-r text-grey-200">
                 {notice.content}
               </span>
-              <span className="shrink-0 typo-sm-r text-grey-400">
+              <span className="shrink-0 typo-sm-r text-grey-300">
                 {formatNoticeDate(notice.createdAt)}
               </span>
             </Link>

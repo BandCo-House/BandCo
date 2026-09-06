@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { SignupForm } from './SignupForm';
 import { server } from '@/mocks/server';
+import { toast } from 'sonner';
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 describe('SignupForm', () => {
   const getFields = () => ({
@@ -47,6 +50,30 @@ describe('SignupForm', () => {
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
 
     expect(submitButton).toBeEnabled();
+  });
+
+  it('약관에 동의하지 않아도 버튼은 활성화되고, 누르면 스낵바로 안내하며 onSubmit은 호출되지 않는다', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(<SignupForm onSubmit={onSubmit} />);
+
+    const submitButton = screen.getByRole('button', { name: /가입하기/i });
+    const fields = getFields();
+
+    await user.type(fields.email, 'test@test.com');
+    await user.type(fields.password, 'password123!');
+    await user.type(fields.passwordConfirm, 'password123!');
+    await user.type(fields.nickname, '홍길동');
+    // 약관은 체크하지 않는다.
+
+    // 막아두면 왜 못 누르는지 알 수 없으므로 누를 수는 있어야 한다.
+    expect(submitButton).toBeEnabled();
+
+    await user.click(submitButton);
+
+    expect(toast.error).toHaveBeenCalledWith('필수 이용약관에 동의해주세요.');
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('올바른 입력, 이메일 사용 가능 확인, 필수 약관 동의 후 가입하기 버튼을 누르면 onSubmit이 호출되어야 한다', async () => {

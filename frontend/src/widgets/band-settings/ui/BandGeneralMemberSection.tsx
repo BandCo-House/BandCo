@@ -16,9 +16,7 @@ export const BandGeneralMemberSection: React.FC<
 > = ({ members, onRoleChange, onKick }) => {
   return (
     <div className="flex flex-col gap-2.5">
-      <h3 className="typo-base-sb text-base font-semibold text-grey-100">
-        일반 멤버
-      </h3>
+      <h3 className="typo-base-sb text-grey-100">일반 멤버</h3>
 
       <div className="flex flex-col gap-2">
         {members.length > 0 ? (

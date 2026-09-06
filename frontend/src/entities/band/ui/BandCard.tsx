@@ -27,7 +27,7 @@ export const BandCard = ({ band }: BandCardProps) => {
         <span className="absolute inset-0 rounded-md bg-linear-to-b from-transparent via-black/20 to-black/80"></span>
       </div>
 
-      <div className="absolute right-2.5 bottom-12 z-20 mt-3 flex items-center justify-end gap-1.5 typo-sm-m text-muted">
+      <div className="absolute right-2.5 bottom-12 z-20 mt-3 flex items-center justify-end gap-1.5 typo-sm-sb text-muted">
         <div className="flex gap-1 rounded-l-full rounded-r-full border border-grey-100 bg-gradient-top px-3 py-1">
           <SVGIcon icon="Member" size="sm" className="text-grey-100" />
           <span className="text-grey-100">{band.memberCount ?? 0}명</span>

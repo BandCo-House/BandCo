@@ -45,7 +45,7 @@ export const ScheduleDetailView = ({
     <div className="flex flex-col">
       {/* 제목 + 메모 카드 (primary) */}
       <div className="flex flex-col gap-1 rounded-xl bg-primary p-4 shadow-[0px_3px_6px_2px_rgba(6,22,59,0.16)]">
-        <p className="typo-2xl-b text-gradient-top">{detail.title}</p>
+        <p className="typo-xl-sb text-gradient-top">{detail.title}</p>
         {detail.memo ? (
           <p className="typo-base-b text-grey-400">{detail.memo}</p>
         ) : null}
