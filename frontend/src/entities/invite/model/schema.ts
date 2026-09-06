@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-export const inviteStatusSchema = z.enum(['PENDING', 'ACCEPTED', 'DECLINED']);
+export const inviteStatusSchema = z.enum([
+  'PENDING',
+  'ACCEPTED',
+  'DECLINED',
+  'EXPIRED',
+]);
 
 export const inviteSchema = z.object({
   id: z.string(),

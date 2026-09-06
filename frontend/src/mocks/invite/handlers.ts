@@ -107,17 +107,30 @@ export const inviteHandlers = [
     });
   }),
 
-  http.post(`${API_URL}/bands/:bandId/invitations`, async ({ request }) => {
-    const body = (await request.json()) as { inviteeEmail: string };
+  // 밴드 초대 전송 — 백엔드 CreateBandInvitationResult envelope 형태
+  http.post(
+    `${API_URL}/bands/:bandId/invitations`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as {
+        inviteeUserId: string;
+        message?: string;
+      };
 
-    return HttpResponse.json<ApiResponse<Invite>>({
-      success: true,
-      data: {
-        ...invite,
-        inviteeEmail: body.inviteeEmail,
-      },
-    });
-  }),
+      return HttpResponse.json({
+        status: 'success',
+        error: null,
+        message: '밴드 초대 전송 완료',
+        data: {
+          invitationId: `uuid-invite-${Date.now()}`,
+          bandId: String(params.bandId),
+          inviterUserId: 'user-001',
+          inviteeUserId: body.inviteeUserId,
+          invitationStatus: 'PENDING',
+          createdAt: new Date().toISOString(),
+        },
+      });
+    },
+  ),
 
   http.post(`${API_URL}/invitations/:inviteId/accept`, ({ params }) => {
     const inviteIdStr = String(params.inviteId);

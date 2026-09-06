@@ -151,26 +151,31 @@ export const memberHandlers = [
   }),
 
   // 밴드 멤버 권한 변경 mock (PATCH /bands/:bandId/users/:userId)
-  http.patch(`${API_URL}/bands/:bandId/users/:userId`, async ({ params, request }) => {
-    const { userId } = params as { userId: string };
-    const body = (await request.json()) as { role: string };
-    const member = bandMembersStore.find((m) => m.userId === userId);
-    if (member) {
-      member.role = body.role;
-    }
-    return HttpResponse.json({
-      success: true,
-      data: { userId, role: body.role },
-    });
-  }),
+  http.patch(
+    `${API_URL}/bands/:bandId/users/:userId`,
+    async ({ params, request }) => {
+      const { userId } = params as { userId: string };
+      const body = (await request.json()) as { role: string };
+      const member = bandMembersStore.find((m) => m.userId === userId);
+      if (member) {
+        member.role = body.role;
+      }
+      return HttpResponse.json({
+        success: true,
+        data: { userId, role: body.role },
+      });
+    },
+  ),
 
   // 밴드 멤버 강퇴 mock (DELETE /bands/:bandId/users/:userId)
   http.delete(`${API_URL}/bands/:bandId/users/:userId`, ({ params }) => {
-    const { userId } = params as { userId: string };
+    const { bandId, userId } = params as { bandId: string; userId: string };
     bandMembersStore = bandMembersStore.filter((m) => m.userId !== userId);
     return HttpResponse.json({
-      success: true,
-      data: { userId, removed: true },
+      status: 'success',
+      error: null,
+      message: '밴드 멤버를 강퇴했습니다.',
+      data: { bandId, userId, removed: true },
     });
   }),
 ];
