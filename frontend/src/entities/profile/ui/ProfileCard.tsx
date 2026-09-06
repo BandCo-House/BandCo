@@ -43,9 +43,7 @@ export function ProfileCard({
   const profileName = profile.profile?.nickname || '익명의 아티스트';
   const avatarUrl = editForm.avatarUrl || profile.profile?.avatarUrl;
   const selfDescription = profile.profile?.selfDescription;
-  const profileMusic = isEditing
-    ? editForm.profileMusic
-    : profile.profile?.profileMusic;
+  const profileMusic = isEditing ? editForm.profileMusic : profile.profileMusic;
   const musicUrl = profileMusic?.previewUrl ?? null;
   const profileMusicTitle = profileMusic?.title ?? '음악 없음';
   const profileMusicArtist = profileMusic?.artistName ?? '';
