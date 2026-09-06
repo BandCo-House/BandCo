@@ -57,58 +57,7 @@ describe('NotificationList', () => {
     expect(await screen.findByText('공지사항 알림')).toBeInTheDocument();
   });
 
-  it('활성 탭에만 aria-current="page"를 부여해 스크린리더에 현재 탭을 알린다', () => {
-    renderWithClient(<NotificationList tab="INVITE" />);
-
-    expect(screen.getByRole('button', { name: /초대장/ })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    expect(
-      screen.getByRole('button', { name: /공지사항/ }),
-    ).not.toHaveAttribute('aria-current');
-  });
-
-  it('비활성 탭에 안 읽은 알림이 있을 경우 #D6705C 색상의 dot 배지를 표시한다', async () => {
-    server.use(
-      http.get(`${API_URL}/notifications/unread-summary`, () => {
-        return HttpResponse.json({
-          status: 'success',
-          error: null,
-          message: '성공',
-          data: {
-            unreadCount: 2,
-            unreadByType: {
-              NOTICE: 0,
-              INVITE: 2,
-              REMINDER: 0,
-            },
-          },
-        });
-      }),
-      http.get(`${API_URL}/notifications/me`, () => {
-        return HttpResponse.json({
-          status: 'success',
-          error: null,
-          message: '성공',
-          data: {
-            items: [],
-            meta: { count: 0, take: 20, next: null },
-          },
-        });
-      }),
-    );
-
-    renderWithClient(<NotificationList tab="NOTICE" />);
-
-    await waitFor(() => {
-      const inviteTabBtn = screen.getByRole('button', { name: /초대장/ });
-      const dotBadge = inviteTabBtn.querySelector('span');
-      expect(dotBadge).toBeInTheDocument();
-      expect(dotBadge).toHaveClass('bg-[#D6705C]');
-      expect(dotBadge).toHaveClass('h-[5px]', 'w-[5px]');
-    });
-  });
+  // 탭 관련 검증은 NotificationTabs.test.tsx로 옮겼다 — 탭이 헤더로 빠졌다.
 
   it('모두 읽음 버튼이 알약(캡슐) 모양의 스타일(border-grey-300 rounded-full)로 표시된다', async () => {
     server.use(
