@@ -77,9 +77,9 @@ export class AuthController {
   @ApiOperation({ summary: '이메일 중복 확인' })
   @ApiResponse({ status: 201, description: '이메일 중복 확인 성공' })
   @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async checkEmail(@Body() { email }: CheckEmailDto): Promise<ApiSuccessResponse<{ email: string }>> {
+  async checkEmail(@Body() { email }: CheckEmailDto): Promise<ApiSuccessResponse<{ email: string; duplicated: boolean }>> {
     const isDuplicate = await this.authService.checkEmailDuplicate(email);
     const message = isDuplicate ? '중복 된 이메일입니다.' : '사용할 수 있는 이메일입니다.';
-    return createSuccessResponse(message, { email });
+    return createSuccessResponse(message, { email, duplicated: isDuplicate });
   }
 }
