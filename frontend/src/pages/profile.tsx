@@ -339,7 +339,7 @@ function ProfileRoutePage() {
         >
           <AppDialogContent className="max-w-[calc(100%-2rem)] p-8 sm:max-w-2xl">
             <AppDialogBody className="items-center gap-6 text-center">
-              <DialogTitle className="text-3xl text-grey-50">
+              <DialogTitle className="typo-xl-sb text-grey-50">
                 편집 모드를 나가시겠습니까?
               </DialogTitle>
               <p className="typo-lg-sb text-grey-100">

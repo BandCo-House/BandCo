@@ -59,7 +59,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
         </div>
 
         {member.skills && member.skills.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 px-1.5 typo-xs-sb text-[10px] text-grey-200">
+          <div className="flex flex-wrap items-center gap-1.5 px-1.5 typo-xs-sb text-grey-200">
             {member.skills.map((skill) => (
               <span key={skill.skillTypeId} className="whitespace-nowrap">
                 {skill.skillName}

@@ -112,7 +112,7 @@ export const BandLeaderSection: React.FC<BandLeaderSectionProps> = ({
           }}
           className="group flex w-full cursor-pointer items-center justify-between rounded-[16px] border border-[#c6c6c8]/40 bg-transparent p-4 shadow-sm backdrop-blur-md transition-all hover:border-[#c6c6c8] hover:bg-white/5"
         >
-          <p className="flex-1 text-center typo-xs-sb text-[10px] text-primary">
+          <p className="flex-1 text-center typo-sm-r text-primary">
             새로운 부리더 멤버를 추가해보세요.
           </p>
           <div className="inline-flex items-center gap-2.5 rounded-full bg-[#c6c6c8] px-4 py-2 typo-sm-sb text-grey-400 transition-colors group-hover:bg-white">
