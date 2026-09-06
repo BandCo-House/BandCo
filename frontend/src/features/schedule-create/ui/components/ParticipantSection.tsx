@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
+import { getTeamMembers } from '@/entities/team/api/team-api';
+import { teamKeys } from '@/entities/team/api/queries';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { FieldLabel, fieldSurfaceClass } from '@/shared/ui/field';
@@ -25,6 +29,7 @@ const badgeFor = (role: string): string | undefined =>
  * - 전원 선택 링크 / 참여자 인풋(→ 멤버·팀 검색 모달)
  * - 리더·부리더는 체크박스로 추가/해제(카드 최상단·뱃지·X 없음)
  * - 그 외 멤버는 모달로 추가(추가 순서대로 카드·X로 제거)
+ * - 팀을 고르면 그 팀 멤버를 한 번에 추가한다(이미 있는 멤버는 건너뛴다)
  */
 export const ParticipantSection = ({
   bandId,
@@ -32,6 +37,7 @@ export const ParticipantSection = ({
   onChange,
 }: ParticipantSectionProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { data: members = [] } = useBandMembers(bandId);
 
   const memberById = new Map(members.map((m) => [m.bandMemberId, m]));
@@ -45,6 +51,23 @@ export const ParticipantSection = ({
         : [...value, member.bandMemberId],
     );
   const selectAll = () => onChange(members.map((m) => m.bandMemberId));
+
+  // 팀 멤버는 목록 응답에 없어 고를 때 한 번 가져온다. fetchQuery라 캐시가 있으면 재요청하지 않는다.
+  const selectTeam = async (teamId: string) => {
+    try {
+      const teamMembers = await queryClient.fetchQuery({
+        queryKey: teamKeys.members(teamId),
+        queryFn: () => getTeamMembers(teamId),
+      });
+      const added = teamMembers
+        .map((member) => member.bandMemberId)
+        .filter((id) => !selected.has(id));
+      if (added.length > 0) onChange([...value, ...added]);
+      setIsModalOpen(false);
+    } catch {
+      toast.error('팀 멤버를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
 
   // 카드 순서: 리더/부리더(최상단) → 그 외(추가 순서).
   const picked = value
@@ -139,6 +162,7 @@ export const ParticipantSection = ({
         bandId={bandId}
         selectedIds={value}
         onToggleMember={toggle}
+        onSelectTeam={(teamId) => void selectTeam(teamId)}
       />
     </section>
   );

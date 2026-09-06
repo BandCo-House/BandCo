@@ -22,6 +22,8 @@ interface MemberSearchModalProps {
   selectedIds: string[];
   /** 멤버 행 탭 시 추가/해제. 선택된 멤버 전체 정보를 넘긴다. */
   onToggleMember: (member: BandMemberListItem) => void;
+  /** 팀 행 탭 시 그 팀 전체를 참여자로 넣는다. */
+  onSelectTeam?: (teamId: string) => void;
 }
 
 type Tab = 'member' | 'team';
@@ -42,8 +44,9 @@ const RowLink = ({ label }: { label: string }) => (
 );
 
 /**
- * 멤버/팀 검색 모달. 멤버 탭에서 행을 탭하면 참여자로 추가/해제한다.
- * 팀 탭·프로필/상세보기 라우팅은 아직 미연동(닫기 X만 동작).
+ * 멤버/팀 검색 모달. 멤버 탭은 행을 탭할 때마다 참여자를 추가/해제하고(다중 선택),
+ * 팀 탭은 행을 탭하면 그 팀 멤버를 한 번에 넣는다.
+ * 프로필/상세보기 라우팅은 아직 미연동.
  */
 export const MemberSearchModal = ({
   open,
@@ -51,6 +54,7 @@ export const MemberSearchModal = ({
   bandId,
   selectedIds,
   onToggleMember,
+  onSelectTeam,
 }: MemberSearchModalProps) => {
   const [tab, setTab] = useState<Tab>('member');
   const [query, setQuery] = useState('');
@@ -164,12 +168,16 @@ export const MemberSearchModal = ({
                 key={team.teamId}
                 className="flex items-center justify-between gap-2"
               >
-                <div className="flex items-center gap-2.5 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => onSelectTeam?.(team.teamId)}
+                  className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors"
+                >
                   <span className="typo-sm-sb text-grey-50">{team.name}</span>
                   <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
                     {team.memberCount}명
                   </span>
-                </div>
+                </button>
                 <RowLink label="상세보기" />
               </div>
             ))
