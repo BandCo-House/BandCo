@@ -225,6 +225,47 @@ describe('세션 편성', () => {
     ).toBe(true);
   });
 
+  it('세션이 없는 참여자도 함께 실어 전체 교체에서 사라지지 않게 한다', () => {
+    const req = toScheduleRequest({
+      ...baseForm(),
+      title: '합주 A',
+      placeId: 'place-1',
+      songId: 'band-song-1',
+      sessionAssignments: [
+        { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+      ],
+      participantBandMemberIds: ['member-1', 'member-2'],
+    });
+
+    expect(req.participants).toEqual([
+      { bandMemberId: 'member-1', skillTypeId: 'skill-1' },
+      { bandMemberId: 'member-2' },
+    ]);
+  });
+
+  it('skillType이 없는(undefined) 응답에서도 상세를 폼으로 되돌린다', () => {
+    // 백엔드 배포 전에는 이 필드가 아예 없는 응답이 온다.
+    const detail = makeDetail({
+      scheduleType: 'PRACTICE',
+      participants: [
+        {
+          participantId: 'p1',
+          bandMemberId: 'member-1',
+          userId: 'user-1',
+          nickname: '김민수',
+          avatarUrl: null,
+          attendanceStatus: null,
+          note: null,
+        } as never,
+      ],
+    });
+
+    const form = detailToForm(detail);
+
+    expect(form.sessionAssignments).toEqual([]);
+    expect(form.participantBandMemberIds).toEqual(['member-1']);
+  });
+
   it('상세의 세션이 붙은 참여자는 편성으로, 겸업은 참여자 목록에서 한 번만 센다', () => {
     const detail = makeDetail({
       scheduleType: 'PRACTICE',

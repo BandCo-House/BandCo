@@ -64,9 +64,17 @@ export const SessionSection = ({
     setIsModalOpen(false);
   };
 
-  const removeAssignment = (skillTypeId: string) =>
+  // 세션과 멤버를 모두 봐야 한다. 세션만 보면 같은 세션에 두 명이 실려 온 경우
+  // (상세에서 복원했거나 팀 편성을 옮겨 왔을 때) 한 번 눌러 둘 다 사라진다.
+  const removeAssignment = (target: ScheduleSessionAssignment) =>
     onChange(
-      value.filter((assignment) => assignment.skillTypeId !== skillTypeId),
+      value.filter(
+        (assignment) =>
+          !(
+            assignment.skillTypeId === target.skillTypeId &&
+            assignment.bandMemberId === target.bandMemberId
+          ),
+      ),
     );
 
   // 팀 멤버는 목록 응답에 없어 고를 때 한 번 가져온다. 세션이 배정된 팀원만 옮긴다.
@@ -155,7 +163,7 @@ export const SessionSection = ({
                   </span>
                   <button
                     type="button"
-                    onClick={() => removeAssignment(assignment.skillTypeId)}
+                    onClick={() => removeAssignment(assignment)}
                     className="typo-sm-sb text-grey-300 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     삭제
@@ -176,7 +184,17 @@ export const SessionSection = ({
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         bandId={bandId}
-        selectedIds={value.map((assignment) => assignment.bandMemberId)}
+        // 한 명만 고르는 모달이라 지금 고르는 세션에 배정된 사람만 선택 상태다.
+        // 전체를 넘기면 radiogroup 안에서 aria-checked가 여러 개 true가 된다.
+        selectedIds={
+          pendingSkillTypeId
+            ? value
+                .filter(
+                  (assignment) => assignment.skillTypeId === pendingSkillTypeId,
+                )
+                .map((assignment) => assignment.bandMemberId)
+            : []
+        }
         onToggleMember={assignMember}
         onSelectTeam={(teamId) => void selectTeam(teamId)}
         singleSelect

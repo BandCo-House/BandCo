@@ -66,11 +66,13 @@ export const ScheduleDetailView = ({
   const showSongCard = isPractice && detail.songs.length > 0;
 
   // 세션이 붙은 참여자만 편성 카드로 올린다(회의 참여자는 skillType이 없다).
+  // != null인 이유: 백엔드가 배포되기 전에는 이 필드가 아예 없는(undefined) 응답이 온다.
+  // ==/!== null로 가르면 그 응답에서 전원이 편성 쪽으로 몰리고 라벨이 빈칸이 된다.
   const sessionParticipants = detail.participants.filter(
-    (participant) => participant.skillType !== null,
+    (participant) => participant.skillType != null,
   );
   const plainParticipants = detail.participants.filter(
-    (participant) => participant.skillType === null,
+    (participant) => participant.skillType == null,
   );
 
   return (

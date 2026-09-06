@@ -113,12 +113,24 @@ export const toScheduleRequest = (
     placeId: form.placeId ?? undefined,
     memo: memo || undefined,
     songIds: isPractice && form.songId ? [form.songId] : undefined,
-    // 합주는 세션 편성이 곧 참여자다. 회의는 세션 없이 사람만 싣는다.
+    // 합주는 세션 편성이 참여자를 정한다. 다만 세션이 배정되지 않은 참여자도
+    // 함께 실어야 한다 — participants는 전체 교체라, 빠뜨리면 시간만 고쳐도
+    // 그 사람들이 조용히 일정에서 빠진다.
     participants: isPractice
-      ? form.sessionAssignments.map((assignment) => ({
-          bandMemberId: assignment.bandMemberId,
-          skillTypeId: assignment.skillTypeId,
-        }))
+      ? [
+          ...form.sessionAssignments.map((assignment) => ({
+            bandMemberId: assignment.bandMemberId,
+            skillTypeId: assignment.skillTypeId,
+          })),
+          ...form.participantBandMemberIds
+            .filter(
+              (bandMemberId) =>
+                !form.sessionAssignments.some(
+                  (assignment) => assignment.bandMemberId === bandMemberId,
+                ),
+            )
+            .map((bandMemberId) => ({ bandMemberId })),
+        ]
       : form.participantBandMemberIds.map((bandMemberId) => ({ bandMemberId })),
     // 빈 배열도 그대로 보낸다 — 전체 교체 방식이라 "모두 삭제"를 표현해야 한다.
     externalLinks: form.externalLinks,
@@ -149,8 +161,10 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
     participantBandMemberIds: [
       ...new Set(detail.participants.map((p) => p.bandMemberId)),
     ],
+    // != null — 백엔드 배포 전에는 skillType이 아예 없는(undefined) 응답이 온다.
+    // !== null로 가르면 undefined가 살아남아 p.skillType!.skillTypeId에서 터진다.
     sessionAssignments: detail.participants
-      .filter((p) => p.skillType !== null)
+      .filter((p) => p.skillType != null)
       .map((p) => ({
         skillTypeId: p.skillType!.skillTypeId,
         bandMemberId: p.bandMemberId,
