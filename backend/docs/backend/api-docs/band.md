@@ -176,6 +176,48 @@
 
 ---
 
+## #71 DELETE /bands/{bandId}/users/{userId}
+
+**설명:** 밴드장이 멤버를 강퇴한다. 권한 변경(#9)과 같은 규칙을 따른다. 밴드장 자신은 대상이 될 수 없다(나가기·삭제 API 사용).
+**인증:** 필요 (JWT Bearer)
+
+> [설계자 보완 2026-09-06] 프론트 밴드 설정 화면이 이미 호출 중이던 경로를 구현. Notion에는 미등록 — 수동 등록 필요.
+
+### Request
+
+**Path Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|:----:|------|
+| bandId | string (UUID) | ✅ | 밴드 ID |
+| userId | string (UUID) | ✅ | 강퇴할 멤버의 유저 ID |
+
+### Response 200
+
+```json
+{
+  "status": "success",
+  "error": null,
+  "message": "밴드 멤버를 강퇴했습니다.",
+  "data": {
+    "bandId": "3d2a4a6e-4b3b-4c3f-9f7a-1c9a3b1d5e21",
+    "userId": "b6d0f0b1-7c7d-4e23-9c7b-0c0d9f6a2a21",
+    "removed": true
+  }
+}
+```
+
+### Error
+
+| 코드 | 사유 |
+|------|------|
+| 400 | `bandId`/`userId` UUID 형식 오류, 대상이 밴드장인 경우 |
+| 401 | 인증 실패 |
+| 403 | 요청자가 밴드장이 아님 |
+| 404 | 밴드 없음 또는 대상 멤버 없음 |
+
+---
+
 ## #10 GET /bands/me
 
 **설명:** 인증된 유저가 속한 밴드 목록을 커서 기반 페이지네이션으로 조회한다.

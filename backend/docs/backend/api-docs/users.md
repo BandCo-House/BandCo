@@ -308,7 +308,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
   "success": true,
   "message": "중복 된 이메일입니다.",
   "data": {
-    "email": "user@example.com"
+    "email": "user@example.com",
+    "duplicated": true
   }
 }
 ```
