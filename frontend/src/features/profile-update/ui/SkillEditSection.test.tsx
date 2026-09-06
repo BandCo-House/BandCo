@@ -32,9 +32,11 @@ describe('SkillEditSection', () => {
         { id: 'skill-3', name: '드럼' },
       ],
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof skillApi.useSkillTypes>);
 
-    vi.mocked(profileApi.updateUserProfile).mockResolvedValue({} as any);
+    vi.mocked(profileApi.updateUserProfile).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof profileApi.updateUserProfile>>,
+    );
   });
 
   const renderComponent = (props: {
@@ -86,9 +88,7 @@ describe('SkillEditSection', () => {
     expect(
       screen.getByRole('heading', { name: '플레이 파트' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /드럼/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /드럼/i })).toBeInTheDocument();
 
     // 드럼 칩 클릭 (추가)
     await user.click(screen.getByRole('button', { name: /드럼/i }));

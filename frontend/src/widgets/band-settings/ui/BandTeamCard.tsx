@@ -66,8 +66,8 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
           />
         </div>
 
-        <div className="flex flex-1 items-center justify-between min-w-0">
-          <span className="truncate typo-sm-b text-grey-50 font-bold">
+        <div className="flex min-w-0 flex-1 items-center justify-between">
+          <span className="truncate typo-sm-b font-bold text-grey-50">
             {team.name}
           </span>
           <ChevronRight className="h-5 w-5 text-grey-300 transition-transform group-hover/card:translate-x-0.5 group-hover/card:text-white" />
@@ -93,7 +93,7 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
               key={member.teamMemberId}
               className="inline-flex items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] px-2.5 py-1"
             >
-              <Avatar className="h-8 w-8 rounded-full shrink-0">
+              <Avatar className="h-8 w-8 shrink-0 rounded-full">
                 <AvatarImage
                   src={member.user.profileImageUrl || undefined}
                   alt={member.user.nickname}
@@ -102,7 +102,7 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
                   {member.user.nickname.slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <span className="typo-sm-m text-grey-50 text-xs">
+              <span className="typo-sm-m text-xs text-grey-50">
                 {member.user.nickname}
               </span>
             </div>
@@ -118,8 +118,10 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
             e.stopPropagation();
             setIsExpanded((prev) => !prev);
           }}
-          className="flex w-full items-center justify-center pt-1 text-grey-300 hover:text-white transition-colors"
-          aria-label={isExpanded ? `${team.name} 팀원 접기` : `${team.name} 팀원 펼치기`}
+          className="flex w-full items-center justify-center pt-1 text-grey-300 transition-colors hover:text-white"
+          aria-label={
+            isExpanded ? `${team.name} 팀원 접기` : `${team.name} 팀원 펼치기`
+          }
         >
           {isExpanded ? (
             <ChevronUp className="h-4 w-4" />
@@ -131,4 +133,3 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
     </div>
   );
 };
-

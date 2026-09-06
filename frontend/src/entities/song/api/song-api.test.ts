@@ -53,7 +53,9 @@ const trackPreview = {
 describe('band song api 어댑터', () => {
   it('밴드 합주곡 목록을 백엔드 경로로 조회하고 items 배열로 언랩한다', async () => {
     mock.onGet('/bands/band-1/songs').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         items: [listItem],
         meta: { count: 1, take: 20, cursor: null, next: null },
@@ -70,7 +72,9 @@ describe('band song api 어댑터', () => {
 
   it('곡 목록의 커버·길이·외부 링크·참고자료를 그대로 보존한다', async () => {
     mock.onGet('/bands/band-1/songs').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items: [listItem], meta: {} },
     });
 
@@ -85,7 +89,9 @@ describe('band song api 어댑터', () => {
 
   it('미리듣기 조회에 쓰는 외부 트랙 ID를 보존한다', async () => {
     mock.onGet('/bands/band-1/songs').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items: [listItem], meta: {} },
     });
 
@@ -98,7 +104,9 @@ describe('band song api 어댑터', () => {
     const withoutTrackId: Record<string, unknown> = { ...listItem };
     delete withoutTrackId.externalTrackId;
     mock.onGet('/bands/band-1/songs').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items: [withoutTrackId], meta: {} },
     });
 
@@ -109,7 +117,9 @@ describe('band song api 어댑터', () => {
 
   it('필수 필드(id)가 누락되면 reject된다', async () => {
     mock.onGet('/bands/band-1/songs').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items: [{ title: '제목만' }] },
     });
 
@@ -118,7 +128,9 @@ describe('band song api 어댑터', () => {
 
   it('알 수 없는 조성 값이 오면 reject된다', async () => {
     mock.onGet('/bands/band-1/songs').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items: [{ ...listItem, key: 'H' }], meta: {} },
     });
 
@@ -130,7 +142,15 @@ describe('외부 음원 검색 어댑터', () => {
   it('검색어를 query 파라미터로 넘기고 곡 미리보기 목록을 돌려준다', async () => {
     mock.onGet('/songs/tracks/search').reply((config) => {
       expect(config.params).toEqual({ query: 'Oasis' });
-      return [200, { success: true, data: [trackPreview] }];
+      return [
+        200,
+        {
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: [trackPreview],
+        },
+      ];
     });
 
     const result = await searchTracks('Oasis');
@@ -143,7 +163,9 @@ describe('외부 음원 검색 어댑터', () => {
 
   it('지원하지 않는 음원 출처가 오면 reject된다', async () => {
     mock.onGet('/songs/tracks/search').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: [{ ...trackPreview, sourceType: 'YOUTUBE' }],
     });
 
@@ -162,7 +184,9 @@ describe('곡 생성 어댑터', () => {
       return [
         201,
         {
-          success: true,
+          status: 'success',
+          error: null,
+          message: '요청 성공',
           data: {
             song: {
               id: 'song-9',
@@ -186,7 +210,9 @@ describe('곡 생성 어댑터', () => {
 
   it('응답에 곡 id가 없으면 reject된다', async () => {
     mock.onPost('/bands/band-1/songs').reply(201, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { song: { bandId: 'band-1', title: 'Wonderwall' } },
     });
 

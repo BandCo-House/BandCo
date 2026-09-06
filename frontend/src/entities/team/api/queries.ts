@@ -63,7 +63,9 @@ export const useAddTeamMember = (teamId: string) => {
   return useMutation({
     mutationFn: (bandMemberId: string) => addTeamMember(teamId, bandMemberId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: teamKeys.members(teamId) });
+      void queryClient.invalidateQueries({
+        queryKey: teamKeys.members(teamId),
+      });
     },
   });
 };
@@ -74,9 +76,12 @@ export const useAddTeamMember = (teamId: string) => {
 export const useRemoveTeamMember = (teamId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (teamMemberId: string) => removeTeamMember(teamId, teamMemberId),
+    mutationFn: (teamMemberId: string) =>
+      removeTeamMember(teamId, teamMemberId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: teamKeys.members(teamId) });
+      void queryClient.invalidateQueries({
+        queryKey: teamKeys.members(teamId),
+      });
     },
   });
 };

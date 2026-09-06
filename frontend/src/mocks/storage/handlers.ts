@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import { API_URL } from '../config';
 
 const uploadedFiles = new Map<string, { blob: Blob; contentType: string }>();
@@ -14,9 +14,11 @@ export const storageHandlers = [
     const key = `${body.folder}/${Date.now()}-${crypto.randomUUID()}`;
 
     return HttpResponse.json<
-      ApiResponse<{ presignedUrl: string; objectUrl: string }>
+      ApiSuccessResponse<{ presignedUrl: string; objectUrl: string }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         presignedUrl: `${API_URL}/mock-upload/${key}`,
         objectUrl: `${API_URL}/mock-storage/${key}`,

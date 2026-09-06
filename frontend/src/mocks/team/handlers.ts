@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type { BandTeamListItem } from '@/entities/team/model/types';
 import { API_URL } from '../config';
 import { BAND_MEMBERS } from '../member/handlers';
@@ -49,7 +49,12 @@ type StoreMember = {
   user: { userId: string; nickname: string; profileImageUrl: string | null };
   teamRole: string;
   joinedAt: string;
-  skills: { skillTypeId: string; skillName: string; skillLevel: string; isPrimary: boolean }[];
+  skills: {
+    skillTypeId: string;
+    skillName: string;
+    skillLevel: string;
+    isPrimary: boolean;
+  }[];
 };
 
 const teamMemberStore = new Map<string, StoreMember[]>([
@@ -63,8 +68,18 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'LEADER',
         joinedAt: '2026-05-01T12:00:00Z',
         skills: [
-          { skillTypeId: 'vocal-1', skillName: '보컬', skillLevel: 'ADVANCED', isPrimary: true },
-          { skillTypeId: 'guitar-1', skillName: '기타', skillLevel: 'INTERMEDIATE', isPrimary: false },
+          {
+            skillTypeId: 'vocal-1',
+            skillName: '보컬',
+            skillLevel: 'ADVANCED',
+            isPrimary: true,
+          },
+          {
+            skillTypeId: 'guitar-1',
+            skillName: '기타',
+            skillLevel: 'INTERMEDIATE',
+            isPrimary: false,
+          },
         ],
       },
       {
@@ -74,7 +89,12 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'MEMBER',
         joinedAt: '2026-05-01T12:30:00Z',
         skills: [
-          { skillTypeId: 'guitar-2', skillName: '기타2', skillLevel: 'ADVANCED', isPrimary: true },
+          {
+            skillTypeId: 'guitar-2',
+            skillName: '기타2',
+            skillLevel: 'ADVANCED',
+            isPrimary: true,
+          },
         ],
       },
     ],
@@ -89,7 +109,12 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'LEADER',
         joinedAt: '2026-05-02T12:00:00Z',
         skills: [
-          { skillTypeId: 'vocal-1', skillName: '보컬', skillLevel: 'ADVANCED', isPrimary: true },
+          {
+            skillTypeId: 'vocal-1',
+            skillName: '보컬',
+            skillLevel: 'ADVANCED',
+            isPrimary: true,
+          },
         ],
       },
       {
@@ -99,7 +124,12 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'MEMBER',
         joinedAt: '2026-05-02T13:00:00Z',
         skills: [
-          { skillTypeId: 'vocal-2', skillName: '보컬2', skillLevel: 'INTERMEDIATE', isPrimary: true },
+          {
+            skillTypeId: 'vocal-2',
+            skillName: '보컬2',
+            skillLevel: 'INTERMEDIATE',
+            isPrimary: true,
+          },
         ],
       },
     ],
@@ -114,7 +144,12 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'LEADER',
         joinedAt: '2026-05-03T12:00:00Z',
         skills: [
-          { skillTypeId: 'drum-1', skillName: '드럼', skillLevel: 'ADVANCED', isPrimary: true },
+          {
+            skillTypeId: 'drum-1',
+            skillName: '드럼',
+            skillLevel: 'ADVANCED',
+            isPrimary: true,
+          },
         ],
       },
       {
@@ -124,7 +159,12 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'MEMBER',
         joinedAt: '2026-05-03T12:30:00Z',
         skills: [
-          { skillTypeId: 'bass-1', skillName: '베이스', skillLevel: 'ADVANCED', isPrimary: true },
+          {
+            skillTypeId: 'bass-1',
+            skillName: '베이스',
+            skillLevel: 'ADVANCED',
+            isPrimary: true,
+          },
         ],
       },
       {
@@ -134,7 +174,12 @@ const teamMemberStore = new Map<string, StoreMember[]>([
         teamRole: 'MEMBER',
         joinedAt: '2026-05-03T13:00:00Z',
         skills: [
-          { skillTypeId: 'keyboard-1', skillName: '건반', skillLevel: 'ADVANCED', isPrimary: true },
+          {
+            skillTypeId: 'keyboard-1',
+            skillName: '건반',
+            skillLevel: 'ADVANCED',
+            isPrimary: true,
+          },
         ],
       },
     ],
@@ -159,9 +204,15 @@ export const teamHandlers = [
     }));
 
     return HttpResponse.json<
-      ApiResponse<{ bandId: string; items: BandTeamListItem[]; meta: unknown }>
+      ApiSuccessResponse<{
+        bandId: string;
+        items: BandTeamListItem[];
+        meta: unknown;
+      }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         bandId,
         items,
@@ -173,7 +224,10 @@ export const teamHandlers = [
   // POST /bands/:bandId/teams
   http.post(`${API_URL}/bands/:bandId/teams`, async ({ request, params }) => {
     const { bandId } = params as { bandId: string };
-    const body = (await request.json()) as { name: string; description?: string };
+    const body = (await request.json()) as {
+      name: string;
+      description?: string;
+    };
     const newTeamId = `team-${Date.now()}`;
     const leaderBandMember = BAND_MEMBERS[0];
     const newTeam: StoreBandTeam = {
@@ -183,7 +237,10 @@ export const teamHandlers = [
       status: 'ACTIVE',
       teamCoverUrl: null,
       memberCount: 1,
-      teamLeader: { userId: leaderBandMember.userId, nickname: leaderBandMember.nickname },
+      teamLeader: {
+        userId: leaderBandMember.userId,
+        nickname: leaderBandMember.nickname,
+      },
       createdAt: new Date().toISOString(),
     };
     bandTeamsStore.unshift(newTeam);
@@ -202,23 +259,25 @@ export const teamHandlers = [
       },
     ]);
 
-    return HttpResponse.json({
-      success: true,
-      message: '팀 생성 성공',
-      data: {
-        team: {
+    return HttpResponse.json(
+      {
+        status: 'success',
+        error: null,
+        message: '팀 생성 성공',
+        // 백엔드 CreateTeamResult 형태(감싸지 않은 평면 객체)
+        data: {
           teamId: newTeamId,
           bandId,
           name: newTeam.name,
           description: newTeam.description,
           status: newTeam.status,
+          teamLeaderUserId: leaderBandMember.userId,
           teamCoverUrl: null,
-          teamLeaderId: leaderBandMember.userId,
           createdAt: newTeam.createdAt,
-          updatedAt: newTeam.createdAt,
         },
       },
-    }, { status: 201 });
+      { status: 201 },
+    );
   }),
 
   // GET /teams/:teamId
@@ -228,7 +287,9 @@ export const teamHandlers = [
     const members = getTeamMembers(teamId);
 
     return HttpResponse.json({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         teamId,
         bandId: 'band-1',
@@ -236,7 +297,14 @@ export const teamHandlers = [
         description: matchedTeam?.description ?? null,
         status: matchedTeam?.status ?? 'ACTIVE',
         teamCoverUrl: null,
-        teamLeader: matchedTeam?.teamLeader ?? (members[0] ? { userId: members[0].user.userId, nickname: members[0].user.nickname } : null),
+        teamLeader:
+          matchedTeam?.teamLeader ??
+          (members[0]
+            ? {
+                userId: members[0].user.userId,
+                nickname: members[0].user.nickname,
+              }
+            : null),
         memberCount: members.length,
         createdAt: matchedTeam?.createdAt ?? '2026-05-01T12:00:00Z',
         updatedAt: '2026-05-01T12:00:00Z',
@@ -250,7 +318,9 @@ export const teamHandlers = [
     bandTeamsStore = bandTeamsStore.filter((t) => t.teamId !== teamId);
     teamMemberStore.delete(teamId);
     return HttpResponse.json({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { teamId, deleted: true },
     });
   }),
@@ -260,8 +330,11 @@ export const teamHandlers = [
     const { teamId } = params as { teamId: string };
     const items = getTeamMembers(teamId);
     return HttpResponse.json({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
+        teamId,
         items,
         meta: { count: items.length, take: 20, cursor: null, next: null },
       },
@@ -281,7 +354,8 @@ export const teamHandlers = [
       bandMemberId: body.bandMemberId,
       user: {
         userId: matchedBandMember?.userId ?? `u-${body.bandMemberId}`,
-        nickname: matchedBandMember?.nickname ?? `멤버(${body.bandMemberId.slice(-4)})`,
+        nickname:
+          matchedBandMember?.nickname ?? `멤버(${body.bandMemberId.slice(-4)})`,
         profileImageUrl: matchedBandMember?.avatarUrl ?? null,
       },
       teamRole: 'MEMBER',
@@ -289,19 +363,39 @@ export const teamHandlers = [
       skills: matchedBandMember?.skills ?? [],
     };
     getTeamMembers(teamId).push(newMember);
-    return HttpResponse.json({ success: true, data: newMember });
+    // 백엔드 AddTeamMemberResult 형태(skills 없음)
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '팀 멤버 추가 성공',
+      data: {
+        teamMemberId: newMember.teamMemberId,
+        teamId,
+        bandMemberId: newMember.bandMemberId,
+        user: newMember.user,
+        teamRole: newMember.teamRole,
+        joinedAt: newMember.joinedAt,
+      },
+    });
   }),
 
   // DELETE /teams/:teamId/members/:teamMemberId
-  http.delete(`${API_URL}/teams/:teamId/members/:teamMemberId`, ({ params }) => {
-    const { teamId, teamMemberId } = params as { teamId: string; teamMemberId: string };
-    const store = getTeamMembers(teamId);
-    const idx = store.findIndex((m) => m.teamMemberId === teamMemberId);
-    if (idx !== -1) store.splice(idx, 1);
-    return HttpResponse.json({
-      success: true,
-      data: { teamMemberId, removed: true },
-    });
-  }),
+  http.delete(
+    `${API_URL}/teams/:teamId/members/:teamMemberId`,
+    ({ params }) => {
+      const { teamId, teamMemberId } = params as {
+        teamId: string;
+        teamMemberId: string;
+      };
+      const store = getTeamMembers(teamId);
+      const idx = store.findIndex((m) => m.teamMemberId === teamMemberId);
+      if (idx !== -1) store.splice(idx, 1);
+      return HttpResponse.json({
+        status: 'success',
+        error: null,
+        message: '요청 성공',
+        data: { teamMemberId, removed: true },
+      });
+    },
+  ),
 ];
-

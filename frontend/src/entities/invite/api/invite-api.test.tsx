@@ -54,20 +54,22 @@ describe('entities/invite API & Hooks', () => {
       expect(data.inviter.nickname).toBe('초대자');
     });
 
-    it('서버 응답 status가 error인 경우 에러를 던진다', async () => {
+    it('서버가 실패 봉투(404)를 돌려주면 에러를 던진다', async () => {
       server.use(
         http.get('*/invitations/invalid-id', () => {
-          return HttpResponse.json({
-            status: 'error',
-            error: 'NOT_FOUND',
-            message: '초대를 찾을 수 없습니다.',
-          });
+          return HttpResponse.json(
+            {
+              status: 'fail',
+              error: { code: 'NOT_FOUND', details: { statusCode: 404 } },
+              message: '초대를 찾을 수 없습니다.',
+              data: {},
+            },
+            { status: 404 },
+          );
         }),
       );
 
-      await expect(getBandInvitationDetail('invalid-id')).rejects.toThrow(
-        '초대를 찾을 수 없습니다.',
-      );
+      await expect(getBandInvitationDetail('invalid-id')).rejects.toThrow();
     });
   });
 

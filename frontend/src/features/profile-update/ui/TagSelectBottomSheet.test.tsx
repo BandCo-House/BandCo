@@ -1,10 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  TagSelectBottomSheet,
-  type TagItem,
-} from './TagSelectBottomSheet';
+import { TagSelectBottomSheet, type TagItem } from './TagSelectBottomSheet';
 
 const mockItems: TagItem[] = [
   { id: '1', name: '일렉기타' },

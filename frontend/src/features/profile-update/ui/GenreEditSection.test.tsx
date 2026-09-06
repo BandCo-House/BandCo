@@ -32,9 +32,11 @@ describe('GenreEditSection', () => {
         { id: 'genre-3', name: '재즈' },
       ],
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof genreApi.useGenres>);
 
-    vi.mocked(profileApi.updateUserProfile).mockResolvedValue({} as any);
+    vi.mocked(profileApi.updateUserProfile).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof profileApi.updateUserProfile>>,
+    );
   });
 
   const renderComponent = (props: {
@@ -82,9 +84,7 @@ describe('GenreEditSection', () => {
     expect(
       screen.getByRole('heading', { name: '선호 장르' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /재즈/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /재즈/i })).toBeInTheDocument();
 
     // 재즈 칩 클릭 (추가)
     await user.click(screen.getByRole('button', { name: /재즈/i }));

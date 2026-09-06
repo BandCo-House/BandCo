@@ -1,5 +1,8 @@
 import React from 'react';
-import type { BandMemberListItem, BandMemberRole } from '@/entities/member/model/types';
+import type {
+  BandMemberListItem,
+  BandMemberRole,
+} from '@/entities/member/model/types';
 import { BandMemberRow } from './BandMemberRow';
 
 interface BandGeneralMemberSectionProps {
@@ -13,7 +16,7 @@ export const BandGeneralMemberSection: React.FC<
 > = ({ members, onRoleChange, onKick }) => {
   return (
     <div className="flex flex-col gap-2.5">
-      <h3 className="typo-base-sb text-grey-100 font-semibold text-base">
+      <h3 className="typo-base-sb text-base font-semibold text-grey-100">
         일반 멤버
       </h3>
 

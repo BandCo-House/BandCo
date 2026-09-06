@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import { API_URL } from '../config';
 
@@ -130,13 +130,15 @@ export const memberHandlers = [
   http.get(`${API_URL}/bands/:bandId/users`, ({ params }) => {
     const { bandId } = params as { bandId: string };
     return HttpResponse.json<
-      ApiResponse<{
+      ApiSuccessResponse<{
         bandId: string;
         members: BandMemberListItem[];
         meta: unknown;
       }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         bandId,
         members: bandMembersStore,
@@ -161,8 +163,10 @@ export const memberHandlers = [
         member.role = body.role;
       }
       return HttpResponse.json({
-        success: true,
-        data: { userId, role: body.role },
+        status: 'success',
+        error: null,
+        message: '밴드 멤버 권한 변경 성공',
+        data: { member: { userId, role: body.role } },
       });
     },
   ),

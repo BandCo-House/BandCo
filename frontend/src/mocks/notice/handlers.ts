@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type { BandNotice } from '@/entities/notice/model/types';
 import { API_URL } from '../config';
 
@@ -37,8 +37,10 @@ export const noticeHandlers = [
     const items =
       Number.isFinite(size) && size > 0 ? sorted.slice(0, size) : sorted;
 
-    return HttpResponse.json<ApiResponse<{ items: BandNotice[] }>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<{ items: BandNotice[] }>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items },
     });
   }),

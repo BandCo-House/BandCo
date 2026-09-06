@@ -13,7 +13,9 @@ afterEach(() => {
 describe('invite decline 어댑터', () => {
   it('초대를 거절한다', async () => {
     mock.onPost('/invitations/invite-id-2/decline').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: undefined,
     });
 

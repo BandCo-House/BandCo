@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type { Place } from '@/entities/place/model/types';
 import { API_URL } from '../config';
 
@@ -31,9 +31,11 @@ export const placeHandlers = [
     const items = buildBandPlaces(bandId);
 
     return HttpResponse.json<
-      ApiResponse<{ bandId: string; items: Place[]; meta: unknown }>
+      ApiSuccessResponse<{ bandId: string; items: Place[]; meta: unknown }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         bandId,
         items,
@@ -52,8 +54,10 @@ export const placeHandlers = [
       imageUrl?: string;
     };
 
-    return HttpResponse.json<ApiResponse<Place>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<Place>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         placeId: `place-created-${Date.now()}`,
         bandId,

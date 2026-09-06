@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createFileRoute, useParams, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useParams,
+  useNavigate,
+} from '@tanstack/react-router';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { Trash2, Check, Loader2 } from 'lucide-react';
@@ -41,7 +45,7 @@ export const Route = createFileRoute('/band/$bandId/team/$teamId')({
 function HeaderTitle() {
   const { isEditing } = useTeamHeaderState();
   return (
-    <h1 className="min-w-0 truncate text-grey-50 typo-xl-sb">
+    <h1 className="min-w-0 truncate typo-xl-sb text-grey-50">
       {isEditing ? '팀원 수정' : '팀 상세'}
     </h1>
   );
@@ -49,7 +53,8 @@ function HeaderTitle() {
 
 /** 최상단 공통 RouteHeader에 바인딩되는 옵저버 우측 액션 렌더러 */
 function HeaderRightAction() {
-  const { isEditing, isSaving, onDeleteTeam, onSaveMembers } = useTeamHeaderState();
+  const { isEditing, isSaving, onDeleteTeam, onSaveMembers } =
+    useTeamHeaderState();
 
   if (isEditing) {
     return (
@@ -58,12 +63,14 @@ function HeaderRightAction() {
         onClick={() => onSaveMembers?.()}
         disabled={isSaving}
         aria-label="저장"
-        className="flex items-center gap-1.5 typo-xs-m text-grey-300 hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 typo-xs-m text-grey-300 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span>{isSaving ? '저장 중...' : '저장'}</span>
-        {isSaving
-          ? <Loader2 className="h-4 w-4 animate-spin" />
-          : <Check className="h-4 w-4 text-secondary" />}
+        {isSaving ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Check className="h-4 w-4 text-secondary" />
+        )}
       </button>
     );
   }
@@ -73,7 +80,7 @@ function HeaderRightAction() {
       type="button"
       onClick={() => onDeleteTeam?.()}
       aria-label="팀 삭제"
-      className="flex items-center gap-1.5 typo-xs-m text-grey-300 hover:text-destructive transition-colors"
+      className="flex items-center gap-1.5 typo-xs-m text-grey-300 transition-colors hover:text-destructive"
     >
       <span>팀 삭제</span>
       <Trash2 className="h-4 w-4" />
@@ -166,12 +173,7 @@ function BandTeamDetailRoutePage() {
       onSaveMembers: () => void handleSaveMembers(),
       onToggleEdit: handleToggleEdit,
     });
-  }, [
-    isEditing,
-    isSaving,
-    handleSaveMembers,
-    handleToggleEdit,
-  ]);
+  }, [isEditing, isSaving, handleSaveMembers, handleToggleEdit]);
 
   // 언마운트 시 헤더 상태 클린업
   useEffect(() => {
@@ -194,7 +196,7 @@ function BandTeamDetailRoutePage() {
   }
 
   return (
-    <div className="pb-12 pt-0">
+    <div className="pt-0 pb-12">
       <TeamDetailView
         key={isEditing ? 'edit' : 'read'}
         team={team}

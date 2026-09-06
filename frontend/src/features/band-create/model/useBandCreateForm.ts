@@ -19,7 +19,12 @@ export const useBandCreateForm = (
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
-  const { submit, isLoading: isSubmitLoading, error, reset: resetMutation } = useBandCreate();
+  const {
+    submit,
+    isLoading: isSubmitLoading,
+    error,
+    reset: resetMutation,
+  } = useBandCreate();
 
   const resetForm = () => {
     if (previewUrlRef.current) {

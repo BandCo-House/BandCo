@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type {
   CreateSongRequest,
   SongListItem,
@@ -64,9 +64,11 @@ const buildTrackResults = (query: string): SongPreview[] =>
 export const songHandlers = [
   http.get(`${API_URL}/bands/:bandId/songs`, () => {
     return HttpResponse.json<
-      ApiResponse<{ items: SongListItem[]; meta: unknown }>
+      ApiSuccessResponse<{ items: SongListItem[]; meta: unknown }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         items: bandSongs,
         meta: { count: bandSongs.length, take: 20, cursor: null, next: null },
@@ -77,8 +79,10 @@ export const songHandlers = [
   http.get(`${API_URL}/songs/tracks/search`, ({ request }) => {
     const query = new URL(request.url).searchParams.get('query') ?? '';
 
-    return HttpResponse.json<ApiResponse<SongPreview[]>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<SongPreview[]>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: query.includes('없는곡') ? [] : buildTrackResults(query),
     });
   }),
@@ -87,8 +91,10 @@ export const songHandlers = [
   http.get(`${API_URL}/songs/tracks/:trackId`, ({ params }) => {
     const trackId = String(params.trackId);
 
-    return HttpResponse.json<ApiResponse<SongPreview>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<SongPreview>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         externalTrackId: trackId,
         title: '미리듣기 트랙',
@@ -132,8 +138,13 @@ export const songHandlers = [
     };
     bandSongs.push(created);
 
-    return HttpResponse.json<ApiResponse<{ song: SongListItem }>>(
-      { success: true, data: { song: created } },
+    return HttpResponse.json<ApiSuccessResponse<{ song: SongListItem }>>(
+      {
+        status: 'success',
+        error: null,
+        message: '요청 성공',
+        data: { song: created },
+      },
       { status: 201 },
     );
   }),

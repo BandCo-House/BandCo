@@ -11,7 +11,14 @@ export { uploadFile } from './upload';
 
 export { getApiErrorMessage } from './error';
 
-export type { ApiResponse, ApiError, TokenResponse } from './types';
+export type {
+  ApiError,
+  ApiErrorDetails,
+  ApiFailResponse,
+  ApiResponse,
+  ApiSuccessResponse,
+  TokenResponse,
+} from './types';
 
 export {
   API_BASE_URL,

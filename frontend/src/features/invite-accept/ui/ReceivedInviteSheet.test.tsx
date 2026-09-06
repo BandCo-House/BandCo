@@ -136,7 +136,9 @@ describe('ReceivedInviteSheet', () => {
       http.post('*/invitations/uuid-invite-123/accept', () => {
         apiCalled = true;
         return HttpResponse.json({
-          success: true,
+          status: 'success',
+          error: null,
+          message: '요청 성공',
           data: {
             invitationId: 'uuid-invite-123',
             bandId: 'mock-band-id',
@@ -147,7 +149,12 @@ describe('ReceivedInviteSheet', () => {
         });
       }),
       http.patch('*/notifications/noti-invite-123/read', () => {
-        return HttpResponse.json({ success: true, data: null });
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: null,
+        });
       }),
     );
 
@@ -176,10 +183,20 @@ describe('ReceivedInviteSheet', () => {
     server.use(
       http.post('*/invitations/uuid-invite-123/decline', () => {
         apiCalled = true;
-        return HttpResponse.json({ success: true, data: null });
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: null,
+        });
       }),
       http.patch('*/notifications/noti-invite-123/read', () => {
-        return HttpResponse.json({ success: true, data: null });
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: null,
+        });
       }),
     );
 

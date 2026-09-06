@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getBands } from './band-api';
+import { getMyBands } from './band-api';
 
 export const bandKeys = {
   all: ['bands'] as const,
@@ -9,6 +9,6 @@ export const bandKeys = {
 export const useBands = () => {
   return useQuery({
     queryKey: bandKeys.lists(),
-    queryFn: getBands,
+    queryFn: getMyBands,
   });
 };

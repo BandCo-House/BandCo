@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import type { ComponentPropsWithoutRef } from 'react';
 import { TeamDetailView } from './TeamDetailView';
 import type { TeamDetail, TeamMember } from '@/entities/team/model/types';
 
@@ -7,7 +8,9 @@ vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router');
   return {
     ...actual,
-    Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
+    Link: ({ children, ...props }: ComponentPropsWithoutRef<'a'>) => (
+      <a {...props}>{children}</a>
+    ),
   };
 });
 
