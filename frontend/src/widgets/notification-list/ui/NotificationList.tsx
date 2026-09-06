@@ -292,10 +292,8 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
                   onClick={() =>
                     navigate({ to: '/notifications', search: { tab: key } })
                   }
-                  className={`relative z-10 flex h-8.5 flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-colors duration-200 ${
-                    isActive
-                      ? 'typo-base-b text-black'
-                      : 'text-[13px] leading-4.5 font-bold text-primary'
+                  className={`relative z-10 flex h-8.5 flex-1 items-center justify-center gap-1.5 rounded-[20px] typo-base-b transition-colors duration-200 ${
+                    isActive ? 'text-grey-600' : 'text-primary'
                   }`}
                 >
                   {label}

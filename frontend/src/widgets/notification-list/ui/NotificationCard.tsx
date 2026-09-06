@@ -104,14 +104,14 @@ export const NotificationCard = ({
       {/* 알림 상세 텍스트 */}
       <div className="flex flex-1 flex-col justify-center gap-0.5">
         <h3
-          className={`pr-6 typo-sm-b ${
+          className={`pr-6 typo-base-sb ${
             !noti.isRead ? 'text-white' : 'text-grey-200'
           }`}
         >
           {noti.title}
         </h3>
         <p
-          className={`line-clamp-1 pr-6 typo-xs-sb ${
+          className={`line-clamp-1 pr-6 typo-sm-r ${
             !noti.isRead ? 'text-grey-200' : 'text-grey-300'
           }`}
         >

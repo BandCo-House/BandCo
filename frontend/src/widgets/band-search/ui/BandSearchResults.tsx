@@ -104,19 +104,19 @@ export const BandSearchResults = ({
                 )}
               </div>
 
-              <p className="w-full truncate px-1 text-center typo-xs-sb text-grey-600">
+              <p className="w-full truncate px-1 text-center typo-base-sb text-grey-600">
                 {band.name}
               </p>
             </div>
 
             {/* Right: Info (Figma Node 1604:15780) */}
-            <div className="flex flex-1 flex-col gap-2 p-[4px] typo-xs-r text-grey-200">
+            <div className="flex flex-1 flex-col gap-2 p-[4px] text-grey-200">
               <div className="flex items-center gap-2 typo-xs-sb text-grey-200">
                 <span>멤버 {band.memberCount ?? 0}명</span>
               </div>
 
               {band.description && (
-                <p className="line-clamp-3 typo-xs-r text-grey-200">
+                <p className="line-clamp-3 typo-sm-r text-grey-200">
                   {band.description}
                 </p>
               )}
