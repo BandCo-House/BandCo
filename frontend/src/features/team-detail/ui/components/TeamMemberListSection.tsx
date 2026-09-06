@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pencil, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { useSkillTypes } from '@/entities/skill/api/useSkillTypes';
+import { SelectField } from '@/shared/ui/select-field';
 import type { TeamMember } from '@/entities/team/model/types';
 
 interface TeamMemberListSectionProps {
@@ -9,6 +11,11 @@ interface TeamMemberListSectionProps {
   onToggleEdit?: () => void;
   onOpenSearchForSession: (index: number) => void;
   onOpenSearchForNewMember: () => void;
+  /** 팀에서 맡을 세션을 바꾼다. 수정 모드에서만 쓰인다. */
+  onChangeSession?: (
+    index: number,
+    skillType: { skillTypeId: string; name: string } | null,
+  ) => void;
 }
 
 export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
@@ -17,8 +24,16 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
   onToggleEdit,
   onOpenSearchForSession,
   onOpenSearchForNewMember,
+  onChangeSession,
 }) => {
+  const { data: skillTypes = [] } = useSkillTypes(isEditing);
+
+  /**
+   * 팀에서 맡은 세션. `skillType`이 실제 편성이고, 없을 때만 보유 스킬로 대신 채운다.
+   * 둘은 다른 값이라 — 편성이 정해지면 그걸 우선한다.
+   */
   const getSessionName = (member: TeamMember, defaultIndex?: number) => {
+    if (member.skillType) return member.skillType.name;
     if (member.skills && member.skills.length > 0) {
       return member.skills.map((s) => s.skillName).join(', ');
     }
@@ -79,11 +94,26 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               key={member.teamMemberId}
               className="flex w-full items-center gap-2 py-0.5"
             >
-              {/* 좌측 세션명 + 라임 #ECFCAB 밑줄 */}
-              <div className="flex h-[54px] flex-1 items-center border-b border-[#ECFCAB] px-3 py-4">
-                <span className="typo-base-sb text-grey-50">
-                  {getSessionName(member, idx)}
-                </span>
+              {/* 좌측 세션 선택 — 팀에서 맡을 자리를 직접 고른다 */}
+              <div className="flex-1">
+                <SelectField
+                  value={member.skillType?.skillTypeId ?? null}
+                  onValueChange={(skillTypeId) => {
+                    const picked = skillTypes.find((s) => s.id === skillTypeId);
+                    if (picked) {
+                      onChangeSession?.(idx, {
+                        skillTypeId: picked.id,
+                        name: picked.name,
+                      });
+                    }
+                  }}
+                  options={skillTypes.map((skill) => ({
+                    value: skill.id,
+                    label: skill.name,
+                  }))}
+                  placeholder={`세션${idx + 1}`}
+                  ariaLabel={`${member.user.nickname} 세션 선택`}
+                />
               </div>
 
               {/* 멤버 칩 */}

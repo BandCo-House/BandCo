@@ -42,6 +42,17 @@ const INITIAL_TEAMS: StoreBandTeam[] = [
 
 let bandTeamsStore = [...INITIAL_TEAMS];
 
+// skill/handlers.ts의 skillTypeId ↔ 이름. 팀 편성 세션명을 붙이는 데 쓴다.
+const SESSION_SKILL_NAMES: Record<string, string> = {
+  'guitar-1': '일렉기타',
+  'acoustic-1': '통기타',
+  'bass-1': '베이스',
+  'drum-1': '드럼',
+  'percussion-1': '퍼커션',
+  'keyboard-1': '키보드',
+  'vocal-1': '보컬',
+};
+
 // ── 인메모리 팀 멤버 스토어 ──────────────────────────────────────────
 type StoreMember = {
   teamMemberId: string;
@@ -49,6 +60,8 @@ type StoreMember = {
   user: { userId: string; nickname: string; profileImageUrl: string | null };
   teamRole: string;
   joinedAt: string;
+  /** 이 팀에서 맡은 세션(팀 편성). 아래 skills(개인 보유)와 다른 값이다. */
+  skillType: { skillTypeId: string; name: string } | null;
   skills: {
     skillTypeId: string;
     skillName: string;
@@ -63,6 +76,7 @@ const teamMemberStore = new Map<string, StoreMember[]>([
     [
       {
         teamMemberId: 'tm-1-1',
+        skillType: { skillTypeId: 'vocal-1', name: '보컬' },
         bandMemberId: 'member-1',
         user: { userId: 'user-1', nickname: '김민준', profileImageUrl: null },
         teamRole: 'LEADER',
@@ -84,6 +98,7 @@ const teamMemberStore = new Map<string, StoreMember[]>([
       },
       {
         teamMemberId: 'tm-1-2',
+        skillType: { skillTypeId: 'guitar-1', name: '일렉기타' },
         bandMemberId: 'member-2',
         user: { userId: 'user-2', nickname: '박민준', profileImageUrl: null },
         teamRole: 'MEMBER',
@@ -104,6 +119,7 @@ const teamMemberStore = new Map<string, StoreMember[]>([
     [
       {
         teamMemberId: 'tm-2-1',
+        skillType: { skillTypeId: 'vocal-1', name: '보컬' },
         bandMemberId: 'member-3',
         user: { userId: 'user-3', nickname: '박지은', profileImageUrl: null },
         teamRole: 'LEADER',
@@ -119,6 +135,7 @@ const teamMemberStore = new Map<string, StoreMember[]>([
       },
       {
         teamMemberId: 'tm-2-2',
+        skillType: { skillTypeId: 'guitar-1', name: '일렉기타' },
         bandMemberId: 'member-4',
         user: { userId: 'user-4', nickname: '이서연', profileImageUrl: null },
         teamRole: 'MEMBER',
@@ -139,6 +156,7 @@ const teamMemberStore = new Map<string, StoreMember[]>([
     [
       {
         teamMemberId: 'tm-3-1',
+        skillType: { skillTypeId: 'bass-1', name: '베이스' },
         bandMemberId: 'member-5',
         user: { userId: 'user-5', nickname: '이준호', profileImageUrl: null },
         teamRole: 'LEADER',
@@ -154,6 +172,7 @@ const teamMemberStore = new Map<string, StoreMember[]>([
       },
       {
         teamMemberId: 'tm-3-2',
+        skillType: { skillTypeId: 'drum-1', name: '드럼' },
         bandMemberId: 'member-6',
         user: { userId: 'user-6', nickname: '김루나', profileImageUrl: null },
         teamRole: 'MEMBER',
@@ -169,8 +188,9 @@ const teamMemberStore = new Map<string, StoreMember[]>([
       },
       {
         teamMemberId: 'tm-3-3',
-        bandMemberId: 'member-7',
-        user: { userId: 'user-7', nickname: '정지우', profileImageUrl: null },
+        skillType: { skillTypeId: 'vocal-1', name: '보컬' },
+        bandMemberId: 'member-1',
+        user: { userId: 'user-1', nickname: '김민수', profileImageUrl: null },
         teamRole: 'MEMBER',
         joinedAt: '2026-05-03T13:00:00Z',
         skills: [
@@ -247,6 +267,7 @@ export const teamHandlers = [
     teamMemberStore.set(newTeamId, [
       {
         teamMemberId: `tm-${newTeamId}-leader`,
+        skillType: null,
         bandMemberId: leaderBandMember.bandMemberId,
         user: {
           userId: leaderBandMember.userId,
@@ -344,7 +365,10 @@ export const teamHandlers = [
   // POST /teams/:teamId/members
   http.post(`${API_URL}/teams/:teamId/members`, async ({ params, request }) => {
     const { teamId } = params as { teamId: string };
-    const body = (await request.json()) as { bandMemberId: string };
+    const body = (await request.json()) as {
+      bandMemberId: string;
+      skillTypeId?: string;
+    };
     const matchedBandMember = BAND_MEMBERS.find(
       (m) => m.bandMemberId === body.bandMemberId,
     );
@@ -360,6 +384,15 @@ export const teamHandlers = [
       },
       teamRole: 'MEMBER',
       joinedAt: new Date().toISOString(),
+      skillType: body.skillTypeId
+        ? {
+            skillTypeId: body.skillTypeId,
+            name:
+              SESSION_SKILL_NAMES[body.skillTypeId] ??
+              matchedBandMember?.skills[0]?.skillName ??
+              '세션',
+          }
+        : null,
       skills: matchedBandMember?.skills ?? [],
     };
     getTeamMembers(teamId).push(newMember);

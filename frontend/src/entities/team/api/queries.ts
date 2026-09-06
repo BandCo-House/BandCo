@@ -61,7 +61,13 @@ export const useTeamMembers = (teamId: string) =>
 export const useAddTeamMember = (teamId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (bandMemberId: string) => addTeamMember(teamId, bandMemberId),
+    mutationFn: ({
+      bandMemberId,
+      skillTypeId,
+    }: {
+      bandMemberId: string;
+      skillTypeId?: string;
+    }) => addTeamMember(teamId, bandMemberId, skillTypeId),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: teamKeys.members(teamId),

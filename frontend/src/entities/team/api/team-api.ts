@@ -77,13 +77,16 @@ export const getTeamMembers = async (
 
 /**
  * 팀 멤버를 추가한다. (POST /teams/:teamId/members)
+ * skillTypeId를 주면 그 세션으로 배정한다. 같은 멤버를 다른 세션으로 여러 번 넣을 수 있다.
  */
 export const addTeamMember = async (
   teamId: string,
   bandMemberId: string,
+  skillTypeId?: string,
 ): Promise<TeamMember> => {
   const data = await apiPost<unknown>(`/teams/${teamId}/members`, {
     bandMemberId,
+    ...(skillTypeId ? { skillTypeId } : {}),
   });
   return teamMemberSchema.parse(data);
 };

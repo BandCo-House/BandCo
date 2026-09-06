@@ -103,6 +103,7 @@ function BandTeamDetailRoutePage() {
     searchModalOpen,
     setSearchModalOpen,
     handleToggleMember,
+    handleChangeSession,
     handleOpenSearchForSession,
     handleOpenSearchForNewMember,
   } = useTeamMemberEdit({ propMembers: initialMembers });
@@ -132,21 +133,30 @@ function BandTeamDetailRoutePage() {
   const handleSaveMembers = useCallback(async () => {
     setIsSaving(true);
     try {
-      const originalIds = new Set(initialMembers.map((m) => m.bandMemberId));
-      const updatedIds = new Set(currentMembers.map((m) => m.bandMemberId));
+      // 한 사람이 여러 세션을 맡을 수 있어 멤버 ID만으로는 같은 배정인지 알 수 없다.
+      // (멤버, 세션) 쌍을 키로 잡아야 "보컬은 그대로 두고 기타만 교체"가 제대로 잡힌다.
+      const assignmentKey = (m: (typeof currentMembers)[number]) =>
+        `${m.bandMemberId}|${m.skillType?.skillTypeId ?? ''}`;
+      const originalKeys = new Set(initialMembers.map(assignmentKey));
+      const updatedKeys = new Set(currentMembers.map(assignmentKey));
 
-      // 제거된 멤버: 원본에 있고 편집 후에 없는 것
+      // 제거된 배정: 원본에 있고 편집 후에 없는 것
       const toRemove = initialMembers.filter(
-        (m) => !updatedIds.has(m.bandMemberId),
+        (m) => !updatedKeys.has(assignmentKey(m)),
       );
-      // 추가된 멤버: 편집 후에 있고 원본에 없는 것
+      // 추가된 배정: 편집 후에 있고 원본에 없는 것
       const toAdd = currentMembers.filter(
-        (m) => !originalIds.has(m.bandMemberId),
+        (m) => !originalKeys.has(assignmentKey(m)),
       );
 
       await Promise.all([
         ...toRemove.map((m) => removeMember(m.teamMemberId)),
-        ...toAdd.map((m) => addMember(m.bandMemberId)),
+        ...toAdd.map((m) =>
+          addMember({
+            bandMemberId: m.bandMemberId,
+            skillTypeId: m.skillType?.skillTypeId,
+          }),
+        ),
       ]);
 
       toast.success('팀원 설정이 저장되었습니다.');
@@ -205,6 +215,7 @@ function BandTeamDetailRoutePage() {
         onToggleEdit={handleToggleEdit}
         onOpenSearchForSession={handleOpenSearchForSession}
         onOpenSearchForNewMember={handleOpenSearchForNewMember}
+        onChangeSession={handleChangeSession}
         searchModalOpen={searchModalOpen}
         setSearchModalOpen={setSearchModalOpen}
         handleToggleMember={handleToggleMember}

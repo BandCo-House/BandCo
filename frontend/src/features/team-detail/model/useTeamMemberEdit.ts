@@ -20,13 +20,20 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
   }, [propMembers]);
 
   const handleToggleMember = (picked: BandMemberListItem) => {
+    // 한 사람이 보컬·기타를 겸할 수 있으므로 세션까지 같아야 중복이다.
+    const targetSkillTypeId =
+      selectedSessionIndex !== null
+        ? (currentMembers[selectedSessionIndex]?.skillType?.skillTypeId ?? null)
+        : null;
     const isDuplicate = currentMembers.some(
       (m, idx) =>
-        m.bandMemberId === picked.bandMemberId && idx !== selectedSessionIndex, // 자기 자신(현재 세션)은 중복으로 보지 않음
+        m.bandMemberId === picked.bandMemberId &&
+        (m.skillType?.skillTypeId ?? null) === targetSkillTypeId &&
+        idx !== selectedSessionIndex,
     );
 
     if (isDuplicate) {
-      toast.warning('이미 팀에 포함되어 있습니다.');
+      toast.warning('이미 같은 세션으로 팀에 포함되어 있습니다.');
       setSearchModalOpen(false);
       setSelectedSessionIndex(null);
       return;
@@ -59,6 +66,8 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
       const newMember: TeamMember = {
         teamMemberId: `tm-${Date.now()}`,
         bandMemberId: picked.bandMemberId,
+        // 세션은 아직 안 정해졌다. 목록에서 드롭다운으로 고른다.
+        skillType: null,
         skills: picked.skills,
         user: {
           userId: picked.userId,
@@ -79,6 +88,18 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
     setSearchModalOpen(true);
   };
 
+  /** 세션 편성(팀에서 맡을 자리)을 바꾼다. 멤버가 가진 스킬(skills)과 다른 값이다. */
+  const handleChangeSession = (
+    index: number,
+    skillType: { skillTypeId: string; name: string } | null,
+  ) => {
+    setCurrentMembers((prev) =>
+      prev.map((member, idx) =>
+        idx === index ? { ...member, skillType } : member,
+      ),
+    );
+  };
+
   const handleOpenSearchForNewMember = () => {
     setSelectedSessionIndex(null);
     setSearchModalOpen(true);
@@ -89,6 +110,7 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
     searchModalOpen,
     setSearchModalOpen,
     handleToggleMember,
+    handleChangeSession,
     handleOpenSearchForSession,
     handleOpenSearchForNewMember,
   };

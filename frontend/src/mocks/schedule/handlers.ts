@@ -241,10 +241,10 @@ const BAND_SONGS = [
 
 // skill/handlers.ts의 skillTypeId와 맞춘다(세션 편성 확인용).
 const SESSION_SKILL_TYPES = [
-  { skillTypeId: 'skill-1', name: '보컬' },
-  { skillTypeId: 'skill-2', name: '기타' },
-  { skillTypeId: 'skill-3', name: '베이스' },
-  { skillTypeId: 'skill-4', name: '드럼' },
+  { skillTypeId: 'vocal-1', name: '보컬' },
+  { skillTypeId: 'guitar-1', name: '일렉기타' },
+  { skillTypeId: 'bass-1', name: '베이스' },
+  { skillTypeId: 'drum-1', name: '드럼' },
 ];
 
 // team/handlers.ts의 팀과 teamId를 맞춰 상세 필터의 "연습 팀" 선택이 실제로 걸리게 한다.
