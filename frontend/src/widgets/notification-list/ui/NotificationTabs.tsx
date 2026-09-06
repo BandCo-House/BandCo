@@ -20,6 +20,10 @@ export const NotificationTabs = () => {
     <RouteTabs
       ariaLabel="알림 탭"
       variant="pill"
+      // 탭이 같은 라우트의 검색 파라미터라 push하면 뒤로가기가
+      // 알림 페이지를 벗어나지 못한다. 알림은 여러 화면에서 들어오므로
+      // 뒤로가기는 "들어온 화면"으로 돌아가야 한다.
+      replaceOnChange
       activeKey={tab}
       tabs={NOTIFICATION_TABS.map(({ key, label }) => ({
         key,

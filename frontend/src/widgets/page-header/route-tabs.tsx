@@ -23,6 +23,16 @@ type RouteTabsProps = {
   tabs: readonly RouteTabItem[];
   activeKey: string;
   variant?: RouteTabsVariant;
+  /**
+   * 탭 전환을 히스토리에 쌓지 않는다.
+   *
+   * 탭이 서로 **다른 라우트**면 켜지 않는다 — 다른 페이지로 이동한 것이니
+   * 뒤로가기로 되짚어지는 게 맞다(밴드 메인: /band/x · /archive · /library).
+   * 탭이 **같은 라우트의 검색 파라미터**면 켠다 — 같은 페이지의 필터를 바꾼
+   * 것뿐인데 히스토리가 쌓이면 뒤로가기가 페이지를 벗어나지 못한다
+   * (알림: /notifications?tab=...).
+   */
+  replaceOnChange?: boolean;
 };
 
 const VARIANT = {
@@ -46,11 +56,6 @@ const VARIANT = {
 
 /**
  * 헤더 하단(`header.renderBottom`)에 들어가는 라우트 탭.
- *
- * 탭 전환은 `replace`로 한다. push하면 히스토리에 탭마다 항목이 쌓여
- * 뒤로가기가 페이지를 벗어나지 않고 이전 탭으로 돌아간다 — 탭은 화면 안의
- * 상태이지 "이전 화면"이 아니다.
- *
  * 인디케이터 위치는 useSlidingIndicator가 DOM에 직접 반영한다.
  */
 export const RouteTabs = ({
@@ -58,6 +63,7 @@ export const RouteTabs = ({
   tabs,
   activeKey,
   variant = 'underline',
+  replaceOnChange = false,
 }: RouteTabsProps) => {
   const style = VARIANT[variant];
   const { containerRef, indicatorRef } = useSlidingIndicator(
@@ -80,7 +86,7 @@ export const RouteTabs = ({
             to={tab.to as never}
             {...(tab.params ? { params: tab.params as never } : {})}
             {...(tab.search ? { search: tab.search as never } : {})}
-            replace
+            {...(replaceOnChange ? { replace: true } : {})}
             // 부모 경로가 자식 경로에서 fuzzy-active 되지 않도록 정확 매칭한다.
             activeOptions={{ exact: true }}
             aria-current={isActive ? 'page' : undefined}

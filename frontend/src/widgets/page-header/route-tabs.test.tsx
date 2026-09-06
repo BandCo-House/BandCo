@@ -9,8 +9,9 @@ import { server } from '@/mocks/server';
 import { API_URL } from '@/mocks/config';
 
 /**
- * 탭은 header.renderBottom으로 렌더링되므로 라우터를 통째로 띄워야 검증할 수 있다.
- * "헤더 안에 있는가"까지 함께 확인되는 게 이 방식의 이점이다.
+ * RouteTabs를 실제 사용처 두 곳(알림 pill / 밴드 메인 underline)으로 검증한다.
+ * 탭은 header.renderBottom으로 렌더링되므로 라우터를 통째로 띄워야 하고,
+ * 그 덕에 "헤더 안에 있는가"까지 함께 확인된다.
  */
 const renderAt = (path: string) => {
   const router = createAppRouter();
@@ -43,7 +44,7 @@ const renderAt = (path: string) => {
   return router;
 };
 
-describe('알림 탭', () => {
+describe('알림 탭 (pill)', () => {
   it('활성 탭에만 aria-current="page"를 부여해 스크린리더에 현재 탭을 알린다', async () => {
     renderAt('/notifications?tab=INVITE');
 
@@ -92,7 +93,7 @@ describe('알림 탭', () => {
     ).toBeNull();
   });
 
-  it('탭 전환은 히스토리를 쌓지 않는다 — 뒤로가기가 이전 탭이 아니라 이전 화면으로 가야 한다', async () => {
+  it('탭 전환은 히스토리를 쌓지 않는다 — 알림은 여러 화면에서 들어오므로 뒤로가기가 들어온 화면으로 가야 한다', async () => {
     const router = renderAt('/notifications?tab=NOTICE');
     await screen.findByRole('link', { name: /초대장/ });
 
@@ -104,5 +105,20 @@ describe('알림 탭', () => {
     });
 
     expect(router.history.length).toBe(lengthBefore);
+  });
+});
+
+describe('밴드 메인 탭 (underline)', () => {
+  it('히스토리를 쌓는다 — 탭마다 다른 라우트이므로 push가 맞다', async () => {
+    const router = renderAt('/band/band-1');
+    await screen.findByRole('navigation', { name: '밴드 메인 탭' });
+
+    const lengthBefore = router.history.length;
+    await router.navigate({
+      to: '/band/$bandId/archive',
+      params: { bandId: 'band-1' },
+    });
+
+    expect(router.history.length).toBe(lengthBefore + 1);
   });
 });
