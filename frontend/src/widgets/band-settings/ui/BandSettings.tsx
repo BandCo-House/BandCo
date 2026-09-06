@@ -1,13 +1,52 @@
-import { useParams, useSearch } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { useBand } from '@/entities/band/api/useBand';
 import { ComingSoon } from '@/shared/ui/coming-soon';
+import { useBandSettingsAccess } from '../model/useBandSettingsAccess';
 import { BandBasicSettings } from './BandBasicSettings';
+import { BandMemberSettings } from './BandMemberSettings';
+import { BandTeamSettings } from './BandTeamSettings';
 
 /** 밴드 설정 화면. 활성 탭은 route search(`?tab=`)가 들고 있다. */
 export const BandSettings = () => {
+  const navigate = useNavigate();
   const { bandId } = useParams({ from: '/band/$bandId/settings' });
   const { tab } = useSearch({ from: '/band/$bandId/settings' });
   const { data: band, isLoading, isError } = useBand(bandId);
+  const { canAccessSettings, allowedTabs, isLoading: isAccessLoading } =
+    useBandSettingsAccess(bandId);
+
+  useEffect(() => {
+    if (isAccessLoading) return;
+
+    if (!canAccessSettings) {
+      toast.error('접근 권한이 없습니다.');
+      void navigate({
+        to: '/band/$bandId',
+        params: { bandId },
+      });
+      return;
+    }
+
+    if (!allowedTabs.includes(tab)) {
+      const fallbackTab = allowedTabs[0] ?? 'teams';
+      void navigate({
+        to: '/band/$bandId/settings',
+        params: { bandId },
+        search: { tab: fallbackTab },
+        replace: true,
+      });
+    }
+  }, [canAccessSettings, allowedTabs, tab, isAccessLoading, bandId, navigate]);
+
+  if (tab === 'members') {
+    return <BandMemberSettings bandId={bandId} />;
+  }
+
+  if (tab === 'teams') {
+    return <BandTeamSettings bandId={bandId} />;
+  }
 
   if (tab !== 'basic') {
     return <ComingSoon />;

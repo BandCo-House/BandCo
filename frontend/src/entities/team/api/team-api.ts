@@ -1,7 +1,15 @@
 import { z } from 'zod';
-import { apiGet } from '@/shared/api';
-import { bandTeamListItemSchema } from '../model/schema';
-import type { BandTeamListItem } from '../model/types';
+import { apiGet, apiPost, apiDelete } from '@/shared/api';
+import {
+  bandTeamListItemSchema,
+  teamDetailSchema,
+  teamMemberSchema,
+} from '../model/schema';
+import type {
+  BandTeamListItem,
+  TeamDetail,
+  TeamMember,
+} from '../model/types';
 
 export interface GetBandTeamsParams {
   order__created_at?: 'asc' | 'desc';
@@ -18,6 +26,7 @@ interface GetBandTeamsResult {
 }
 
 const teamListSchema = z.array(bandTeamListItemSchema);
+const teamMemberListSchema = z.array(teamMemberSchema);
 
 /**
  * 밴드 팀 목록을 조회한다.
@@ -31,4 +40,84 @@ export const getBandTeams = async (
     params,
   });
   return teamListSchema.parse(data.items);
+};
+
+/**
+ * 팀 상세 정보를 조회한다. (GET /teams/:teamId)
+ */
+export const getTeamDetail = async (teamId: string): Promise<TeamDetail> => {
+  const data = await apiGet<{ data: unknown }>(`/teams/${teamId}`);
+  return teamDetailSchema.parse(data.data ?? data);
+};
+
+/**
+ * 팀을 삭제한다. (DELETE /teams/:teamId)
+ */
+export const deleteTeam = async (
+  teamId: string,
+): Promise<{ teamId: string; deleted: boolean }> => {
+  const data = await apiDelete<{ data: { teamId: string; deleted: boolean } }>(
+    `/teams/${teamId}`,
+  );
+  return data.data ?? data;
+};
+
+/**
+ * 팀 멤버 목록을 조회한다. (GET /teams/:teamId/members)
+ */
+export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
+  const data = await apiGet<{ data: { items: unknown[] } }>(
+    `/teams/${teamId}/members`,
+  );
+  const items = data.data?.items ?? (data as unknown as { items: unknown[] }).items ?? [];
+  return teamMemberListSchema.parse(items);
+};
+
+/**
+ * 팀 멤버를 추가한다. (POST /teams/:teamId/members)
+ */
+export const addTeamMember = async (
+  teamId: string,
+  bandMemberId: string,
+): Promise<TeamMember> => {
+  const data = await apiPost<{ data: unknown }>(`/teams/${teamId}/members`, {
+    bandMemberId,
+  });
+  return teamMemberSchema.parse(data.data ?? data);
+};
+
+/**
+ * 팀 멤버를 제거한다. (DELETE /teams/:teamId/members/:teamMemberId)
+ */
+export const removeTeamMember = async (
+  teamId: string,
+  teamMemberId: string,
+): Promise<{ teamMemberId: string; removed: boolean }> => {
+  const data = await apiDelete<{
+    data: { teamMemberId: string; removed: boolean };
+  }>(`/teams/${teamId}/members/${teamMemberId}`);
+  return data.data ?? data;
+};
+
+/**
+ * 팀을 생성한다. (POST /bands/:bandId/teams)
+ */
+export interface CreateTeamRequest {
+  name: string;
+  description?: string;
+  teamCoverUrl?: string;
+}
+
+export const createTeam = async (
+  bandId: string,
+  body: CreateTeamRequest,
+): Promise<{ teamId: string; name: string }> => {
+  const data = await apiPost<{
+    data: { team: { teamId?: string; id?: string; name: string } };
+  }>(`/bands/${bandId}/teams`, body);
+  const team = (data as any)?.data?.team ?? (data as any)?.team ?? data;
+  return {
+    teamId: team.teamId ?? team.id,
+    name: team.name,
+  };
 };

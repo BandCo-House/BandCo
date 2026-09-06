@@ -1,6 +1,7 @@
 import { Link, useParams, useSearch } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
 import { BAND_SETTINGS_TABS } from '../model/tabs';
+import { useBandSettingsAccess } from '../model/useBandSettingsAccess';
 
 /**
  * 밴드 설정 탭. 활성 탭을 route search(`?tab=`)에 두어
@@ -9,10 +10,15 @@ import { BAND_SETTINGS_TABS } from '../model/tabs';
 export const BandSettingsTabs = () => {
   const { bandId } = useParams({ from: '/band/$bandId/settings' });
   const { tab } = useSearch({ from: '/band/$bandId/settings' });
+  const { allowedTabs } = useBandSettingsAccess(bandId);
+
+  const visibleTabs = BAND_SETTINGS_TABS.filter((item) =>
+    allowedTabs.includes(item.key),
+  );
 
   return (
     <nav aria-label="밴드 설정 탭" className="flex w-full">
-      {BAND_SETTINGS_TABS.map((item) => {
+      {visibleTabs.map((item) => {
         const isActive = item.key === tab;
         return (
           <Link
