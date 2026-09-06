@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WinstonModule } from 'nest-winston';
 
+import { ApiExceptionFilter } from './common/filters';
 import { PrismaService } from './database/prisma';
 import { AppModule } from './app.module';
 import { createWinstonLoggerOptions, getAppConfig } from './config';
@@ -14,6 +15,9 @@ async function bootstrap(): Promise<void> {
   const prismaService = app.get(PrismaService);
 
   app.enableCors();
+
+  // 모든 예외를 ApiFailResponse 형식으로 통일한다 (성공 응답과 같은 envelope)
+  app.useGlobalFilters(new ApiExceptionFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({

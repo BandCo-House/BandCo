@@ -81,6 +81,7 @@
 - 요청/응답 처리만 담당한다.
 - 단순 데이터 전달만 수행한다.
 - 모든 응답은 `ApiSuccessResponse<T>`로 감싼다. Prisma 객체 직접 반환 절대 금지.
+- 실패 응답은 컨트롤러가 만들지 않는다. 예외를 던지면 글로벌 `ApiExceptionFilter`가 `ApiFailResponse`(`status: 'fail'`, `error.code`는 HTTP 상태 이름, `message`는 사용자 노출 문구)로 통일한다.
 - 불필요한 Exception 사용을 금지한다.
 - 의미 있는 예외만 허용한다. (예: 파일 업로드 요청에서 파일이 없는 경우)
 
