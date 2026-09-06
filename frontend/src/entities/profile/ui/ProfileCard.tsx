@@ -3,6 +3,7 @@ import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
 import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
+import { GlassRim } from '@/shared/ui/glass-rim';
 import GalleryIcon from '@/assets/icons/gallery.svg?react';
 import { useAudioPreview } from '@/shared/lib/use-audio-preview';
 
@@ -146,6 +147,7 @@ export function ProfileCard({
 
       <div className="relative z-20 mt-72 mb-12 rounded-md backdrop-blur-lg">
         <div className="absolute h-full w-full rounded-md bg-white/40 backdrop-blur-lg" />
+        <GlassRim />
 
         <div className="relative z-20">
           <div className="flex items-start justify-between gap-4">

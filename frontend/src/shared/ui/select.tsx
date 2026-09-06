@@ -3,6 +3,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { Select as SelectPrimitive } from 'radix-ui';
 
 import { cn } from '@/shared/lib/utils';
+import { GlassRim } from './glass-rim';
 import { useFieldRequired } from './field-context';
 
 function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
@@ -53,6 +54,7 @@ function SelectContent({
         )}
         {...props}
       >
+        <GlassRim />
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
           className={cn(
