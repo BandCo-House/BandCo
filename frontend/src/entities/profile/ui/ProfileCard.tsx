@@ -124,9 +124,9 @@ export function ProfileCard({
         <>
           <button
             type="button"
-            aria-label="프로필 이미지 선택"
+            aria-label="프로필 배경 이미지 변경"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute top-74 left-5 z-30 flex size-9 items-center justify-center rounded-full bg-overlay-24 p-2.5 text-primary backdrop-blur-md"
+            className="absolute top-[285px] left-5 z-30 flex size-9 cursor-pointer items-center justify-center rounded-full bg-surface-1 p-2.5 text-primary shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-95"
           >
             <GalleryIcon className="size-4" />
           </button>

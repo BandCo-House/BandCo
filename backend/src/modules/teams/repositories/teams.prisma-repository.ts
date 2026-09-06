@@ -365,6 +365,16 @@ export class TeamsPrismaRepository implements TeamsRepository {
                 profile: {
                   select: { nickname: true, avatarUrl: true },
                 },
+                userSkills: {
+                  select: {
+                    skillTypeId: true,
+                    skillLevel: true,
+                    isPrimary: true,
+                    skillType: {
+                      select: { name: true },
+                    },
+                  },
+                },
               },
             },
           },
@@ -386,6 +396,13 @@ export class TeamsPrismaRepository implements TeamsRepository {
       },
       teamRole: member.teamRole,
       joinedAt: member.joinedAt.toISOString(),
+      skills:
+        member.bandMember.user?.userSkills?.map(s => ({
+          skillTypeId: s.skillTypeId,
+          skillName: s.skillType.name,
+          skillLevel: s.skillLevel,
+          isPrimary: s.isPrimary,
+        })) ?? [],
     }));
 
     const count = items.length;

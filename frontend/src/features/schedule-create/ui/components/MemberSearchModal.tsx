@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
-import { useBandTeams } from '@/entities/team/api/useBandTeams';
+import { useBandTeams } from '@/entities/team/api/queries';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import {
   Dialog,
@@ -20,8 +20,8 @@ interface MemberSearchModalProps {
   bandId: string;
   /** 이미 참여자로 선택된 bandMemberId 집합. */
   selectedIds: string[];
-  /** 멤버 행 탭 시 추가/해제. */
-  onToggleMember: (bandMemberId: string) => void;
+  /** 멤버 행 탭 시 추가/해제. 선택된 멤버 전체 정보를 넘긴다. */
+  onToggleMember: (member: BandMemberListItem) => void;
 }
 
 type Tab = 'member' | 'team';
@@ -125,7 +125,7 @@ export const MemberSearchModal = ({
                   <button
                     type="button"
                     aria-pressed={selected.has(member.bandMemberId)}
-                    onClick={() => onToggleMember(member.bandMemberId)}
+                    onClick={() => onToggleMember(member)}
                     className={cn(
                       'flex flex-1 items-center justify-between gap-2 rounded-[20px] border bg-surface-3 p-2 transition-colors',
                       selected.has(member.bandMemberId)

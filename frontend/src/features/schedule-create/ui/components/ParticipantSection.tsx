@@ -38,9 +38,11 @@ export const ParticipantSection = ({
   const specialMembers = members.filter((m) => isSpecial(m.role));
   const selected = new Set(value);
 
-  const toggle = (id: string) =>
+  const toggle = (member: BandMemberListItem) =>
     onChange(
-      selected.has(id) ? value.filter((mId) => mId !== id) : [...value, id],
+      selected.has(member.bandMemberId)
+        ? value.filter((id) => id !== member.bandMemberId)
+        : [...value, member.bandMemberId],
     );
   const selectAll = () => onChange(members.map((m) => m.bandMemberId));
 
@@ -94,7 +96,7 @@ export const ParticipantSection = ({
           <Checkbox
             className="size-5"
             checked={selected.has(member.bandMemberId)}
-            onCheckedChange={() => toggle(member.bandMemberId)}
+            onCheckedChange={() => toggle(member)}
           />
           <span className="typo-sm-b text-grey-50">{member.nickname}</span>
           {badgeFor(member.role) && (
@@ -125,7 +127,7 @@ export const ParticipantSection = ({
                 badge={badgeFor(member.role)}
                 className={cn(!special && 'min-h-[92px]')}
                 onRemove={
-                  special ? undefined : () => toggle(member.bandMemberId)
+                  special ? undefined : () => toggle(member)
                 }
               />
             );

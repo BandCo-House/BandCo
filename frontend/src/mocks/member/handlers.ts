@@ -76,6 +76,44 @@ export const BAND_MEMBERS: BandMemberListItem[] = [
       },
     ],
   },
+  {
+    bandMemberId: 'member-5',
+    userId: 'user-5',
+    nickname: '김루나',
+    avatarUrl: null,
+    role: 'MEMBER',
+    joinedAt: '2026-01-15T00:00:00+09:00',
+    skills: [
+      {
+        skillTypeId: 'bass-1',
+        skillName: '베이스',
+        skillLevel: 'ADVANCED',
+        isPrimary: true,
+      },
+    ],
+  },
+  {
+    bandMemberId: 'member-6',
+    userId: 'user-6',
+    nickname: '송창섭',
+    avatarUrl: null,
+    role: 'MEMBER',
+    joinedAt: '2026-01-20T00:00:00+09:00',
+    skills: [
+      {
+        skillTypeId: 'guitar-1',
+        skillName: '일렉기타',
+        skillLevel: 'ADVANCED',
+        isPrimary: true,
+      },
+      {
+        skillTypeId: 'vocal-1',
+        skillName: '보컬',
+        skillLevel: 'INTERMEDIATE',
+        isPrimary: false,
+      },
+    ],
+  },
 ];
 
 // 멤버별 지참사항(일정 상세 참여자 note 시드). 멤버 속성이 아니라 일정별 참여자 메모다.
@@ -84,6 +122,8 @@ export const MEMBER_GEAR: Record<string, string> = {
   'member-2': 'Fender Precision Bass',
   'member-3': 'Pearl Export Series',
 };
+
+let bandMembersStore = [...BAND_MEMBERS];
 
 export const memberHandlers = [
   // 밴드 멤버 목록 mock (GET /bands/:bandId/users)
@@ -99,14 +139,38 @@ export const memberHandlers = [
       success: true,
       data: {
         bandId,
-        members: BAND_MEMBERS,
+        members: bandMembersStore,
         meta: {
-          count: BAND_MEMBERS.length,
+          count: bandMembersStore.length,
           take: 20,
           cursor: null,
           next: null,
         },
       },
+    });
+  }),
+
+  // 밴드 멤버 권한 변경 mock (PATCH /bands/:bandId/users/:userId)
+  http.patch(`${API_URL}/bands/:bandId/users/:userId`, async ({ params, request }) => {
+    const { userId } = params as { userId: string };
+    const body = (await request.json()) as { role: string };
+    const member = bandMembersStore.find((m) => m.userId === userId);
+    if (member) {
+      member.role = body.role;
+    }
+    return HttpResponse.json({
+      success: true,
+      data: { userId, role: body.role },
+    });
+  }),
+
+  // 밴드 멤버 강퇴 mock (DELETE /bands/:bandId/users/:userId)
+  http.delete(`${API_URL}/bands/:bandId/users/:userId`, ({ params }) => {
+    const { userId } = params as { userId: string };
+    bandMembersStore = bandMembersStore.filter((m) => m.userId !== userId);
+    return HttpResponse.json({
+      success: true,
+      data: { userId, removed: true },
     });
   }),
 ];

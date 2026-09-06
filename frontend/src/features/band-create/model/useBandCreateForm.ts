@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { uploadFile } from '@/shared/api/upload';
 import { bandCreateSchema } from './schema';
 import { useBandCreate } from './useBandCreate';
 
@@ -16,8 +17,9 @@ export const useBandCreateForm = (
   const [form, setForm] = useState(initialForm);
   const [preview, setPreview] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
-  const { submit, isLoading, error, reset: resetMutation } = useBandCreate();
+  const { submit, isLoading: isSubmitLoading, error, reset: resetMutation } = useBandCreate();
 
   const resetForm = () => {
     if (previewUrlRef.current) {
@@ -27,6 +29,7 @@ export const useBandCreateForm = (
     setForm(initialForm);
     setPreview(null);
     setFieldError(null);
+    setIsUploading(false);
     resetMutation();
   };
 
@@ -60,10 +63,31 @@ export const useBandCreateForm = (
   }, []);
 
   const handleSubmit = async () => {
+    setFieldError(null);
+    let uploadedCoverImgUrl: string | null = null;
+
+    if (form.coverImage) {
+      try {
+        setIsUploading(true);
+        uploadedCoverImgUrl = await uploadFile(form.coverImage, 'bands');
+      } catch (err) {
+        setIsUploading(false);
+        setFieldError(
+          err instanceof Error
+            ? err.message
+            : '커버 이미지 업로드에 실패했습니다.',
+        );
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
     const parsed = bandCreateSchema.safeParse({
       name: form.name,
       description: form.description.trim() || null,
       visibility: form.visibility,
+      coverImgUrl: uploadedCoverImgUrl,
     });
     if (!parsed.success) {
       setFieldError(parsed.error.issues[0]?.message ?? '입력값을 확인해주세요');
@@ -80,7 +104,8 @@ export const useBandCreateForm = (
   const setVisibility = (visibility: boolean) =>
     setForm((f) => ({ ...f, visibility }));
 
-  const isSubmitDisabled = form.name.trim().length === 0;
+  const isSubmitDisabled = form.name.trim().length === 0 || isUploading;
+  const isLoading = isSubmitLoading || isUploading;
 
   return {
     form,
