@@ -5,15 +5,27 @@
 # preflight(OPTIONS)가 403으로 떨어져 업로드가 전부 실패한다. presigned URL 발급과
 # 서명 자체는 정상이므로 서버 로그에는 아무것도 남지 않는다 — 버킷 설정이 유일한 원인이다.
 #
-# 사용: sh ./scripts/apply-storage-cors.sh
-#   AWS_STORAGE_BUCKET  대상 버킷 (기본: bandco-prod-media)
+# put-bucket-cors는 병합이 아니라 **전체 교체**다. 기존 규칙이 있으면 이 스크립트가
+# 만드는 한 벌로 덮인다. 그래서 적용 전에 현재 설정을 출력해 두고, 그걸 본 사람이
+# 직접 확인해야 진행한다. 되돌리려면 출력된 JSON을 --cors-configuration으로 다시 넣는다.
+#
+# 사용: AWS_STORAGE_BUCKET=... pnpm run storage:cors:apply
+#   AWS_STORAGE_BUCKET  대상 버킷 (필수 — 운영 버킷에 실수로 나가지 않도록 기본값을 두지 않는다)
 #   AWS_REGION          리전 (기본: ap-northeast-2)
 #   ALLOWED_ORIGINS     쉼표로 구분한 허용 origin 목록
+#   ASSUME_YES          1이면 확인 프롬프트를 건너뛴다 (비대화형 실행용)
 set -eu
 
-BUCKET=${AWS_STORAGE_BUCKET:-bandco-prod-media}
 AWS_REGION=${AWS_REGION:-ap-northeast-2}
 ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://bandco.vercel.app,http://localhost:5173}
+ASSUME_YES=${ASSUME_YES:-0}
+
+if [ -z "${AWS_STORAGE_BUCKET:-}" ]; then
+  echo "AWS_STORAGE_BUCKET이 필요합니다. 예: AWS_STORAGE_BUCKET=bandco-prod-media $0" >&2
+  exit 1
+fi
+
+BUCKET=$AWS_STORAGE_BUCKET
 
 if ! command -v aws >/dev/null 2>&1; then
   echo "AWS CLI가 필요합니다." >&2
@@ -38,10 +50,30 @@ cors_json=$(jq -n --arg origins "$ALLOWED_ORIGINS" '{
   ]
 }')
 
+echo "대상 버킷: $BUCKET ($AWS_REGION)"
+echo
+echo "현재 설정 (없으면 NoSuchCORSConfiguration):"
+aws s3api get-bucket-cors --bucket "$BUCKET" --region "$AWS_REGION" || true
+echo
+echo "적용할 설정:"
+echo "$cors_json"
+echo
+
+if [ "$ASSUME_YES" != "1" ]; then
+  printf '위 설정으로 %s의 CORS를 전체 교체합니다. 계속할까요? [y/N] ' "$BUCKET"
+  read -r answer
+  case "$answer" in
+    y | Y) ;;
+    *)
+      echo "취소했습니다."
+      exit 1
+      ;;
+  esac
+fi
+
 aws s3api put-bucket-cors \
   --bucket "$BUCKET" \
   --region "$AWS_REGION" \
   --cors-configuration "$cors_json"
 
-echo "$BUCKET 버킷에 CORS 규칙을 적용했습니다. 현재 설정:"
-aws s3api get-bucket-cors --bucket "$BUCKET" --region "$AWS_REGION"
+echo "$BUCKET 버킷에 CORS 규칙을 적용했습니다."
