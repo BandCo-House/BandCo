@@ -76,3 +76,20 @@
 | P4 BE 응답 형태 정규화 | 2-3 항목을 규칙(§4)대로 엔드포인트별 이관. FE 호출처 동시 수정. 우선순위: 단건 래핑 제거 → 목록 키 `items` → meta.next 통일 → id 네이밍 → bandspaces 커서화 | BE+FE | 며칠, 분할 PR |
 
 P1·P2·P3는 서로 독립이라 바로 시작할 수 있다. P4는 FE 팀원과 합의 후 착수한다.
+
+## 6. 진행 상황 (2026-09-06)
+
+| 단계 | 상태 | PR |
+|------|------|----|
+| P1 | 완료 | BE #188, FE #189 |
+| P3 | 완료 | BE #190 (`ApiExceptionFilter`) |
+| P2 | 완료 | FE (이 문서와 같은 PR) — `ApiSuccessResponse`/`ApiFailResponse` 타입, `apiClient` 직접 호출 제거, envelope zod 유니온 제거, team-api 이중 언랩 제거, `features/invite-list`·`inviteSchema` 삭제, MSW 34곳 envelope 통일 + Nest 기본 에러 4곳을 fail envelope로 교체 |
+| P4 | 미착수 | FE 팀원 합의 후 |
+
+### P2 중 추가로 발견한 운영 결함
+
+| ID | 내용 | 조치 |
+|----|------|------|
+| B4 | **토큰 재발급 응답 언랩 누락**: BE `POST /auth/token/access`·`/auth/token/refresh`는 `createSuccessResponse`로 감싸 `{ data: { accessToken } }`를 주는데, FE `refreshAccessToken`/`refreshRefreshToken`은 본문에서 `accessToken`을 바로 읽어 `undefined`를 저장했다. 액세스 토큰 만료 후 첫 401에서 `Bearer undefined`로 재시도해 다시 401 → 재발급 → 실패가 반복된다. MSW 목이 원시 `{ accessToken }`을 돌려줘 dev에서는 드러나지 않았다 | FE `client.ts`에서 `data.data.accessToken` 읽도록 수정, 목·테스트를 envelope로 교체 |
+
+MSW 헬퍼(`ok()`/`fail()`)는 만들지 않았다. 핸들러마다 봉투 리터럴을 그대로 쓰는 편이 grep이 쉽고 백엔드 형태와 1:1로 대응돼 규칙(`frontend/AGENTS.md` MSW 표)으로만 고정했다.

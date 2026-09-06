@@ -85,15 +85,10 @@ export const bandListMetaSchema = z.object({
   next: z.string().nullable().optional(),
 });
 
-export const bandListResponseSchema = z.object({
-  status: z.enum(['success', 'error']).optional(),
-  error: z.unknown().nullable().optional(),
-  message: z.string().optional(),
-  data: z.object({
-    totalCount: z.number().int().nonnegative().optional(),
-    items: z.array(bandSchema),
-    meta: bandListMetaSchema.optional(),
-  }),
+/** 내 밴드 목록(GET /bands/me) 결과. 봉투는 apiGet이 벗기므로 data 부분만 검증한다. */
+export const bandListResultSchema = z.object({
+  items: z.array(bandSchema),
+  meta: bandListMetaSchema.optional(),
 });
 
 export const createBandResponseSchema = bandSummarySchema.extend({

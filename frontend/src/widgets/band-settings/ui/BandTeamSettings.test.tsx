@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { ComponentPropsWithoutRef } from 'react';
 import * as teamApi from '@/entities/team/api/team-api';
 import type { BandTeamListItem, TeamMember } from '@/entities/team/model/types';
 import { BandTeamCard } from './BandTeamCard';
@@ -11,7 +12,11 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useNavigate: () => vi.fn(),
-    Link: ({ children, to, ...props }: any) => (
+    Link: ({
+      children,
+      to,
+      ...props
+    }: ComponentPropsWithoutRef<'a'> & { to?: unknown }) => (
       <a href={typeof to === 'string' ? to : '#'} {...props}>
         {children}
       </a>
@@ -48,14 +53,28 @@ const MOCK_MEMBERS: TeamMember[] = [
     bandMemberId: 'bm-1',
     user: { userId: 'u-1', nickname: '김민준', profileImageUrl: null },
     teamRole: 'LEADER',
-    skills: [{ skillTypeId: 'st-1', skillName: '기타', skillLevel: 'ADVANCED', isPrimary: true }],
+    skills: [
+      {
+        skillTypeId: 'st-1',
+        skillName: '기타',
+        skillLevel: 'ADVANCED',
+        isPrimary: true,
+      },
+    ],
   },
   {
     teamMemberId: 'tm-2',
     bandMemberId: 'bm-2',
     user: { userId: 'u-2', nickname: '박민준', profileImageUrl: null },
     teamRole: 'MEMBER',
-    skills: [{ skillTypeId: 'st-2', skillName: '기타2', skillLevel: 'INTERMEDIATE', isPrimary: true }],
+    skills: [
+      {
+        skillTypeId: 'st-2',
+        skillName: '기타2',
+        skillLevel: 'INTERMEDIATE',
+        isPrimary: true,
+      },
+    ],
   },
 ];
 
@@ -107,7 +126,9 @@ describe('BandTeamCard', () => {
       </QueryClientProvider>,
     );
 
-    const checkbox = screen.getByRole('checkbox', { name: '듀얼 기타 편성 선택' });
+    const checkbox = screen.getByRole('checkbox', {
+      name: '듀얼 기타 편성 선택',
+    });
     fireEvent.click(checkbox);
     expect(onToggleSelect).toHaveBeenCalledWith('team-1');
   });
@@ -143,7 +164,10 @@ describe('BandTeamSettings', () => {
   beforeEach(() => {
     vi.spyOn(teamApi, 'getBandTeams').mockResolvedValue(MOCK_TEAMS);
     vi.spyOn(teamApi, 'getTeamMembers').mockResolvedValue(MOCK_MEMBERS);
-    vi.spyOn(teamApi, 'deleteTeam').mockResolvedValue({ teamId: 'team-1', deleted: true });
+    vi.spyOn(teamApi, 'deleteTeam').mockResolvedValue({
+      teamId: 'team-1',
+      deleted: true,
+    });
   });
 
   it('팀 개수 카운트와 팀 추가 버튼을 렌더링한다', async () => {
@@ -198,8 +222,12 @@ describe('BandTeamSettings', () => {
     fireEvent.click(deleteBtn);
 
     // 다이얼로그 내용 확인
-    expect(await screen.findByText('팀을 삭제하시겠습니까?')).toBeInTheDocument();
-    expect(screen.getByText('삭제된 팀은 복구가 불가능합니다.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('팀을 삭제하시겠습니까?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('삭제된 팀은 복구가 불가능합니다.'),
+    ).toBeInTheDocument();
 
     // 다이얼로그의 "삭제" 확인 버튼 클릭
     const confirmBtn = screen.getByRole('button', { name: '삭제' });

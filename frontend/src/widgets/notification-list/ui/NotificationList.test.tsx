@@ -177,7 +177,9 @@ describe('NotificationList', () => {
       http.post('*/invitations/uuid-invite-999/accept', () => {
         acceptApiCalled = true;
         return HttpResponse.json({
-          success: true,
+          status: 'success',
+          error: null,
+          message: '요청 성공',
           data: {
             invitationId: 'uuid-invite-999',
             bandId: 'mock-joined-band-id',

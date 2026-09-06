@@ -51,18 +51,26 @@ const createEmailCheckResponse = (email: string, duplicated: boolean) => {
 };
 
 /**
- * 백엔드 UnauthorizedException 응답과 같은 형태의 실패 응답을 생성한다.
+ * 백엔드 ApiExceptionFilter의 실패 봉투와 같은 형태의 응답을 생성한다.
  */
-const createUnauthorizedResponse = (message: string) => {
+const createFailResponse = (
+  statusCode: number,
+  code: string,
+  message: string,
+) => {
   return HttpResponse.json(
     {
+      status: 'fail',
+      error: { code, details: { statusCode } },
       message,
-      error: 'Unauthorized',
-      statusCode: 401,
+      data: {},
     },
-    { status: 401 },
+    { status: statusCode },
   );
 };
+
+const createUnauthorizedResponse = (message: string) =>
+  createFailResponse(401, 'UNAUTHORIZED', message);
 
 const extractBearerToken = (request: Request) => {
   const authHeader = request.headers.get('Authorization');
@@ -81,13 +89,10 @@ export const authHandlers = [
 
     // 특정 이메일로 실패 케이스 테스트 가능
     if (body.email === 'error@test.com') {
-      return HttpResponse.json(
-        {
-          message: '이미 존재하는 이메일입니다.',
-          error: 'Bad Request',
-          statusCode: 400,
-        },
-        { status: 400 },
+      return createFailResponse(
+        400,
+        'BAD_REQUEST',
+        '이미 존재하는 이메일입니다.',
       );
     }
 
@@ -112,7 +117,12 @@ export const authHandlers = [
       );
     }
 
-    return HttpResponse.json({ accessToken: 'mock-rotated-access-token' });
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '액세스 토큰 재발급 성공',
+      data: { accessToken: 'mock-rotated-access-token' },
+    });
   }),
 
   http.post('*/auth/token/refresh', ({ request }) => {
@@ -130,7 +140,12 @@ export const authHandlers = [
       '.eyJpZCI6InVzZXItMDAxIiwiZW1haWwiOiJtZW1iZXJAZXhhbXBsZS5jb20iLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6NDEwMjQ0NDgwMH0' +
       '.mock-signature';
 
-    return HttpResponse.json({ refreshToken: mockRotatedRefreshToken });
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '리프레시 토큰 재발급 성공',
+      data: { refreshToken: mockRotatedRefreshToken },
+    });
   }),
 
   // 이메일 로그인 (Basic Auth)
@@ -151,14 +166,7 @@ export const authHandlers = [
     const body = (await request.json()) as { idToken?: string };
 
     if (!body.idToken) {
-      return HttpResponse.json(
-        {
-          message: 'idToken must be a string',
-          error: 'Bad Request',
-          statusCode: 400,
-        },
-        { status: 400 },
-      );
+      return createFailResponse(400, 'BAD_REQUEST', 'idToken must be a string');
     }
 
     return createTokenResponse('로그인 성공');

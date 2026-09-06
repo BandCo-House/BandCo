@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type { Space } from '@/entities/space/model/types';
 import { API_URL } from '../config';
 
@@ -121,9 +121,11 @@ export const spaceHandlers = [
     );
 
     return HttpResponse.json<
-      ApiResponse<{ items: Space[]; pagination: unknown }>
+      ApiSuccessResponse<{ items: Space[]; pagination: unknown }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         items,
         pagination: {
@@ -149,14 +151,16 @@ export const spaceHandlers = [
     }));
 
     return HttpResponse.json<
-      ApiResponse<{
+      ApiSuccessResponse<{
         space: Space;
         members: unknown[];
         songCount: number;
         scheduleCount: number;
       }>
     >({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         space,
         members,
@@ -168,8 +172,10 @@ export const spaceHandlers = [
   http.post(`${API_URL}/bands/:bandId/bandspaces`, async ({ request }) => {
     const body = (await request.json()) as Partial<Space>;
 
-    return HttpResponse.json<ApiResponse<Space>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<Space>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { ...spaces[0], ...body, spaceId: 'space-created' },
     });
   }),

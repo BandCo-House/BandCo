@@ -42,16 +42,18 @@
 
 ## API 규칙
 
-| 항목          | 규칙                                                                                                                        |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| 호출 방식     | `@/shared/api`의 `apiGet`, `apiPost`, `apiPatch`, `apiDelete`를 우선 사용한다. 필요할 때만 `apiClient`를 직접 쓴다.         |
-| endpoint      | `/bands`, `/auth/login/email`처럼 백엔드 실제 path만 적고 base URL을 붙이지 않는다.                                         |
-| base URL      | `shared/api/config.ts`와 Vite env가 담당한다.                                                                               |
-| development   | 기본값은 `/api`이며 dev에서는 MSW가 요청을 가로챈다.                                                                        |
-| production    | 배포 주소는 env의 `VITE_API_BASE_URL`로 주입한다.                                                                           |
-| proxy         | 백엔드는 전역 `/api` prefix가 없으므로 dev proxy가 필요할 때만 `/api`를 제거해 백엔드 루트로 전달한다.                      |
-| 응답 검증     | `shared/api/types.ts`와 entity schema를 확인하고, 런타임 검증이 필요한 값은 zod schema로 parse한다.                         |
-| 응답 envelope | 백엔드가 `{ genres }`, `{ items }`처럼 감싸 주는지 실제 타입을 확인하고 언랩한다. 배열로 바로 받으면 조용히 빈 목록이 된다. |
+| 항목        | 규칙                                                                                                                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 호출 방식   | `@/shared/api`의 `apiGet`, `apiPost`, `apiPatch`, `apiDelete`만 사용한다. `apiClient`를 직접 호출하는 API 함수는 만들지 않는다(토큰 재발급 등 `shared/api/client.ts` 내부만 예외).                              |
+| endpoint    | `/bands`, `/auth/login/email`처럼 백엔드 실제 path만 적고 base URL을 붙이지 않는다.                                                                                                                             |
+| base URL    | `shared/api/config.ts`와 Vite env가 담당한다.                                                                                                                                                                   |
+| development | 기본값은 `/api`이며 dev에서는 MSW가 요청을 가로챈다.                                                                                                                                                            |
+| production  | 배포 주소는 env의 `VITE_API_BASE_URL`로 주입한다.                                                                                                                                                               |
+| proxy       | 백엔드는 전역 `/api` prefix가 없으므로 dev proxy가 필요할 때만 `/api`를 제거해 백엔드 루트로 전달한다.                                                                                                          |
+| 응답 봉투   | 백엔드 응답은 항상 `{ status, error, message, data }` 봉투다(`shared/api/types.ts`의 `ApiSuccessResponse`·`ApiFailResponse`). `apiGet`류가 `data`만 돌려주므로 API 함수와 schema는 봉투를 다시 정의하지 않는다. |
+| 응답 검증   | `shared/api/types.ts`와 entity schema를 확인하고, 런타임 검증이 필요한 값은 `apiGet<unknown>`으로 받아 zod schema로 parse한다.                                                                                  |
+| 실패 응답   | 4xx·5xx는 `{ status: 'fail', error: { code, details: { statusCode } }, message, data: {} }`로 오고 axios가 reject한다. 사용자 메시지는 `getApiErrorMessage`로 읽는다.                                           |
+| data 형태   | `data` 안은 API마다 다르다. 백엔드가 `{ genres }`, `{ items }`처럼 감싸 주는지 실제 타입(`backend/src/modules/*/types`)을 확인하고 언랩한다.                                                                    |
 
 ## 상태와 데이터
 
@@ -124,13 +126,14 @@
 
 ## MSW
 
-| 항목            | 규칙                                                              |
-| --------------- | ----------------------------------------------------------------- |
-| browser worker  | `main.tsx`에서 dev일 때만 켜진다.                                 |
-| handler 위치    | `mocks/{domain}/handlers.ts`에 두고 `mocks/handlers.ts`에 합친다. |
-| endpoint 기준   | `mocks/config.ts`의 `API_URL`을 따른다.                           |
-| 테스트 override | 개별 handler 변경은 `server.use(...)`를 사용한다.                 |
-| cleanup         | `src/test/setup.ts`의 reset 흐름을 깨지 않는다.                   |
+| 항목            | 규칙                                                                                                                                                                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| browser worker  | `main.tsx`에서 dev일 때만 켜진다.                                                                                                                                                                                                      |
+| handler 위치    | `mocks/{domain}/handlers.ts`에 두고 `mocks/handlers.ts`에 합친다.                                                                                                                                                                      |
+| endpoint 기준   | `mocks/config.ts`의 `API_URL`을 따른다.                                                                                                                                                                                                |
+| 응답 형태       | 성공은 `{ status: 'success', error: null, message, data }`, 실패는 `{ status: 'fail', error: { code, details: { statusCode } }, message, data: {} }`로 백엔드 봉투를 그대로 흉내 낸다. `data`는 백엔드 result 타입과 같은 형태로 둔다. |
+| 테스트 override | 개별 handler 변경은 `server.use(...)`를 사용한다.                                                                                                                                                                                      |
+| cleanup         | `src/test/setup.ts`의 reset 흐름을 깨지 않는다.                                                                                                                                                                                        |
 
 ## 검증
 

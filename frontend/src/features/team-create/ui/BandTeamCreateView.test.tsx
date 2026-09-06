@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as teamApi from '@/entities/team/api/team-api';
@@ -155,9 +161,13 @@ describe('BandTeamCreateView', () => {
     const editBtn = screen.getByRole('button', { name: '박지은 변경' });
     fireEvent.click(editBtn);
 
-    // 3. 모달에서 다른 멤버 선택 시 교체되고 모달 닫힘
-    const newMemberItem = await screen.findByText('김민준');
-    fireEvent.click(newMemberItem);
+    // 3. 모달에서 다른 멤버 선택 시 교체되고 모달 닫힘 (팀원 행에도 같은 닉네임이 있으므로 모달 안에서 찾는다)
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(await within(dialog).findByText('김민준'));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText('박지은')).not.toBeInTheDocument();
   });
 
   it('팀 생성 성공 시 createTeam 및 addTeamMember를 호출하고 팀 목록으로 이동한다', async () => {

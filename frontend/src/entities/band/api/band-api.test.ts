@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 
 import { apiClient } from '@/shared/api/client';
-import { getBands } from './band-api';
+import { getMyBands } from './band-api';
 
 const mock = new MockAdapter(apiClient);
 
@@ -10,7 +10,7 @@ afterEach(() => {
   mock.reset();
 });
 
-describe('getBands 어댑터', () => {
+describe('getMyBands 어댑터', () => {
   it('GET /bands/me 응답을 schema로 검증한 뒤 bands를 반환한다', async () => {
     mock.onGet('/bands/me').reply(200, {
       status: 'success',
@@ -39,7 +39,7 @@ describe('getBands 어댑터', () => {
       },
     });
 
-    await expect(getBands()).resolves.toEqual([
+    await expect(getMyBands()).resolves.toEqual([
       {
         id: 'band-1',
         name: '합주하자',
@@ -74,6 +74,6 @@ describe('getBands 어댑터', () => {
       },
     });
 
-    await expect(getBands()).rejects.toThrow();
+    await expect(getMyBands()).rejects.toThrow();
   });
 });
