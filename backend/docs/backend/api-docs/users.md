@@ -430,18 +430,18 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
     "profile": {
       "nickname": "홍길동",
       "selfDescription": "기타를 사랑합니다.",
-      "avatarUrl": "https://example.com/avatar.jpg"
-    },
-    "profileMusic": {
-      "externalTrackId": "12345",
-      "sourceType": "DEEZER",
-      "title": "Blinding Lights",
-      "artistName": "The Weeknd",
-      "albumName": "After Hours",
-      "albumImageUrl": "https://example.com/album.jpg",
-      "durationMs": 200000,
-      "previewUrl": "https://cdns-preview.dzcdn.net/...",
-      "sourceUrl": "https://www.deezer.com/track/12345"
+      "avatarUrl": "https://example.com/avatar.jpg",
+      "profileMusic": {
+        "externalTrackId": "12345",
+        "sourceType": "DEEZER",
+        "title": "Blinding Lights",
+        "artistName": "The Weeknd",
+        "albumName": "After Hours",
+        "albumImageUrl": "https://example.com/album.jpg",
+        "durationMs": 200000,
+        "previewUrl": "https://cdns-preview.dzcdn.net/...",
+        "sourceUrl": "https://www.deezer.com/track/12345"
+      }
     },
     "skills": [
       {
@@ -461,7 +461,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 }
 ```
 
-> 참고: `profile`이 없으면 `null`. `profileMusic`이 없으면 `null`.
+> 참고: `profile`이 없으면 `null`. `profile.profileMusic`이 없으면 `null`. (2026-09-06 정정: 최상위 `profileMusic` → `profile.profileMusic`, 수정 요청 형태와 통일)
 
 ### Error
 
