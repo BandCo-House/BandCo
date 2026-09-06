@@ -46,8 +46,11 @@ git diff --name-only HEAD
 
 **UI / 스타일** ("UI와 스타일")
 
-- [ ] raw hex/px 대신 토큰 기반 Tailwind 클래스를 썼는가?
-- [ ] `shared/ui` 기존 컴포넌트를 재사용했는가?
+- [ ] raw hex/px 대신 토큰 기반 Tailwind 클래스를 썼는가? (hex 리터럴·slate/violet/gray 팔레트 금지)
+- [ ] 글자 크기·굵기를 `typo-*`로만 지정했는가? `text-sm`·`font-bold` 같은 Tailwind 기본 유틸과 **같은 요소에 겹쳐 쓰지 않았는가?** (컴포넌트 기본 className + 호출부 className이 합쳐지는 경우 포함)
+- [ ] 스케일 밖 값(20px·28px·13px·10px·weight 500)을 쓰지 않았는가? — `AGENTS.md` "타이포그래피와 색" 표
+- [ ] 안내문구(빈 상태·도움말·에러)를 12로 내리지 않았는가? 기준은 14다
+- [ ] `shared/ui` 기존 컴포넌트를 재사용했는가? (빈 상태는 `EmptyState`, 헤더 탭은 `RouteTabs`)
 
 **접근성** ("접근성")
 
