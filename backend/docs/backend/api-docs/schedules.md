@@ -55,7 +55,7 @@
 }
 ```
 
-> 선택 필드: placeId, songIds, participantBandMemberIds, memo, externalLinks, referenceFiles
+> 선택 필드: placeId, songIds, participants, participantBandMemberIds(deprecated), memo, externalLinks, referenceFiles
 
 ### Response 200
 ```json
@@ -77,7 +77,8 @@
       {
         "songId": "song-uuid",
         "title": "좋은 날",
-        "artistName": "IU"
+        "artistName": "IU",
+        "key": "F_SHARP_MINOR"
       }
     ],
     "participantCount": 2,

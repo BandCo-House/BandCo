@@ -131,6 +131,17 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     });
   }
 
+  /**
+   * 조회 결과의 참여자 행을 밴드 멤버 기준으로 접는다.
+   * 세션 편성 때문에 한 사람이 여러 행으로 나오므로 인원수·미리보기는 이 값으로 센다.
+   *
+   * @param {T[]} rows - bandMemberId를 가진 참여자 행 목록
+   * @returns {T[]} 멤버마다 첫 행만 남긴 목록
+   */
+  private dedupeParticipantRowsByMember<T extends { bandMemberId: string }>(rows: T[]): T[] {
+    return [...new Map(rows.map(row => [row.bandMemberId, row])).values()];
+  }
+
   async findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
     const client = tx ?? this.prisma;
     if (skillTypeIds.length === 0) return [];
@@ -274,6 +285,34 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     } else if (updated.scheduleType === 'MEETING') {
       // 참여자를 그대로 두고 합주 → 회의로만 바꾼 경우. 세션이 붙은 행이 남으면
       // 회의인데 세션 편성이 있는 상태가 되므로 여기서 정리한다.
+      //
+      // 그냥 updateMany로 밀면 안 된다 — 겸업 참여자(보컬+기타)는 행이 둘이라
+      // 둘 다 (scheduleId, bandMemberId, NULL)이 되어 partial unique index
+      // (schedule_participants_schedule_member_no_skill_key)를 위반하고
+      // PATCH 전체가 롤백된다. 멤버당 한 행만 남기고 나머지를 먼저 지운다.
+      //
+      // 남길 행은 id 오름차순 첫 번째다. 행을 지웠다 다시 만들지 않는 이유는
+      // attendanceStatus·note를 잃지 않기 위해서다.
+      const existingRows = await client.scheduleParticipant.findMany({
+        where: { scheduleId },
+        select: { id: true, bandMemberId: true },
+        orderBy: { id: 'asc' },
+      });
+
+      const keptIdByMember = new Map<string, string>();
+      const duplicatedIds: string[] = [];
+      for (const row of existingRows) {
+        if (keptIdByMember.has(row.bandMemberId)) {
+          duplicatedIds.push(row.id);
+          continue;
+        }
+        keptIdByMember.set(row.bandMemberId, row.id);
+      }
+
+      if (duplicatedIds.length > 0) {
+        await client.scheduleParticipant.deleteMany({ where: { id: { in: duplicatedIds } } });
+      }
+
       await client.scheduleParticipant.updateMany({
         where: { scheduleId, skillTypeId: { not: null } },
         data: { skillTypeId: null },
@@ -509,8 +548,9 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         place: row.place ? { placeId: row.place.id, name: row.place.name } : null,
         team: row.scheduleTeams[0] ? { teamId: row.scheduleTeams[0].team.id, name: row.scheduleTeams[0].team.name } : null,
         songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName, key: ss.song.key ?? null })),
-        participantCount: row.participants.length,
-        participants: row.participants.map(p => ({
+        // 세션마다 행이 나뉘므로 겸업 참여자는 여러 번 나온다. 사람 기준으로 접는다.
+        participantCount: this.dedupeParticipantRowsByMember(row.participants).length,
+        participants: this.dedupeParticipantRowsByMember(row.participants).map(p => ({
           bandMemberId: p.bandMemberId,
           nickname: p.bandMember.user.profile?.nickname ?? '',
           profileImageUrl: p.bandMember.user.profile?.avatarUrl ?? null,

@@ -9,6 +9,7 @@ const BAND_MEMBER_ID = '33333333-3333-4333-8333-333333333333';
 const CREATED_AT = new Date('2026-08-11T00:00:00.000Z');
 const VOCAL_SKILL_ID = '44444444-4444-4444-8444-444444444444';
 const GUITAR_SKILL_ID = '55555555-5555-4555-8555-555555555555';
+const OTHER_BAND_MEMBER_ID = '66666666-6666-4666-8666-666666666666';
 
 const createPrismaMock = () => ({
   schedule: {
@@ -177,12 +178,34 @@ describe('SchedulesPrismaRepository', () => {
 
   it('참여자를 안 보내고 회의로 바꾸면 남은 세션 배정을 비운다', async () => {
     prisma.schedule.update.mockResolvedValue({ ...scheduleRow, scheduleType: ScheduleType.MEETING });
-    prisma.scheduleParticipant.findMany.mockResolvedValue([{ bandMemberId: BAND_MEMBER_ID }]);
+    prisma.scheduleParticipant.findMany.mockResolvedValue([{ id: 'p1', bandMemberId: BAND_MEMBER_ID }]);
     prisma.scheduleSong.findMany.mockResolvedValue([]);
     prisma.scheduleReferenceFile.findMany.mockResolvedValue([]);
 
     await repository.updateSchedule(SCHEDULE_ID, { scheduleType: ScheduleType.MEETING });
 
+    expect(prisma.scheduleParticipant.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.scheduleParticipant.updateMany).toHaveBeenCalledWith({
+      where: { scheduleId: SCHEDULE_ID, skillTypeId: { not: null } },
+      data: { skillTypeId: null },
+    });
+  });
+
+  it('겸업 참여자를 회의로 바꿀 때 멤버당 한 행만 남기고 지운다', async () => {
+    // 두 행을 모두 NULL로 밀면 partial unique index를 위반해 PATCH 전체가 롤백된다.
+    prisma.schedule.update.mockResolvedValue({ ...scheduleRow, scheduleType: ScheduleType.MEETING });
+    prisma.scheduleParticipant.findMany.mockResolvedValue([
+      { id: 'p1', bandMemberId: BAND_MEMBER_ID },
+      { id: 'p2', bandMemberId: BAND_MEMBER_ID },
+      { id: 'p3', bandMemberId: OTHER_BAND_MEMBER_ID },
+    ]);
+    prisma.scheduleSong.findMany.mockResolvedValue([]);
+    prisma.scheduleReferenceFile.findMany.mockResolvedValue([]);
+
+    await repository.updateSchedule(SCHEDULE_ID, { scheduleType: ScheduleType.MEETING });
+
+    // 같은 멤버의 두 번째 행만 지운다(첫 행은 attendanceStatus·note를 지키려고 남긴다).
+    expect(prisma.scheduleParticipant.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['p2'] } } });
     expect(prisma.scheduleParticipant.updateMany).toHaveBeenCalledWith({
       where: { scheduleId: SCHEDULE_ID, skillTypeId: { not: null } },
       data: { skillTypeId: null },

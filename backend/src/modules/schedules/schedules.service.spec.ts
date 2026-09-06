@@ -402,6 +402,33 @@ describe('SchedulesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('participants가 null로 오면 참여자를 건드리지 않는다(500 방지)', async () => {
+      // @IsOptional()은 null도 검증에서 빼주므로 null이 그대로 Service까지 온다.
+      let captured: unknown = 'unset';
+      const service = new SchedulesService(
+        createRepositoryStub({
+          async createSchedule(_spaceId, _memberId, input) {
+            captured = input.participants;
+            return createScheduleResult;
+          },
+        }),
+        createPrismaServiceStub(),
+        createNotificationsServiceMock(),
+      );
+
+      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
+        title: '합주',
+        scheduleType: ScheduleType.PRACTICE,
+        startAt: '2026-06-01T14:00:00+09:00',
+        endAt: '2026-06-01T16:00:00+09:00',
+        status: ScheduleStatus.PLANNED,
+        participants: null as never,
+        participantBandMemberIds: null as never,
+      });
+
+      expect(captured).toEqual([]);
+    });
+
     it('createSchedule 내부 호출이 같은 tx로 처리된다', async () => {
       const capturedTransactions: unknown[] = [];
       const stub = createRepositoryStub({

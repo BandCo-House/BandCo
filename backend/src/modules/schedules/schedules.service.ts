@@ -32,16 +32,19 @@ export class SchedulesService {
    * 백엔드가 프론트보다 먼저 배포되므로 운영 중인 구형 클라이언트가 계속 동작해야 한다.
    * 둘 다 오면 표현력이 큰 `participants`를 택한다.
    *
-   * @param {ScheduleParticipantInput[] | undefined} participants - 신규 형식 참여자 목록
-   * @param {string[] | undefined} participantBandMemberIds - 구형 형식 참여자 ID 목록
+   * `@IsOptional()`은 undefined뿐 아니라 null도 검증에서 빼주므로 null이 그대로 들어온다.
+   * null은 "안 보냄"으로 본다 — 참여자를 비우는 건 빈 배열이 맡는다.
+   *
+   * @param {ScheduleParticipantInput[] | null | undefined} participants - 신규 형식 참여자 목록
+   * @param {string[] | null | undefined} participantBandMemberIds - 구형 형식 참여자 ID 목록
    * @returns {ScheduleParticipantInput[] | undefined} 정규화된 목록. 둘 다 없으면 undefined(수정에서 "건드리지 않음")
    */
   private normalizeParticipants(
-    participants: ScheduleParticipantInput[] | undefined,
-    participantBandMemberIds: string[] | undefined,
+    participants: ScheduleParticipantInput[] | null | undefined,
+    participantBandMemberIds: string[] | null | undefined,
   ): ScheduleParticipantInput[] | undefined {
-    if (participants !== undefined) return participants;
-    if (participantBandMemberIds !== undefined) return participantBandMemberIds.map(bandMemberId => ({ bandMemberId }));
+    if (participants != null) return participants;
+    if (participantBandMemberIds != null) return participantBandMemberIds.map(bandMemberId => ({ bandMemberId }));
     return undefined;
   }
 
