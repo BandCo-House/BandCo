@@ -36,6 +36,12 @@ export default defineConfig(({ mode }) => {
     },
 
     server: {
+      // 스토리지 버킷 CORS가 http://localhost:5173만 허용한다. Vite는 이 포트가
+      // 점유돼 있으면 조용히 다음 포트로 넘어가는데, 그러면 허용 목록에 없는
+      // origin이 되어 파일 업로드만 preflight 403으로 막힌다. 서버 로그에도
+      // 아무것도 안 남아 원인을 찾기 어렵다. 포트가 막혔으면 그냥 실패하게 둔다.
+      port: 5173,
+      strictPort: true,
       proxy: {
         '/api': {
           target: apiProxyTarget,
