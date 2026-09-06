@@ -24,11 +24,26 @@ model User {
   managedBands        Band[]            @relation("BandManager")
   favoriteGenres      FavoriteGenre[]
   notifications       Notification[]
+  oauthAccounts       UserOAuthAccount[]
   profile             UserProfile?
   profileMusic        ProfileMusic?
   userSkills          UserSkill[]
 
   @@map("users")
+}
+
+model UserOAuthAccount {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  provider       OAuthProvider
+  providerUserId String        @map("provider_user_id") @db.VarChar(255)
+  email          String?       @db.VarChar(255)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user           User          @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUserId])
+  @@map("user_oauth_accounts")
 }
 
 model SkillType {
@@ -575,4 +590,8 @@ enum BandMemberRole {
 enum TeamMemberRole {
   LEADER
   MEMBER
+}
+
+enum OAuthProvider {
+  GOOGLE
 }

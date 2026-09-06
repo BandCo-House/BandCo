@@ -37,6 +37,7 @@
 | 높음 | `docs/backend/conventions.md` | `@db.SmallInt` 컬럼에는 DTO에도 `@Max(32767)`를 붙인다는 규칙 추가 필요. `bpm`·`songLength`가 `@Min(1)`만 있어 32767 초과 값이 검증을 통과한 뒤 DB에서 터져 400이 아니라 500이 났다. 컬럼 타입과 DTO 상한을 짝지어 보는 체크가 없으면 반복된다. | PR #158 CodeRabbit 리뷰 — 곡 생성/수정 DTO |
 | 중간 | `docs/backend/conventions.md` | 한 벌로만 의미가 있는 optional 필드군은 `@IsOptional()` 대신 `@ValidateIf`로 all-or-nothing 검증한다는 규칙 추가 필요. `sourceUrl`·`sourceType`·`externalTrackId`가 각각 `@IsOptional()`이라 하나만 보내도 통과해 반쪽짜리 음원 출처가 저장될 수 있었다. | PR #158 CodeRabbit 리뷰 — 곡 생성 DTO |
 | 중간 | `CLAUDE.md` | `prisma:generate`가 "스키마 수정 시 필수"로만 적혀 있는데, **리베이스·브랜치 전환 후에도 필요**하다는 안내 추가 필요. `src/generated/prisma`가 gitignore 대상이라 브랜치를 옮기면 이전 스키마의 클라이언트가 그대로 남아, enum 값이 없다는 컴파일 에러가 난다(원인 파악에 시간이 걸림). | KAN-78을 dev에 리베이스한 뒤 `SongKey.FSM` 컴파일 에러 |
+| 중간 | `docs/backend/api-docs/*.md` | 응답 예시가 전부 `"success": true` 형태인데 실제 `createSuccessResponse`는 `{ status: "success", error: null, message, data }`를 반환한다. 10개 문서 64개 예시가 실제 응답과 달라 프론트가 envelope을 잘못 파싱할 수 있다(실제로 프론트 `loginEmail`이 `success` 가정으로 작성돼 토큰을 못 읽는 버그가 있었음). be-api-sync가 예시를 생성할 때 `createSuccessResponse` 형태를 쓰도록 규칙 추가 필요. | PR #171 CodeRabbit 리뷰 — users.md #70 응답 예시 지적, #70만 수정하고 나머지는 보류 |
 
 **기록 방법** (한 줄씩 추가):
 

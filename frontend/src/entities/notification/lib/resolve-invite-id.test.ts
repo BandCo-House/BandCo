@@ -25,6 +25,8 @@ describe('resolveInviteId', () => {
 
   it('유효하지 않은 URL이거나 파라미터가 없으면 빈 문자열을 반환한다', () => {
     expect(resolveInviteId(null)).toBe('');
-    expect(resolveInviteId({ targetPath: '/invalid-path-without-id' })).toBe('');
+    expect(resolveInviteId({ targetPath: '/invalid-path-without-id' })).toBe(
+      '',
+    );
   });
 });

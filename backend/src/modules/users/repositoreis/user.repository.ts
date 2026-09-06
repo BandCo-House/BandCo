@@ -1,7 +1,8 @@
-import type { Prisma, User } from 'src/generated/prisma';
+import type { OAuthProvider, Prisma, User } from 'src/generated/prisma';
 
 import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
+import type { CreateOAuthUserInput, OAuthLinkUser } from '../types/oauth-user.type';
 import type { GetUsersResult } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 
@@ -26,6 +27,10 @@ export interface UsersRepository {
   findAuthUserById(id: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
   findUserForPasswordAuth(email: string, tx?: Prisma.TransactionClient): Promise<PasswordAuthUser | null>;
   createUserWithEmail(email: string, passwordHash: string, nickname: string, tx?: Prisma.TransactionClient): Promise<User>;
+  findUserByOAuth(provider: OAuthProvider, providerUserId: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null>;
+  findUserForOAuthLink(email: string, tx?: Prisma.TransactionClient): Promise<OAuthLinkUser | null>;
+  createOAuthAccount(userId: string, provider: OAuthProvider, providerUserId: string, email: string, tx?: Prisma.TransactionClient): Promise<void>;
+  createUserWithOAuth(input: CreateOAuthUserInput, tx?: Prisma.TransactionClient): Promise<User>;
   findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult>;
   findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null>;
   updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult>;

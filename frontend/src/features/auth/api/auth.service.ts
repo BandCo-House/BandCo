@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/api/client';
+import { apiClient, apiPost } from '@/shared/api/client';
 import { type TokenResponse } from '@/shared/api/types';
 import { type SignupReq } from '../model/auth.schema';
 
@@ -23,12 +23,7 @@ export type EmailDuplicateCheckResponse = {
 export const registerEmail = async (
   data: SignupReq,
 ): Promise<TokenResponse> => {
-  const response = await apiClient.post<TokenResponse>(
-    '/auth/register/email',
-    data,
-  );
-
-  return response.data;
+  return apiPost<TokenResponse>('/auth/register/email', data);
 };
 
 /**
@@ -60,7 +55,7 @@ export const loginEmail = async (
   // email:password 형태를 base64로 인코딩
   const credentials = btoa(`${email}:${password}`);
 
-  const response = await apiClient.post<TokenResponse>(
+  return apiPost<TokenResponse>(
     '/auth/login/email',
     {},
     {
@@ -69,6 +64,13 @@ export const loginEmail = async (
       },
     },
   );
+};
 
-  return response.data;
+/**
+ * Google 로그인
+ * @param idToken Google Identity Services에서 받은 ID 토큰
+ * @returns accessToken, refreshToken
+ */
+export const loginGoogle = async (idToken: string): Promise<TokenResponse> => {
+  return apiPost<TokenResponse>('/auth/login/google', { idToken });
 };

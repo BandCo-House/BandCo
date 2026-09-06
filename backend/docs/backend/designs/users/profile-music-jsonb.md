@@ -525,3 +525,7 @@ profile: { nickname: 'testuser', selfDescription: null, avatarUrl: null, profile
 ## 미결 사항
 
 없음. 확정된 API 명세와 스키마를 기반으로 모든 항목이 결정되었다.
+
+## 정정 (2026-09-06)
+
+구현이 `profileMusic`을 `GetUserProfileResult` 최상위에 두었으나, 설계(§ UserProfileDetail에 `profileMusic` 추가)와 프론트 계약은 `profile.profileMusic`이다. 프로필 페이지가 zod 파싱 실패로 "존재하지 않는 유저 프로필입니다"를 띄운 원인이라, `UserProfileDetail.profileMusic`으로 옮겨 수정 요청(`profile.profileMusic`)과 응답 형태를 통일했다. api-docs #4 응답 예시도 함께 정정했다.

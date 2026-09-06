@@ -13,6 +13,7 @@ const mockPrisma = {
   profileMusic: { findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
   userSkill: { deleteMany: jest.fn(), createMany: jest.fn() },
   favoriteGenre: { deleteMany: jest.fn(), createMany: jest.fn() },
+  userOAuthAccount: { findUnique: jest.fn(), create: jest.fn() },
   $transaction: jest.fn().mockImplementation(fn => fn(mockPrisma)),
 };
 
@@ -63,6 +64,86 @@ describe('UsersPrismaRepository', () => {
       await repository.findByEmail('test@example.com', txClient as unknown as Prisma.TransactionClient);
       expect(txClient.user.findUnique).toHaveBeenCalled();
       expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findUserByOAuth', () => {
+    it('provider와 providerUserId 복합 키로 연결된 활성 유저를 반환한다', async () => {
+      mockPrisma.userOAuthAccount.findUnique.mockResolvedValue({
+        user: { id: 'user-001', email: 'test@example.com', deletedAt: null, status: 'ACTIVE' },
+      });
+
+      const result = await repository.findUserByOAuth('GOOGLE', 'google-sub-001');
+
+      expect(mockPrisma.userOAuthAccount.findUnique).toHaveBeenCalledWith({
+        where: { provider_providerUserId: { provider: 'GOOGLE', providerUserId: 'google-sub-001' } },
+        select: { user: { select: { id: true, email: true, deletedAt: true, status: true } } },
+      });
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com' });
+    });
+
+    it('연결이 없으면 null을 반환한다', async () => {
+      mockPrisma.userOAuthAccount.findUnique.mockResolvedValue(null);
+      expect(await repository.findUserByOAuth('GOOGLE', 'unknown-sub')).toBeNull();
+    });
+
+    it('연결된 유저가 탈퇴 상태면 null을 반환한다', async () => {
+      mockPrisma.userOAuthAccount.findUnique.mockResolvedValue({
+        user: { id: 'user-001', email: 'test@example.com', deletedAt: new Date(), status: 'INACTIVE' },
+      });
+      expect(await repository.findUserByOAuth('GOOGLE', 'google-sub-001')).toBeNull();
+    });
+  });
+
+  describe('findUserForOAuthLink', () => {
+    it('탈퇴 여부와 무관하게 이메일 유저를 deletedAt·status와 함께 반환한다', async () => {
+      const deletedAt = new Date('2026-08-01T00:00:00.000Z');
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-001', email: 'test@example.com', deletedAt, status: 'INACTIVE' });
+
+      const result = await repository.findUserForOAuthLink('test@example.com');
+
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+        select: { id: true, email: true, deletedAt: true, status: true },
+      });
+      expect(result).toEqual({ id: 'user-001', email: 'test@example.com', deletedAt, status: 'INACTIVE' });
+    });
+
+    it('존재하지 않으면 null을 반환한다', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      expect(await repository.findUserForOAuthLink('none@example.com')).toBeNull();
+    });
+  });
+
+  describe('createUserWithOAuth', () => {
+    it('유저·프로필·OAuth 계정을 같은 transaction에서 생성한다', async () => {
+      mockPrisma.user.create.mockResolvedValue({ id: 'user-002', email: 'new@example.com' });
+
+      const result = await repository.createUserWithOAuth({
+        provider: 'GOOGLE',
+        providerUserId: 'google-sub-002',
+        email: 'new@example.com',
+        nickname: '구글유저',
+      });
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({ data: { email: 'new@example.com' } });
+      expect(mockPrisma.userProfile.create).toHaveBeenCalledWith({ data: { userId: 'user-002', nickname: '구글유저' } });
+      expect(mockPrisma.userOAuthAccount.create).toHaveBeenCalledWith({
+        data: { userId: 'user-002', provider: 'GOOGLE', providerUserId: 'google-sub-002', email: 'new@example.com' },
+      });
+      expect(result).toEqual({ id: 'user-002', email: 'new@example.com' });
+    });
+
+    it('외부 tx가 전달되면 새 transaction을 열지 않는다', async () => {
+      mockPrisma.user.create.mockResolvedValue({ id: 'user-002', email: 'new@example.com' });
+
+      await repository.createUserWithOAuth(
+        { provider: 'GOOGLE', providerUserId: 'google-sub-002', email: 'new@example.com', nickname: '구글유저' },
+        mockPrisma as unknown as Prisma.TransactionClient,
+      );
+
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -279,8 +360,17 @@ describe('UsersPrismaRepository', () => {
       expect(result?.user.id).toBe('user-001');
       expect(result?.user.createdAt).toBe('2026-01-01T00:00:00.000Z');
       expect(result?.profile?.nickname).toBe('testuser');
+      expect(result?.profile?.profileMusic).toBeNull();
+      expect(result).not.toHaveProperty('profileMusic');
       expect(result?.skills[0]).toEqual({ skillTypeId: 'skill-001', skillName: 'GUITAR', level: 'ADVANCED', isPrimary: true });
       expect(result?.favoriteGenres[0]).toEqual({ genreId: 'genre-001', name: 'ROCK' });
+    });
+
+    it('프로필 음악이 있으면 profile.profileMusic으로 매핑한다', async () => {
+      const trackData = { externalTrackId: '12345', sourceType: 'DEEZER', title: 'Blinding Lights' };
+      mockPrisma.user.findUnique.mockResolvedValue({ ...userRecord, profileMusic: { trackData } });
+      const result = await repository.findUserProfileById('user-001');
+      expect(result?.profile?.profileMusic).toEqual(trackData);
     });
 
     it('profile이 없으면 profile 필드가 null이다', async () => {
