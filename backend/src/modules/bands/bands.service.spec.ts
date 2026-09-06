@@ -2763,4 +2763,73 @@ describe('BandsService', () => {
       expect(capturedTx).toBe(externalTx);
     });
   });
+
+  describe('removeBandMember', () => {
+    it('밴드장이 멤버를 강퇴하면 해당 멤버 행을 삭제하고 removed: true를 반환한다', async () => {
+      let capturedBandMemberId: string | undefined;
+      const repository = createBandsRepositoryStub({
+        onLeaveBand(bandMemberId) {
+          capturedBandMemberId = bandMemberId;
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      const result = await service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-001');
+
+      expect(capturedBandMemberId).toBeDefined();
+      expect(result).toEqual({ bandId: 'band-001', userId: INVITEE_USER_ID, removed: true });
+    });
+
+    it('밴드가 없거나 삭제되었으면 NotFoundException을 던진다', async () => {
+      const repository = createBandsRepositoryStub({ activeBand: null });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.removeBandMember(BAND_MASTER_USER_ID, 'band-missing', 'target-user-001')).rejects.toThrow(NotFoundException);
+    });
+
+    it('밴드장이 아니면 ForbiddenException을 던진다', async () => {
+      const repository = createBandsRepositoryStub({
+        activeBand: { id: 'band-001', bandMasterUserId: '22222222-2222-4222-8222-222222222222' },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('대상이 밴드장이면 BadRequestException을 던진다', async () => {
+      const repository = createBandsRepositoryStub();
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', BAND_MASTER_USER_ID)).rejects.toThrow(BadRequestException);
+    });
+
+    it('대상 멤버가 밴드에 없으면 NotFoundException을 던진다', async () => {
+      const repository = createBandsRepositoryStub({ bandMemberForRoleUpdate: null });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await expect(service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않고 그대로 전달한다', async () => {
+      const externalTx = { transactionClient: true };
+      const capturedTransactions: unknown[] = [];
+      const repository = createBandsRepositoryStub({
+        onFindActiveBandById(tx) {
+          capturedTransactions.push(tx);
+        },
+        onFindBandMemberByBandIdAndUserId(tx) {
+          capturedTransactions.push(tx);
+        },
+        onLeaveBand(_bandMemberId, tx) {
+          capturedTransactions.push(tx);
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-001', externalTx as never);
+
+      expect(capturedTransactions).toHaveLength(3);
+      expect(capturedTransactions.every(tx => tx === externalTx)).toBe(true);
+    });
+  });
 });

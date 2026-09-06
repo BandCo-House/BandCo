@@ -21,7 +21,9 @@ describe('invite accept 어댑터', () => {
     };
 
     mock.onPost('/invitations/invite-id-1/accept').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: mockResponse,
     });
 

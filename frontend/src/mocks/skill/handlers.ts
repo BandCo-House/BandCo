@@ -15,7 +15,9 @@ const skills = [
 export const skillHandlers = [
   http.get(`${API_URL}/common/skills`, () => {
     return HttpResponse.json({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { skills },
     });
   }),

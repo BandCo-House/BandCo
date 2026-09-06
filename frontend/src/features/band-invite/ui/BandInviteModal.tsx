@@ -17,7 +17,7 @@ export interface BandInviteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   inviteeName: string;
-  inviteeEmail: string | null;
+  inviteeUserId: string;
   isLoggedIn: boolean;
 }
 
@@ -25,7 +25,7 @@ export function BandInviteModal({
   open,
   onOpenChange,
   inviteeName,
-  inviteeEmail,
+  inviteeUserId,
   isLoggedIn,
 }: BandInviteModalProps) {
   const { data: bands = [], isLoading } = useMyBands(open && isLoggedIn);
@@ -55,16 +55,9 @@ export function BandInviteModal({
       return;
     }
 
-    if (!inviteeEmail) {
-      toast.error(
-        '대상 유저의 이메일 정보가 누락되어 초대를 보낼 수 없습니다.',
-      );
-      return;
-    }
-
     try {
       setIsSubmitting(true);
-      await createInvite(selectedBandId, { inviteeEmail });
+      await createInvite(selectedBandId, { inviteeUserId });
       toast.success(`${inviteeName}님을 성공적으로 초대했습니다!`);
       onOpenChange(false);
     } catch {

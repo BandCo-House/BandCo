@@ -21,7 +21,9 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
   const { data: bandMembers = [] } = useBandMembers(bandId);
 
   const [teamName, setTeamName] = useState('');
-  const [selectedMembers, setSelectedMembers] = useState<BandMemberListItem[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<BandMemberListItem[]>(
+    [],
+  );
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +76,10 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
     if (editingMemberId) {
       if (editingMemberId === member.bandMemberId) {
         // 자기 자신을 그대로 누르면 해제/제거 (리더는 제거 방지)
-        if (!creatorMember || member.bandMemberId !== creatorMember.bandMemberId) {
+        if (
+          !creatorMember ||
+          member.bandMemberId !== creatorMember.bandMemberId
+        ) {
           setSelectedMembers((prev) =>
             prev.filter((m) => m.bandMemberId !== editingMemberId),
           );
@@ -82,7 +87,9 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
       } else {
         // 이미 다른 슬롯에 존재하는 멤버인 경우 중복 방지 처리
         setSelectedMembers((prev) => {
-          const withoutNew = prev.filter((m) => m.bandMemberId !== member.bandMemberId);
+          const withoutNew = prev.filter(
+            (m) => m.bandMemberId !== member.bandMemberId,
+          );
           return withoutNew.map((m) =>
             m.bandMemberId === editingMemberId ? member : m,
           );
@@ -154,7 +161,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
   };
 
   return (
-    <div className="relative flex w-full flex-col gap-8 text-white pb-6">
+    <div className="relative flex w-full flex-col gap-8 pb-6 text-white">
       {/* 상단 타이틀 & 설명 */}
       <div className="flex flex-col gap-2">
         <h2 className="typo-2xl-sb text-2xl font-semibold text-white">
@@ -174,7 +181,10 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
             className="flex items-center gap-1 typo-base-sb text-base font-semibold text-grey-100"
           >
             <span>팀 이름</span>
-            <span className="size-1 rounded-full bg-[#d6705c]" aria-hidden="true" />
+            <span
+              className="size-1 rounded-full bg-[#d6705c]"
+              aria-hidden="true"
+            />
           </label>
           <div className="border-b border-white/24 px-1 py-3 focus-within:border-primary">
             <input
@@ -183,7 +193,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
               placeholder="팀 이름을 입력해주세요"
-              className="w-full bg-transparent typo-base-sb text-base text-white placeholder:text-grey-300 outline-none"
+              className="w-full bg-transparent typo-base-sb text-base text-white outline-none placeholder:text-grey-300"
             />
           </div>
         </div>
@@ -193,7 +203,10 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-1 typo-base-sb text-base font-semibold text-grey-100">
               <span>팀 구성</span>
-              <span className="size-1 rounded-full bg-[#d6705c]" aria-hidden="true" />
+              <span
+                className="size-1 rounded-full bg-[#d6705c]"
+                aria-hidden="true"
+              />
             </label>
 
             {/* 팀원 추가 버튼 */}
@@ -244,14 +257,14 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                     className="flex items-center gap-2 py-1"
                   >
                     {/* 1. 좌측: 세션명 (피그마 하단 라임 언더라인 입력창 스타일) */}
-                    <div className="flex h-[54px] flex-1 min-w-0 items-center border-b border-primary px-4 py-3">
+                    <div className="flex h-[54px] min-w-0 flex-1 items-center border-b border-primary px-4 py-3">
                       <span className="truncate typo-base-sb text-base text-white">
                         {skillsDisplay}
                       </span>
                     </div>
 
                     {/* 2. 중간: 프로필 알약 칩 (아바타 + 닉네임) */}
-                    <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] py-1.5 pl-1.5 pr-3.5 backdrop-blur-sm">
+                    <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
                       <Avatar className="size-8 rounded-full">
                         <AvatarImage src={member.avatarUrl ?? undefined} />
                         <AvatarFallback className="text-xs">
@@ -268,7 +281,9 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                       <>
                         <button
                           type="button"
-                          onClick={() => handleOpenEditMember(member.bandMemberId)}
+                          onClick={() =>
+                            handleOpenEditMember(member.bandMemberId)
+                          }
                           aria-label={`${member.nickname} 변경`}
                           className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] text-primary transition-opacity hover:opacity-90 active:scale-95"
                         >
@@ -277,7 +292,9 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
 
                         <button
                           type="button"
-                          onClick={() => handleRemoveMember(member.bandMemberId)}
+                          onClick={() =>
+                            handleRemoveMember(member.bandMemberId)
+                          }
                           aria-label={`${member.nickname} 제거`}
                           className="flex size-8 shrink-0 items-center justify-center rounded-full text-grey-300 transition-colors hover:bg-white/10 hover:text-white"
                         >
@@ -301,7 +318,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
           size="pill"
           onClick={handleCancel}
           disabled={isSubmitting}
-          className="h-[54px] min-w-[90px] border-[#c6c6c8] text-grey-100 typo-base-sb"
+          className="h-[54px] min-w-[90px] border-[#c6c6c8] typo-base-sb text-grey-100"
         >
           취소
         </Button>

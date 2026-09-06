@@ -1,4 +1,4 @@
-import { apiClient, apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api';
 import type {
   Band,
   BandDetail,
@@ -10,19 +10,13 @@ import {
   bandDetailSchema,
   bandInviteLinkSchema,
   updatedBandSchema,
-  bandListResponseSchema,
+  bandListResultSchema,
 } from '../model/schema';
 
-export const getBands = async (): Promise<Band[]> => {
-  const response = await apiClient.get('/bands/me');
-  const parsed = bandListResponseSchema.parse(response.data);
-  return parsed.data.items;
-};
-
+/** 내 밴드 목록 조회(GET /bands/me). 백엔드는 `{ items, meta }`를 돌려주므로 items만 반환한다. */
 export const getMyBands = async (): Promise<Band[]> => {
-  const response = await apiClient.get('/bands/me');
-  const parsed = bandListResponseSchema.parse(response.data);
-  return parsed.data.items;
+  const data = await apiGet<unknown>('/bands/me');
+  return bandListResultSchema.parse(data).items;
 };
 
 /** 밴드 상세 조회(GET /bands/:bandId). 상세 헤더에 밴드명·멤버 수를 채운다. */

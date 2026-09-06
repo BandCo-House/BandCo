@@ -26,16 +26,16 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
     return defaultIndex !== undefined ? `세션${defaultIndex + 1}` : '세션';
   };
   return (
-    <div className="rounded-[20px] border border-[#28272a] bg-[#65637a]/48 p-5 shadow-sm backdrop-blur-md w-full">
+    <div className="w-full rounded-[20px] border border-[#28272a] bg-[#65637a]/48 p-5 shadow-sm backdrop-blur-md">
       {/* 카드 헤더 */}
       <div className="flex items-center justify-between pb-3">
-        <h3 className="typo-base-b text-grey-50 font-bold">팀원 목록</h3>
+        <h3 className="typo-base-b font-bold text-grey-50">팀원 목록</h3>
         {!isEditing && (
           <button
             type="button"
             onClick={onToggleEdit}
             aria-label="팀원 수정"
-            className="flex items-center gap-2 px-3 py-2 rounded-full text-grey-300 hover:text-white transition-colors"
+            className="flex items-center gap-2 rounded-full px-3 py-2 text-grey-300 transition-colors hover:text-white"
           >
             <span className="typo-sm-m text-sm">수정</span>
             <Pencil className="h-4 w-4" />
@@ -45,17 +45,17 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
 
       {!isEditing ? (
         /* 읽기 모드: 피그마 알약 캡슐(Pill) 스타일 (text-[#ECFCAB] 라임 세션명 + 32px 아바타 + white 닉네임) */
-        <div className="flex flex-wrap gap-1.5 items-start pt-1">
+        <div className="flex flex-wrap items-start gap-1.5 pt-1">
           {members.map((member) => (
             <div
               key={member.teamMemberId}
               className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(97,117,158,0.56)] px-3 py-1 shadow-xs"
             >
-              <span className="typo-base-sb text-[#ECFCAB] font-semibold text-base">
+              <span className="typo-base-sb text-base font-semibold text-[#ECFCAB]">
                 {getSessionName(member)}:
               </span>
               <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8 rounded-full shrink-0">
+                <Avatar className="h-8 w-8 shrink-0 rounded-full">
                   <AvatarImage
                     src={member.user.profileImageUrl || undefined}
                     alt={member.user.nickname}
@@ -64,7 +64,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
                     {member.user.nickname.slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="typo-sm-m text-grey-50 text-sm">
+                <span className="typo-sm-m text-sm text-grey-50">
                   {member.user.nickname}
                 </span>
               </div>
@@ -73,22 +73,22 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
         </div>
       ) : (
         /* 피그마 팀원 수정 모드: (라임 #ECFCAB 밑줄 Input + 40px 원형 🔍 돋보기 버튼) */
-        <div className="flex flex-col gap-4 pt-1 w-full">
+        <div className="flex w-full flex-col gap-4 pt-1">
           {members.map((member, idx) => (
             <div
               key={member.teamMemberId}
-              className="flex items-center gap-2 py-0.5 w-full"
+              className="flex w-full items-center gap-2 py-0.5"
             >
               {/* 좌측 세션명 + 라임 #ECFCAB 밑줄 */}
-              <div className="flex-1 border-b border-[#ECFCAB] h-[54px] flex items-center px-3 py-4">
-                <span className="typo-base-sb text-grey-50 font-semibold text-base">
+              <div className="flex h-[54px] flex-1 items-center border-b border-[#ECFCAB] px-3 py-4">
+                <span className="typo-base-sb text-base font-semibold text-grey-50">
                   {getSessionName(member, idx)}
                 </span>
               </div>
 
               {/* 멤버 칩 */}
-              <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] px-3 py-1.5 shrink-0">
-                <Avatar className="h-8 w-8 rounded-full shrink-0">
+              <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] px-3 py-1.5">
+                <Avatar className="h-8 w-8 shrink-0 rounded-full">
                   <AvatarImage
                     src={member.user.profileImageUrl || undefined}
                     alt={member.user.nickname}
@@ -97,7 +97,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
                     {member.user.nickname.slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="typo-sm-m text-grey-50 text-sm">
+                <span className="typo-sm-m text-sm text-grey-50">
                   {member.user.nickname}
                 </span>
               </div>
@@ -106,7 +106,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenSearchForSession(idx)}
-                className="flex items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] shrink-0 h-10 w-10 text-[#ECFCAB] hover:bg-[#61759E]/80 transition-colors"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] text-[#ECFCAB] transition-colors hover:bg-[#61759E]/80"
                 aria-label={`${getSessionName(member, idx)} 멤버 변경`}
               >
                 <Search className="h-6 w-6" />
@@ -115,16 +115,16 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
           ))}
 
           {/* 미할당 세션 추가 라인 */}
-          <div className="flex items-center gap-2 py-0.5 w-full">
-            <div className="flex-1 border-b border-[#3D3E54] h-[54px] flex items-center px-3 py-4">
-              <span className="typo-base-r text-grey-400 text-base">
+          <div className="flex w-full items-center gap-2 py-0.5">
+            <div className="flex h-[54px] flex-1 items-center border-b border-[#3D3E54] px-3 py-4">
+              <span className="typo-base-r text-base text-grey-400">
                 {`세션${members.length + 1}`}
               </span>
             </div>
             <button
               type="button"
               onClick={onOpenSearchForNewMember}
-              className="flex items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] shrink-0 h-10 w-10 text-[#ECFCAB] hover:bg-[#61759E]/80 transition-colors"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] text-[#ECFCAB] transition-colors hover:bg-[#61759E]/80"
               aria-label="세션 멤버 검색"
             >
               <Search className="h-6 w-6" />

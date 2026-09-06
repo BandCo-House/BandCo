@@ -22,8 +22,7 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
   const handleToggleMember = (picked: BandMemberListItem) => {
     const isDuplicate = currentMembers.some(
       (m, idx) =>
-        m.bandMemberId === picked.bandMemberId &&
-        idx !== selectedSessionIndex, // 자기 자신(현재 세션)은 중복으로 보지 않음
+        m.bandMemberId === picked.bandMemberId && idx !== selectedSessionIndex, // 자기 자신(현재 세션)은 중복으로 보지 않음
     );
 
     if (isDuplicate) {

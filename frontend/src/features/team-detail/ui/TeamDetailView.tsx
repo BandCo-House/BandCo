@@ -31,7 +31,6 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
   setSearchModalOpen,
   handleToggleMember,
 }) => {
-
   return (
     <div className="-mt-1 flex flex-col gap-4 px-5 pt-0 pb-8 text-foreground">
       {/* 1. 서브 헤더 */}

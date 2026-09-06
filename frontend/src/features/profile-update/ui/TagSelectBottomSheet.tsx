@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -34,20 +34,21 @@ export function TagSelectBottomSheet({
   onSave,
   isLoading = false,
 }: TagSelectBottomSheetProps) {
-  const currentSelectionRef = useRef<string[]>(selectedIds);
+  // 시트 안에서 고른 임시 선택. null이면 아직 손대지 않은 상태라 selectedIds를 그대로 쓴다.
+  const [tempSelectedIds, setTempSelectedIds] = useState<string[] | null>(null);
   const [prevOpen, setPrevOpen] = useState(open);
 
-  // Controlled open prop 변경 감지: 열리는 순간 최신 selectedIds로 ref 즉시 동기화
+  // Controlled open prop 변경 감지: 열리는 순간 임시 선택을 비워 최신 selectedIds부터 시작한다
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
-      currentSelectionRef.current = selectedIds;
+      setTempSelectedIds(null);
     }
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
-      const tempIds = currentSelectionRef.current;
+      const tempIds = tempSelectedIds ?? selectedIds;
       const isDifferent =
         tempIds.length !== selectedIds.length ||
         tempIds.some((id, idx) => id !== selectedIds[idx]);
@@ -55,9 +56,8 @@ export function TagSelectBottomSheet({
       if (isDifferent && onSave) {
         void onSave(tempIds);
       }
-    } else {
-      currentSelectionRef.current = selectedIds;
     }
+    setTempSelectedIds(null);
     onOpenChange(nextOpen);
   };
 
@@ -66,7 +66,7 @@ export function TagSelectBottomSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="fixed bottom-0 left-0 right-[var(--removed-body-scroll-bar-size,0px)] mx-auto flex h-[60vh] max-h-[60vh] w-full max-w-[648px] flex-col gap-0 rounded-t-3xl border-t border-grey-50/15 bg-[#12131E] p-6 text-grey-50 shadow-2xl backdrop-blur-2xl"
+        className="fixed right-[var(--removed-body-scroll-bar-size,0px)] bottom-0 left-0 mx-auto flex h-[60vh] max-h-[60vh] w-full max-w-[648px] flex-col gap-0 rounded-t-3xl border-t border-grey-50/15 bg-[#12131E] p-6 text-grey-50 shadow-2xl backdrop-blur-2xl"
       >
         <SheetHeader className="flex flex-row items-center justify-between p-0">
           <SheetTitle className="typo-lg-b text-grey-50">{title}</SheetTitle>
@@ -85,9 +85,7 @@ export function TagSelectBottomSheet({
             items={items}
             initialSelectedIds={selectedIds}
             isLoading={isLoading}
-            onSelectionChange={(nextIds) => {
-              currentSelectionRef.current = nextIds;
-            }}
+            onSelectionChange={setTempSelectedIds}
           />
         )}
       </SheetContent>
@@ -144,14 +142,14 @@ function TagSelectContent({
               onClick={() => handleToggle(item.id)}
               aria-pressed={isSelected}
               className={cn(
-                'flex items-center rounded-full px-4 py-2 transition-all select-none typo-base-sb focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:outline-none',
+                'flex items-center rounded-full px-4 py-2 typo-base-sb transition-all select-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:outline-none',
                 isSelected
                   ? 'bg-[#E7FF86] text-[#12131E] shadow-sm'
                   : 'border border-grey-50/20 bg-surface-2/40 text-grey-100 hover:border-grey-50/40 hover:bg-white/10',
               )}
             >
               {isSelected && (
-                <span className="mr-1.5 flex size-5 items-center justify-center rounded-full bg-[#12131E] typo-xs-b text-white">
+                <span className="typo-xs-b mr-1.5 flex size-5 items-center justify-center rounded-full bg-[#12131E] text-white">
                   {selectedIndex + 1}
                 </span>
               )}

@@ -8,7 +8,7 @@ import {
   type ScheduleParticipantPreview,
   type ScheduleSong,
 } from '@/entities/schedule/model/types';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import { BAND_MEMBERS, MEMBER_GEAR } from '../member/handlers';
 import { API_URL } from '../config';
 
@@ -396,7 +396,9 @@ export const scheduleHandlers = [
     });
 
     return HttpResponse.json({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         items,
         meta: { count: items.length, take: 50, cursor: null, next: null },
@@ -414,8 +416,10 @@ export const scheduleHandlers = [
       const detail = buildDetail(scheduleId, spaceId, body);
       scheduleStore.set(scheduleId, detail);
 
-      return HttpResponse.json<ApiResponse<CreateScheduleResult>>({
-        success: true,
+      return HttpResponse.json<ApiSuccessResponse<CreateScheduleResult>>({
+        status: 'success',
+        error: null,
+        message: '요청 성공',
         data: toResult(detail),
       });
     },
@@ -427,8 +431,10 @@ export const scheduleHandlers = [
     const detail =
       scheduleStore.get(scheduleId) ?? buildFallbackDetail(scheduleId);
 
-    return HttpResponse.json<ApiResponse<{ schedule: ScheduleDetail }>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<{ schedule: ScheduleDetail }>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { schedule: detail },
     });
   }),
@@ -478,8 +484,10 @@ export const scheduleHandlers = [
       };
       scheduleStore.set(scheduleId, updated);
 
-      return HttpResponse.json<ApiResponse<CreateScheduleResult>>({
-        success: true,
+      return HttpResponse.json<ApiSuccessResponse<CreateScheduleResult>>({
+        status: 'success',
+        error: null,
+        message: '요청 성공',
         data: toResult(updated),
       });
     },

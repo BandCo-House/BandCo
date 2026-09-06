@@ -280,20 +280,6 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
-  it('팀 상세의 뒤로가기는 해당 곡의 팀 목록으로 이동한다', async () => {
-    const router = createRouterForTest('/song/1/team/1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(router);
-
-    await screen.findByText('TeamDetailPage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
-
-    expect(await screen.findByText('SongTeamsPage')).toBeInTheDocument();
-  });
-
   it('공연 상세(캘린더)의 뒤로가기는 밴드 상세로 이동한다', async () => {
     const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,

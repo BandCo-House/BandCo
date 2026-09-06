@@ -38,7 +38,9 @@ describe('band space api 어댑터', () => {
     mock
       .onGet('/bands/band-1/bandspaces', { params: { onlyMine: true } })
       .reply(200, {
-        success: true,
+        status: 'success',
+        error: null,
+        message: '요청 성공',
         data: {
           items: [listItem],
           pagination: { page: 1, size: 20, totalCount: 1, hasNext: false },
@@ -56,7 +58,9 @@ describe('band space api 어댑터', () => {
 
   it('스페이스 상세를 bandspaces 경로로 조회하고 space를 반환한다', async () => {
     mock.onGet('/bandspaces/space-1').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         space: {
           spaceId: 'space-1',
@@ -84,7 +88,9 @@ describe('band space api 어댑터', () => {
 
   it('상세 응답에서 멤버 수(members 길이)와 곡 수를 요약해 반환한다', async () => {
     mock.onGet('/bandspaces/space-1').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         space: {
           spaceId: 'space-1',
@@ -111,7 +117,9 @@ describe('band space api 어댑터', () => {
 
   it('스페이스를 bandspaces 경로로 생성한다', async () => {
     mock.onPost('/bands/band-1/bandspaces').reply(201, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { ...listItem, spaceId: 'space-created', name: '새 합주' },
     });
 

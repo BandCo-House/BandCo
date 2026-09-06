@@ -1,5 +1,5 @@
-import { apiPost, apiClient } from '@/shared/api';
-import { getReceivedBandInvitationsResponseSchema } from '@/entities/invite/model/schema';
+import { apiGet, apiPost } from '@/shared/api';
+import { getReceivedBandInvitationsResultSchema } from '@/entities/invite/model/schema';
 import type { GetReceivedBandInvitationsResult } from '@/entities/invite/model/types';
 
 export interface AcceptInviteResponse {
@@ -13,12 +13,11 @@ export interface AcceptInviteResponse {
 export const acceptInvite = (inviteId: string): Promise<AcceptInviteResponse> =>
   apiPost<AcceptInviteResponse>(`/invitations/${inviteId}/accept`);
 
+/** 받은 초대 목록 조회(GET /invitations/received). */
 export const getReceivedInvitations = async (params?: {
   where__invitation_status?: 'PENDING' | 'ACCEPTED' | 'DECLINED';
   take?: number;
 }): Promise<GetReceivedBandInvitationsResult> => {
-  const response = await apiClient.get('/invitations/received', { params });
-  const parsed = getReceivedBandInvitationsResponseSchema.parse(response.data);
-  if (parsed.status === 'error') throw new Error(parsed.message);
-  return parsed.data;
+  const data = await apiGet<unknown>('/invitations/received', { params });
+  return getReceivedBandInvitationsResultSchema.parse(data);
 };

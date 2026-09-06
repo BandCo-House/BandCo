@@ -14,8 +14,11 @@ export const BandSettings = () => {
   const { bandId } = useParams({ from: '/band/$bandId/settings' });
   const { tab } = useSearch({ from: '/band/$bandId/settings' });
   const { data: band, isLoading, isError } = useBand(bandId);
-  const { canAccessSettings, allowedTabs, isLoading: isAccessLoading } =
-    useBandSettingsAccess(bandId);
+  const {
+    canAccessSettings,
+    allowedTabs,
+    isLoading: isAccessLoading,
+  } = useBandSettingsAccess(bandId);
 
   useEffect(() => {
     if (isAccessLoading) return;

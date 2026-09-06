@@ -11,7 +11,7 @@ import {
   LOGIN_ENDPOINT_PREFIX,
   REFRESH_TOKEN_REFRESH_ENDPOINT,
 } from './config';
-import { type ApiResponse } from './types';
+import { type ApiSuccessResponse } from './types';
 import {
   getAccessToken,
   getRefreshToken,
@@ -64,7 +64,9 @@ function processQueue(error: unknown, token: string | null = null): void {
 export const refreshAccessToken = async (
   refreshToken: string,
 ): Promise<string> => {
-  const { data } = await apiClient.post<{ accessToken: string }>(
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{ accessToken: string }>
+  >(
     ACCESS_TOKEN_REFRESH_ENDPOINT,
     {},
     {
@@ -74,7 +76,7 @@ export const refreshAccessToken = async (
     },
   );
 
-  return data.accessToken;
+  return data.data.accessToken;
 };
 
 /**
@@ -83,7 +85,9 @@ export const refreshAccessToken = async (
 export const refreshRefreshToken = async (
   refreshToken: string,
 ): Promise<string> => {
-  const { data } = await apiClient.post<{ refreshToken: string }>(
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{ refreshToken: string }>
+  >(
     REFRESH_TOKEN_REFRESH_ENDPOINT,
     {},
     {
@@ -93,7 +97,7 @@ export const refreshRefreshToken = async (
     },
   );
 
-  return data.refreshToken;
+  return data.data.refreshToken;
 };
 
 apiClient.interceptors.response.use(
@@ -160,8 +164,12 @@ apiClient.interceptors.response.use(
   },
 );
 
+/**
+ * 백엔드 성공 봉투(`{ status, error, message, data }`)에서 data만 꺼내 돌려준다.
+ * 실패 봉투는 4xx·5xx로 오므로 axios가 reject하고, 메시지는 `getApiErrorMessage`로 읽는다.
+ */
 async function api<T>(config: AxiosRequestConfig): Promise<T> {
-  const { data } = await apiClient<ApiResponse<T>>(config);
+  const { data } = await apiClient<ApiSuccessResponse<T>>(config);
   return data.data;
 }
 
