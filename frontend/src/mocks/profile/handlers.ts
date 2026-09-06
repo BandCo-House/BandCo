@@ -113,7 +113,7 @@ const mockProfiles: Record<string, Profile> = {
 export const profileHandlers = [
   http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
     const url = new URL(request.url);
-    const query = (url.searchParams.get('query') ?? '').trim().toLowerCase();
+    const query = (url.searchParams.get('q') ?? '').trim().toLowerCase();
     const items = query
       ? profileMusicPreviews.filter(
           (track) =>
@@ -122,9 +122,11 @@ export const profileHandlers = [
         )
       : [];
 
-    return HttpResponse.json<ApiResponse<ProfileMusicPreview[]>>({
-      success: true,
-      data: items,
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '프로필 음악 검색 성공',
+      data: { items },
     });
   }),
 

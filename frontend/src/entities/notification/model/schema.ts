@@ -24,7 +24,7 @@ export const notificationSenderSchema = z.object({
 export const notificationReferenceSchema = z.object({
   type: notificationReferenceTypeSchema,
   id: z.string(),
-  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED']),
+  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED']),
   sender: notificationSenderSchema.nullable(),
 });
 

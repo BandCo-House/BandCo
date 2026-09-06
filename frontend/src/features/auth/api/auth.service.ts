@@ -1,15 +1,6 @@
-import { apiClient, apiPost } from '@/shared/api/client';
+import { apiPost } from '@/shared/api/client';
 import { type TokenResponse } from '@/shared/api/types';
 import { type SignupReq } from '../model/auth.schema';
-
-type BackendEmailCheckResponse = {
-  status: 'success';
-  error: null;
-  message: string;
-  data: {
-    email: string;
-  };
-};
 
 export type EmailDuplicateCheckResponse = {
   duplicated: boolean;
@@ -27,19 +18,17 @@ export const registerEmail = async (
 };
 
 /**
- * 이메일 중복 여부를 확인한다.
+ * 이메일 중복 여부를 확인한다(POST /auth/email). 백엔드가 `duplicated` 플래그를 준다.
  */
 export const checkEmailDuplicate = async (
   email: string,
 ): Promise<EmailDuplicateCheckResponse> => {
-  const response = await apiClient.post<BackendEmailCheckResponse>(
+  const { duplicated } = await apiPost<{ email: string; duplicated: boolean }>(
     '/auth/email',
     { email },
   );
 
-  return {
-    duplicated: response.data.message.includes('중복'),
-  };
+  return { duplicated };
 };
 
 /**

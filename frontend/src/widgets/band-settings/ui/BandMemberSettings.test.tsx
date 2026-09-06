@@ -17,8 +17,18 @@ const MOCK_MEMBERS: BandMemberListItem[] = [
     role: 'BM',
     joinedAt: '2026-01-01T00:00:00Z',
     skills: [
-      { skillTypeId: 'st-1', skillName: '기타', skillLevel: 'ADVANCED', isPrimary: true },
-      { skillTypeId: 'st-2', skillName: '보컬', skillLevel: 'ADVANCED', isPrimary: false },
+      {
+        skillTypeId: 'st-1',
+        skillName: '기타',
+        skillLevel: 'ADVANCED',
+        isPrimary: true,
+      },
+      {
+        skillTypeId: 'st-2',
+        skillName: '보컬',
+        skillLevel: 'ADVANCED',
+        isPrimary: false,
+      },
     ],
   },
   {
@@ -29,7 +39,12 @@ const MOCK_MEMBERS: BandMemberListItem[] = [
     role: 'ADMIN',
     joinedAt: '2026-01-02T00:00:00Z',
     skills: [
-      { skillTypeId: 'st-3', skillName: '베이스', skillLevel: 'ADVANCED', isPrimary: true },
+      {
+        skillTypeId: 'st-3',
+        skillName: '베이스',
+        skillLevel: 'ADVANCED',
+        isPrimary: true,
+      },
     ],
   },
   {
@@ -40,7 +55,12 @@ const MOCK_MEMBERS: BandMemberListItem[] = [
     role: 'MEMBER',
     joinedAt: '2026-01-03T00:00:00Z',
     skills: [
-      { skillTypeId: 'st-4', skillName: '드럼', skillLevel: 'ADVANCED', isPrimary: true },
+      {
+        skillTypeId: 'st-4',
+        skillName: '드럼',
+        skillLevel: 'ADVANCED',
+        isPrimary: true,
+      },
     ],
   },
 ];
@@ -71,9 +91,7 @@ describe('BandMemberSettings', () => {
     vi.spyOn(memberApi, 'getBandMembers').mockResolvedValue(MOCK_MEMBERS);
     vi.spyOn(teamApi, 'getBandTeams').mockResolvedValue(MOCK_TEAMS);
     vi.spyOn(memberApi, 'updateBandMemberRole').mockResolvedValue({
-      bandId: 'band-1',
-      userId: 'user-3',
-      role: 'ADMIN',
+      member: { userId: 'user-3', role: 'ADMIN' },
     });
     vi.spyOn(memberApi, 'kickBandMember').mockResolvedValue({
       bandId: 'band-1',
@@ -114,9 +132,7 @@ describe('BandMemberSettings', () => {
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
 
-    expect(
-      await screen.findByText('팀 리더 (리듬 세션)'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('팀 리더 (리듬 세션)')).toBeInTheDocument();
   });
 
   it('일반 멤버의 강퇴 버튼 클릭 시 ConfirmDialog를 띄우고 확인 시 강퇴 API를 호출한다', async () => {

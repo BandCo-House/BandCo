@@ -31,19 +31,19 @@ export const getBandMembers = async (
   return bandMemberResponseSchema.parse(data).members;
 };
 
-/** 밴드 멤버의 권한(BM | ADMIN | MEMBER)을 변경한다. */
+/** 밴드 멤버의 권한(BM | ADMIN | MEMBER)을 변경한다. 백엔드는 `{ member: { userId, role } }`를 돌려준다. */
 export const updateBandMemberRole = async (
   bandId: string,
   userId: string,
   role: BandMemberRole,
-): Promise<{ bandId: string; userId: string; role: BandMemberRole }> => {
-  return apiPatch<{ bandId: string; userId: string; role: BandMemberRole }>(
+): Promise<{ member: { userId: string; role: BandMemberRole } }> => {
+  return apiPatch<{ member: { userId: string; role: BandMemberRole } }>(
     `/bands/${bandId}/users/${userId}`,
     { role },
   );
 };
 
-/** 밴드 멤버를 강퇴한다. */
+/** 밴드 멤버를 강퇴한다(DELETE /bands/:bandId/users/:userId, #71). */
 export const kickBandMember = async (
   bandId: string,
   userId: string,

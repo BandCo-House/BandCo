@@ -319,7 +319,7 @@ function ProfileRoutePage() {
             open={isInviting}
             onOpenChange={setIsInviting}
             inviteeName={profileName}
-            inviteeEmail={profile.user.email}
+            inviteeUserId={profile.user.id}
             isLoggedIn={auth.user.isLoggedIn}
           />
         )}

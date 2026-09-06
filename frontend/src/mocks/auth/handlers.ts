@@ -45,6 +45,7 @@ const createEmailCheckResponse = (email: string, duplicated: boolean) => {
       : '사용할 수 있는 이메일입니다.',
     data: {
       email,
+      duplicated,
     },
   };
 };
