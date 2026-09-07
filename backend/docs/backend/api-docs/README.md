@@ -31,6 +31,7 @@ API 엔드포인트, 요청 DTO, 응답 DTO, 응답 예시를 작성하거나 �
 - [곡 API 명세](./song.md)
 - [합주 공간 관리 API 명세](./bandspaces.md)
 - [일정 관리 API 명세](./schedules.md)
+- [일정 조율 투표 API 명세](./schedule-polls.md)
 - [장소 API 명세](./place.md)
 - [알림 API 명세](./notification.md)
 - [팀 API 명세](./teams.md)
