@@ -3,6 +3,7 @@ import { useSearchTracks } from '@/entities/song/api/useSearchTracks';
 import { formatSongLength } from '@/entities/song/lib/song-length';
 import type { SongPreview } from '@/entities/song/model/types';
 import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
+import { cn } from '@/shared/lib/utils';
 import {
   AppDialogContent,
   Dialog,
@@ -41,6 +42,7 @@ export const SongSearchModal = ({
 
   const {
     data: tracks = [],
+    isLoading,
     isFetching,
     isError,
   } = useSearchTracks(keyword, open);
@@ -58,7 +60,10 @@ export const SongSearchModal = ({
     if (!hasKeyword) {
       return <EmptyState title="제목이나 가수로 곡을 검색하세요." />;
     }
-    if (isFetching) return <EmptyState title="검색 중이에요." />;
+    // isFetching이 아니라 isLoading인 이유: isFetching은 이미 결과가 있는 상태의
+    // 재조회에도 참이라, 글자를 더 칠 때마다 목록이 빈 화면으로 교체됐다.
+    // 보여줄 게 아직 없는 첫 검색에서만 이 자리를 쓴다.
+    if (isLoading) return <EmptyState title="검색 중이에요." />;
     if (isError) {
       return <EmptyState title="곡을 검색하지 못했어요." />;
     }
@@ -124,7 +129,15 @@ export const SongSearchModal = ({
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
         />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {/* 갱신 중에는 목록을 지우는 대신 흐리게 둔다. 자리가 유지돼야 방금 보던
+            행이 어디 있었는지 잃지 않는다. aria-busy로 스크린리더에도 알린다. */}
+        <div
+          aria-busy={isFetching}
+          className={cn(
+            'relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto transition-opacity',
+            isFetching && !isLoading && 'opacity-50',
+          )}
+        >
           {renderResults()}
         </div>
       </AppDialogContent>
