@@ -125,7 +125,7 @@ export const MemberSearchModal = ({
         />
 
         <div
-          className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+          className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto scrollbar-glass"
           role={singleSelect && tab === 'member' ? 'radiogroup' : undefined}
           aria-label={
             singleSelect && tab === 'member' ? '멤버 선택' : undefined

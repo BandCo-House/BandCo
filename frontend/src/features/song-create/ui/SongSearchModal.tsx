@@ -143,7 +143,7 @@ export const SongSearchModal = ({
         <div
           aria-busy={isFetching}
           className={cn(
-            'relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto transition-opacity',
+            'relative z-10 flex min-h-0 scrollbar-glass flex-1 flex-col overflow-y-auto transition-opacity',
             isFetching && !isLoading && 'opacity-50',
           )}
         >

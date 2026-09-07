@@ -218,7 +218,7 @@ function AppDialogBody({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       className={cn(
         // min-h-0가 있어야 flex 자식이 실제로 줄어들며 스크롤이 생긴다.
-        'relative z-10 flex min-h-0 flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
+        'relative z-10 flex min-h-0 scrollbar-glass flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
         className,
       )}
       {...props}
