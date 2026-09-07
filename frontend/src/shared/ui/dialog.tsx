@@ -220,8 +220,10 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      // 모달 제목 공용 스타일. 시트 제목(sheet.tsx)과 같은 typo-lg-sb를 쓴다.
-      className={cn('typo-lg-sb text-grey-100', className)}
+      // index.css 타이포 스케일에서 24는 "페이지·모달·상세 제목" 자리다.
+      // 18을 쓰면 바로 아래 섹션 라벨(밴드 이름·밴드 커버…)과 같은 크기가 되어
+      // 제목이 목록의 한 항목처럼 읽힌다. 시트 제목은 앱바에 가까워 18을 유지한다.
+      className={cn('typo-xl-sb text-grey-100', className)}
       {...props}
     />
   );
