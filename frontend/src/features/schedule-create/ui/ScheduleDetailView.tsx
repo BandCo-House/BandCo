@@ -5,6 +5,7 @@ import type { ScheduleDetail } from '@/entities/schedule/model/types';
 import { AttachmentItem } from '@/shared/ui/attachment-item';
 import { formatClockTime, formatDotDate } from '@/shared/lib/date';
 import { MemberCard } from './components/MemberCard';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface ScheduleDetailViewProps {
   detail: ScheduleDetail;
@@ -24,12 +25,14 @@ const InfoItem = ({
   </div>
 );
 
-/** 일정 상세(디자인5: 회의 상세). 제목 카드 · 날짜/시간/장소 · 참여자 카드. */
+/** 일정 상세. 합주곡 카드(합주 전용) · 날짜/시간/장소 · 참여자 카드. */
 export const ScheduleDetailView = ({
   detail,
   bandId,
 }: ScheduleDetailViewProps) => {
-  const { data: members = [] } = useBandMembers(bandId);
+  const { data: members = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
   const skillsByMemberId = new Map(
     members.map((m) => [m.bandMemberId, m.skills.map((s) => s.skillName)]),
   );
@@ -41,15 +44,28 @@ export const ScheduleDetailView = ({
   const hasReferenceFiles = detail.referenceFiles.length > 0;
   const hasExternalLinks = detail.externalLinks.length > 0;
 
+  // 곡은 합주 전용이라 회의에는 이 카드를 띄우지 않는다. 실을 곡이 없으면 접는다.
+  const isPractice = detail.scheduleType === 'PRACTICE';
+  const showSongCard = isPractice && detail.songs.length > 0;
+
   return (
     <div className="flex flex-col">
-      {/* 제목 + 메모 카드 (primary) */}
-      <div className="flex flex-col gap-1 rounded-xl bg-primary p-4 shadow-[0px_3px_6px_2px_rgba(6,22,59,0.16)]">
-        <p className="typo-xl-sb text-gradient-top">{detail.title}</p>
-        {detail.memo ? (
-          <p className="typo-base-b text-grey-400">{detail.memo}</p>
-        ) : null}
-      </div>
+      {/* 합주곡 + 메모 카드 (primary). 일정 제목은 상단 헤더가 이미 보여준다. */}
+      {showSongCard && (
+        <div className="flex flex-col gap-1 rounded-xl bg-primary p-4 shadow-[0px_3px_6px_2px_rgba(6,22,59,0.16)]">
+          {detail.songs.map((song) => (
+            <div key={song.songId} className="flex flex-col">
+              <p className="typo-xl-sb text-gradient-top">{song.title}</p>
+              <p className="typo-sm-sb text-grey-400">{song.artistName}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 메모는 합주·회의 공통이다. 곡 카드 안에 두면 회의 안건이 어디에도 안 보인다. */}
+      {detail.memo ? (
+        <p className="pt-3 typo-base-r text-grey-100">{detail.memo}</p>
+      ) : null}
 
       {/* 날짜 / 시간 / 장소 */}
       <div className="flex items-center justify-center gap-3 py-8">

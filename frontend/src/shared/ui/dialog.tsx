@@ -135,7 +135,11 @@ function AppDialogContent({
       showCloseButton={false}
       overlayClassName="backdrop-blur-none"
       className={cn(
-        'overflow-hidden rounded-md border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
+        // 높이 제한과 flex 세로 배치는 기본값이다. 이게 없으면 내용이 뷰포트보다
+        // 길어질 때 overflow-hidden에 잘려 나가고 스크롤도 안 돼, 아래쪽 CTA에
+        // 아예 손이 닿지 않는다(예: 360x568에서 커버를 고른 밴드 만들기).
+        // 스크롤은 AppDialogBody가 맡는다.
+        'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
         className,
       )}
       style={{
@@ -178,7 +182,7 @@ function AppDialogHeader({
 }: React.ComponentProps<typeof DialogHeader>) {
   return (
     <DialogHeader
-      className={cn('relative z-10 mb-2 text-left', className)}
+      className={cn('relative z-10 mb-2 shrink-0 text-left', className)}
       {...props}
     />
   );
@@ -188,7 +192,8 @@ function AppDialogBody({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'relative z-10 flex flex-col gap-9 text-grey-100',
+        // min-h-0가 있어야 flex 자식이 실제로 줄어들며 스크롤이 생긴다.
+        'relative z-10 flex min-h-0 flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
         className,
       )}
       {...props}
@@ -202,7 +207,7 @@ function AppDialogFooter({
 }: React.ComponentProps<typeof DialogFooter>) {
   return (
     <DialogFooter
-      className={cn('relative z-10 mt-8 items-end', className)}
+      className={cn('relative z-10 mt-8 shrink-0 items-end', className)}
       {...props}
     />
   );

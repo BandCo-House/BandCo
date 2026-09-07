@@ -5,6 +5,8 @@ interface ThumbnailRemoveButtonProps {
   /** 무엇을 지우는지 알리는 접근성 이름. 아이콘 전용 버튼이라 필수. */
   label: string;
   onClick: () => void;
+  /** 업로드처럼 되돌릴 수 없는 작업이 도는 동안 잠근다. */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -16,15 +18,18 @@ interface ThumbnailRemoveButtonProps {
 export const ThumbnailRemoveButton = ({
   label,
   onClick,
+  disabled = false,
   className,
 }: ThumbnailRemoveButtonProps) => (
   <button
     type="button"
     aria-label={label}
     onClick={onClick}
+    disabled={disabled}
     className={cn(
       'absolute -top-2.5 -right-2.5 flex items-center justify-center p-1.5',
       'rounded-full focus-visible:outline-2 focus-visible:outline-primary',
+      'disabled:cursor-not-allowed disabled:opacity-50',
       className,
     )}
   >

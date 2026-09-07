@@ -6,6 +6,7 @@ import {
   teamMemberSchema,
 } from '../model/schema';
 import type { BandTeamListItem, TeamDetail, TeamMember } from '../model/types';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 export interface GetBandTeamsParams {
   order__created_at?: 'asc' | 'desc';
@@ -62,9 +63,15 @@ export const deleteTeam = (
 /**
  * 팀 멤버 목록을 조회한다. (GET /teams/:teamId/members)
  * 백엔드는 `{ teamId, items, meta }`를 돌려주므로 items만 반환한다.
+ * take를 안 주면 백엔드 기본값이 20이라, 그보다 큰 팀은 조용히 잘린다.
  */
-export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
-  const data = await apiGet<unknown>(`/teams/${teamId}/members`);
+export const getTeamMembers = async (
+  teamId: string,
+  take = MEMBER_PICKER_TAKE,
+): Promise<TeamMember[]> => {
+  const data = await apiGet<unknown>(`/teams/${teamId}/members`, {
+    params: { take },
+  });
   return teamMembersResultSchema.parse(data).items;
 };
 

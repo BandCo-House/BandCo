@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { useBandCreateForm } from '@/features/band-create/model/useBandCreateForm';
 import { Button } from '@/shared/ui/button';
 import {
@@ -11,6 +10,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
+import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
 import { cn } from '@/shared/lib/utils';
 import { Search, UploadIcon } from 'lucide-react';
 
@@ -23,7 +23,6 @@ export const BandCreateDialog = ({
   open,
   onOpenChange,
 }: BandCreateDialogProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     form,
     preview,
@@ -31,6 +30,7 @@ export const BandCreateDialog = ({
     isSubmitDisabled,
     handleOpenChange,
     handleCoverChange,
+    clearCover,
     handleSubmit,
     setName,
     setVisibility,
@@ -96,38 +96,33 @@ export const BandCreateDialog = ({
           {/* 커버 이미지 */}
           <div className="flex flex-col gap-3">
             <span className="typo-lg-sb">밴드 커버</span>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                'relative flex items-center gap-3 overflow-hidden rounded-md border border-border bg-grey-500/30 px-5 text-muted transition hover:border-ring',
-                preview
-                  ? 'h-48 w-48 rounded-full'
-                  : 'h-14 w-full rounded-l-full rounded-r-full',
-              )}
-            >
-              {preview ? (
+            {preview ? (
+              <div className="relative size-20">
                 <img
                   src={preview}
-                  alt="커버 미리보기"
-                  className="h-full w-full object-fill"
+                  alt="선택한 커버 미리보기"
+                  className="size-full rounded-md border border-grey-50 object-cover opacity-80"
                 />
-              ) : (
-                <>
-                  <UploadIcon className="h-6 w-6 text-grey-300" />
-                  <span className="typo-base-r text-grey-100">
-                    파일을 선택하세요.
-                  </span>
-                </>
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleCoverChange}
-            />
+                {/* 업로드 중에 지우면 이미 시작된 업로드 결과가 그대로 실려
+                    지운 커버가 저장된다. 끝날 때까지 잠근다. */}
+                <ThumbnailRemoveButton
+                  label="커버 제거"
+                  onClick={clearCover}
+                  disabled={isLoading}
+                />
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
+                <UploadIcon aria-hidden="true" className="size-6" />
+                <span className="typo-base-sb">파일을 선택하세요</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverChange}
+                  className="sr-only"
+                />
+              </label>
+            )}
           </div>
 
           {/* 멤버 초대 (UI only) */}

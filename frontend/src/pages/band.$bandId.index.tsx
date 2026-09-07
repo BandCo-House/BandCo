@@ -13,7 +13,7 @@ export const Route = createFileRoute('/band/$bandId/')({
 function BandDetailRoutePage() {
   return (
     <>
-      <span className="sr-only">BandDetailPage</span>
+      <span data-testid="band-detail-page" className="hidden" />
       <BandMain />
     </>
   );

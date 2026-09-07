@@ -19,7 +19,7 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/settings')({
 function PerformanceSettingsRoutePage() {
   return (
     <>
-      <span className="sr-only">PerformanceSettingsPage</span>
+      <span data-testid="performance-settings-page" className="hidden" />
       <ComingSoon />
     </>
   );

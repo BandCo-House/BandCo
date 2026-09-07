@@ -106,7 +106,7 @@ export const SongSearchModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[70vh] flex-col gap-10 px-5 pt-5 pb-8">
+      <AppDialogContent className="flex max-h-[70dvh] flex-col gap-10 px-5 pt-5 pb-8">
         <DialogDescription className="sr-only">
           제목이나 가수로 곡을 검색해 합주곡 정보를 채웁니다.
         </DialogDescription>

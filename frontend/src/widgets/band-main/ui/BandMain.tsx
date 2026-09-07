@@ -90,7 +90,11 @@ export const BandMain = () => {
         )}
       </div>
 
-      <SpeedDialFab className="bottom-24" actions={fabActions} />
+      <SpeedDialFab
+        className="bottom-24"
+        actions={fabActions}
+        hidden={isSpaceModalOpen}
+      />
 
       <SpaceCreateModal
         open={isSpaceModalOpen}

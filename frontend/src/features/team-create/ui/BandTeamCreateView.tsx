@@ -10,6 +10,7 @@ import type { BandMemberListItem } from '@/entities/member/model/types';
 import { MemberSearchModal } from '@/features/schedule-create/ui/components/MemberSearchModal';
 import { Button } from '@/shared/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface BandTeamCreateViewProps {
   bandId: string;
@@ -18,7 +19,9 @@ interface BandTeamCreateViewProps {
 export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: bandMembers = [] } = useBandMembers(bandId);
+  const { data: bandMembers = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
 
   const [teamName, setTeamName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<BandMemberListItem[]>(

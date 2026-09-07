@@ -12,6 +12,12 @@ interface SpeedDialFabProps {
   mainLabel?: string;
   /** 바깥 컨테이너 위치/여백 override (예: bottom 위치 조정) */
   className?: string;
+  /**
+   * 다이얼로그·시트가 열려 있는 동안 true. 오버레이가 반투명이라 z-40 FAB이
+   * 그대로 비쳐 보이고, 패널에 가려 아랫부분만 삐져나와 버튼이 흘러내린 것처럼
+   * 보인다. 그동안은 아예 렌더하지 않는다.
+   */
+  hidden?: boolean;
 }
 
 const CONTAINER_BASE =
@@ -25,6 +31,7 @@ export const SpeedDialFab = ({
   actions,
   mainLabel = '메뉴 열기',
   className,
+  hidden = false,
 }: SpeedDialFabProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,6 +48,8 @@ export const SpeedDialFab = ({
     if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  if (hidden) return null;
 
   return (
     <div className={cn(CONTAINER_BASE, className)}>

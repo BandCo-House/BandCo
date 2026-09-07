@@ -18,21 +18,20 @@ interface BandNoticeSectionProps {
 }
 
 export const BandNoticeSection = ({ bandId }: BandNoticeSectionProps) => {
-  const {
-    data: notices,
-    isLoading,
-    isError,
-  } = useBandNotices(bandId, NOTICE_LIMIT);
+  const { data: notices, isLoading } = useBandNotices(bandId, NOTICE_LIMIT);
 
   const renderBody = () => {
     if (isLoading) {
       return <p className="typo-sm-r text-grey-300">불러오는 중...</p>;
     }
-    if (isError) {
-      return (
-        <p className="typo-sm-r text-grey-300">공지를 불러오지 못했어요.</p>
-      );
-    }
+    // 실패도 빈 목록과 같이 취급한다.
+    // GET /bands/:bandId/notices는 백엔드에 아직 없어(Nest 라우트 미등록 → 404)
+    // 모든 밴드에서 항상 실패한다. 에러 문구를 띄우면 밴드 홈마다 붉은 신호가
+    // 상주하게 되는데, 정작 사용자가 할 수 있는 일이 없다.
+    // 엔드포인트가 생기면 isError를 다시 갈라 실제 실패를 구분한다.
+    //
+    // isError를 조건에 넣지 않는다 — 캐시된 목록이 있는데 background refetch만
+    // 실패한 경우까지 "없음"으로 덮어 버린다.
     if (!notices || notices.length === 0) {
       return <p className="typo-sm-r text-grey-300">공지사항이 없습니다.</p>;
     }

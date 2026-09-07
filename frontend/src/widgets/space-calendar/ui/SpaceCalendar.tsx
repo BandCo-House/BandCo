@@ -36,6 +36,8 @@ export const SpaceCalendar = () => {
     useState<ScheduleDetailFilter>(EMPTY_DETAIL_FILTER);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // 일정 카드를 눌러 연 경우에만 채워진다. 비어 있으면 모달은 '추가' 폼으로 열린다.
+  const [detailScheduleId, setDetailScheduleId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
   // 필터가 헤더에 고정되는 순간에만 collapsed로 전환(고정 후 배경이 떠 겹침 방지).
@@ -62,8 +64,19 @@ export const SpaceCalendar = () => {
   });
 
   const fabActions: SpeedDialAction[] = [
-    { label: '새 일정', onClick: () => setIsModalOpen(true) },
+    {
+      label: '새 일정',
+      onClick: () => {
+        setDetailScheduleId(null);
+        setIsModalOpen(true);
+      },
+    },
   ];
+
+  const handleScheduleClick = (scheduleId: string) => {
+    setDetailScheduleId(scheduleId);
+    setIsModalOpen(true);
+  };
 
   const detailFilterActive =
     detailFilter.songIds.length > 0 ||
@@ -134,9 +147,17 @@ export const SpaceCalendar = () => {
         />
       </div>
 
-      <DayTimeline className="mt-2" blocks={blocks} />
+      <DayTimeline
+        className="mt-2"
+        blocks={blocks}
+        onScheduleClick={handleScheduleClick}
+      />
 
-      <SpeedDialFab className="bottom-24" actions={fabActions} />
+      <SpeedDialFab
+        className="bottom-24"
+        actions={fabActions}
+        hidden={isModalOpen || isFilterSheetOpen}
+      />
 
       <ScheduleFilterSheet
         open={isFilterSheetOpen}
@@ -152,6 +173,7 @@ export const SpaceCalendar = () => {
         spaceId={spaceId ?? ''}
         bandId={bandId ?? ''}
         initialDate={selectedDate}
+        initialScheduleId={detailScheduleId}
       />
     </div>
   );

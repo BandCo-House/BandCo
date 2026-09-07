@@ -57,6 +57,15 @@ export const useBandCreateForm = (
     }
   };
 
+  const clearCover = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setForm((f) => ({ ...f, coverImage: null }));
+    setPreview(null);
+  };
+
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) {
@@ -117,6 +126,7 @@ export const useBandCreateForm = (
     isSubmitDisabled,
     handleOpenChange,
     handleCoverChange,
+    clearCover,
     handleSubmit,
     setName,
     setVisibility,
