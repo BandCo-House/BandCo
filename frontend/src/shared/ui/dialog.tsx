@@ -139,7 +139,12 @@ function AppDialogContent({
         // 길어질 때 overflow-hidden에 잘려 나가고 스크롤도 안 돼, 아래쪽 CTA에
         // 아예 손이 닿지 않는다(예: 360x568에서 커버를 고른 밴드 만들기).
         // 스크롤은 AppDialogBody가 맡는다.
-        'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
+        //
+        // 패딩 20은 화면별로 덮어쓰지 않는다. 이전 기본값 24는 shadcn에서 물려받은
+        // 값이라 아무도 고른 적이 없었고, 그래서 모달마다 20·32로 제각각
+        // 오버라이드하며 피해 다녔다(4종류).
+        // 하단을 32로 키우지 않는 이유: 푸터 간격은 AppDialogFooter의 mt-8이 맡는다.
+        'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-5 text-grey-100 shadow-none backdrop-blur-md',
         className,
       )}
       style={{
