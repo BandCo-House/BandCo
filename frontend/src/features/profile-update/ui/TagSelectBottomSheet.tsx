@@ -75,7 +75,7 @@ export function TagSelectBottomSheet({
           </SheetDescription>
           <AppSheetClose
             aria-label="닫기"
-            className="static size-9 text-grey-200 hover:text-white"
+            className="text-grey-200 hover:text-white"
           />
         </SheetHeader>
 

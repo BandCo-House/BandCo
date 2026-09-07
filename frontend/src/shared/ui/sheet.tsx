@@ -5,6 +5,7 @@ import { Dialog as SheetPrimitive } from 'radix-ui';
 import { cn } from '@/shared/lib/utils';
 import {
   CloseButtonContent,
+  closeButtonClass,
   closeButtonFloatingClass,
 } from '@/shared/ui/close-button';
 
@@ -24,16 +25,28 @@ function SheetClose({
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
-/** 시트 우상단 닫기(X). 시트는 제목이 가운데 오는 경우가 있어 부유형을 쓴다. */
+/**
+ * 시트 닫기(X). 모달과 마찬가지로 헤더 흐름에 놓는 게 기본이다.
+ *
+ * floating: 제목이 가운데 정렬이라 흐름에 넣을 자리가 없는 시트만 쓴다
+ * (예: 밴드 초대장). 오프셋이 top-6/right-6으로 고정이라, 그 시트의 패딩이
+ * 24가 아니면 어긋난다 — 쓰는 쪽이 책임진다.
+ */
 function AppSheetClose({
   className,
   children,
+  floating = false,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Close>) {
+}: React.ComponentProps<typeof SheetPrimitive.Close> & {
+  floating?: boolean;
+}) {
   return (
     <SheetClose
       type="button"
-      className={cn(closeButtonFloatingClass, className)}
+      className={cn(
+        floating ? closeButtonFloatingClass : closeButtonClass,
+        className,
+      )}
       {...props}
     >
       {children ?? <CloseButtonContent />}
