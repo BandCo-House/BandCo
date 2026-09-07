@@ -32,6 +32,11 @@ interface SpaceCreateModalProps {
 // 뱃지는 spaceType(PRACTICE)로 상시 처리하므로 이 날짜 자체는 표시에 쓰이지 않는다.
 const ONGOING_END_DATE = '9999-12-31';
 
+// 문구를 흐름에 두고 id로 휠 카드와 잇는다. absolute로 띄우면 레이아웃은 안 밀지만
+// 스크롤 컨테이너의 overflow에는 그대로 잡혀, 정작 문구는 보이지 않은 채
+// 모달에만 스크롤이 생긴다(측정: scrollHeight 508 → 532, clientHeight 508).
+const SPACE_PERIOD_ERROR_ID = 'space-period-error';
+
 const compareDate = (a: WheelDate, b: WheelDate) =>
   a.year - b.year || a.month - b.month || a.day - b.day;
 
@@ -139,7 +144,7 @@ export const SpaceCreateModal = ({
             />
           </Field>
 
-          <div className="relative flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <FieldLabel required size="lg">
                 합주 기간
@@ -155,7 +160,15 @@ export const SpaceCreateModal = ({
             </div>
 
             {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
-            <WheelFieldCard className="h-[232px] justify-center px-2.5 py-0">
+            <WheelFieldCard
+              className="h-[232px] justify-center px-2.5 py-0"
+              role="group"
+              aria-label="합주 기간"
+              aria-invalid={endBeforeStart || undefined}
+              aria-describedby={
+                endBeforeStart ? SPACE_PERIOD_ERROR_ID : undefined
+              }
+            >
               <WheelDatePicker
                 label="시작"
                 value={startDate}
@@ -173,9 +186,11 @@ export const SpaceCreateModal = ({
                 </p>
               )}
             </WheelFieldCard>
-            {/* 주변에 다른 요소가 없어 absolute로 띄워 레이아웃을 밀지 않는다. */}
             {endBeforeStart && (
-              <p className="absolute top-full mt-1 typo-sm-r text-destructive">
+              <p
+                id={SPACE_PERIOD_ERROR_ID}
+                className="typo-sm-r text-destructive"
+              >
                 종료 날짜는 시작 날짜 이후여야 해요.
               </p>
             )}
