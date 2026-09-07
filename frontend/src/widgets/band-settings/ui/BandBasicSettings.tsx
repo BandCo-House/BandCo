@@ -11,6 +11,8 @@ import { buttonVariants } from '@/shared/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { Field, FieldLabel } from '@/shared/ui/field';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
 import { Input } from '@/shared/ui/input';
 import {
   SegmentedToggle,
@@ -57,6 +59,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
   const [isCoverCleared, setIsCoverCleared] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
+  const { selectFile, cropDialogProps } = useImageCrop();
 
   // 미리보기 blob URL은 값이 바뀌거나 언마운트될 때 revoke한다.
   useEffect(() => {
@@ -128,13 +131,15 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
   }, [canSave, isSaving, isUploading]);
 
   const handleCoverSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setCoverFile(file);
-      setCoverPreview(URL.createObjectURL(file));
-      setIsCoverCleared(false);
-    }
+    selectFile(event.target.files?.[0]);
     event.target.value = '';
+  };
+
+  /** 크롭 모달이 돌려준 파일만 폼에 들어간다. 원본은 여기까지 오지 않는다. */
+  const applyCroppedCover = (file: File) => {
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+    setIsCoverCleared(false);
   };
 
   const clearCover = () => {
@@ -268,6 +273,13 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
         description="나가면 이 밴드의 일정과 라이브러리를 볼 수 없어요. 다시 참여하려면 초대가 필요합니다."
         confirmLabel="나가기"
         onConfirm={handleLeave}
+      />
+
+      <ImageCropDialog
+        {...cropDialogProps}
+        aspect={CROP_ASPECT.square}
+        title="밴드 커버 자르기"
+        onCropped={applyCroppedCover}
       />
     </div>
   );

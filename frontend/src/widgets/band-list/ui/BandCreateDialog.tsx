@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
 import { Input } from '@/shared/ui/input';
 import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
 import { cn } from '@/shared/lib/utils';
@@ -30,6 +31,8 @@ export const BandCreateDialog = ({
     isSubmitDisabled,
     handleOpenChange,
     handleCoverChange,
+    applyCroppedCover,
+    cropDialogProps,
     clearCover,
     handleSubmit,
     setName,
@@ -159,6 +162,13 @@ export const BandCreateDialog = ({
           </Button>
         </AppDialogFooter>
       </AppDialogContent>
+
+      <ImageCropDialog
+        {...cropDialogProps}
+        aspect={CROP_ASPECT.square}
+        title="밴드 커버 자르기"
+        onCropped={applyCroppedCover}
+      />
     </Dialog>
   );
 };

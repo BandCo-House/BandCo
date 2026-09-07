@@ -12,6 +12,8 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/shared/ui/sheet';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
@@ -80,6 +82,7 @@ export const SongCreateModal = ({
   onCreated,
 }: SongCreateModalProps) => {
   const { mutate, isPending } = useCreateSong(bandId);
+  const { selectFile, cropDialogProps } = useImageCrop();
 
   const [form, setForm] = useState<SongFormState>(createEmptyForm);
   const [linkDraft, setLinkDraft] = useState('');
@@ -130,7 +133,8 @@ export const SongCreateModal = ({
   const handleManualEntry = (query: string) =>
     setForm((prev) => applyManualEntryToForm(prev, query));
 
-  const handleSelectCover = (file: File) =>
+  /** 크롭 모달이 돌려준 파일만 폼에 들어간다. 원본은 여기까지 오지 않는다. */
+  const applyCroppedCover = (file: File) =>
     update({
       coverSource: 'custom',
       coverFile: file,
@@ -275,7 +279,7 @@ export const SongCreateModal = ({
             source={form.coverSource}
             albumImageUrl={form.track?.albumImageUrl ?? null}
             previewUrl={form.coverPreviewUrl}
-            onSelectFile={handleSelectCover}
+            onSelectFile={selectFile}
             onResetToAlbum={() =>
               update({
                 coverSource: 'album',
@@ -464,6 +468,13 @@ export const SongCreateModal = ({
           onManualEntry={handleManualEntry}
         />
       </SheetContent>
+
+      <ImageCropDialog
+        {...cropDialogProps}
+        aspect={CROP_ASPECT.square}
+        title="합주곡 커버 자르기"
+        onCropped={applyCroppedCover}
+      />
     </Sheet>
   );
 };
