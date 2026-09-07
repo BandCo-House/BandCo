@@ -10,6 +10,7 @@ import type { BandMemberListItem } from '@/entities/member/model/types';
 import { FieldLabel, fieldSurfaceClass } from '@/shared/ui/field';
 import { SelectField } from '@/shared/ui/select-field';
 import { cn } from '@/shared/lib/utils';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 import type { ScheduleSessionAssignment } from '../../model/types';
 import { MemberCard } from './MemberCard';
 import { MemberSearchModal } from './MemberSearchModal';
@@ -36,8 +37,13 @@ export const SessionSection = ({
   const [pendingSkillTypeId, setPendingSkillTypeId] = useState<string | null>(
     null,
   );
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
   const queryClient = useQueryClient();
-  const { data: members = [] } = useBandMembers(bandId);
+  // 다른 멤버 피커와 같은 범위를 봐야 한다. 기본 take(20)면 21번째부터
+  // memberById에서 빠져 카드가 "알 수 없는 멤버"로 뜬다.
+  const { data: members = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
   const { data: skillTypes = [] } = useSkillTypes();
 
   const memberById = new Map(members.map((m) => [m.bandMemberId, m]));
@@ -79,17 +85,30 @@ export const SessionSection = ({
 
   // 팀 멤버는 목록 응답에 없어 고를 때 한 번 가져온다. 세션이 배정된 팀원만 옮긴다.
   const selectTeam = async (teamId: string) => {
+    // 팀 A·B를 빠르게 누르면 두 요청이 같은 이전 value를 캡처해, 늦게 끝난 쪽이
+    // 먼저 반영된 편성을 덮어쓴다. ParticipantSection과 같이 한 번에 하나만 받는다.
+    if (isAddingTeam) return;
+    setIsAddingTeam(true);
     try {
       const teamMembers = await queryClient.fetchQuery({
         queryKey: teamKeys.members(teamId),
         queryFn: () => getTeamMembers(teamId),
       });
-      const fromTeam = teamMembers
-        .filter((member) => member.skillType)
-        .map((member) => ({
-          skillTypeId: member.skillType!.skillTypeId,
-          bandMemberId: member.bandMemberId,
-        }));
+      // 세션 하나에 한 명이 규칙이라 팀 안에서도 세션 기준으로 접는다.
+      // 같은 세션에 팀원이 둘이면 뒤에 온 사람이 남는다(Map 갱신).
+      const fromTeam = [
+        ...new Map(
+          teamMembers
+            .filter((member) => member.skillType)
+            .map((member) => [
+              member.skillType!.skillTypeId,
+              {
+                skillTypeId: member.skillType!.skillTypeId,
+                bandMemberId: member.bandMemberId,
+              },
+            ]),
+        ).values(),
+      ];
 
       if (fromTeam.length === 0) {
         toast.error('이 팀은 아직 세션 편성이 없어요.');
@@ -105,6 +124,8 @@ export const SessionSection = ({
       setIsModalOpen(false);
     } catch {
       toast.error('팀 편성을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsAddingTeam(false);
     }
   };
 
@@ -197,6 +218,7 @@ export const SessionSection = ({
         }
         onToggleMember={assignMember}
         onSelectTeam={(teamId) => void selectTeam(teamId)}
+        isSelectingTeam={isAddingTeam}
         singleSelect
       />
     </section>

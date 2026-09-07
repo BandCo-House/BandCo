@@ -182,7 +182,15 @@ export const isFormValid = (form: ScheduleFormState): boolean => {
   if (!form.placeId) return false;
   // 합주는 곡과 세션 편성이, 회의는 참여자가 필수다.
   if (form.scheduleType === 'PRACTICE') {
-    return !!form.songId && form.sessionAssignments.length > 0;
+    // 개수만 보면 같은 세션에 두 명이 실린 편성도 통과한다(팀 편성을 옮겨 왔거나
+    // 상세에서 복원한 경우). 세션 하나에 한 명이 계약이라 유일성까지 본다.
+    const sessionIds = form.sessionAssignments.map((a) => a.skillTypeId);
+    const hasDuplicateSession = new Set(sessionIds).size !== sessionIds.length;
+    return (
+      !!form.songId &&
+      form.sessionAssignments.length > 0 &&
+      !hasDuplicateSession
+    );
   }
   return form.participantBandMemberIds.length > 0;
 };

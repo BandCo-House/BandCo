@@ -239,12 +239,17 @@ const BAND_SONGS = [
   },
 ];
 
-// skill/handlers.ts의 skillTypeId와 맞춘다(세션 편성 확인용).
+// skill/handlers.ts의 공통 카탈로그와 같은 집합이어야 한다. 여기 없는 skillTypeId를
+// 고르면 skillTypeById에서 못 찾아 응답의 skillType이 null이 되고, 방금 배정한
+// 세션이 조용히 사라진 것처럼 보인다.
 const SESSION_SKILL_TYPES = [
-  { skillTypeId: 'vocal-1', name: '보컬' },
   { skillTypeId: 'guitar-1', name: '일렉기타' },
+  { skillTypeId: 'acoustic-1', name: '통기타' },
   { skillTypeId: 'bass-1', name: '베이스' },
   { skillTypeId: 'drum-1', name: '드럼' },
+  { skillTypeId: 'percussion-1', name: '퍼커션' },
+  { skillTypeId: 'keyboard-1', name: '키보드' },
+  { skillTypeId: 'vocal-1', name: '보컬' },
 ];
 
 // team/handlers.ts의 팀과 teamId를 맞춰 상세 필터의 "연습 팀" 선택이 실제로 걸리게 한다.
@@ -292,16 +297,23 @@ const skillTypeById = new Map(
   SESSION_SKILL_TYPES.map((skill) => [skill.skillTypeId, skill]),
 );
 
+/**
+ * 회의(MEETING)에는 세션 개념이 없다. skillTypeId가 실려 와도 응답에서는 지운다 —
+ * 안 그러면 PRACTICE로 만든 일정을 MEETING으로 바꿔도 예전 세션이 남아,
+ * ScheduleParticipantDetail 계약과 어긋난 상태를 화면이 그대로 믿는다.
+ */
 const buildParticipants = (
   inputs: { bandMemberId: string; skillTypeId?: string }[] = [],
   scheduleId: string,
+  scheduleType: ScheduleDetail['scheduleType'],
 ): ScheduleParticipantDetail[] =>
   inputs.map((input, index) => {
     const mid = input.bandMemberId;
     const member = membersById.get(mid);
-    const skill = input.skillTypeId
-      ? skillTypeById.get(input.skillTypeId)
-      : undefined;
+    const skill =
+      input.skillTypeId && scheduleType !== 'MEETING'
+        ? skillTypeById.get(input.skillTypeId)
+        : undefined;
     return {
       participantId: `${scheduleId}-p${index + 1}`,
       bandMemberId: mid,
@@ -352,7 +364,11 @@ const buildDetail = (
     status: body.status,
     place: place ? { ...place, address: '' } : null,
     songs: resolveSongs(body.songIds),
-    participants: buildParticipants(body.participants, scheduleId),
+    participants: buildParticipants(
+      body.participants,
+      scheduleId,
+      body.scheduleType,
+    ),
     memo: body.memo ?? null,
     externalLinks: body.externalLinks ?? [],
     referenceFiles: buildReferenceFiles(body.referenceFiles, scheduleId),
@@ -389,14 +405,25 @@ const buildFallbackDetail = (scheduleId: string): ScheduleDetail => {
     };
   }
   // 합주는 세션을 순환 배정해 세션 편성 화면을 확인할 수 있게 한다.
-  const participantInputs = BAND_MEMBERS.slice(0, item.participantCount).map(
-    (m, index) => ({
-      bandMemberId: m.bandMemberId,
-      skillTypeId:
-        item.scheduleType === 'PRACTICE'
-          ? SESSION_SKILL_TYPES[index % SESSION_SKILL_TYPES.length].skillTypeId
-          : undefined,
-    }),
+  // participantCount가 BAND_MEMBERS(6명)보다 큰 시드가 있어(sch-6은 12) 단순
+  // slice로는 목록 카드의 인원수와 상세의 참여자 수가 어긋난다. 모자란 만큼
+  // 합성 참여자로 채워 둘을 맞춘다.
+  const participantInputs = Array.from(
+    { length: item.participantCount },
+    (_, index) => {
+      const seedMember = BAND_MEMBERS[index % BAND_MEMBERS.length];
+      const isSynthetic = index >= BAND_MEMBERS.length;
+      return {
+        bandMemberId: isSynthetic
+          ? `${seedMember.bandMemberId}-extra-${index}`
+          : seedMember.bandMemberId,
+        skillTypeId:
+          item.scheduleType === 'PRACTICE'
+            ? SESSION_SKILL_TYPES[index % SESSION_SKILL_TYPES.length]
+                .skillTypeId
+            : undefined,
+      };
+    },
   );
   return {
     scheduleId,
@@ -408,7 +435,11 @@ const buildFallbackDetail = (scheduleId: string): ScheduleDetail => {
     status: item.status,
     place: item.place ? { ...item.place, address: '' } : null,
     songs: item.songs,
-    participants: buildParticipants(participantInputs, scheduleId),
+    participants: buildParticipants(
+      participantInputs,
+      scheduleId,
+      item.scheduleType,
+    ),
     memo: item.memo,
     externalLinks: [],
     referenceFiles: [],
@@ -505,10 +536,14 @@ export const scheduleHandlers = [
         scheduleStore.get(scheduleId) ?? buildFallbackDetail(scheduleId);
       const place = body.placeId ? placesById.get(body.placeId) : undefined;
 
+      // 유형이 회의로 바뀌면 참여자를 새로 안 보내도 기존 세션이 남는다.
+      // 최종 유형을 먼저 정하고 양쪽 갈래에 모두 적용한다.
+      const nextScheduleType = body.scheduleType ?? existing.scheduleType;
+
       const updated: ScheduleDetail = {
         ...existing,
         title: body.title ?? existing.title,
-        scheduleType: body.scheduleType ?? existing.scheduleType,
+        scheduleType: nextScheduleType,
         startAt: body.startAt ?? existing.startAt,
         endAt: body.endAt ?? existing.endAt,
         status: body.status ?? existing.status,
@@ -524,8 +559,10 @@ export const scheduleHandlers = [
             : existing.songs,
         participants:
           body.participants !== undefined
-            ? buildParticipants(body.participants, scheduleId)
-            : existing.participants,
+            ? buildParticipants(body.participants, scheduleId, nextScheduleType)
+            : nextScheduleType === 'MEETING'
+              ? existing.participants.map((p) => ({ ...p, skillType: null }))
+              : existing.participants,
         memo: body.memo !== undefined ? (body.memo ?? null) : existing.memo,
         // 전체 교체: 배열이 오면 그 값으로 통째 교체, 안 오면 기존 유지.
         externalLinks:

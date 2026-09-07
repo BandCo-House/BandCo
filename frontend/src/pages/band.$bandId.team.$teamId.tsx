@@ -134,6 +134,17 @@ function BandTeamDetailRoutePage() {
   }, [teamId, bandId, navigate, queryClient]);
 
   const handleSaveMembers = useCallback(async () => {
+    // UI에서 막고 있지만 저장 직전에 한 번 더 본다. 상세에서 불러온 편성이 이미
+    // 중복이었거나(과거 데이터) 화면을 거치지 않고 상태가 바뀌면 여기가 마지막
+    // 방어선이다 — 넘어가면 중복 skillTypeId 요청이 그대로 나간다.
+    const assignedSessions = currentMembers
+      .map((m) => m.skillType?.skillTypeId)
+      .filter((id): id is string => !!id);
+    if (new Set(assignedSessions).size !== assignedSessions.length) {
+      toast.error('한 세션에는 한 명만 배정할 수 있어요.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       // teamMemberId는 편집 중에도 그대로라 원본 행과 짝지을 수 있다.

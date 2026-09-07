@@ -225,6 +225,38 @@ describe('세션 편성', () => {
     ).toBe(true);
   });
 
+  it('한 세션에 두 명이 실린 편성은 유효하지 않다', () => {
+    // 팀 편성을 옮겨 왔거나 상세에서 복원하면 같은 skillTypeId가 겹칠 수 있다.
+    // 개수만 세면 이런 편성이 통과해 중복 배정이 그대로 저장 요청에 실린다.
+    const base = {
+      ...baseForm(),
+      title: '합주 A',
+      placeId: 'place-1',
+      songId: 'band-song-1',
+    };
+
+    expect(
+      isFormValid({
+        ...base,
+        sessionAssignments: [
+          { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+          { skillTypeId: 'skill-1', bandMemberId: 'member-2' },
+        ],
+      }),
+    ).toBe(false);
+
+    // 한 사람이 두 세션을 겸하는 건 중복이 아니다.
+    expect(
+      isFormValid({
+        ...base,
+        sessionAssignments: [
+          { skillTypeId: 'skill-1', bandMemberId: 'member-1' },
+          { skillTypeId: 'skill-2', bandMemberId: 'member-1' },
+        ],
+      }),
+    ).toBe(true);
+  });
+
   it('세션이 없는 참여자도 함께 실어 전체 교체에서 사라지지 않게 한다', () => {
     const req = toScheduleRequest({
       ...baseForm(),

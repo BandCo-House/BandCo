@@ -7,6 +7,18 @@ interface UseTeamMemberEditProps {
   propMembers: TeamMember[];
 }
 
+/** 다른 행이 이미 쓰고 있는 세션인지. 세션 하나에 한 명이 계약이다. */
+const isSessionTakenByOtherRow = (
+  members: TeamMember[],
+  skillTypeId: string | null,
+  exceptIndex: number | null,
+) =>
+  skillTypeId !== null &&
+  members.some(
+    (member, idx) =>
+      idx !== exceptIndex && member.skillType?.skillTypeId === skillTypeId,
+  );
+
 export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
   const [currentMembers, setCurrentMembers] =
     useState<TeamMember[]>(propMembers);
@@ -34,6 +46,21 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
 
     if (isDuplicate) {
       toast.warning('이미 같은 세션으로 팀에 포함되어 있습니다.');
+      setSearchModalOpen(false);
+      setSelectedSessionIndex(null);
+      return;
+    }
+
+    // 사람만 바뀌어도 그 행이 들고 있던 세션은 그대로 남는다. 다른 행이 같은
+    // 세션을 쓰고 있으면 교체 후 중복이 되므로 여기서도 막는다.
+    if (
+      isSessionTakenByOtherRow(
+        currentMembers,
+        targetSkillTypeId,
+        selectedSessionIndex,
+      )
+    ) {
+      toast.warning('이미 다른 팀원이 맡은 세션이에요.');
       setSearchModalOpen(false);
       setSelectedSessionIndex(null);
       return;
@@ -93,6 +120,18 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
     index: number,
     skillType: { skillTypeId: string; name: string } | null,
   ) => {
+    // 여기서 막지 않으면 중복 skillTypeId가 그대로 저장 요청에 실린다.
+    // 비우는 것(null)은 언제나 허용한다.
+    if (
+      isSessionTakenByOtherRow(
+        currentMembers,
+        skillType?.skillTypeId ?? null,
+        index,
+      )
+    ) {
+      toast.warning('이미 다른 팀원이 맡은 세션이에요.');
+      return;
+    }
     setCurrentMembers((prev) =>
       prev.map((member, idx) =>
         idx === index ? { ...member, skillType } : member,
