@@ -7,6 +7,7 @@ import {
   AppDialogFooter,
   AppDialogHeader,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
@@ -46,6 +47,9 @@ export const BandCreateDialog = ({
           <DialogTitle>밴드 만들기</DialogTitle>
           <AppDialogClose />
         </AppDialogHeader>
+        <DialogDescription className="sr-only">
+          공개 여부와 이름, 커버 이미지를 입력해 새 밴드를 만듭니다.
+        </DialogDescription>
 
         <AppDialogBody>
           {/* 공개/비공개 토글 */}

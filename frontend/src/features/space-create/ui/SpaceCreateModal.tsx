@@ -7,6 +7,7 @@ import {
   AppDialogHeader,
   AppDialogContent,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
@@ -105,6 +106,9 @@ export const SpaceCreateModal = ({
           <DialogTitle>합주 공간 만들기</DialogTitle>
           <AppDialogClose aria-label="합주 공간 만들기 닫기" />
         </AppDialogHeader>
+        <DialogDescription className="sr-only">
+          이름과 기간을 입력해 새 합주 공간을 만듭니다.
+        </DialogDescription>
 
         <AppDialogBody className="gap-9 overflow-y-auto">
           <Field

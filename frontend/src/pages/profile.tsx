@@ -24,6 +24,7 @@ import {
   AppDialogContent,
   AppDialogFooter,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
@@ -329,9 +330,9 @@ function ProfileRoutePage() {
               <DialogTitle className="typo-xl-sb text-grey-50">
                 편집 모드를 나가시겠습니까?
               </DialogTitle>
-              <p className="typo-lg-sb text-grey-100">
+              <DialogDescription className="typo-lg-sb text-grey-100">
                 변경사항이 저장되지 않습니다
-              </p>
+              </DialogDescription>
             </AppDialogBody>
             <AppDialogFooter className="mt-8 flex-row gap-4">
               <Button
