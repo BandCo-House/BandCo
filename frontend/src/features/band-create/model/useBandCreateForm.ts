@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { uploadFile } from '@/shared/api/upload';
 import { bandCreateSchema } from './schema';
 import { useBandCreate } from './useBandCreate';
@@ -16,13 +17,11 @@ export const useBandCreateForm = (
 ) => {
   const [form, setForm] = useState(initialForm);
   const [preview, setPreview] = useState<string | null>(null);
-  const [fieldError, setFieldError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
   const {
     submit,
     isLoading: isSubmitLoading,
-    error,
     reset: resetMutation,
   } = useBandCreate();
 
@@ -33,7 +32,6 @@ export const useBandCreateForm = (
     }
     setForm(initialForm);
     setPreview(null);
-    setFieldError(null);
     setIsUploading(false);
     resetMutation();
   };
@@ -59,6 +57,15 @@ export const useBandCreateForm = (
     }
   };
 
+  const clearCover = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setForm((f) => ({ ...f, coverImage: null }));
+    setPreview(null);
+  };
+
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) {
@@ -68,7 +75,6 @@ export const useBandCreateForm = (
   }, []);
 
   const handleSubmit = async () => {
-    setFieldError(null);
     let uploadedCoverImgUrl: string | null = null;
 
     if (form.coverImage) {
@@ -77,7 +83,7 @@ export const useBandCreateForm = (
         uploadedCoverImgUrl = await uploadFile(form.coverImage, 'bands');
       } catch (err) {
         setIsUploading(false);
-        setFieldError(
+        toast.error(
           err instanceof Error
             ? err.message
             : '커버 이미지 업로드에 실패했습니다.',
@@ -95,14 +101,15 @@ export const useBandCreateForm = (
       coverImgUrl: uploadedCoverImgUrl,
     });
     if (!parsed.success) {
-      setFieldError(parsed.error.issues[0]?.message ?? '입력값을 확인해주세요');
+      toast.error(parsed.error.issues[0]?.message ?? '입력값을 확인해주세요');
       return;
     }
-    setFieldError(null);
     const result = await submit(parsed.data);
-    if (result.success) {
-      handleOpenChange(false);
+    if (!result.success) {
+      toast.error(result.message ?? '밴드 생성에 실패했습니다.');
+      return;
     }
+    handleOpenChange(false);
   };
 
   const setName = (name: string) => setForm((f) => ({ ...f, name }));
@@ -115,12 +122,11 @@ export const useBandCreateForm = (
   return {
     form,
     preview,
-    fieldError,
     isLoading,
-    error,
     isSubmitDisabled,
     handleOpenChange,
     handleCoverChange,
+    clearCover,
     handleSubmit,
     setName,
     setVisibility,

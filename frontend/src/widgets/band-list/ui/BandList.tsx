@@ -21,25 +21,32 @@ export const BandList = () => {
     [setIsCreateDialogOpen, setIsInviteCodeDialogOpen],
   );
 
+  const dialogs = (
+    <>
+      <SpeedDialFab
+        className="bottom-24"
+        mainLabel="밴드 메뉴 열기"
+        actions={fabActions}
+        hidden={isCreateDialogOpen || isInviteCodeDialogOpen}
+      />
+      <BandCreateDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
+      <InviteCodeDialog
+        open={isInviteCodeDialogOpen}
+        onOpenChange={setIsInviteCodeDialogOpen}
+      />
+    </>
+  );
+
   if (isLoading) return <div data-testid="band-list">로딩 중...</div>;
 
   if (bands.length === 0)
     return (
       <>
         <div data-testid="band-list">아직 참여한 밴드가 없어요</div>
-        <SpeedDialFab
-          className="bottom-24"
-          mainLabel="밴드 메뉴 열기"
-          actions={fabActions}
-        />
-        <BandCreateDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-        />
-        <InviteCodeDialog
-          open={isInviteCodeDialogOpen}
-          onOpenChange={setIsInviteCodeDialogOpen}
-        />
+        {dialogs}
       </>
     );
 
@@ -54,20 +61,7 @@ export const BandList = () => {
           ))}
         </ul>
 
-        <SpeedDialFab
-          className="bottom-24"
-          mainLabel="밴드 메뉴 열기"
-          actions={fabActions}
-        />
-
-        <BandCreateDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-        />
-        <InviteCodeDialog
-          open={isInviteCodeDialogOpen}
-          onOpenChange={setIsInviteCodeDialogOpen}
-        />
+        {dialogs}
       </section>
       <div className="pointer-events-none fixed top-header-64 z-30 -mx-5 flex h-full w-full max-w-[648px] flex-col items-start justify-start gap-6 overflow-hidden bg-linear-to-b">
         <div

@@ -17,7 +17,7 @@ export const Route = createFileRoute('/band/$bandId/notices')({
 function BandNoticesRoutePage() {
   return (
     <div className="py-10 text-center">
-      <span className="sr-only">BandNoticesPage</span>
+      <span data-testid="band-notices-page" className="hidden" />
       <p className="typo-sm-r text-grey-300">공지 페이지 구현 예정입니다.</p>
     </div>
   );

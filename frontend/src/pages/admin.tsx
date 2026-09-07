@@ -16,7 +16,7 @@ export const Route = createFileRoute('/admin')({
 function AdminRoutePage() {
   return (
     <>
-      <span className="sr-only">AdminPage</span>
+      <span data-testid="admin-page" className="hidden" />
       <ComingSoon />
     </>
   );

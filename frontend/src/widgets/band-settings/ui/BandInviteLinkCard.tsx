@@ -133,16 +133,16 @@ export const BandInviteLinkCard = ({
   return (
     <div className="flex flex-col gap-6 rounded-sm bg-surface-3 p-4">
       <div className="flex flex-col gap-2">
-        <p className="typo-sm-m text-grey-50">초대 링크</p>
+        <p className="typo-sm-sb text-grey-50">초대 링크</p>
         <div className="flex items-start gap-2">
           <p className="flex h-9 min-w-0 flex-1 items-center gap-2.5 overflow-hidden rounded-full border-[0.667px] border-grey-200 bg-grey-50 px-3.5 py-2">
             <LinkIcon aria-hidden="true" className="size-4 shrink-0" />
-            <span className="truncate typo-xs-m text-black">{url}</span>
+            <span className="truncate typo-xs-sb text-black">{url}</span>
           </p>
           <button
             type="button"
             onClick={() => void copyToClipboard(url, '초대 링크')}
-            className="flex shrink-0 items-center gap-2.5 self-stretch rounded-full bg-primary px-4 py-2 typo-sm-m text-black focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex shrink-0 items-center gap-2.5 self-stretch rounded-full bg-primary px-4 py-2 typo-sm-sb text-black focus-visible:outline-2 focus-visible:outline-primary"
           >
             <CopyIcon aria-hidden="true" className="size-4" />
             복사
@@ -155,7 +155,7 @@ export const BandInviteLinkCard = ({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="typo-sm-m text-grey-100">초대 코드</p>
+        <p className="typo-sm-sb text-grey-100">초대 코드</p>
         <div className="flex h-27 flex-col items-center justify-center gap-2 rounded-sm border border-grey-200 bg-surface-1 px-4">
           <div className="flex items-center gap-2.5">
             <span className="typo-lg-b text-grey-50">

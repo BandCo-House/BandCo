@@ -7,38 +7,24 @@ import { useNotificationList } from '@/entities/notification/api/useNotification
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
 import { useDeleteManyNotifications } from '@/entities/notification/api/useDeleteManyNotifications';
-import {
-  useNotificationUnreadSummary,
-  notificationQueries,
-} from '@/entities/notification/api/useNotificationUnreadSummary';
+import { notificationQueries } from '@/entities/notification/api/useNotificationUnreadSummary';
 import { updateNotificationHeader } from '@/entities/notification/model/notification-header-state';
 import type { NotificationType } from '@/entities/notification/model/types';
 import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
 import { acceptInvite } from '@/features/invite-accept/api/invite-api';
 import { declineInvite } from '@/features/invite-decline/api/invite-api';
 import { bandKeys } from '@/entities/band/api/useBands';
-import { cn } from '@/shared/lib/utils';
-import { useShowOnScrollUp } from '@/shared/lib/use-scroll-direction';
-import {
-  slidingIndicatorClass,
-  useSlidingIndicator,
-} from '@/shared/lib/use-sliding-indicator';
 import { NotificationCard } from './NotificationCard';
+import { EmptyState } from '@/shared/ui/empty-state';
 
 type TabType = 'NOTICE' | 'INVITE' | 'REMINDER';
-
-const TAB_CONFIGS = [
-  { key: 'NOTICE' as const, label: '공지사항' },
-  { key: 'INVITE' as const, label: '초대장' },
-  { key: 'REMINDER' as const, label: '일정 조율' },
-] as const;
 
 type NotificationListProps = {
   tab: TabType;
 };
 
 /**
- * 알림 탭바 + 목록 + 로딩/에러/빈 상태 + 더보기 버튼을 조합한 위젯.
+ * 알림 목록 + 로딩/에러/빈 상태 + 더보기 버튼을 조합한 위젯.
  * 편집 모드 상태와 모든 mutation 로직을 캡슐화한다.
  */
 export const NotificationList = ({ tab }: NotificationListProps) => {
@@ -57,10 +43,6 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     setSelectedIds(new Set());
   }
 
-  const showTabBar = useShowOnScrollUp();
-  const { containerRef: tabContainerRef, indicatorRef: tabIndicatorRef } =
-    useSlidingIndicator(tab);
-
   const {
     data,
     fetchNextPage,
@@ -69,8 +51,6 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     isLoading,
     isError,
   } = useNotificationList({ where__type: tab });
-
-  const { data: unreadSummary } = useNotificationUnreadSummary();
 
   const markAsReadMutation = useMarkNotificationAsRead();
   const markAllAsReadMutation = useMarkAllNotificationsAsRead();
@@ -254,72 +234,19 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   }, []);
 
   return (
-    <div data-testid="notifications-page" className="w-full pb-16">
-      {/* 통합 sticky 헤더 (탭 바 + 요약/모두읽음 바) */}
-      <div
-        inert={!showTabBar}
-        className={cn(
-          'sticky top-[64px] z-30 -mx-5 -mt-8 px-5 pb-4',
-          'transition-[transform,opacity] duration-300 ease-out',
-          !showTabBar && '-translate-y-full opacity-0',
-        )}
-      >
-        {/* 탭 네비게이션 */}
-        <div className="pt-2 pb-0">
-          <div
-            ref={tabContainerRef}
-            className="relative flex w-full gap-4 px-5"
+    <div data-testid="notifications-page" className="-mt-8 w-full pt-4 pb-16">
+      {!isLoading && !isError && hasNotifications && !isEditMode && (
+        <div className="mb-2 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={handleMarkAllAsRead}
+            disabled={markAllAsReadMutation.isPending || !hasUnread}
+            className="rounded-full border border-grey-300 px-4 py-1.5 typo-sm-sb text-grey-300 transition-all hover:bg-grey-300 hover:text-grey-600 disabled:opacity-40"
           >
-            <span
-              ref={tabIndicatorRef}
-              aria-hidden="true"
-              className={cn(
-                slidingIndicatorClass,
-                'rounded-[20px] bg-primary shadow-sm',
-              )}
-            />
-            {TAB_CONFIGS.map(({ key, label }) => {
-              const isActive = tab === key;
-              const hasUnreadForTab =
-                unreadSummary?.unreadByType?.[key] != null &&
-                unreadSummary.unreadByType[key] > 0;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  data-active={isActive}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() =>
-                    navigate({ to: '/notifications', search: { tab: key } })
-                  }
-                  className={`relative z-10 flex h-8.5 flex-1 items-center justify-center gap-1.5 rounded-[20px] transition-colors duration-200 ${
-                    isActive
-                      ? 'typo-base-b text-black'
-                      : 'text-[13px] leading-4.5 font-bold text-primary'
-                  }`}
-                >
-                  {label}
-                  {hasUnreadForTab && (
-                    <span className="absolute top-2 right-4 h-[5px] w-[5px] shrink-0 rounded-full bg-[#D6705C]" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            모두 읽음
+          </button>
         </div>
-        {!isLoading && !isError && hasNotifications && !isEditMode && (
-          <div className="mt-2 flex items-center justify-end px-5">
-            <button
-              type="button"
-              onClick={handleMarkAllAsRead}
-              disabled={markAllAsReadMutation.isPending || !hasUnread}
-              className="rounded-full border border-grey-300 px-4 py-1.5 typo-xs-m text-grey-300 transition-all hover:bg-grey-300 hover:text-black disabled:opacity-40"
-            >
-              모두 읽음
-            </button>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* 콘텐츠 영역 */}
       {isLoading ? (
@@ -331,7 +258,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
         </div>
       ) : isError ? (
         <div className="flex min-h-[400px] flex-col items-center justify-center py-20 text-center">
-          <p className="typo-base-m text-red-500">
+          <p className="typo-base-sb text-destructive">
             알림 목록을 불러오지 못했습니다.
           </p>
           <p className="mt-2 typo-sm-r text-muted-foreground">
@@ -339,12 +266,10 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
           </p>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="flex h-[110px] w-full flex-col justify-center gap-1 rounded-2xl p-4">
-          <h4 className="typo-sm-b text-primary">새로운 알림이 없습니다.</h4>
-          <p className="typo-xs-m text-grey-300">
-            밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요.
-          </p>
-        </div>
+        <EmptyState
+          title="새로운 알림이 없습니다."
+          description="밴코 서비스의 모든 알림을 이곳에서 모아볼 수 있어요."
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {notifications.map((noti) => (
@@ -390,7 +315,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
             type="button"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="flex w-full max-w-xs items-center justify-center gap-2 rounded-full border border-border py-2.5 typo-sm-m text-foreground disabled:opacity-40"
+            className="flex w-full max-w-xs items-center justify-center gap-2 rounded-full border border-border py-2.5 typo-sm-sb text-foreground disabled:opacity-40"
           >
             {isFetchingNextPage ? (
               <>

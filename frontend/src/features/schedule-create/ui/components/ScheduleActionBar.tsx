@@ -4,6 +4,7 @@ interface ScheduleActionBarProps {
   /** 왼쪽 아웃라인 버튼(취소 · 수정). */
   secondaryLabel: string;
   onSecondary: () => void;
+  secondaryDisabled?: boolean;
   /** 오른쪽 shining 버튼(추가 · 확인). */
   primaryLabel: string;
   onPrimary: () => void;
@@ -18,6 +19,7 @@ interface ScheduleActionBarProps {
 export const ScheduleActionBar = ({
   secondaryLabel,
   onSecondary,
+  secondaryDisabled,
   primaryLabel,
   onPrimary,
   primaryDisabled,
@@ -29,6 +31,7 @@ export const ScheduleActionBar = ({
       variant="outline"
       size="pill"
       className="border-grey-50 typo-base-b text-grey-50"
+      disabled={secondaryDisabled}
       onClick={onSecondary}
     >
       {secondaryLabel}

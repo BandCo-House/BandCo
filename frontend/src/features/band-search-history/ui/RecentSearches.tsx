@@ -1,4 +1,5 @@
 import { X as XIcon } from 'lucide-react';
+import { EmptyState } from '@/shared/ui/empty-state';
 
 interface RecentSearchesProps {
   searches: string[];
@@ -14,23 +15,17 @@ export const RecentSearches = ({
   onClearAll,
 }: RecentSearchesProps) => {
   if (searches.length === 0) {
-    return (
-      <div className="flex h-32 w-full flex-col items-center justify-center text-sm text-[#9D9D9F]">
-        최근 검색어가 없습니다.
-      </div>
-    );
+    return <EmptyState className="h-32" title="최근 검색어가 없습니다." />;
   }
 
   return (
     <div className="w-full px-5 py-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#9D9D9F]">
-          최근 검색어
-        </span>
+        <span className="typo-xs-sb text-grey-300">최근 검색어</span>
         <button
           type="button"
           onClick={onClearAll}
-          className="text-xs text-[#9D9D9F] underline hover:opacity-80"
+          className="typo-xs-r text-grey-300 underline hover:opacity-80"
         >
           전체 삭제
         </button>
@@ -45,14 +40,14 @@ export const RecentSearches = ({
             <button
               type="button"
               onClick={() => onSelectSearch(term)}
-              className="min-w-0 flex-1 truncate text-start text-sm font-medium text-white transition-opacity hover:opacity-80"
+              className="min-w-0 flex-1 truncate text-start typo-sm-sb text-grey-50 transition-opacity hover:opacity-80"
             >
               {term}
             </button>
             <button
               type="button"
               onClick={() => onRemoveSearch(term)}
-              className="p-1 text-[#9D9D9F] hover:text-white"
+              className="p-1 text-grey-300 hover:text-grey-50"
               aria-label={`${term} 최근 검색어 삭제`}
             >
               <XIcon size={16} />

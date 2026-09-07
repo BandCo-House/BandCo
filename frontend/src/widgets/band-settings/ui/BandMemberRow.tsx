@@ -49,17 +49,17 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
               src={member.avatarUrl || undefined}
               alt={member.nickname}
             />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="typo-xs-sb">
               {member.nickname.slice(0, 2)}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate typo-sm-m text-xs font-medium text-white">
+          <span className="truncate typo-sm-sb text-white">
             {member.nickname}
           </span>
         </div>
 
         {member.skills && member.skills.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 px-1.5 typo-xs-m text-[10px] text-grey-200">
+          <div className="flex flex-wrap items-center gap-1.5 px-1.5 typo-xs-sb text-grey-200">
             {member.skills.map((skill) => (
               <span key={skill.skillTypeId} className="whitespace-nowrap">
                 {skill.skillName}
@@ -72,11 +72,11 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
       {/* 2. 우측: 역할 뱃지 / 드롭다운 & 강퇴 버튼 */}
       <div className="flex shrink-0 items-center gap-2">
         {isLeader ? (
-          <div className="flex items-center justify-center rounded-full bg-primary px-4 py-1.5 typo-sm-b text-xs font-bold text-gray-900">
+          <div className="flex items-center justify-center rounded-full bg-primary px-4 py-1.5 typo-sm-b text-grey-600">
             리더
           </div>
         ) : teamName ? (
-          <div className="flex items-center justify-center rounded-full bg-grey-400 px-3 py-1.5 typo-xs-sb text-xs text-white">
+          <div className="flex items-center justify-center rounded-full bg-grey-400 px-3 py-1.5 typo-xs-sb text-white">
             팀 리더 ({teamName})
           </div>
         ) : (
@@ -85,7 +85,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
               value={currentRole}
               onValueChange={(val) => onRoleChange?.(val as BandMemberRole)}
             >
-              <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-0 bg-[#646468] px-3.5 py-1.5 typo-sm-m text-xs text-white hover:bg-[#727277]">
+              <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-0 bg-[#646468] px-3.5 py-1.5 typo-sm-sb text-white hover:bg-[#727277]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -98,7 +98,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
               <button
                 type="button"
                 onClick={() => onKick(member)}
-                className="px-2.5 py-1 typo-xs-m text-[#d6705c] transition-opacity hover:opacity-80"
+                className="px-2.5 py-1 typo-xs-sb text-[#d6705c] transition-opacity hover:opacity-80"
               >
                 강퇴
               </button>

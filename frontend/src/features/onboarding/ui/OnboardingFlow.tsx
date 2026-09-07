@@ -99,12 +99,12 @@ export const OnboardingFlow = ({
       </div>
 
       <header className="mb-12">
-        <h1 className="typo-2xl-b whitespace-pre-line text-grey-50">
+        <h1 className="typo-3xl-b whitespace-pre-line text-grey-50">
           {isGenreStep
             ? `반가워요, ${userName}님\n어떤 음악을 추구하나요?`
             : `${userName}님이\n자신 있는 포지션은?`}
         </h1>
-        <p className="mt-3 typo-base-m text-grey-200">
+        <p className="mt-3 typo-base-sb text-grey-200">
           {isGenreStep
             ? `선택한 순서대로 내 프로필에 적용됩니다. (최대 ${maxGenreSelections}개)`
             : '선택한 순서대로 내 프로필에 적용됩니다'}
@@ -125,7 +125,7 @@ export const OnboardingFlow = ({
               type="button"
               aria-pressed={isSelected}
               className={cn(
-                'relative min-h-12 rounded-full border-2 px-5 typo-base-m transition-colors focus-visible:outline-2 focus-visible:outline-primary',
+                'relative min-h-12 rounded-full border-2 px-5 typo-base-sb transition-colors focus-visible:outline-2 focus-visible:outline-primary',
                 isSelected
                   ? 'bg-primary text-primary-dark'
                   : 'border-grey-300 bg-transparent text-grey-200 hover:border-primary hover:text-grey-50',
@@ -144,7 +144,7 @@ export const OnboardingFlow = ({
       </section>
 
       <footer className="mt-auto pt-16">
-        <p className="mb-8 text-center typo-sm-m text-grey-200">
+        <p className="mb-8 text-center typo-sm-sb text-grey-200">
           {isGenreStep
             ? '선호 장르는 나중에 다시 수정할 수 있어요!'
             : '포지션은 나중에 다시 수정할 수 있어요!'}
@@ -164,7 +164,7 @@ export const OnboardingFlow = ({
             </Button>
             <button
               type="button"
-              className="mx-auto typo-base-m text-grey-200 underline underline-offset-4 transition-colors hover:text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
+              className="mx-auto typo-base-sb text-grey-200 underline underline-offset-4 transition-colors hover:text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
               onClick={() =>
                 onComplete({
                   favoriteGenreIds: [],

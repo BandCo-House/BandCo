@@ -4,6 +4,7 @@ import {
   slidingIndicatorClass,
   useSlidingIndicator,
 } from '@/shared/lib/use-sliding-indicator';
+import { GlassRim } from './glass-rim';
 import { useFieldRequired } from './field-context';
 
 export interface SegmentedOption<T extends string> {
@@ -79,15 +80,18 @@ export const SegmentedToggle = <T extends string>({
       )}
     >
       {isTab && (
-        <span
-          ref={indicatorRef}
-          aria-hidden="true"
-          className={cn(
-            slidingIndicatorClass,
-            'rounded-full bg-primary',
-            activeOption?.selectedClassName,
-          )}
-        />
+        <>
+          <span
+            ref={indicatorRef}
+            aria-hidden="true"
+            className={cn(
+              slidingIndicatorClass,
+              'rounded-full bg-primary',
+              activeOption?.selectedClassName,
+            )}
+          />
+          <GlassRim />
+        </>
       )}
       {options.map((option, index) => {
         const isActive = option.value === value;

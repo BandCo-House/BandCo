@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
+import { EmptyState } from '@/shared/ui/empty-state';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -111,7 +112,7 @@ export function ProfileMusicSearchDialog({
 
           <div className="flex min-h-64 flex-col gap-5 pt-8">
             {isLoading && (
-              <p className="typo-sm-m text-grey-200">검색 중입니다.</p>
+              <p className="typo-sm-sb text-grey-200">검색 중입니다.</p>
             )}
             {!isLoading &&
               shouldShowResults &&
@@ -137,7 +138,7 @@ export function ProfileMusicSearchDialog({
                 </button>
               ))}
             {!isLoading && shouldShowResults && results.length === 0 && (
-              <p className="typo-sm-m text-grey-200">검색 결과가 없습니다.</p>
+              <EmptyState title="검색 결과가 없습니다." />
             )}
           </div>
         </AppDialogBody>

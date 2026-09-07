@@ -1,9 +1,5 @@
-import { Link, useParams, useRouterState } from '@tanstack/react-router';
-import { cn } from '@/shared/lib/utils';
-import {
-  slidingIndicatorClass,
-  useSlidingIndicator,
-} from '@/shared/lib/use-sliding-indicator';
+import { useParams, useRouterState } from '@tanstack/react-router';
+import { RouteTabs } from '@/widgets/page-header';
 
 const TABS = [
   { key: 'home', label: '홈', to: '/band/$bandId' },
@@ -21,46 +17,13 @@ const resolveActiveKey = (pathname: string): (typeof TABS)[number]['key'] => {
 export const BandMainTabs = () => {
   const { bandId } = useParams({ from: '/band/$bandId' });
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const activeKey = resolveActiveKey(pathname);
-  const { containerRef, indicatorRef } = useSlidingIndicator(
-    activeKey,
-    'underline',
-  );
 
   return (
-    <nav
-      ref={containerRef}
-      aria-label="밴드 메인 탭"
-      className="relative flex w-full"
-    >
-      <span
-        ref={indicatorRef}
-        aria-hidden="true"
-        className={cn(
-          slidingIndicatorClass,
-          'top-auto bottom-0 h-0.5 bg-primary',
-        )}
-      />
-      {TABS.map((tab) => {
-        const isActive = tab.key === activeKey;
-        return (
-          <Link
-            key={tab.key}
-            to={tab.to}
-            params={{ bandId }}
-            // 홈(`/band/$bandId`)이 자식 경로에서 fuzzy-active 되지 않도록 정확 매칭한다.
-            activeOptions={{ exact: true }}
-            aria-current={isActive ? 'page' : undefined}
-            data-active={isActive}
-            className={cn(
-              'flex flex-1 items-center justify-center border-b-2 border-transparent pt-4 pb-5 typo-sm-sb transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary',
-              isActive ? 'text-primary' : 'text-grey-300',
-            )}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <RouteTabs
+      ariaLabel="밴드 메인 탭"
+      variant="underline"
+      activeKey={resolveActiveKey(pathname)}
+      tabs={TABS.map((tab) => ({ ...tab, params: { bandId } }))}
+    />
   );
 };

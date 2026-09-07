@@ -10,6 +10,7 @@ import type { BandMemberListItem } from '@/entities/member/model/types';
 import { MemberSearchModal } from '@/features/schedule-create/ui/components/MemberSearchModal';
 import { Button } from '@/shared/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface BandTeamCreateViewProps {
   bandId: string;
@@ -18,7 +19,9 @@ interface BandTeamCreateViewProps {
 export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: bandMembers = [] } = useBandMembers(bandId);
+  const { data: bandMembers = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
 
   const [teamName, setTeamName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<BandMemberListItem[]>(
@@ -164,10 +167,8 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
     <div className="relative flex w-full flex-col gap-8 pb-6 text-white">
       {/* 상단 타이틀 & 설명 */}
       <div className="flex flex-col gap-2">
-        <h2 className="typo-2xl-sb text-2xl font-semibold text-white">
-          팀 추가
-        </h2>
-        <p className="typo-base-r text-base text-grey-300">
+        <h2 className="typo-xl-sb text-white">팀 추가</h2>
+        <p className="typo-base-r text-grey-300">
           밴드멤버들과 팀을 만들어 합주할 수 있어요
         </p>
       </div>
@@ -178,7 +179,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
         <div className="flex flex-col gap-2">
           <label
             htmlFor="team-name-input"
-            className="flex items-center gap-1 typo-base-sb text-base font-semibold text-grey-100"
+            className="flex items-center gap-1 typo-base-sb text-grey-100"
           >
             <span>팀 이름</span>
             <span
@@ -193,7 +194,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
               placeholder="팀 이름을 입력해주세요"
-              className="w-full bg-transparent typo-base-sb text-base text-white outline-none placeholder:text-grey-300"
+              className="w-full bg-transparent typo-base-sb text-white outline-none placeholder:text-grey-300"
             />
           </div>
         </div>
@@ -201,7 +202,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
         {/* 2. 팀 구성 입력 필드 */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1 typo-base-sb text-base font-semibold text-grey-100">
+            <label className="flex items-center gap-1 typo-base-sb text-grey-100">
               <span>팀 구성</span>
               <span
                 className="size-1 rounded-full bg-[#d6705c]"
@@ -213,7 +214,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
             <button
               type="button"
               onClick={handleOpenAddMember}
-              className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 typo-sm-b text-xs font-bold text-gray-900 shadow-sm transition-transform active:scale-95"
+              className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 typo-sm-b text-grey-600 shadow-sm transition-transform active:scale-95"
             >
               <Plus className="size-4" />
               <span>팀원 추가</span>
@@ -235,10 +236,10 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                 }}
                 className="flex h-14 cursor-pointer items-center justify-between border-b border-white/24 px-4 py-3 text-grey-300 transition-colors hover:text-grey-100"
               >
-                <span className="typo-base-r text-base text-grey-300">
+                <span className="typo-base-r text-grey-300">
                   먼저 세션을 입력해주세요
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-surface-2/60 px-3 py-1 typo-xs-m text-xs text-primary">
+                <span className="inline-flex items-center gap-1 rounded-full bg-surface-2/60 px-3 py-1 typo-xs-sb text-primary">
                   선택하기
                 </span>
               </div>
@@ -258,7 +259,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                   >
                     {/* 1. 좌측: 세션명 (피그마 하단 라임 언더라인 입력창 스타일) */}
                     <div className="flex h-[54px] min-w-0 flex-1 items-center border-b border-primary px-4 py-3">
-                      <span className="truncate typo-base-sb text-base text-white">
+                      <span className="truncate typo-base-sb text-white">
                         {skillsDisplay}
                       </span>
                     </div>
@@ -267,11 +268,11 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                     <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
                       <Avatar className="size-8 rounded-full">
                         <AvatarImage src={member.avatarUrl ?? undefined} />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className="typo-xs-sb">
                           {member.nickname.slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="max-w-[70px] truncate typo-sm-m text-sm font-medium text-white">
+                      <span className="max-w-[70px] truncate typo-sm-sb text-white">
                         {member.nickname}
                       </span>
                     </div>
