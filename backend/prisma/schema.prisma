@@ -9,19 +9,19 @@ datasource db {
 }
 
 model User {
-  id                  String            @id @default(uuid()) @db.Uuid
-  email               String?           @unique @db.VarChar(255)
-  passwordHash        String?           @map("password_hash") @db.VarChar(255)
-  status              UserStatus        @default(ACTIVE)
-  lastLoginAt         DateTime?         @map("last_login_at") @db.Timestamptz(6)
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  deletedAt           DateTime?         @map("deleted_at") @db.Timestamptz(6)
-  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String             @id @default(uuid()) @db.Uuid
+  email               String?            @unique @db.VarChar(255)
+  passwordHash        String?            @map("password_hash") @db.VarChar(255)
+  status              UserStatus         @default(ACTIVE)
+  lastLoginAt         DateTime?          @map("last_login_at") @db.Timestamptz(6)
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt           DateTime?          @map("deleted_at") @db.Timestamptz(6)
+  updatedAt           DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   blacklistedBands    BandBlacklist[]
-  receivedInvitations BandInvitation[]  @relation("BandInvitationInvitee")
+  receivedInvitations BandInvitation[]   @relation("BandInvitationInvitee")
   joinRequests        BandJoinRequest[]
   bandMemberships     BandMember[]
-  managedBands        Band[]            @relation("BandManager")
+  managedBands        Band[]             @relation("BandManager")
   favoriteGenres      FavoriteGenre[]
   notifications       Notification[]
   oauthAccounts       UserOAuthAccount[]
@@ -226,6 +226,8 @@ model BandMember {
   createdBandSpaces    BandSpace[]           @relation("BandSpaceCreator")
   scheduleParticipants ScheduleParticipant[]
   createdSchedules     Schedule[]            @relation("ScheduleCreator")
+  createdSchedulePolls SchedulePoll[]        @relation("SchedulePollCreator")
+  schedulePollVotes    SchedulePollVote[]
   createdSongs         Song[]                @relation("SongCreator")
   spaceMemberships     SpaceMember[]
   teamMemberships      TeamMember[]
@@ -281,9 +283,50 @@ model BandSpace {
   band                  Band            @relation(fields: [bandId], references: [id], onDelete: Cascade)
   createdByBandMember   BandMember      @relation("BandSpaceCreator", fields: [createdByBandMemberId], references: [id])
   schedules             Schedule[]
+  schedulePolls         SchedulePoll[]
   members               SpaceMember[]
 
   @@map("band_spaces")
+}
+
+model SchedulePoll {
+  id                    String               @id @default(uuid()) @db.Uuid
+  bandSpaceId           String               @map("band_space_id") @db.Uuid
+  createdByBandMemberId String               @map("created_by_band_member_id") @db.Uuid
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bandSpace             BandSpace            @relation(fields: [bandSpaceId], references: [id], onDelete: Cascade)
+  createdByBandMember   BandMember           @relation("SchedulePollCreator", fields: [createdByBandMemberId], references: [id], onDelete: Cascade)
+  options               SchedulePollOption[]
+
+  @@index([bandSpaceId, createdAt])
+  @@map("schedule_polls")
+}
+
+model SchedulePollOption {
+  id             String             @id @default(uuid()) @db.Uuid
+  schedulePollId String             @map("schedule_poll_id") @db.Uuid
+  startAt        DateTime           @map("start_at") @db.Timestamptz(6)
+  endAt          DateTime           @map("end_at") @db.Timestamptz(6)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  schedulePoll   SchedulePoll       @relation(fields: [schedulePollId], references: [id], onDelete: Cascade)
+  votes          SchedulePollVote[]
+
+  @@unique([schedulePollId, startAt, endAt])
+  @@map("schedule_poll_options")
+}
+
+model SchedulePollVote {
+  id                   String             @id @default(uuid()) @db.Uuid
+  schedulePollOptionId String             @map("schedule_poll_option_id") @db.Uuid
+  bandMemberId         String             @map("band_member_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  schedulePollOption   SchedulePollOption @relation(fields: [schedulePollOptionId], references: [id], onDelete: Cascade)
+  bandMember           BandMember         @relation(fields: [bandMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([schedulePollOptionId, bandMemberId])
+  @@index([bandMemberId])
+  @@map("schedule_poll_votes")
 }
 
 model SpaceMember {
