@@ -44,6 +44,7 @@ export const SongSearchModal = ({
     data: tracks = [],
     isLoading,
     isFetching,
+    isPlaceholderData,
     isError,
   } = useSearchTracks(keyword, open);
 
@@ -62,8 +63,16 @@ export const SongSearchModal = ({
     }
     // isFetching이 아니라 isLoading인 이유: isFetching은 이미 결과가 있는 상태의
     // 재조회에도 참이라, 글자를 더 칠 때마다 목록이 빈 화면으로 교체됐다.
-    // 보여줄 게 아직 없는 첫 검색에서만 이 자리를 쓴다.
-    if (isLoading) return <EmptyState title="검색 중이에요." />;
+    // 보여줄 게 아직 없을 때만 이 자리를 쓴다.
+    //
+    // 두 번째 조건이 필요한 이유: 직전 결과가 빈 배열이면 keepPreviousData가 그
+    // 빈 배열을 그대로 물려줘 query가 success 상태가 된다(isLoading=false).
+    // 그대로 두면 응답도 오기 전에 "결과 없음 + 직접 입력하기"가 떠, 있는 곡을
+    // 없다고 단정하게 된다.
+    const hasNothingToShow = isPlaceholderData && tracks.length === 0;
+    if (isLoading || hasNothingToShow) {
+      return <EmptyState title="검색 중이에요." />;
+    }
     if (isError) {
       return <EmptyState title="곡을 검색하지 못했어요." />;
     }
