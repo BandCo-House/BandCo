@@ -18,24 +18,24 @@ description: frontend/src 코드에 테스트를 작성하는 스킬. "테스트
 
 ## 검증 대상 — 쉽게 바뀌는 것은 검증하지 않는다
 
-| 검증한다 (안정적)                          | 검증하지 않는다 (쉽게 바뀜)                 |
-| ------------------------------------------ | ------------------------------------------- |
-| 로직·분기·상태 전이 (disabled, 에러 표시)  | 컬러 토큰·border 두께·radius 등 스타일 값   |
-| 접근성 (role, `aria-*`, label)             | 화면에 보이는 문구 텍스트 그 자체           |
-| 안정적 식별자 (`role`, `data-testid`, id)  | DOM 구조·클래스명·마크업 깊이               |
+| 검증한다 (안정적)                         | 검증하지 않는다 (쉽게 바뀜)               |
+| ----------------------------------------- | ----------------------------------------- |
+| 로직·분기·상태 전이 (disabled, 에러 표시) | 컬러 토큰·border 두께·radius 등 스타일 값 |
+| 접근성 (role, `aria-*`, label)            | 화면에 보이는 문구 텍스트 그 자체         |
+| 안정적 식별자 (`role`, `data-testid`, id) | DOM 구조·클래스명·마크업 깊이             |
 
 - 문구를 단언 키로 쓰면 카피 한 번에 깨진다. `getByText('저장')` 대신 `getByRole('button')`·`data-testid`·로직 결과로 단언한다.
 - 테스트끼리, 또는 특정 마크업에 종속되지 않게 유지한다.
 
 ## Step 1: 대상 분류 및 도구 선택
 
-| 대상                          | 도구                       | 위치 규칙                        |
-| ----------------------------- | -------------------------- | -------------------------------- |
-| 순수 함수/schema/query key    | Vitest                     | 대상 파일 옆 `*.test.ts`         |
-| React 컴포넌트/hook           | Testing Library + jsdom    | 대상 파일 옆 `*.test.tsx`        |
-| API 함수                      | axios-mock-adapter         | `*-api.test.ts`                  |
-| 사용자 흐름 + 네트워크        | MSW server                 | feature/흐름 단위 테스트         |
-| focus trap/portal/scroll/caret | Playwright                | `tests/` (실제 브라우저 필요 시) |
+| 대상                           | 도구                    | 위치 규칙                        |
+| ------------------------------ | ----------------------- | -------------------------------- |
+| 순수 함수/schema/query key     | Vitest                  | 대상 파일 옆 `*.test.ts`         |
+| React 컴포넌트/hook            | Testing Library + jsdom | 대상 파일 옆 `*.test.tsx`        |
+| API 함수                       | axios-mock-adapter      | `*-api.test.ts`                  |
+| 사용자 흐름 + 네트워크         | MSW server              | feature/흐름 단위 테스트         |
+| focus trap/portal/scroll/caret | Playwright              | `tests/` (실제 브라우저 필요 시) |
 
 테스트 설명(`describe`/`it`)은 구현 절차가 아니라 **계약과 로직이 보이게** 적는다. "조건 → 기대 결과" 형태로 쓴다.
 
@@ -66,9 +66,16 @@ describe('getBands 어댑터', () => {
     mock.onGet('/bands').reply(200, {
       status: 'success',
       error: null,
-      data: { totalCount: 1, items: [/* ... */] },
+      data: {
+        totalCount: 1,
+        items: [
+          /* ... */
+        ],
+      },
     });
-    await expect(getBands()).resolves.toEqual([/* ... */]);
+    await expect(getBands()).resolves.toEqual([
+      /* ... */
+    ]);
   });
 
   it('필수 필드가 누락되면 reject된다', async () => {

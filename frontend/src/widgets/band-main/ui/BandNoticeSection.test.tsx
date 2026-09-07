@@ -25,7 +25,7 @@ describe('BandNoticeSection', () => {
     expect(screen.getByText('공지사항이 없습니다.')).toBeInTheDocument();
   });
 
-  it('오류 시 불러오지 못했다는 문구를 표시한다', () => {
+  it('오류도 빈 목록과 같이 취급한다(엔드포인트 미구현이라 항상 실패)', () => {
     useBandNoticesMock.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -34,7 +34,7 @@ describe('BandNoticeSection', () => {
 
     render(<BandNoticeSection bandId="band-1" />);
 
-    expect(screen.getByText('공지를 불러오지 못했어요.')).toBeInTheDocument();
+    expect(screen.getByText('공지사항이 없습니다.')).toBeInTheDocument();
   });
 
   it('공지를 링크 항목으로 표시한다', () => {

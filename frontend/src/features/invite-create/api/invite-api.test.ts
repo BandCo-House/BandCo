@@ -11,25 +11,26 @@ afterEach(() => {
 });
 
 describe('invite create 어댑터', () => {
-  it('밴드 초대를 생성한다', async () => {
-    const requestBody = { inviteeEmail: 'member@example.com' };
+  it('유저 ID로 밴드 초대를 생성하고 envelope의 data를 반환한다', async () => {
+    const requestBody = { inviteeUserId: 'user-2' };
 
-    mock.onPost('/bands/band-1/invitations', requestBody).reply(200, {
-      success: true,
+    mock.onPost('/bands/band-1/invitations', requestBody).reply(201, {
+      status: 'success',
+      error: null,
+      message: '밴드 초대 전송 완료',
       data: {
-        id: 'invite-1',
+        invitationId: 'invite-1',
         bandId: 'band-1',
-        bandName: '신촌 락밴드',
-        inviteeEmail: 'member@example.com',
-        inviteCode: 'INV-team-1-DEMO1',
-        inviteLink: 'https://example.com/invites/demo',
-        token: 'token-1',
-        status: 'PENDING',
+        inviterUserId: 'user-1',
+        inviteeUserId: 'user-2',
+        invitationStatus: 'PENDING',
+        createdAt: '2026-01-01T00:00:00.000Z',
       },
     });
 
     const result = await createInvite('band-1', requestBody);
 
-    expect(result.inviteeEmail).toBe('member@example.com');
+    expect(result.invitationId).toBe('invite-1');
+    expect(result.inviteeUserId).toBe('user-2');
   });
 });

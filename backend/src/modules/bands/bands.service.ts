@@ -33,6 +33,7 @@ import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
 import type { GetReceivedBandInvitationsResult, ReceivedBandInvitationListItem } from './types/received-band-invitation-list.type';
 import type { RejectBandJoinRequestResult } from './types/reject-band-join-request-result.type';
+import type { RemoveBandMemberResult } from './types/remove-band-member-result.type';
 import type { GetSentBandInvitationsResult } from './types/sent-band-invitation-list.type';
 import type { GetSentBandJoinRequestsResult } from './types/sent-band-join-request-list.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
@@ -819,6 +820,57 @@ export class BandsService {
       }
 
       return this.bandsRepository.updateBandMemberRole(member.id, input, client);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드장이 멤버를 강퇴한다.
+   *
+   * 권한 변경(updateBandMemberRole)과 같은 규칙을 따른다. 밴드장만 호출할 수 있고,
+   * 밴드장 자신은 대상이 될 수 없다(밴드 나가기·삭제 API를 쓴다).
+   * 멤버 행 삭제는 나가기와 동일하므로 repository.leaveBand를 재사용한다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 밴드 ID
+   * @param {string} targetUserId - 강퇴할 멤버의 유저 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   */
+  async removeBandMember(
+    requesterUserId: string,
+    bandId: string,
+    targetUserId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<RemoveBandMemberResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<RemoveBandMemberResult> => {
+      const band = await this.bandsRepository.findActiveBandById(bandId, client);
+
+      if (band === null) {
+        throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
+      }
+
+      if (band.bandMasterUserId !== requesterUserId) {
+        throw new ForbiddenException('밴드 멤버 강퇴 권한이 없습니다.');
+      }
+
+      if (targetUserId === band.bandMasterUserId) {
+        throw new BadRequestException('밴드장은 강퇴할 수 없습니다.');
+      }
+
+      const member = await this.bandsRepository.findBandMemberByBandIdAndUserId(bandId, targetUserId, client);
+
+      if (member === null) {
+        throw new NotFoundException('요청한 밴드 멤버를 찾을 수 없습니다.');
+      }
+
+      const removed = await this.bandsRepository.leaveBand(member.id, client);
+
+      return { bandId: removed.bandId, userId: removed.userId, removed: true };
     };
 
     if (tx !== undefined) {

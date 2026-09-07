@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
-import { useBandTeams } from '@/entities/team/api/useBandTeams';
+import { useBandTeams } from '@/entities/team/api/queries';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 import { Input } from '@/shared/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { cn } from '@/shared/lib/utils';
+import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface MemberSearchModalProps {
   open: boolean;
@@ -20,8 +21,12 @@ interface MemberSearchModalProps {
   bandId: string;
   /** 이미 참여자로 선택된 bandMemberId 집합. */
   selectedIds: string[];
-  /** 멤버 행 탭 시 추가/해제. */
-  onToggleMember: (bandMemberId: string) => void;
+  /** 멤버 행 탭 시 추가/해제. 선택된 멤버 전체 정보를 넘긴다. */
+  onToggleMember: (member: BandMemberListItem) => void;
+  /** 팀 행 탭 시 그 팀 전체를 참여자로 넣는다. */
+  onSelectTeam?: (teamId: string) => void;
+  /** 팀 조회가 도는 중. 응답을 기다리는 동안 팀 행을 잠근다. */
+  isSelectingTeam?: boolean;
 }
 
 type Tab = 'member' | 'team';
@@ -36,14 +41,15 @@ const RowLink = ({ label }: { label: string }) => (
     // TODO: 프로필/팀 상세 라우팅 연동 예정. 지금은 닫기(X)만 동작.
     className="flex shrink-0 items-center gap-2.5 rounded-3xl px-3 py-2 text-grey-200"
   >
-    <span className="typo-sm-m">{label}</span>
+    <span className="typo-sm-sb">{label}</span>
     <ArrowRightIcon aria-hidden="true" className="size-4" />
   </button>
 );
 
 /**
- * 멤버/팀 검색 모달. 멤버 탭에서 행을 탭하면 참여자로 추가/해제한다.
- * 팀 탭·프로필/상세보기 라우팅은 아직 미연동(닫기 X만 동작).
+ * 멤버/팀 검색 모달. 멤버 탭은 행을 탭할 때마다 참여자를 추가/해제하고(다중 선택),
+ * 팀 탭은 행을 탭하면 그 팀 멤버를 한 번에 넣는다.
+ * 프로필/상세보기 라우팅은 아직 미연동.
  */
 export const MemberSearchModal = ({
   open,
@@ -51,11 +57,15 @@ export const MemberSearchModal = ({
   bandId,
   selectedIds,
   onToggleMember,
+  onSelectTeam,
+  isSelectingTeam = false,
 }: MemberSearchModalProps) => {
   const [tab, setTab] = useState<Tab>('member');
   const [query, setQuery] = useState('');
 
-  const { data: members = [] } = useBandMembers(bandId);
+  const { data: members = [] } = useBandMembers(bandId, {
+    take: MEMBER_PICKER_TAKE,
+  });
   const { data: teams = [] } = useBandTeams(bandId, {}, { enabled: open });
 
   const keyword = query.trim();
@@ -69,7 +79,7 @@ export const MemberSearchModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[70vh] flex-col gap-8 px-5 pt-5 pb-8 text-grey-50">
+      <AppDialogContent className="flex max-h-[70dvh] flex-col gap-8 px-5 pt-5 pb-8 text-grey-50">
         <DialogTitle className="sr-only">멤버·팀 검색</DialogTitle>
         <DialogDescription className="sr-only">
           이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.
@@ -77,7 +87,7 @@ export const MemberSearchModal = ({
 
         <AppDialogClose className="top-5 right-5" />
         <div className="relative z-10 flex items-center gap-8 pr-12">
-          <div className="flex flex-1 items-center gap-7 text-xl leading-[1.4] font-semibold">
+          <div className="flex flex-1 items-center gap-7 typo-lg-sb">
             <button
               type="button"
               aria-pressed={tab === 'member'}
@@ -125,7 +135,7 @@ export const MemberSearchModal = ({
                   <button
                     type="button"
                     aria-pressed={selected.has(member.bandMemberId)}
-                    onClick={() => onToggleMember(member.bandMemberId)}
+                    onClick={() => onToggleMember(member)}
                     className={cn(
                       'flex flex-1 items-center justify-between gap-2 rounded-[20px] border bg-surface-3 p-2 transition-colors',
                       selected.has(member.bandMemberId)
@@ -140,12 +150,12 @@ export const MemberSearchModal = ({
                           {member.nickname.slice(0, 1)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="typo-sm-m text-grey-50">
+                      <span className="typo-sm-sb text-grey-50">
                         {member.nickname}
                       </span>
                     </span>
                     {primarySession(member) && (
-                      <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
+                      <span className="px-1.5 typo-xs-r text-grey-200">
                         {primarySession(member)}
                       </span>
                     )}
@@ -164,12 +174,28 @@ export const MemberSearchModal = ({
                 key={team.teamId}
                 className="flex items-center justify-between gap-2"
               >
-                <div className="flex items-center gap-2.5 px-3 py-2">
-                  <span className="typo-sm-sb text-grey-50">{team.name}</span>
-                  <span className="px-1.5 text-xs leading-[1.4] font-normal text-grey-200">
-                    {team.memberCount}명
-                  </span>
-                </div>
+                {/* 팀을 고르는 화면이 아닌 호출부(팀 상세·팀 생성 등)에서는 눌리는
+                    컨트롤로 만들지 않는다 — 포커스만 먹고 아무 일도 안 하게 된다. */}
+                {onSelectTeam ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectTeam(team.teamId)}
+                    disabled={isSelectingTeam}
+                    className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="typo-sm-sb text-grey-50">{team.name}</span>
+                    <span className="px-1.5 typo-xs-r text-grey-200">
+                      {team.memberCount}명
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex flex-1 items-center gap-2.5 px-3 py-2">
+                    <span className="typo-sm-sb text-grey-50">{team.name}</span>
+                    <span className="px-1.5 typo-xs-r text-grey-200">
+                      {team.memberCount}명
+                    </span>
+                  </div>
+                )}
                 <RowLink label="상세보기" />
               </div>
             ))

@@ -1,6 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
-import type { Invite } from '@/entities/invite/model/types';
+import type { ApiSuccessResponse } from '@/shared/api';
 import { API_URL } from '../config';
 import type { AcceptInviteResponse } from '@/features/invite-accept/api/invite-api';
 import { updateMockNotificationInviteStatus } from '../notification/handlers';
@@ -43,17 +42,6 @@ export const mockInvitations: MockInvitationItem[] = Array.from(
     };
   },
 );
-
-const invite: Invite = {
-  id: 'invite-1',
-  bandId: 'band-1',
-  bandName: '신촌 락밴드',
-  inviteeEmail: 'member@example.com',
-  inviteCode: 'INV-team-1-DEMO1',
-  inviteLink: 'https://example.com/invites/demo',
-  token: 'token-1',
-  status: 'PENDING',
-};
 
 export const inviteHandlers = [
   http.get(`${API_URL}/invitations/received`, ({ request }) => {
@@ -100,24 +88,30 @@ export const inviteHandlers = [
     });
   }),
 
-  http.get(`${API_URL}/invites/:bandId`, () => {
-    return HttpResponse.json<ApiResponse<Invite[]>>({
-      success: true,
-      data: [invite],
-    });
-  }),
+  // 밴드 초대 전송 — 백엔드 CreateBandInvitationResult envelope 형태
+  http.post(
+    `${API_URL}/bands/:bandId/invitations`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as {
+        inviteeUserId: string;
+        message?: string;
+      };
 
-  http.post(`${API_URL}/bands/:bandId/invitations`, async ({ request }) => {
-    const body = (await request.json()) as { inviteeEmail: string };
-
-    return HttpResponse.json<ApiResponse<Invite>>({
-      success: true,
-      data: {
-        ...invite,
-        inviteeEmail: body.inviteeEmail,
-      },
-    });
-  }),
+      return HttpResponse.json({
+        status: 'success',
+        error: null,
+        message: '밴드 초대 전송 완료',
+        data: {
+          invitationId: `uuid-invite-${Date.now()}`,
+          bandId: String(params.bandId),
+          inviterUserId: 'user-001',
+          inviteeUserId: body.inviteeUserId,
+          invitationStatus: 'PENDING',
+          createdAt: new Date().toISOString(),
+        },
+      });
+    },
+  ),
 
   http.post(`${API_URL}/invitations/:inviteId/accept`, ({ params }) => {
     const inviteIdStr = String(params.inviteId);
@@ -129,8 +123,10 @@ export const inviteHandlers = [
     }
     updateMockNotificationInviteStatus(inviteIdStr, 'ACCEPTED');
 
-    return HttpResponse.json<ApiResponse<AcceptInviteResponse>>({
-      success: true,
+    return HttpResponse.json<ApiSuccessResponse<AcceptInviteResponse>>({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         invitationId: inviteIdStr,
         bandId: item?.band.bandId || 'band-123',
@@ -151,9 +147,18 @@ export const inviteHandlers = [
     }
     updateMockNotificationInviteStatus(inviteIdStr, 'DECLINED');
 
-    return HttpResponse.json<ApiResponse<void>>({
-      success: true,
-      data: undefined,
+    // 백엔드 DeclineBandInvitationResult 형태
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '밴드 초대 거절 완료',
+      data: {
+        invitationId: inviteIdStr,
+        bandId: item?.band.bandId || 'band-123',
+        userId: 'user-123',
+        invitationStatus: 'DECLINED',
+        respondedAt: new Date().toISOString(),
+      },
     });
   }),
 ];

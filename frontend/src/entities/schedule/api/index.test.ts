@@ -7,7 +7,9 @@ import { getSchedules } from './index';
 const mock = new MockAdapter(apiClient);
 
 const emptyResult = {
-  success: true,
+  status: 'success',
+  error: null,
+  message: '요청 성공',
   data: { items: [], meta: { count: 0, take: 50, cursor: null, next: null } },
 };
 

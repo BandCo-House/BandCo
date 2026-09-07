@@ -24,6 +24,7 @@ import type { DeleteBandResult } from './types/delete-band-result.type';
 import type { GetBandResult } from './types/get-band-result.type';
 import type { LeaveBandResult } from './types/leave-band-result.type';
 import type { GetMyBandsResult } from './types/my-band-list.type';
+import type { RemoveBandMemberResult } from './types/remove-band-member-result.type';
 import type { UpdateBandMemberRoleResult } from './types/update-band-member-role-result.type';
 import type { UpdateBandResult } from './types/update-band-result.type';
 import { BandsService } from './bands.service';
@@ -223,5 +224,26 @@ export class BandsController {
     const updatedMember = await this.bandsService.updateBandMemberRole(request.user.id, bandId, userId, input);
 
     return createSuccessResponse('밴드 멤버 권한이 변경되었습니다.', updatedMember);
+  }
+
+  @Delete(':bandId/users/:userId')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 멤버 강퇴' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiParam({ name: 'userId', description: '강퇴할 멤버의 유저 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 멤버 강퇴 성공' })
+  @ApiResponse({ status: 400, description: '대상이 밴드장인 경우' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '요청자가 밴드장이 아님' })
+  @ApiResponse({ status: 404, description: '밴드 또는 멤버를 찾을 수 없음' })
+  async removeBandMember(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId', ParseUUIDPipe) bandId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<ApiSuccessResponse<RemoveBandMemberResult>> {
+    const removedMember = await this.bandsService.removeBandMember(request.user.id, bandId, userId);
+
+    return createSuccessResponse('밴드 멤버를 강퇴했습니다.', removedMember);
   }
 }

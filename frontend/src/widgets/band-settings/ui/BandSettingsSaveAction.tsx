@@ -14,7 +14,7 @@ export const BandSettingsSaveAction = () => {
       type="button"
       disabled={!action.canSave || action.isSaving}
       onClick={action.save}
-      className="flex items-center gap-2.5 rounded-3xl px-3 py-2 typo-sm-m text-primary focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-grey-400"
+      className="flex items-center gap-2.5 rounded-3xl px-3 py-2 typo-sm-sb text-primary focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-grey-400"
     >
       {action.isSaving ? '저장 중...' : '저장'}
       <CheckIcon aria-hidden="true" className="size-4" />

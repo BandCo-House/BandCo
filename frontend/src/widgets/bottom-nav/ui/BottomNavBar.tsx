@@ -37,7 +37,7 @@ export function BottomNavBar({ items = NAV_ITEMS }: BottomNavBarProps) {
                 className={cn(
                   'flex flex-col items-center justify-center gap-2 py-3 transition-colors',
                   'hover:text-primary focus-visible:outline-2 focus-visible:outline-key',
-                  isActive ? 'text-primary' : 'text-gray-300',
+                  isActive ? 'text-primary' : 'text-grey-200',
                 )}
               >
                 <Icon

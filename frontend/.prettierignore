@@ -3,3 +3,6 @@ coverage
 node_modules
 public/mockServiceWorker.js
 src/routeTree.gen.ts
+# 생성물·외부 export 파일은 포맷 대상에서 제외한다
+pnpm-lock.yaml
+tokens/tokens.json

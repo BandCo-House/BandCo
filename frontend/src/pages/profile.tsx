@@ -18,6 +18,7 @@ import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
 import { compressProfileImage } from '@/features/profile-update/model/image-compression';
+import { uploadFile } from '@/shared/api/upload';
 import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
 import {
   AppDialogBody,
@@ -160,21 +161,15 @@ function ProfileRoutePage() {
       };
 
       if (avatarFile) {
-        const formData = new FormData();
-        formData.append(
-          'profile',
-          new Blob([JSON.stringify(profilePayload)], {
-            type: 'application/json',
-          }),
-        );
-        formData.append('avatar', avatarFile);
-        await updateUserProfile(targetUserId, formData);
+        const uploadedAvatarUrl = await uploadFile(avatarFile, 'profiles');
+        profilePayload.avatarUrl = uploadedAvatarUrl;
       } else {
         profilePayload.avatarUrl = validatedData.avatarUrl || null;
-        await updateUserProfile(targetUserId, {
-          profile: profilePayload,
-        });
       }
+
+      await updateUserProfile(targetUserId, {
+        profile: profilePayload,
+      });
 
       queryClient.invalidateQueries({
         queryKey: ['user-profiles', 'detail', targetUserId],
@@ -237,10 +232,10 @@ function ProfileRoutePage() {
 
   if (loading && !profile) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
+      <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-12 animate-spin rounded-full border-4 border-violet-500 border-t-transparent"></div>
-          <span className="typo-md-m text-violet-400">
+          <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <span className="typo-sm-r text-grey-300">
             프로필 정보를 불러오는 중입니다.
           </span>
         </div>
@@ -250,8 +245,8 @@ function ProfileRoutePage() {
 
   if (!profile) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-slate-950 text-slate-200">
-        <span className="typo-lg-b text-rose-500">
+      <div className="flex h-[80vh] items-center justify-center">
+        <span className="typo-sm-r text-destructive">
           존재하지 않는 유저 프로필입니다.
         </span>
       </div>
@@ -324,7 +319,7 @@ function ProfileRoutePage() {
             open={isInviting}
             onOpenChange={setIsInviting}
             inviteeName={profileName}
-            inviteeEmail={profile.user.email}
+            inviteeUserId={profile.user.id}
             isLoggedIn={auth.user.isLoggedIn}
           />
         )}
@@ -344,7 +339,7 @@ function ProfileRoutePage() {
         >
           <AppDialogContent className="max-w-[calc(100%-2rem)] p-8 sm:max-w-2xl">
             <AppDialogBody className="items-center gap-6 text-center">
-              <DialogTitle className="text-3xl text-grey-50">
+              <DialogTitle className="typo-xl-sb text-grey-50">
                 편집 모드를 나가시겠습니까?
               </DialogTitle>
               <p className="typo-lg-sb text-grey-100">

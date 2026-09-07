@@ -1,7 +1,6 @@
 import { Search } from 'lucide-react';
 import { BandList } from '@/widgets/band-list/ui/BandList';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import SettingIcon from '@/assets/icons/setting.svg?react';
 import { NotificationBellLink } from '@/entities/notification/ui/NotificationBellLink';
 
 // 내 밴드 전용 우측 다중 아이콘 액션 버튼. 알림 벨은 홈과 같은 공용 컴포넌트를 쓴다.
@@ -16,6 +15,7 @@ function MyBandsHeaderActions() {
         <Search aria-hidden="true" className="size-6" />
       </Link>
       <NotificationBellLink />
+      {/* TODO: 밴드 리스트 수정 작업 때 다시 도입한다. 그때까지는 노출하지 않는다.
       <Link
         to="/profile"
         aria-label="마이 페이지"
@@ -23,6 +23,7 @@ function MyBandsHeaderActions() {
       >
         <SettingIcon aria-hidden="true" className="size-5" />
       </Link>
+      */}
     </div>
   );
 }

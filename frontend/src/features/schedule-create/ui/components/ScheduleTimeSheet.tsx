@@ -1,6 +1,8 @@
 import { pad2, type WheelDate } from '@/shared/ui/wheel-date';
 import { WheelTimePicker } from '@/shared/ui/wheel-time-picker';
 import { useFieldRequired } from '@/shared/ui/field-context';
+import { GlassRim } from '@/shared/ui/glass-rim';
+import { GlowBlob } from '@/shared/ui/glow-blob';
 
 interface ScheduleTimeSheetProps {
   /** 스케줄 화면에서 보고 있던 날짜(읽기 전용). 휠로 바꾸지 않는다. */
@@ -36,7 +38,7 @@ const Row = ({
 }) => (
   // 날짜+시간 휠이 한 줄에 안 들어가면 줄바꿈해 가운데 정렬로 재배치한다(좁은 화면 대응).
   // 줄바꿈됐을 때 날짜와 휠이 붙어 보이지 않도록 세로 간격(gap-y)을 넉넉히 둔다.
-  <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-5">
+  <div className="relative z-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-5">
     <span className="min-w-[92px] typo-base-sb text-grey-50">
       {formatDate(date)}
     </span>
@@ -63,8 +65,10 @@ export const ScheduleTimeSheet = ({
       role="group"
       aria-label="시작·종료 시간"
       aria-required={fieldRequired || undefined}
-      className="flex flex-col gap-6 rounded-md field-border border-surface-1 bg-white/24 px-5 py-8 shadow-[0px_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-md"
+      className="relative flex flex-col gap-6 overflow-hidden rounded-md field-border border-surface-1 bg-white/24 px-5 py-8 shadow-[0px_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-md"
     >
+      <GlassRim />
+      <GlowBlob />
       <Row date={date} time={startTime} onChange={onStartTimeChange} />
       <Row date={endDate} time={endTime} onChange={onEndTimeChange} />
     </div>

@@ -5,6 +5,7 @@ import {
   SheetTitle,
 } from '@/shared/ui/sheet';
 import type { NotificationItem } from '@/entities/notification/model/types';
+import { GlassRim } from '@/shared/ui/glass-rim';
 import { GlowBlob } from '@/shared/ui/glow-blob';
 
 type NotificationCardMenuSheetProps = {
@@ -57,6 +58,7 @@ export const NotificationCardMenuSheet = ({
         <div className="relative flex w-full flex-col overflow-hidden rounded-[20px] border border-b-[2px] border-[rgba(220,226,249,0.4)] bg-white/24 p-0 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px]">
           {/* Glow Background */}
           <GlowBlob className="absolute -top-[500px] right-auto bottom-auto left-0 h-[678px] w-full" />
+          <GlassRim />
           {/* Hidden Header for Accessibility */}
           <SheetHeader className="sr-only">
             <SheetTitle>알림 옵션</SheetTitle>
@@ -67,10 +69,10 @@ export const NotificationCardMenuSheet = ({
             type="button"
             disabled={isInviteActionDisabled}
             onClick={handleAction}
-            className={`relative z-10 flex h-[60px] w-full items-center justify-center border-b border-white/10 text-center text-xl leading-7 font-semibold transition-colors ${
+            className={`relative z-10 flex h-[60px] w-full items-center justify-center border-b border-white/10 text-center typo-lg-sb transition-colors ${
               isInviteActionDisabled
-                ? 'cursor-not-allowed text-[#DFDFE1]/40'
-                : 'cursor-pointer text-[#DFDFE1] hover:bg-white/5 active:bg-white/10'
+                ? 'cursor-not-allowed text-grey-100/40'
+                : 'cursor-pointer text-grey-100 hover:bg-white/5 active:bg-white/10'
             }`}
           >
             <span className="relative z-10">
@@ -89,10 +91,10 @@ export const NotificationCardMenuSheet = ({
             type="button"
             disabled={noti.isRead}
             onClick={handleMarkAsRead}
-            className={`relative z-10 flex h-[60px] w-full items-center justify-center text-center text-xl leading-7 font-semibold transition-colors ${
+            className={`relative z-10 flex h-[60px] w-full items-center justify-center text-center typo-lg-sb transition-colors ${
               noti.isRead
-                ? 'cursor-not-allowed text-[#DFDFE1]/40'
-                : 'cursor-pointer text-[#DFDFE1] hover:bg-white/5 active:bg-white/10'
+                ? 'cursor-not-allowed text-grey-100/40'
+                : 'cursor-pointer text-grey-100 hover:bg-white/5 active:bg-white/10'
             }`}
           >
             <span className="relative z-10">읽음 처리</span>
@@ -104,11 +106,12 @@ export const NotificationCardMenuSheet = ({
         <button
           type="button"
           onClick={handleClose}
-          className="relative flex h-[60px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-[20px] border border-b-[2px] border-[rgba(220,226,249,0.4)] bg-white/24 text-xl leading-7 font-semibold text-[#DFDFE1] shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px] transition-colors hover:bg-white/5 active:bg-white/10"
+          className="relative flex h-[60px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-[20px] border border-b-[2px] border-[rgba(220,226,249,0.4)] bg-white/24 typo-lg-sb text-grey-100 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px] transition-colors hover:bg-white/5 active:bg-white/10"
         >
           <span className="relative z-10">이전</span>
           {/* Glow Background */}
           <GlowBlob className="absolute -top-[550px] right-auto bottom-auto left-0 h-[678px] w-full" />
+          <GlassRim />
         </button>
       </SheetContent>
     </Sheet>

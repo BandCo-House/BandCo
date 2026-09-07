@@ -1,6 +1,6 @@
 import { apiPatch } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
-import { profileResponseSchema } from '@/entities/profile/model/schema';
+import { profileSchema } from '@/entities/profile/model/schema';
 import type { ProfileMusic } from '@/entities/profile/model/types';
 
 export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
@@ -45,5 +45,5 @@ export const updateUserProfile = (
           transformRequest: [(requestData) => requestData],
         }
       : undefined,
-  ).then((result) => profileResponseSchema.parse(result));
+  ).then((result) => profileSchema.parse(result));
 };

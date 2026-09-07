@@ -98,7 +98,7 @@ export const SpaceCreateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[85vh] flex-col gap-10 p-5 text-grey-50">
+      <AppDialogContent className="flex max-h-[85dvh] flex-col gap-10 p-5 text-grey-50">
         <AppDialogClose
           className="top-5 right-5"
           aria-label="합주 공간 만들기 닫기"
@@ -151,9 +151,17 @@ export const SpaceCreateModal = ({
 
             {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
             <div className="flex h-[232px] flex-col justify-center gap-6 rounded-md field-border border-surface-1 bg-grey-600/20 px-2.5 backdrop-blur-md">
-              <WheelDatePicker value={startDate} onChange={setStartDate} />
+              <WheelDatePicker
+                label="시작"
+                value={startDate}
+                onChange={setStartDate}
+              />
               {hasEnd ? (
-                <WheelDatePicker value={endDate} onChange={setEndDate} />
+                <WheelDatePicker
+                  label="종료"
+                  value={endDate}
+                  onChange={setEndDate}
+                />
               ) : (
                 <p className="text-center typo-xs-sb text-grey-50">
                   정해진 기간이 없는 합주 공간
@@ -162,7 +170,7 @@ export const SpaceCreateModal = ({
             </div>
             {/* 주변에 다른 요소가 없어 absolute로 띄워 레이아웃을 밀지 않는다. */}
             {endBeforeStart && (
-              <p className="absolute top-full mt-1 typo-xs-m text-destructive">
+              <p className="absolute top-full mt-1 typo-sm-r text-destructive">
                 종료 날짜는 시작 날짜 이후여야 해요.
               </p>
             )}

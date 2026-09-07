@@ -18,7 +18,7 @@ describe('createBand 어댑터', () => {
       visibility: true,
     };
     const responseData = {
-      items: {
+      band: {
         id: 'band-123',
         name: '우리 밴드',
         description: '주 1회 합주',
@@ -53,7 +53,7 @@ describe('createBand 어댑터', () => {
 
     const result = await createBand(requestBody);
 
-    expect(result).toEqual(responseData.items);
+    expect(result).toEqual(responseData.band);
   });
 
   it('name, description, visibility가 서버에 그대로 전달된다', async () => {
@@ -68,7 +68,7 @@ describe('createBand 어댑터', () => {
           error: null,
           message: '밴드 생성 성공',
           data: {
-            items: {
+            band: {
               id: 'band-456',
               name: '테스트 밴드',
               description: null,
@@ -87,7 +87,11 @@ describe('createBand 어댑터', () => {
       ];
     });
 
-    await createBand({ name: '테스트 밴드', description: null, visibility: true });
+    await createBand({
+      name: '테스트 밴드',
+      description: null,
+      visibility: true,
+    });
 
     expect(capturedBody).toEqual({
       name: '테스트 밴드',
@@ -113,7 +117,7 @@ describe('createBand 어댑터', () => {
       error: null,
       message: '밴드 생성 성공',
       data: {
-        items: {
+        band: {
           id: 'band-123',
           // name is omitted (required field)
           description: '주 1회 합주',
@@ -131,7 +135,11 @@ describe('createBand 어댑터', () => {
     });
 
     await expect(
-      createBand({ name: '우리 밴드', description: '주 1회 합주', visibility: true }),
+      createBand({
+        name: '우리 밴드',
+        description: '주 1회 합주',
+        visibility: true,
+      }),
     ).rejects.toThrow();
   });
 });

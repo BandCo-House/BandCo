@@ -104,15 +104,15 @@ export const NotificationCard = ({
       {/* 알림 상세 텍스트 */}
       <div className="flex flex-1 flex-col justify-center gap-0.5">
         <h3
-          className={`pr-6 typo-sm-b ${
-            !noti.isRead ? 'text-white' : 'text-[#C6C6C8]'
+          className={`pr-6 typo-base-sb ${
+            !noti.isRead ? 'text-white' : 'text-grey-200'
           }`}
         >
           {noti.title}
         </h3>
         <p
-          className={`line-clamp-1 pr-6 typo-xs-m ${
-            !noti.isRead ? 'text-[#C6C6C8]' : 'text-[#9D9D9F]'
+          className={`line-clamp-1 pr-6 typo-sm-r ${
+            !noti.isRead ? 'text-grey-200' : 'text-grey-300'
           }`}
         >
           {noti.type === 'INVITE' && noti.reference?.sender?.nickname
@@ -129,18 +129,18 @@ export const NotificationCard = ({
                 e.stopPropagation();
                 setIsInviteSheetOpen(true);
               }}
-              className="typo-xs-m text-[#9CA578] underline transition-opacity hover:opacity-80"
+              className="typo-xs-sb text-[#9CA578] underline transition-opacity hover:opacity-80"
             >
               초대장 보기
             </button>
 
             {/* 수락 / 수락됨 / 거절됨 상태 분기 */}
             {noti.reference?.status === 'DECLINED' ? (
-              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#9D9D9F] bg-[rgba(39,43,34,0.4)] px-4 py-1.5 typo-xs-m text-[#9D9D9F] select-none">
+              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#9D9D9F] bg-[rgba(39,43,34,0.4)] px-4 py-1.5 typo-xs-sb text-grey-300 select-none">
                 거절됨
               </div>
             ) : noti.reference?.status === 'ACCEPTED' ? (
-              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-m text-[#C6C6C8] select-none">
+              <div className="flex cursor-default items-center gap-1 rounded-full border border-[#C6C6C8] bg-[rgba(39,43,34,0.8)] px-4 py-1.5 typo-xs-sb text-grey-200 select-none">
                 수락됨
               </div>
             ) : (
@@ -165,7 +165,7 @@ export const NotificationCard = ({
                     );
                   }
                 }}
-                className="flex items-center gap-2.5 rounded-full border border-primary px-4 py-1.5 typo-xs-m text-primary transition-all hover:bg-primary hover:text-black"
+                className="flex items-center gap-2.5 rounded-full border border-primary px-4 py-1.5 typo-xs-sb text-primary transition-all hover:bg-primary hover:text-black"
               >
                 수락
                 <Check size={16} />

@@ -76,7 +76,7 @@ function OnboardingPage() {
       <div
         role="status"
         aria-live="polite"
-        className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl items-center justify-center typo-base-m text-grey-200"
+        className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl items-center justify-center typo-base-sb text-grey-200"
       >
         온보딩 정보를 불러오는 중입니다.
       </div>
@@ -86,12 +86,12 @@ function OnboardingPage() {
   if (genreOptionsQuery.isError || partOptionsQuery.isError) {
     return (
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl flex-col items-center justify-center gap-5 text-center">
-        <p className="typo-base-m text-grey-200">
+        <p className="typo-base-sb text-grey-200">
           온보딩 정보를 불러오지 못했습니다.
         </p>
         <button
           type="button"
-          className="rounded-full border border-key-muted px-6 py-3 typo-base-m text-grey-200"
+          className="rounded-full border border-key-muted px-6 py-3 typo-base-sb text-grey-200"
           onClick={() => {
             void genreOptionsQuery.refetch();
             void partOptionsQuery.refetch();

@@ -29,7 +29,10 @@ describe('① Request Interceptor — Access Token 주입', () => {
     let capturedAuth = '';
     mock.onGet('/teams').reply((config) => {
       capturedAuth = config.headers?.Authorization ?? '';
-      return [200, { success: true, data: [] }];
+      return [
+        200,
+        { status: 'success', error: null, message: '요청 성공', data: [] },
+      ];
     });
 
     await apiClient.get('/teams');
@@ -40,7 +43,10 @@ describe('① Request Interceptor — Access Token 주입', () => {
     let capturedAuth: string | undefined = 'should-be-undefined';
     mock.onGet('/teams').reply((config) => {
       capturedAuth = config.headers?.Authorization;
-      return [200, { success: true, data: [] }];
+      return [
+        200,
+        { status: 'success', error: null, message: '요청 성공', data: [] },
+      ];
     });
 
     await apiClient.get('/teams');
@@ -61,13 +67,21 @@ describe('② Response Interceptor — 401 토큰 갱신', () => {
       callCount++;
       lastAuth = config.headers?.Authorization ?? '';
       if (callCount === 1) return [401, null];
-      return [200, { success: true, data: [{ id: 1 }] }];
+      return [
+        200,
+        {
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: [{ id: 1 }],
+        },
+      ];
     });
 
     mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply((config) => {
       refreshAuth = config.headers?.Authorization ?? '';
       return [
-        201,
+        200,
         {
           status: 'success',
           error: null,
@@ -81,7 +95,12 @@ describe('② Response Interceptor — 401 토큰 갱신', () => {
     expect(callCount).toBe(2);
     expect(refreshAuth).toBe('Bearer valid-refresh-token');
     expect(lastAuth).toBe('Bearer new-access-token');
-    expect(res.data).toEqual({ success: true, data: [{ id: 1 }] });
+    expect(res.data).toEqual({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
+      data: [{ id: 1 }],
+    });
   });
 
   it('access token 재발급 성공 후 localStorage의 access token만 새 값으로 교체된다', async () => {
@@ -90,7 +109,10 @@ describe('② Response Interceptor — 401 토큰 갱신', () => {
     mock.onGet('/teams').reply((config) => {
       if (config.headers?.Authorization === 'Bearer expired-token')
         return [401, null];
-      return [200, { success: true, data: [] }];
+      return [
+        200,
+        { status: 'success', error: null, message: '요청 성공', data: [] },
+      ];
     });
 
     mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply(200, {
@@ -116,22 +138,41 @@ describe('③ 동시 요청 큐 (processQueue)', () => {
     mock.onGet('/teams').reply((config) => {
       if (config.headers?.Authorization === 'Bearer expired-token')
         return [401, null];
-      return [200, { success: true, data: 'teams' }];
+      return [
+        200,
+        { status: 'success', error: null, message: '요청 성공', data: 'teams' },
+      ];
     });
     mock.onGet('/schedules').reply((config) => {
       if (config.headers?.Authorization === 'Bearer expired-token')
         return [401, null];
-      return [200, { success: true, data: 'schedules' }];
+      return [
+        200,
+        {
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: 'schedules',
+        },
+      ];
     });
     mock.onGet('/notifications').reply((config) => {
       if (config.headers?.Authorization === 'Bearer expired-token')
         return [401, null];
-      return [200, { success: true, data: 'notifications' }];
+      return [
+        200,
+        {
+          status: 'success',
+          error: null,
+          message: '요청 성공',
+          data: 'notifications',
+        },
+      ];
     });
     mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply(() => {
       refreshCount++;
       return [
-        201,
+        200,
         {
           status: 'success',
           error: null,
@@ -198,5 +239,32 @@ describe('④ 로그아웃 처리', () => {
     expect(localStorage.getItem('access_token')).toBeNull();
     expect(localStorage.getItem('refresh_token')).toBeNull();
     expect(window.location.href).toBe('/login');
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+describe('⑤ 로그인 요청의 401', () => {
+  it('로그인 요청이 401이면 토큰 갱신을 시도하지 않고 그대로 reject되며 /login 이동도 없다', async () => {
+    let refreshCount = 0;
+
+    mock
+      .onPost('/auth/login/email')
+      .reply(401, { message: '비밀번호가 일치하지 않습니다.' });
+    mock.onPost(ACCESS_TOKEN_REFRESH_ENDPOINT).reply(() => {
+      refreshCount++;
+      return [
+        200,
+        {
+          status: 'success',
+          error: null,
+          message: '액세스 토큰 재발급 성공',
+          data: { accessToken: 'new-access-token' },
+        },
+      ];
+    });
+
+    await expect(apiClient.post('/auth/login/email', {})).rejects.toThrow();
+    expect(refreshCount).toBe(0);
+    expect(window.location.href).not.toBe('/login');
   });
 });

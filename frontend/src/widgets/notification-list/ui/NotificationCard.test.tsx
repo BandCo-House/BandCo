@@ -63,7 +63,7 @@ describe('NotificationCard', () => {
     const cardDiv = container.firstChild as HTMLElement;
 
     expect(cardDiv).toHaveClass('bg-[rgba(101,99,122,0.48)]');
-    expect(screen.getByText('새로운 공지사항')).toHaveClass('text-[#C6C6C8]');
+    expect(screen.getByText('새로운 공지사항')).toHaveClass('text-grey-200');
   });
 
   it('알림 카드 클릭 시 onAction 콜백이 호출된다', () => {

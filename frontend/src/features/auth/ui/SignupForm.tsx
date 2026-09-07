@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import CheckIcon from '@/assets/icons/check.svg?react';
 import { checkEmailDuplicate } from '../api/auth.service';
@@ -40,9 +41,7 @@ type TermsState = {
 };
 
 type EmailDuplicateStatus = 'idle' | 'checking' | 'available' | 'duplicated';
-type SignupFormErrors = Partial<
-  Record<keyof SignupReq | 'requiredTerms', string>
->;
+type SignupFormErrors = Partial<Record<keyof SignupReq, string>>;
 
 interface TermsCheckboxRowProps {
   id: keyof TermsState;
@@ -110,10 +109,10 @@ const SignupInput = ({
         {action}
       </div>
       {helperText && !errorMessage ? (
-        <p className="typo-xs-m text-grey-200">{helperText}</p>
+        <p className="typo-sm-r text-grey-200">{helperText}</p>
       ) : null}
       {errorMessage ? (
-        <p className="typo-xs-m text-destructive">{errorMessage}</p>
+        <p className="typo-sm-r text-destructive">{errorMessage}</p>
       ) : null}
     </div>
   );
@@ -136,11 +135,11 @@ const TermsCheckboxRow = ({
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
       />
-      <span className="min-w-0 flex-1 typo-sm-m">{children}</span>
+      <span className="min-w-0 flex-1 typo-sm-sb">{children}</span>
       {showMore ? (
         <button
           type="button"
-          className="inline-flex items-center gap-1 px-1 typo-sm-m"
+          className="inline-flex items-center gap-1 px-1 typo-sm-sb"
         >
           더보기
           <ArrowRightIcon aria-hidden="true" className="size-5" />
@@ -181,7 +180,7 @@ const EmailDuplicateResult = ({ status }: EmailDuplicateResultProps) => {
           'flex h-14 items-center justify-center overflow-hidden rounded-full transition-transform duration-300 ease-out',
           isVisible ? 'scale-100' : 'pointer-events-none scale-90',
           isDuplicated
-            ? 'border border-primary px-6 typo-base-m text-foreground'
+            ? 'border border-primary px-6 typo-base-sb text-foreground'
             : 'w-14 border border-primary bg-transparent text-primary',
         )}
       >
@@ -203,7 +202,7 @@ const PasswordConfirmAction = ({
 }: PasswordConfirmActionProps) => {
   if (!isPasswordConfirmed) {
     return (
-      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-primary px-6 typo-base-m text-foreground">
+      <div className="mb-1 flex h-14 shrink-0 items-center rounded-full border border-primary px-6 typo-base-sb text-foreground">
         불일치
       </div>
     );
@@ -250,7 +249,9 @@ export const SignupForm = ({
     formData.email.length > 0 &&
     formData.password.length > 0 &&
     passwordConfirm.length > 0;
-  const canAttemptSubmit = isRequiredFieldsFilled && isRequiredTermsChecked;
+  // 약관 동의는 여기 넣지 않는다. 넣으면 버튼이 disabled로 막혀 handleSubmit이
+  // 돌지 않고, 사용자는 왜 못 누르는지 알 수 없다. 누르게 두고 스낵바로 알린다.
+  const canAttemptSubmit = isRequiredFieldsFilled;
 
   /**
    * 입력 필드의 id를 기준으로 회원가입 폼 상태를 갱신한다.
@@ -356,11 +357,12 @@ export const SignupForm = ({
       nextErrors.email = '이미 사용 중인 이메일입니다.';
     }
 
+    // 약관 동의는 특정 입력칸에 붙지 않는 폼 단위 경고라 스낵바로 알린다.
     if (!isRequiredTermsChecked) {
-      nextErrors.requiredTerms = '필수 이용약관에 동의해주세요.';
+      toast.error('필수 이용약관에 동의해주세요.');
     }
 
-    if (Object.keys(nextErrors).length > 0) {
+    if (Object.keys(nextErrors).length > 0 || !isRequiredTermsChecked) {
       setErrors(nextErrors);
       return;
     }
@@ -395,7 +397,7 @@ export const SignupForm = ({
                 size="sm"
                 disabled={emailDuplicateStatus === 'checking'}
                 onClick={handleEmailDuplicateCheck}
-                className="mb-1 h-14 shrink-0 rounded-full border-primary px-6 typo-base-m text-foreground"
+                className="mb-1 h-14 shrink-0 rounded-full border-primary px-6 typo-base-sb text-foreground"
               >
                 {emailDuplicateStatus === 'checking' ? '확인 중' : '중복 확인'}
               </Button>
@@ -462,9 +464,6 @@ export const SignupForm = ({
               개인정보 수집 및 이용 동의(필수)
             </TermsCheckboxRow>
           </div>
-          {errors.requiredTerms ? (
-            <p className="typo-xs-m text-destructive">{errors.requiredTerms}</p>
-          ) : null}
         </section>
 
         <Button

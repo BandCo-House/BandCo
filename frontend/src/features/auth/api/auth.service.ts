@@ -1,15 +1,6 @@
-import { apiClient } from '@/shared/api/client';
+import { apiPost } from '@/shared/api/client';
 import { type TokenResponse } from '@/shared/api/types';
 import { type SignupReq } from '../model/auth.schema';
-
-type BackendSuccessResponse<T> = {
-  status: 'success';
-  error: null;
-  message: string;
-  data: T;
-};
-
-type BackendEmailCheckResponse = BackendSuccessResponse<{ email: string }>;
 
 export type EmailDuplicateCheckResponse = {
   duplicated: boolean;
@@ -23,28 +14,21 @@ export type EmailDuplicateCheckResponse = {
 export const registerEmail = async (
   data: SignupReq,
 ): Promise<TokenResponse> => {
-  const response = await apiClient.post<BackendSuccessResponse<TokenResponse>>(
-    '/auth/register/email',
-    data,
-  );
-
-  return response.data.data;
+  return apiPost<TokenResponse>('/auth/register/email', data);
 };
 
 /**
- * 이메일 중복 여부를 확인한다.
+ * 이메일 중복 여부를 확인한다(POST /auth/email). 백엔드가 `duplicated` 플래그를 준다.
  */
 export const checkEmailDuplicate = async (
   email: string,
 ): Promise<EmailDuplicateCheckResponse> => {
-  const response = await apiClient.post<BackendEmailCheckResponse>(
+  const { duplicated } = await apiPost<{ email: string; duplicated: boolean }>(
     '/auth/email',
     { email },
   );
 
-  return {
-    duplicated: response.data.message.includes('중복'),
-  };
+  return { duplicated };
 };
 
 /**
@@ -60,7 +44,7 @@ export const loginEmail = async (
   // email:password 형태를 base64로 인코딩
   const credentials = btoa(`${email}:${password}`);
 
-  const response = await apiClient.post<BackendSuccessResponse<TokenResponse>>(
+  return apiPost<TokenResponse>(
     '/auth/login/email',
     {},
     {
@@ -69,6 +53,13 @@ export const loginEmail = async (
       },
     },
   );
+};
 
-  return response.data.data;
+/**
+ * Google 로그인
+ * @param idToken Google Identity Services에서 받은 ID 토큰
+ * @returns accessToken, refreshToken
+ */
+export const loginGoogle = async (idToken: string): Promise<TokenResponse> => {
+  return apiPost<TokenResponse>('/auth/login/google', { idToken });
 };

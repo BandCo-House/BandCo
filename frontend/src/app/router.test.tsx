@@ -170,7 +170,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    expect(await screen.findByText('AdminPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('admin-page')).toBeInTheDocument();
   });
 
   it('밴드 곡 라이브러리 경로에서는 곡 라이브러리 탭이 active 상태다', async () => {
@@ -181,7 +181,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('SongsPage');
+    await screen.findByTestId('songs-page');
 
     expect(screen.getByRole('link', { name: '곡 라이브러리' })).toHaveAttribute(
       'data-variant',
@@ -201,10 +201,10 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('SongsPage');
+    await screen.findByTestId('songs-page');
     fireEvent.click(screen.getByRole('link', { name: '캘린더' }));
 
-    expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('band-detail-page')).toBeInTheDocument();
   });
 
   it('루트 경로에서는 헤더에 BandCo 워드마크를 렌더링해야 한다', async () => {
@@ -257,7 +257,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('BandDetailPage');
+    await screen.findByTestId('band-detail-page');
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
     expect(
@@ -280,20 +280,6 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
-  it('팀 상세의 뒤로가기는 해당 곡의 팀 목록으로 이동한다', async () => {
-    const router = createRouterForTest('/song/1/team/1', {
-      isLoggedIn: true,
-      isAdmin: false,
-    });
-
-    renderWithRouter(router);
-
-    await screen.findByText('TeamDetailPage');
-    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
-
-    expect(await screen.findByText('SongTeamsPage')).toBeInTheDocument();
-  });
-
   it('공연 상세(캘린더)의 뒤로가기는 밴드 상세로 이동한다', async () => {
     const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,
@@ -302,10 +288,10 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('BandPerformancePage');
+    await screen.findByTestId('band-performance-page');
     fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }));
 
-    expect(await screen.findByText('BandDetailPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('band-detail-page')).toBeInTheDocument();
   });
 
   it('밴드 라이브러리 경로에서는 라이브러리 탭이 active 상태다', async () => {
@@ -316,7 +302,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('BandLibraryPage');
+    await screen.findByTestId('band-library-page');
 
     const tabs = within(
       screen.getByRole('navigation', { name: '밴드 메인 탭' }),
@@ -338,7 +324,7 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('BandArchivePage');
+    await screen.findByTestId('band-archive-page');
 
     const tabs = within(
       screen.getByRole('navigation', { name: '밴드 메인 탭' }),
@@ -357,12 +343,12 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
 
-    await screen.findByText('BandDetailPage');
+    await screen.findByTestId('band-detail-page');
     const tabs = within(
       screen.getByRole('navigation', { name: '밴드 메인 탭' }),
     );
     fireEvent.click(tabs.getByRole('link', { name: '라이브러리' }));
 
-    expect(await screen.findByText('BandLibraryPage')).toBeInTheDocument();
+    expect(await screen.findByTestId('band-library-page')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ApiResponse } from '@/shared/api';
+import type { ApiSuccessResponse } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
 import type { ProfileMusicPreview } from '@/entities/profile/api/profile-music-api';
 import type { UpdateProfileRequest } from '@/features/profile-update/api/profile-api';
@@ -110,27 +110,10 @@ const mockProfiles: Record<string, Profile> = {
   },
 };
 
-const createProfileResponseData = (profile: Profile) => {
-  const profileMusic = profile.profile?.profileMusic ?? null;
-  const profileDetail = profile.profile
-    ? {
-        nickname: profile.profile.nickname,
-        selfDescription: profile.profile.selfDescription,
-        avatarUrl: profile.profile.avatarUrl,
-      }
-    : null;
-
-  return {
-    ...profile,
-    profile: profileDetail,
-    profileMusic,
-  };
-};
-
 export const profileHandlers = [
   http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
     const url = new URL(request.url);
-    const query = (url.searchParams.get('query') ?? '').trim().toLowerCase();
+    const query = (url.searchParams.get('q') ?? '').trim().toLowerCase();
     const items = query
       ? profileMusicPreviews.filter(
           (track) =>
@@ -139,9 +122,11 @@ export const profileHandlers = [
         )
       : [];
 
-    return HttpResponse.json<ApiResponse<ProfileMusicPreview[]>>({
-      success: true,
-      data: items,
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '프로필 음악 검색 성공',
+      data: { items },
     });
   }),
 
@@ -152,19 +137,20 @@ export const profileHandlers = [
     if (!userProfile) {
       return HttpResponse.json(
         {
+          status: 'fail',
+          error: { code: 'NOT_FOUND', details: { statusCode: 404 } },
           message: '존재하지 않는 유저입니다.',
-          error: 'Not Found',
-          statusCode: 404,
+          data: {},
         },
         { status: 404 },
       );
     }
 
-    return HttpResponse.json({
+    return HttpResponse.json<ApiSuccessResponse<Profile>>({
       status: 'success',
       error: null,
-      message: '유저 프로필 조회 성공',
-      data: createProfileResponseData(userProfile),
+      message: '요청 성공',
+      data: userProfile,
     });
   }),
 
@@ -265,11 +251,11 @@ export const profileHandlers = [
         }));
       }
 
-      return HttpResponse.json({
+      return HttpResponse.json<ApiSuccessResponse<Profile>>({
         status: 'success',
         error: null,
-        message: '유저 프로필 수정 성공',
-        data: createProfileResponseData(current),
+        message: '요청 성공',
+        data: current,
       });
     },
   ),

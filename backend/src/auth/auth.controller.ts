@@ -4,6 +4,7 @@ import { ApiBasicAuth, ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from 
 import { type ApiSuccessResponse, createSuccessResponse } from '../common/api-response';
 
 import { CheckEmailDto } from './dto/check-email.dto';
+import { LoginGoogleDto } from './dto/login-google.dto';
 import { RegisterEmailDto } from './dto/register-email.dto';
 import { BasicTokenGuard } from './guard/basic-token.guard';
 import { RefreshTokenGuard } from './guard/bearer-token.guard';
@@ -51,6 +52,16 @@ export class AuthController {
     return createSuccessResponse('로그인 성공', tokens);
   }
 
+  @Post('login/google')
+  @ApiOperation({ summary: 'Google 로그인' })
+  @ApiResponse({ status: 201, description: '로그인 성공 (신규 가입·기존 연결 모두 동일 응답)' })
+  @ApiResponse({ status: 400, description: '유효성 검사 실패 (idToken 누락)' })
+  @ApiResponse({ status: 401, description: '유효하지 않은 Google 토큰 | 이메일 미인증 Google 계정 | 탈퇴한 계정' })
+  async loginGoogle(@Body() { idToken }: LoginGoogleDto): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
+    const tokens = await this.authService.loginWithGoogle(idToken);
+    return createSuccessResponse('로그인 성공', tokens);
+  }
+
   @Post('register/email')
   @ApiOperation({ summary: '이메일 회원가입' })
   @ApiResponse({ status: 201, description: '회원가입 성공' })
@@ -66,9 +77,9 @@ export class AuthController {
   @ApiOperation({ summary: '이메일 중복 확인' })
   @ApiResponse({ status: 201, description: '이메일 중복 확인 성공' })
   @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async checkEmail(@Body() { email }: CheckEmailDto): Promise<ApiSuccessResponse<{ email: string }>> {
+  async checkEmail(@Body() { email }: CheckEmailDto): Promise<ApiSuccessResponse<{ email: string; duplicated: boolean }>> {
     const isDuplicate = await this.authService.checkEmailDuplicate(email);
     const message = isDuplicate ? '중복 된 이메일입니다.' : '사용할 수 있는 이메일입니다.';
-    return createSuccessResponse(message, { email });
+    return createSuccessResponse(message, { email, duplicated: isDuplicate });
   }
 }

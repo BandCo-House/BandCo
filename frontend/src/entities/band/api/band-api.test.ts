@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 
 import { apiClient } from '@/shared/api/client';
-import { getBands, getMyBands } from './band-api';
+import { getMyBands } from './band-api';
 
 const mock = new MockAdapter(apiClient);
 
@@ -10,9 +10,9 @@ afterEach(() => {
   mock.reset();
 });
 
-describe('getBands 어댑터', () => {
-  it('GET /bands 응답을 schema로 검증한 뒤 bands를 반환한다', async () => {
-    mock.onGet('/bands').reply(200, {
+describe('getMyBands 어댑터', () => {
+  it('GET /bands/me 응답을 schema로 검증한 뒤 bands를 반환한다', async () => {
+    mock.onGet('/bands/me').reply(200, {
       status: 'success',
       error: null,
       message: '내 밴드 목록 조회 성공',
@@ -33,16 +33,13 @@ describe('getBands 어댑터', () => {
         meta: {
           count: 1,
           take: 20,
-          cursor: {
-            createdAt: '2026-03-01T12:00:00.000+09:00',
-            id: 'band-1',
-          },
+          cursor: null,
           next: null,
         },
       },
     });
 
-    await expect(getBands()).resolves.toEqual([
+    await expect(getMyBands()).resolves.toEqual([
       {
         id: 'band-1',
         name: '합주하자',
@@ -58,7 +55,7 @@ describe('getBands 어댑터', () => {
   });
 
   it('필수 필드가 누락되면 reject된다', async () => {
-    mock.onGet('/bands').reply(200, {
+    mock.onGet('/bands/me').reply(200, {
       status: 'success',
       error: null,
       message: '내 밴드 목록 조회 성공',
@@ -74,48 +71,9 @@ describe('getBands 어댑터', () => {
             createdAt: '2026-03-01T12:00:00.000+09:00',
           },
         ],
-        meta: {
-          count: 1,
-          take: 20,
-          cursor: null,
-          next: null,
-        },
       },
     });
 
-    await expect(getBands()).rejects.toThrow();
-  });
-
-  it('GET /bands/me의 커서 페이지 응답에서 내 밴드 목록을 반환한다', async () => {
-    mock.onGet('/bands/me').reply(200, {
-      status: 'success',
-      error: null,
-      message: '내 밴드 목록 조회 성공',
-      data: {
-        items: [
-          {
-            id: 'band-1',
-            name: 'Jamplay 밴드',
-            description: '로컬 개발 확인용 더미 밴드',
-            visibility: true,
-            myRole: 'BM',
-            joinedAt: '2026-08-30T14:41:50.592Z',
-            createdAt: '2026-08-30T14:41:50.590Z',
-            memberCount: 3,
-          },
-        ],
-        meta: {
-          count: 1,
-          take: 20,
-          cursor: {
-            createdAt: '2026-08-30T14:41:50.590Z',
-            id: 'band-1',
-          },
-          next: null,
-        },
-      },
-    });
-
-    await expect(getMyBands()).resolves.toHaveLength(1);
+    await expect(getMyBands()).rejects.toThrow();
   });
 });

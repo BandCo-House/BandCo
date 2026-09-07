@@ -165,7 +165,9 @@ interface AskAssistantBody {
 export const assistantHandlers = [
   http.get(`${API_URL}/assistant/presets`, () =>
     HttpResponse.json<ApiResponse<{ presets: AssistantPreset[] }>>({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '추천 질문 목록 조회 성공',
       data: { presets },
     }),
   ),
@@ -177,18 +179,27 @@ export const assistantHandlers = [
       const answer = answers[body.presetId];
       if (answer === undefined) {
         return HttpResponse.json(
-          { success: false, message: '요청한 추천 질문을 찾을 수 없습니다.' },
+          {
+            status: 'fail',
+            error: { code: 'NOT_FOUND', details: { statusCode: 404 } },
+            message: '요청한 추천 질문을 찾을 수 없습니다.',
+            data: {},
+          },
           { status: 404 },
         );
       }
       return HttpResponse.json<ApiResponse<AssistantAnswer>>({
-        success: true,
+        status: 'success',
+        error: null,
+        message: '밴드 데이터 질문 처리 성공',
         data: answer,
       });
     }
 
     return HttpResponse.json<ApiResponse<AssistantAnswer>>({
-      success: true,
+      status: 'success',
+      error: null,
+      message: '밴드 데이터 질문 처리 성공',
       data: findAnswerByQuestion(body.question ?? ''),
     });
   }),

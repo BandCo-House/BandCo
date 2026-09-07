@@ -3,6 +3,7 @@ import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
 import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
+import { GlassRim } from '@/shared/ui/glass-rim';
 import GalleryIcon from '@/assets/icons/gallery.svg?react';
 import { useAudioPreview } from '@/shared/lib/use-audio-preview';
 
@@ -83,7 +84,7 @@ export function ProfileCard({
       <div className="absolute top-0 left-0 z-10 h-full w-full bg-linear-to-b from-[#020119] via-[#020119]/10 via-45% to-[#020119]" />
 
       <div className="relative z-50 flex min-h-9 w-full items-center justify-between px-5 py-3">
-        <h1 className="flex min-h-9 items-center gap-2 typo-lg-b font-semibold text-grey-50">
+        <h1 className="flex min-h-9 items-center gap-2 typo-lg-b text-grey-50">
           {isMe && isEditing && (
             <button
               type="button"
@@ -103,7 +104,7 @@ export function ProfileCard({
         {isMe && (
           <button
             onClick={isEditing ? onSave : onToggleEdit}
-            className="flex min-h-9 cursor-pointer items-center justify-center gap-2.5 px-3 py-2 typo-sm-m transition-colors hover:text-white"
+            className="flex min-h-9 cursor-pointer items-center justify-center gap-2.5 px-3 py-2 typo-sm-sb transition-colors hover:text-white"
           >
             {isEditing ? (
               <>
@@ -124,9 +125,9 @@ export function ProfileCard({
         <>
           <button
             type="button"
-            aria-label="프로필 이미지 선택"
+            aria-label="프로필 배경 이미지 변경"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute top-74 left-5 z-30 flex size-9 items-center justify-center rounded-full bg-overlay-24 p-2.5 text-primary backdrop-blur-md"
+            className="absolute top-[285px] left-5 z-30 flex size-9 cursor-pointer items-center justify-center rounded-full bg-surface-1 p-2.5 text-primary shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-95"
           >
             <GalleryIcon className="size-4" />
           </button>
@@ -146,6 +147,7 @@ export function ProfileCard({
 
       <div className="relative z-20 mt-72 mb-12 rounded-md backdrop-blur-lg">
         <div className="absolute h-full w-full rounded-md bg-white/40 backdrop-blur-lg" />
+        <GlassRim />
 
         <div className="relative z-20">
           <div className="flex items-start justify-between gap-4">
@@ -153,7 +155,7 @@ export function ProfileCard({
               <button
                 type="button"
                 onClick={isEditing ? onOpenMusicSearch : undefined}
-                className="mt-5.5 mr-34 ml-auto flex max-w-52 items-center justify-end gap-1.5 typo-sm-m text-grey-100"
+                className="mt-5.5 mr-34 ml-auto flex max-w-52 items-center justify-end gap-1.5 typo-sm-sb text-grey-100"
               >
                 <span className="truncate">{profileMusicTitle}</span>
                 {profileMusicArtist && (
@@ -171,7 +173,7 @@ export function ProfileCard({
                   <>
                     <label
                       htmlFor="nickname-input"
-                      className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
+                      className="shrink-0 cursor-pointer typo-sm-b text-grey-50"
                     >
                       닉네임
                     </label>
@@ -195,7 +197,7 @@ export function ProfileCard({
                   <>
                     <label
                       htmlFor="description-input"
-                      className="shrink-0 cursor-pointer typo-sm-b font-semibold text-grey-50"
+                      className="shrink-0 cursor-pointer typo-sm-b text-grey-50"
                     >
                       소개
                     </label>

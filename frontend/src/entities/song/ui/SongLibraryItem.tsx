@@ -136,8 +136,8 @@ export const SongLibraryItem = ({ song }: SongLibraryItemProps) => {
         />
       )}
       <div className="flex w-full flex-col items-center gap-1 text-center">
-        <p className="w-full truncate typo-sm-m text-grey-100">{song.title}</p>
-        <p className="w-full truncate typo-sm-m text-grey-100">
+        <p className="w-full truncate typo-sm-sb text-grey-100">{song.title}</p>
+        <p className="w-full truncate typo-sm-sb text-grey-100">
           {song.artistName}
         </p>
       </div>

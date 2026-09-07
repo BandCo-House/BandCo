@@ -29,7 +29,7 @@ export const Route = createFileRoute('/band/$bandId/settings')({
 function BandSettingsRoutePage() {
   return (
     <>
-      <span className="sr-only">BandSettingsPage</span>
+      <span data-testid="band-settings-page" className="hidden" />
       <BandSettings />
     </>
   );

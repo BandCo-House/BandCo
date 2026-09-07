@@ -78,7 +78,7 @@ export const ScheduleFilterBar = ({
           checked={onlyMine}
           onCheckedChange={(checked) => onOnlyMineChange(checked === true)}
         />
-        <label htmlFor={ONLY_MINE_ID} className="typo-sm-m text-grey-100">
+        <label htmlFor={ONLY_MINE_ID} className="typo-sm-sb text-grey-100">
           내가 포함된 일정만 보기
         </label>
       </div>

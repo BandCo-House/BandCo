@@ -21,8 +21,6 @@ import type {
   UpdateBandSpaceMemberRoleRepositoryResult,
 } from './bandspaces.repository';
 
-const DEMO_BAND_MEMBER_ID = '11111111-1111-1111-1111-111111111111';
-
 type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
   include: {
     band: {
@@ -86,9 +84,14 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
 export class BandSpacesPrismaRepository implements BandSpacesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async addBandSpaceMember(spaceId: string, input: AddBandSpaceMemberInput): Promise<AddBandSpaceMemberRepositoryResult> {
+  async addBandSpaceMember(
+    spaceId: string,
+    input: AddBandSpaceMemberInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AddBandSpaceMemberRepositoryResult> {
+    const client = tx ?? this.prisma;
     const [space, bandMember, existingMember] = await Promise.all([
-      this.prisma.bandSpace.findFirst({
+      client.bandSpace.findFirst({
         where: {
           id: spaceId,
           deletedAt: null,
@@ -98,7 +101,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
           name: true,
         },
       }),
-      this.prisma.bandMember.findUnique({
+      client.bandMember.findUnique({
         where: {
           id: input.bandMemberId,
         },
@@ -107,7 +110,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
           userId: true,
         },
       }),
-      this.prisma.spaceMember.findFirst({
+      client.spaceMember.findFirst({
         where: {
           bandSpaceId: spaceId,
           bandMemberId: input.bandMemberId,
@@ -130,7 +133,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       throw new ConflictException('이미 합주 공간에 참여 중인 멤버입니다.');
     }
 
-    const createdMember = await this.prisma.spaceMember.create({
+    const createdMember = await client.spaceMember.create({
       data: {
         bandSpaceId: spaceId,
         bandMemberId: input.bandMemberId,
@@ -151,23 +154,15 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     };
   }
 
-  async createBandSpace(bandId: string, input: CreateBandSpaceInput): Promise<CreateBandSpaceResult> {
-    const band = await this.prisma.band.findFirst({
-      where: {
-        id: bandId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (band === null) {
-      throw new NotFoundException('요청한 밴드를 찾을 수 없습니다.');
-    }
-
-    const createdSpace = await this.prisma.$transaction(async transaction => {
-      const bandSpace = await transaction.bandSpace.create({
+  /** 요청자 밴드 멤버를 생성자이자 LEADER 멤버로 기록한다. 밴드 존재·멤버십 확인은 Service가 같은 tx 안에서 끝낸다. */
+  async createBandSpace(
+    bandId: string,
+    requesterBandMemberId: string,
+    input: CreateBandSpaceInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<CreateBandSpaceResult> {
+    const run = async (client: Prisma.TransactionClient) => {
+      const bandSpace = await client.bandSpace.create({
         data: {
           bandId,
           name: input.name,
@@ -176,21 +171,23 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
           status: input.status,
           startDate: new Date(`${input.startDate}T00:00:00.000Z`),
           endDate: new Date(`${input.endDate}T00:00:00.000Z`),
-          createdByBandMemberId: DEMO_BAND_MEMBER_ID,
+          createdByBandMemberId: requesterBandMemberId,
         },
       });
 
-      await transaction.spaceMember.create({
+      await client.spaceMember.create({
         data: {
           bandSpaceId: bandSpace.id,
-          bandMemberId: DEMO_BAND_MEMBER_ID,
+          bandMemberId: requesterBandMemberId,
           role: 'LEADER',
           status: 'ACTIVE',
         },
       });
 
       return bandSpace;
-    });
+    };
+
+    const createdSpace = tx ? await run(tx) : await this.prisma.$transaction(run);
 
     return {
       spaceId: createdSpace.id,
@@ -206,16 +203,22 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     };
   }
 
-  async findBandSpaces(bandId: string, query: GetBandSpacesQuery): Promise<GetBandSpacesResult> {
-    const where = this.createBandSpaceWhereInput(bandId, query);
+  async findBandSpaces(
+    bandId: string,
+    requesterBandMemberId: string,
+    query: GetBandSpacesQuery,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GetBandSpacesResult> {
+    const client = tx ?? this.prisma;
+    const where = this.createBandSpaceWhereInput(bandId, requesterBandMemberId, query);
     const orderBy = this.createBandSpaceOrderByInput(query.sort);
     const skip = (query.page - 1) * query.size;
 
     const [totalCount, spaces] = await Promise.all([
-      this.prisma.bandSpace.count({
+      client.bandSpace.count({
         where,
       }),
-      this.prisma.bandSpace.findMany({
+      client.bandSpace.findMany({
         where,
         orderBy,
         skip,
@@ -232,7 +235,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
           },
           members: {
             where: {
-              bandMemberId: DEMO_BAND_MEMBER_ID,
+              bandMemberId: requesterBandMemberId,
             },
             select: {
               role: true,
@@ -248,7 +251,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     ]);
 
     return {
-      items: spaces.map(space => this.mapBandSpaceListItem(space)),
+      items: spaces.map(space => this.mapBandSpaceListItem(space, requesterBandMemberId)),
       pagination: createPagination(totalCount, {
         page: query.page,
         size: query.size,
@@ -256,8 +259,9 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     };
   }
 
-  async findDetailByBandSpaceId(spaceId: string): Promise<GetBandSpaceDetailResult | undefined> {
-    const space = await this.prisma.bandSpace.findFirst({
+  async findDetailByBandSpaceId(spaceId: string, tx?: Prisma.TransactionClient): Promise<GetBandSpaceDetailResult | undefined> {
+    const client = tx ?? this.prisma;
+    const space = await client.bandSpace.findFirst({
       where: {
         id: spaceId,
         deletedAt: null,
@@ -300,7 +304,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     return this.mapBandSpaceDetail(space);
   }
 
-  private createBandSpaceWhereInput(bandId: string, query: GetBandSpacesQuery): Prisma.BandSpaceWhereInput {
+  private createBandSpaceWhereInput(bandId: string, requesterBandMemberId: string, query: GetBandSpacesQuery): Prisma.BandSpaceWhereInput {
     const where: Prisma.BandSpaceWhereInput = {
       bandId,
       deletedAt: null,
@@ -324,7 +328,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     }
 
     if (query.onlyMine === true) {
-      where.createdByBandMemberId = DEMO_BAND_MEMBER_ID;
+      where.createdByBandMemberId = requesterBandMemberId;
     }
 
     if (query.inProgressOnly === true) {
@@ -350,7 +354,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     return [{ createdAt: 'desc' }];
   }
 
-  private mapBandSpaceListItem(space: BandSpaceListRecord): BandSpaceListItem {
+  private mapBandSpaceListItem(space: BandSpaceListRecord, requesterBandMemberId: string): BandSpaceListItem {
     const myMembership = space.members[0];
 
     return {
@@ -365,7 +369,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       endDate: this.formatDateOnly(space.endDate),
       memberCount: space._count.members,
       songCount: space.band._count.songs,
-      isMine: space.createdByBandMemberId === DEMO_BAND_MEMBER_ID,
+      isMine: space.createdByBandMemberId === requesterBandMemberId,
       myMembership: {
         isMember: myMembership !== undefined,
         role: this.normalizeSpaceMemberRole(myMembership?.role),
@@ -447,6 +451,31 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       select: { userId: true },
     });
     return members.map(m => m.userId);
+  }
+
+  async findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    return client.band.findFirst({
+      where: { id: bandId, deletedAt: null },
+      select: { id: true },
+    });
+  }
+
+  async findBandMemberByBandIdAndUserId(bandId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    return client.bandMember.findFirst({
+      where: { bandId, userId, band: { deletedAt: null } },
+      select: { id: true },
+    });
+  }
+
+  async findBandIdBySpaceId(spaceId: string, tx?: Prisma.TransactionClient): Promise<string | null> {
+    const client = tx ?? this.prisma;
+    const space = await client.bandSpace.findFirst({
+      where: { id: spaceId, deletedAt: null },
+      select: { bandId: true },
+    });
+    return space?.bandId ?? null;
   }
 
   async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult> {

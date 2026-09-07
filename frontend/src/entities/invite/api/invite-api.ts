@@ -1,5 +1,5 @@
-import { apiClient } from '@/shared/api';
-import { getBandInvitationResponseSchema } from '../model/schema';
+import { apiGet } from '@/shared/api';
+import { receivedBandInvitationListItemSchema } from '../model/schema';
 import type { ReceivedBandInvitationListItem } from '../model/types';
 
 export const inviteKeys = {
@@ -10,13 +10,10 @@ export const inviteKeys = {
     [...inviteKeys.all, 'detail', invitationId] as const,
 };
 
+/** 초대 단건 조회(GET /invitations/:invitationId). */
 export const getBandInvitationDetail = async (
   invitationId: string,
 ): Promise<ReceivedBandInvitationListItem> => {
-  const response = await apiClient.get(`/invitations/${invitationId}`);
-  const parsed = getBandInvitationResponseSchema.parse(response.data);
-  if (parsed.status === 'error') {
-    throw new Error(parsed.message);
-  }
-  return parsed.data;
+  const data = await apiGet<unknown>(`/invitations/${invitationId}`);
+  return receivedBandInvitationListItemSchema.parse(data);
 };

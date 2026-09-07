@@ -21,12 +21,19 @@ export const InviteCodeDialog = ({
   open,
   onOpenChange,
 }: InviteCodeDialogProps) => {
-  const { code, setCode, submit, isLoading, isDisabled } = useInviteAccept({
-    onSuccess: () => onOpenChange(false),
-  });
+  const { code, setCode, reset, submit, isLoading, isDisabled } =
+    useInviteAccept({
+      onSuccess: () => onOpenChange(false),
+    });
+
+  // 닫을 때 입력을 비운다. 안 비우면 틀린 코드가 남아 다음에 열 때 그대로 보인다.
+  const handleOpenChange = (next: boolean) => {
+    if (!next) reset();
+    onOpenChange(next);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <AppDialogContent>
         <AppDialogClose />
         <AppDialogHeader>

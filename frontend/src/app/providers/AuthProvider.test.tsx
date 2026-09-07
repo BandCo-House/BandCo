@@ -2,7 +2,11 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './auth-context';
-import { getAccessToken, getRefreshToken, clearTokens } from '@/shared/lib/auth-storage';
+import {
+  getAccessToken,
+  getRefreshToken,
+  clearTokens,
+} from '@/shared/lib/auth-storage';
 
 vi.mock('@/shared/lib/auth-storage', () => ({
   getAccessToken: vi.fn(),
@@ -30,7 +34,7 @@ describe('AuthProvider JWT Decoding', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId('logged-in').textContent).toBe('YES');
     expect(screen.getByTestId('user-id').textContent).toBe('user-001');
@@ -38,13 +42,20 @@ describe('AuthProvider JWT Decoding', () => {
 
   it('패딩이 유실된 Base64URL 토큰(길이 % 4 == 2)에서도 ID를 정상적으로 파싱한다', () => {
     // {"id":"usr1","exp":미래} -> btoa 변환 후 패딩(=) 유실 모의
-    const base64Len2 = window.btoa(JSON.stringify({ id: 'usr1', exp: Math.floor(Date.now() / 1000) + 3600 })).replace(/=/g, '');
+    const base64Len2 = window
+      .btoa(
+        JSON.stringify({
+          id: 'usr1',
+          exp: Math.floor(Date.now() / 1000) + 3600,
+        }),
+      )
+      .replace(/=/g, '');
     const tokenLen2 = `header.${base64Len2}.signature`;
     vi.mocked(getAccessToken).mockReturnValue(tokenLen2);
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId('logged-in').textContent).toBe('YES');
     expect(screen.getByTestId('user-id').textContent).toBe('usr1');
@@ -52,13 +63,17 @@ describe('AuthProvider JWT Decoding', () => {
 
   it('패딩이 유실된 Base64URL 토큰(길이 % 4 == 3)에서도 ID를 정상적으로 파싱한다', () => {
     // {"id":"ab","exp":미래} -> btoa 변환 후 패딩(=) 유실 모의
-    const base64Len3 = window.btoa(JSON.stringify({ id: 'ab', exp: Math.floor(Date.now() / 1000) + 3600 })).replace(/=/g, '');
+    const base64Len3 = window
+      .btoa(
+        JSON.stringify({ id: 'ab', exp: Math.floor(Date.now() / 1000) + 3600 }),
+      )
+      .replace(/=/g, '');
     const tokenLen3 = `header.${base64Len3}.signature`;
     vi.mocked(getAccessToken).mockReturnValue(tokenLen3);
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId('logged-in').textContent).toBe('YES');
     expect(screen.getByTestId('user-id').textContent).toBe('ab');
@@ -71,7 +86,7 @@ describe('AuthProvider JWT Decoding', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');
     expect(screen.getByTestId('user-id').textContent).toBe('NULL');
@@ -84,7 +99,7 @@ describe('AuthProvider JWT Decoding', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');
     expect(screen.getByTestId('user-id').textContent).toBe('NULL');
@@ -104,7 +119,7 @@ describe('AuthProvider Token Expiration Logic', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     expect(screen.getByTestId('logged-in').textContent).toBe('YES');
@@ -117,7 +132,7 @@ describe('AuthProvider Token Expiration Logic', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     expect(screen.getByTestId('logged-in').textContent).toBe('YES');
@@ -130,7 +145,7 @@ describe('AuthProvider Token Expiration Logic', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');
@@ -144,7 +159,7 @@ describe('AuthProvider Token Expiration Logic', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');
@@ -158,7 +173,7 @@ describe('AuthProvider Token Expiration Logic', () => {
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     expect(screen.getByTestId('logged-in').textContent).toBe('NO');

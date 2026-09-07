@@ -8,9 +8,10 @@ import {
   ACCESS_TOKEN_REFRESH_ENDPOINT,
   API_BASE_URL,
   API_TIMEOUT,
+  LOGIN_ENDPOINT_PREFIX,
   REFRESH_TOKEN_REFRESH_ENDPOINT,
 } from './config';
-import { type ApiResponse } from './types';
+import { type ApiSuccessResponse } from './types';
 import {
   getAccessToken,
   getRefreshToken,
@@ -40,13 +41,6 @@ apiClient.interceptors.request.use(
 
 let isRefreshing = false;
 
-type BackendSuccessResponse<T> = {
-  status: 'success';
-  error: null;
-  message: string;
-  data: T;
-};
-
 // 토큰 갱신 대기 중인 요청 큐 (갱신 중 동시 요청들을 모아뒀다가 한번에 재시도)
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -70,8 +64,8 @@ function processQueue(error: unknown, token: string | null = null): void {
 export const refreshAccessToken = async (
   refreshToken: string,
 ): Promise<string> => {
-  const response = await apiClient.post<
-    BackendSuccessResponse<{ accessToken: string }>
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{ accessToken: string }>
   >(
     ACCESS_TOKEN_REFRESH_ENDPOINT,
     {},
@@ -82,7 +76,7 @@ export const refreshAccessToken = async (
     },
   );
 
-  return response.data.data.accessToken;
+  return data.data.accessToken;
 };
 
 /**
@@ -91,8 +85,8 @@ export const refreshAccessToken = async (
 export const refreshRefreshToken = async (
   refreshToken: string,
 ): Promise<string> => {
-  const response = await apiClient.post<
-    BackendSuccessResponse<{ refreshToken: string }>
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{ refreshToken: string }>
   >(
     REFRESH_TOKEN_REFRESH_ENDPOINT,
     {},
@@ -103,7 +97,7 @@ export const refreshRefreshToken = async (
     },
   );
 
-  return response.data.data.refreshToken;
+  return data.data.refreshToken;
 };
 
 apiClient.interceptors.response.use(
@@ -113,6 +107,11 @@ apiClient.interceptors.response.use(
 
     // 401이 아니거나 config가 없으면 그대로 에러 반환
     if (!originalRequest || error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // 로그인 요청의 401은 자격 증명 오류이므로 토큰 갱신·로그인 이동 없이 호출자에게 돌려준다.
+    if (originalRequest.url?.includes(LOGIN_ENDPOINT_PREFIX)) {
       return Promise.reject(error);
     }
 
@@ -165,8 +164,12 @@ apiClient.interceptors.response.use(
   },
 );
 
+/**
+ * 백엔드 성공 봉투(`{ status, error, message, data }`)에서 data만 꺼내 돌려준다.
+ * 실패 봉투는 4xx·5xx로 오므로 axios가 reject하고, 메시지는 `getApiErrorMessage`로 읽는다.
+ */
 async function api<T>(config: AxiosRequestConfig): Promise<T> {
-  const { data } = await apiClient<ApiResponse<T>>(config);
+  const { data } = await apiClient<ApiSuccessResponse<T>>(config);
   return data.data;
 }
 

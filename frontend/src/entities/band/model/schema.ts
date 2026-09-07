@@ -72,24 +72,23 @@ export const bandInviteLinkSchema = z.object({
   expiredAt: z.string(),
 });
 
-export const bandListResponseSchema = z.object({
-  status: z.literal('success'),
-  error: z.null(),
-  message: z.string(),
-  data: z.object({
-    items: z.array(bandSchema),
-    meta: z.object({
-      count: z.number().int().nonnegative(),
-      take: z.number().int().positive(),
-      cursor: z
-        .object({
-          createdAt: z.string(),
-          id: z.string(),
-        })
-        .nullable(),
-      next: z.string().nullable(),
-    }),
-  }),
+export const bandListMetaSchema = z.object({
+  count: z.number().int().nonnegative(),
+  take: z.number().int().nonnegative(),
+  cursor: z
+    .object({
+      id: z.string(),
+      createdAt: z.string(),
+    })
+    .nullable()
+    .optional(),
+  next: z.string().nullable().optional(),
+});
+
+/** 내 밴드 목록(GET /bands/me) 결과. 봉투는 apiGet이 벗기므로 data 부분만 검증한다. */
+export const bandListResultSchema = z.object({
+  items: z.array(bandSchema),
+  meta: bandListMetaSchema.optional(),
 });
 
 export const createBandResponseSchema = bandSummarySchema.extend({

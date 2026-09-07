@@ -548,19 +548,18 @@ export const bandHandlers = [
     // 2. 인메모리 리스트 맨 앞에 추가
     mockBands = [newBand, ...mockBands];
 
-    // 3. 기존의 POST 응답 규격 그대로 반환 (프론트엔드 호환 유지)
+    // 3. 백엔드 실제 응답 규격({ data: { band: ... } }) 반환
     return HttpResponse.json({
       status: 'success',
       error: null,
       message: '밴드 생성 성공',
       data: {
-        items: {
+        band: {
           id: newBandId,
           name: body.name,
           description: body.description,
           visibility: body.visibility,
-          coverImgUrl:
-            body.coverImgUrl ?? 'https://cdn.example.com/bands/cover.png',
+          coverImgUrl: body.coverImgUrl ?? null,
           genres: (
             body.genreIds ?? ['0f0a4e3a-8a0c-4f6e-9d2d-9c1a8c6b7b1a']
           ).map((id) => ({

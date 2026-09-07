@@ -24,7 +24,7 @@ export const notificationSenderSchema = z.object({
 export const notificationReferenceSchema = z.object({
   type: notificationReferenceTypeSchema,
   id: z.string(),
-  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED']),
+  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED']),
   sender: notificationSenderSchema.nullable(),
 });
 
@@ -49,36 +49,3 @@ export const notificationListSchema = z.object({
   items: z.array(notificationItemSchema),
   meta: notificationMetaSchema,
 });
-
-export const notificationUnreadSummaryResponseSchema = z.discriminatedUnion(
-  'status',
-  [
-    z.object({
-      status: z.literal('success'),
-      error: z.null(),
-      message: z.string(),
-      data: notificationUnreadSummarySchema,
-    }),
-    z.object({
-      status: z.literal('error'),
-      error: z.string().nullable(),
-      message: z.string(),
-      data: z.unknown().optional(),
-    }),
-  ],
-);
-
-export const notificationListResponseSchema = z.discriminatedUnion('status', [
-  z.object({
-    status: z.literal('success'),
-    error: z.null(),
-    message: z.string(),
-    data: notificationListSchema,
-  }),
-  z.object({
-    status: z.literal('error'),
-    error: z.string().nullable(),
-    message: z.string(),
-    data: z.unknown().optional(),
-  }),
-]);

@@ -24,7 +24,9 @@ const listItem = {
 describe('band place api 어댑터', () => {
   it('밴드 연습 장소 목록을 백엔드 경로로 조회하고 items 배열로 언랩한다', async () => {
     mock.onGet('/bands/band-1/places').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: {
         bandId: 'band-1',
         items: [listItem],
@@ -42,7 +44,9 @@ describe('band place api 어댑터', () => {
 
   it('필수 필드(name)가 누락되면 reject된다', async () => {
     mock.onGet('/bands/band-1/places').reply(200, {
-      success: true,
+      status: 'success',
+      error: null,
+      message: '요청 성공',
       data: { items: [{ placeId: 'place-1', address: '주소만' }] },
     });
 

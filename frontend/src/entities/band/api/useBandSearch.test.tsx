@@ -21,15 +21,14 @@ const createWrapper = () => {
 describe('useBandSearch', () => {
   it('bandSearchOptions가 올바른 QueryKey 및 Options 팩토리를 생성한다', () => {
     const options = bandSearchOptions('합주', 10);
-    expect(options.queryKey).toEqual(['bands', 'search', '합주']);
+    expect(options.queryKey).toEqual(['bands', 'search', '합주', 10]);
     expect(options.staleTime).toBe(30000);
   });
 
   it('검색어를 입력하면 밴드 목록을 검색하여 반환한다', async () => {
-    const { result } = renderHook(
-      () => useBandSearch({ keyword: '홍대' }),
-      { wrapper: createWrapper() },
-    );
+    const { result } = renderHook(() => useBandSearch({ keyword: '홍대' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -40,10 +39,9 @@ describe('useBandSearch', () => {
   });
 
   it('검색어가 없으면 쿼리가 실행되지 않는다', () => {
-    const { result } = renderHook(
-      () => useBandSearch({ keyword: '' }),
-      { wrapper: createWrapper() },
-    );
+    const { result } = renderHook(() => useBandSearch({ keyword: '' }), {
+      wrapper: createWrapper(),
+    });
 
     expect(result.current.fetchStatus).toBe('idle');
   });

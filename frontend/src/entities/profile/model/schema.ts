@@ -52,26 +52,3 @@ export const profileSchema = z.object({
   skills: z.array(userSkillDetailSchema),
   favoriteGenres: z.array(userFavoriteGenreDetailSchema),
 });
-
-/**
- * 백엔드의 최상위 profileMusic을 화면에서 사용하는 profile 내부 구조로 변환한다.
- */
-export const profileResponseSchema = z
-  .object({
-    user: profileUserDetailSchema,
-    profile: profileDetailSchema.omit({ profileMusic: true }).nullable(),
-    profileMusic: profileMusicSchema.nullable(),
-    skills: z.array(userSkillDetailSchema),
-    favoriteGenres: z.array(userFavoriteGenreDetailSchema),
-  })
-  .transform(({ profileMusic, ...result }) =>
-    profileSchema.parse({
-      ...result,
-      profile: result.profile
-        ? {
-            ...result.profile,
-            profileMusic,
-          }
-        : null,
-    }),
-  );

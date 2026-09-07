@@ -5,6 +5,8 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { CloseButtonContent, closeButtonClass } from '@/shared/ui/close-button';
+import { GlassRim } from '@/shared/ui/glass-rim';
+import { GlowBlob } from '@/shared/ui/glow-blob';
 
 function Dialog({
   ...props
@@ -119,63 +121,6 @@ function DialogFooter({
   );
 }
 
-function AppDialogGlow({ className, ...props }: React.ComponentProps<'svg'>) {
-  const gradientId = React.useId();
-  const filterId = React.useId();
-
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 353 678"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn('pointer-events-none absolute inset-0 z-0', className)}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      {...props}
-    >
-      <g filter={`url(#${filterId})`}>
-        <path
-          d="M354.222 684.439C141.51 721.444 -54.6672 585.939 -147.429 541.939C-240.19 497.939 -433.917 1162.65 -127.171 1226.5C179.575 1290.35 904.543 908.945 926.82 537.628C989.673 -510.001 214.544 94.999 345.197 392.771C393.139 502.038 445.738 668.518 354.222 684.439Z"
-          fill={`url(#${gradientId})`}
-        />
-      </g>
-      <defs>
-        <filter
-          id={filterId}
-          x="-438.551"
-          y="-198.039"
-          width={1514}
-          height="1576.58"
-          filterUnits="userSpaceOnUse"
-          colorInterpolationFilters="sRGB"
-        >
-          <feFlood floodOpacity={0} result="BackgroundImageFix" />
-          <feBlend
-            mode="normal"
-            in="SourceGraphic"
-            in2="BackgroundImageFix"
-            result="shape"
-          />
-          <feGaussianBlur stdDeviation="72.5" result="effect1_foregroundBlur" />
-        </filter>
-        <linearGradient
-          id={gradientId}
-          x1="3.40972"
-          y1={742}
-          x2="663.109"
-          y2="232.642"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0.0511104" stopColor="#E1FC73" stopOpacity="0.2" />
-          <stop offset="0.853476" stopColor="#E1FC73" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
 function AppDialogContent({
   className,
   children,
@@ -190,19 +135,26 @@ function AppDialogContent({
       showCloseButton={false}
       overlayClassName="backdrop-blur-none"
       className={cn(
-        'overflow-hidden rounded-md border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
+        // 높이 제한과 flex 세로 배치는 기본값이다. 이게 없으면 내용이 뷰포트보다
+        // 길어질 때 overflow-hidden에 잘려 나가고 스크롤도 안 돼, 아래쪽 CTA에
+        // 아예 손이 닿지 않는다(예: 360x568에서 커버를 고른 밴드 만들기).
+        // 스크롤은 AppDialogBody가 맡는다.
+        'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
         className,
       )}
       style={{
         borderStyle: 'solid',
         borderWidth: '0.5px 1px 2px 0.5px',
         borderColor: 'color-mix(in srgb, var(--surface-1) 40%, transparent)',
-        boxShadow: '0 3px 6px 2px rgba(255, 255, 255, 0.16)',
+        // 바깥 그림자 + 위/아래 안쪽 흰 하이라이트(유리 두께감).
+        boxShadow:
+          '0 3px 6px 2px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(255,255,255,0.3)',
         ...style,
       }}
       {...props}
     >
-      {showGlow && <AppDialogGlow />}
+      <GlassRim />
+      {showGlow && <GlowBlob />}
       {children}
     </DialogContent>
   );
@@ -230,7 +182,7 @@ function AppDialogHeader({
 }: React.ComponentProps<typeof DialogHeader>) {
   return (
     <DialogHeader
-      className={cn('relative z-10 mb-2 text-left', className)}
+      className={cn('relative z-10 mb-2 shrink-0 text-left', className)}
       {...props}
     />
   );
@@ -240,7 +192,8 @@ function AppDialogBody({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'relative z-10 flex flex-col gap-9 text-grey-100',
+        // min-h-0가 있어야 flex 자식이 실제로 줄어들며 스크롤이 생긴다.
+        'relative z-10 flex min-h-0 flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
         className,
       )}
       {...props}
@@ -254,7 +207,7 @@ function AppDialogFooter({
 }: React.ComponentProps<typeof DialogFooter>) {
   return (
     <DialogFooter
-      className={cn('relative z-10 mt-8 items-end', className)}
+      className={cn('relative z-10 mt-8 shrink-0 items-end', className)}
       {...props}
     />
   );
@@ -267,11 +220,8 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      // 모달 제목 공용 스타일(20px/600/140%/grey-100). 20px SemiBold 유틸이 없어 직접 지정.
-      className={cn(
-        'text-xl leading-[1.4] font-semibold text-grey-100',
-        className,
-      )}
+      // 모달 제목 공용 스타일. 시트 제목(sheet.tsx)과 같은 typo-lg-sb를 쓴다.
+      className={cn('typo-lg-sb text-grey-100', className)}
       {...props}
     />
   );
@@ -296,7 +246,6 @@ export {
   AppDialogClose,
   AppDialogContent,
   AppDialogFooter,
-  AppDialogGlow,
   AppDialogHeader,
   DialogClose,
   DialogContent,

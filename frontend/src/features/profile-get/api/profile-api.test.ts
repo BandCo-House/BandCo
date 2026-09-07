@@ -22,18 +22,18 @@ describe('profile get 어댑터', () => {
       profile: {
         nickname: '김민준',
         selfDescription: '기타리스트입니다',
+        profileMusic: {
+          externalTrackId: 'track-1',
+          sourceType: 'DEEZER',
+          title: '곡 제목',
+          artistName: '아티스트',
+          albumName: '앨범',
+          albumImageUrl: null,
+          durationMs: 180000,
+          previewUrl: 'https://example.com/song.mp3',
+          sourceUrl: 'https://www.deezer.com/track/track-1',
+        },
         avatarUrl: null,
-      },
-      profileMusic: {
-        externalTrackId: 'track-1',
-        sourceType: 'DEEZER',
-        title: '곡 제목',
-        artistName: '아티스트',
-        albumName: '앨범',
-        albumImageUrl: null,
-        durationMs: 180000,
-        previewUrl: 'https://example.com/song.mp3',
-        sourceUrl: 'https://www.deezer.com/track/track-1',
       },
       skills: [
         {
@@ -86,9 +86,9 @@ describe('profile get 어댑터', () => {
       profile: {
         nickname: '특수문자',
         selfDescription: null,
+        profileMusic: null,
         avatarUrl: null,
       },
-      profileMusic: null,
       skills: [],
       favoriteGenres: [],
     };

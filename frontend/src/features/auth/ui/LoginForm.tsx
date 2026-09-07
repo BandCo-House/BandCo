@@ -9,6 +9,7 @@ import { cn } from '@/shared/lib/utils';
 
 interface LoginFormProps {
   onSubmit: (email: string, password: string) => void;
+  onGoogleLogin?: (idToken: string) => void;
   isLoading?: boolean;
 }
 
@@ -66,7 +67,7 @@ const AuthRoundedInput = ({
         aria-invalid={hasError}
       />
       {errorMessage ? (
-        <p className="ml-4 text-xs text-destructive">{errorMessage}</p>
+        <p className="ml-4 typo-sm-r text-destructive">{errorMessage}</p>
       ) : null}
     </div>
   );
@@ -104,7 +105,11 @@ const AuthRowLink = ({ children, to, onClick }: AuthRowLinkProps) => {
 /**
  * 이메일과 비밀번호를 입력받아 로그인 요청을 제출하는 폼을 렌더링한다.
  */
-export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
+export const LoginForm = ({
+  onSubmit,
+  onGoogleLogin,
+  isLoading = false,
+}: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
@@ -180,10 +185,13 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
         right={<AuthRowLink to="/forgot-password">비밀번호 찾기</AuthRowLink>}
       />
 
-      <SocialLoginSection className="mt-20" />
+      <SocialLoginSection
+        className="mt-20"
+        onGoogleCredential={onGoogleLogin}
+      />
 
       <SplitLinkRow
-        className="mt-20 typo-base-m"
+        className="mt-20 typo-base-sb"
         left={
           <AuthRowLink onClick={() => undefined}>개인정보처리방침</AuthRowLink>
         }
