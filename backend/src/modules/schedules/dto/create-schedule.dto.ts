@@ -48,14 +48,8 @@ export class CreateScheduleBodyDto {
   @IsUUID('4', { each: true, message: uuidValidationMessage })
   songIds?: string[];
 
-  @ApiPropertyOptional({ description: '참여자 밴드 멤버 ID 목록 (deprecated — participants를 쓴다)', type: [String] })
-  @IsOptional()
-  @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
-  participantBandMemberIds?: string[];
-
   @ApiPropertyOptional({
-    description: '참여자 목록(세션 포함). participantBandMemberIds와 함께 오면 이쪽이 우선한다.',
+    description: '참여자 목록(세션 포함).',
     type: [ScheduleParticipantInputDto],
   })
   @IsOptional()

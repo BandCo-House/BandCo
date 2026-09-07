@@ -321,57 +321,6 @@ describe('SchedulesService', () => {
       ]);
     });
 
-    it('구형 participantBandMemberIds만 오면 세션 없이 변환한다', async () => {
-      let captured: unknown;
-      const service = new SchedulesService(
-        createRepositoryStub({
-          async createSchedule(_spaceId, _memberId, input) {
-            captured = input.participants;
-            return createScheduleResult;
-          },
-        }),
-        createPrismaServiceStub(),
-        createNotificationsServiceMock(),
-      );
-
-      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
-        title: '합주',
-        scheduleType: ScheduleType.PRACTICE,
-        startAt: '2026-06-01T14:00:00+09:00',
-        endAt: '2026-06-01T16:00:00+09:00',
-        status: ScheduleStatus.PLANNED,
-        participantBandMemberIds: [BAND_MEMBER_ID],
-      });
-
-      expect(captured).toEqual([{ bandMemberId: BAND_MEMBER_ID }]);
-    });
-
-    it('둘 다 오면 participants를 쓴다', async () => {
-      let captured: unknown;
-      const service = new SchedulesService(
-        createRepositoryStub({
-          async createSchedule(_spaceId, _memberId, input) {
-            captured = input.participants;
-            return createScheduleResult;
-          },
-        }),
-        createPrismaServiceStub(),
-        createNotificationsServiceMock(),
-      );
-
-      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
-        title: '합주',
-        scheduleType: ScheduleType.PRACTICE,
-        startAt: '2026-06-01T14:00:00+09:00',
-        endAt: '2026-06-01T16:00:00+09:00',
-        status: ScheduleStatus.PLANNED,
-        participantBandMemberIds: ['00000000-0000-4000-8000-000000000000'],
-        participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }],
-      });
-
-      expect(captured).toEqual([{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }]);
-    });
-
     it('존재하지 않는 세션이면 BadRequestException을 던진다', async () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
@@ -423,7 +372,6 @@ describe('SchedulesService', () => {
         endAt: '2026-06-01T16:00:00+09:00',
         status: ScheduleStatus.PLANNED,
         participants: null as never,
-        participantBandMemberIds: null as never,
       });
 
       expect(captured).toEqual([]);

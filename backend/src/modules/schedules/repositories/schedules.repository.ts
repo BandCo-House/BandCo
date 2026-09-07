@@ -14,7 +14,7 @@ export interface SchedulesRepository {
   /**
    * 밴드 공간에 일정을 생성한다.
    * songIds, participants, referenceFiles가 있으면 연관 레코드도 삽입한다.
-   * participants는 Service가 정규화(participantBandMemberIds 흡수)해 넘긴다.
+   * participants는 Service가 정규화해 넘긴다(null → undefined).
    */
   createSchedule(
     bandSpaceId: string,

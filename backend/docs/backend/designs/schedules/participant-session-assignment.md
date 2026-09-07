@@ -105,17 +105,16 @@ participants?: ScheduleParticipantInputDto[];
 
 ### 하위호환
 
-기존 `participantBandMemberIds: string[]`는 **그대로 남긴다.** 백엔드가 프론트보다 먼저 배포되므로 운영 중인 프론트가 계속 동작해야 한다.
+기존 `participantBandMemberIds: string[]`는 **제거한다.** 출시 전 서비스라 지켜야 할 구형 클라이언트가 없고, 프론트도 `participants`만 보낸다. 입력 경로를 둘로 두면 정규화 분기가 계속 따라다닌다.
 
 | 요청 | 처리 |
 | --- | --- |
-| `participants`만 | 그대로 사용 |
-| `participantBandMemberIds`만 | `{ bandMemberId, skillTypeId: undefined }[]`로 변환 |
-| 둘 다 | **`participants` 우선**, `participantBandMemberIds` 무시 |
-| 둘 다 없음 (POST) | 참여자 없음 |
-| 둘 다 없음 (PATCH) | 참여자 건드리지 않음 (기존 partial update 규칙 유지) |
+| `participants` 있음 | 그대로 사용 |
+| `participants: null` | 안 보낸 것으로 본다 (`@IsOptional()`이 null을 통과시킨다) |
+| 없음 (POST) | 참여자 없음 |
+| 없음 (PATCH) | 참여자 건드리지 않음 (기존 partial update 규칙 유지) |
 
-`participants`를 우선하는 이유: 신규 필드가 세션 정보까지 담아 표현력이 더 크다. 둘 다 보내는 클라이언트는 없어야 정상이므로 에러 대신 조용히 신규 필드를 택한다.
+참여자를 비우는 건 빈 배열(`[]`)이 맡는다 — `null`과 의미가 다르다.
 
 정규화는 **Service**에서 한다(Repository는 이미 정규화된 목록만 받는다).
 
@@ -132,8 +131,8 @@ findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient):
 
 ```
 normalizeParticipants(input):
-1. input.participants가 있으면 그대로, 없고 participantBandMemberIds가 있으면 skillTypeId 없이 변환
-2. 둘 다 없으면 undefined 반환 (PATCH에서 "건드리지 않음"과 구분하기 위해 빈 배열이 아니라 undefined)
+1. input.participants가 있으면 그대로 사용
+2. 없거나 null이면 undefined 반환 (PATCH에서 "건드리지 않음"과 구분하기 위해 빈 배열이 아니라 undefined)
 
 validateParticipantSkillTypes(participants, client):
 1. skillTypeId가 있는 항목의 ID를 모은다 → 없으면 통과
@@ -198,8 +197,6 @@ export interface ScheduleSongItem {
 | --- | --- | --- |
 | createSchedule | participants로 세션 배정 저장 | Stub 기본값 |
 | createSchedule | 한 멤버가 두 세션에 배정 | Stub, 2행 생성 확인 |
-| createSchedule | participantBandMemberIds만 → skillTypeId 없이 변환 | Stub |
-| createSchedule | 둘 다 오면 participants 우선 | Stub |
 | createSchedule | 존재하지 않는 skillTypeId | BadRequestException |
 | createSchedule | MEETING인데 세션 배정 | BadRequestException |
 | createSchedule | tx 일관성 | capturedTransactions 검증 |

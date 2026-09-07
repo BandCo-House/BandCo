@@ -26,26 +26,16 @@ export class SchedulesService {
   ) {}
 
   /**
-   * 참여자 입력을 한 가지 모양으로 정리한다.
-   *
-   * 신규 `participants`(세션 포함)와 구형 `participantBandMemberIds`를 함께 받는다.
-   * 백엔드가 프론트보다 먼저 배포되므로 운영 중인 구형 클라이언트가 계속 동작해야 한다.
-   * 둘 다 오면 표현력이 큰 `participants`를 택한다.
+   * 참여자 입력을 정리한다.
    *
    * `@IsOptional()`은 undefined뿐 아니라 null도 검증에서 빼주므로 null이 그대로 들어온다.
    * null은 "안 보냄"으로 본다 — 참여자를 비우는 건 빈 배열이 맡는다.
    *
-   * @param {ScheduleParticipantInput[] | null | undefined} participants - 신규 형식 참여자 목록
-   * @param {string[] | null | undefined} participantBandMemberIds - 구형 형식 참여자 ID 목록
-   * @returns {ScheduleParticipantInput[] | undefined} 정규화된 목록. 둘 다 없으면 undefined(수정에서 "건드리지 않음")
+   * @param {ScheduleParticipantInput[] | null | undefined} participants - 참여자 목록
+   * @returns {ScheduleParticipantInput[] | undefined} 정규화된 목록. 없으면 undefined(수정에서 "건드리지 않음")
    */
-  private normalizeParticipants(
-    participants: ScheduleParticipantInput[] | null | undefined,
-    participantBandMemberIds: string[] | null | undefined,
-  ): ScheduleParticipantInput[] | undefined {
-    if (participants != null) return participants;
-    if (participantBandMemberIds != null) return participantBandMemberIds.map(bandMemberId => ({ bandMemberId }));
-    return undefined;
+  private normalizeParticipants(participants: ScheduleParticipantInput[] | null | undefined): ScheduleParticipantInput[] | undefined {
+    return participants ?? undefined;
   }
 
   /**
@@ -101,7 +91,7 @@ export class SchedulesService {
         if (!team) throw new BadRequestException('해당 밴드에 속한 팀이 아닙니다.');
       }
 
-      const participants = this.normalizeParticipants(input.participants, input.participantBandMemberIds);
+      const participants = this.normalizeParticipants(input.participants);
       await this.validateParticipantSessions(participants, input.scheduleType, client);
 
       return this.schedulesRepository.createSchedule(bandSpaceId, bandMember.id, { ...input, participants: participants ?? [] }, client);
@@ -142,7 +132,7 @@ export class SchedulesService {
         throw new BadRequestException('종료 시간은 시작 시간보다 이후여야 합니다.');
       }
 
-      const participants = this.normalizeParticipants(input.participants, input.participantBandMemberIds);
+      const participants = this.normalizeParticipants(input.participants);
       // 합주를 회의로 바꾸면서 세션을 함께 보내면 저장 뒤 무효한 편성이 남는다.
       // 검증 기준은 요청값이 아니라 저장될 최종 유형이다.
       const scheduleType = (input.scheduleType ?? existing.schedule.scheduleType) as ScheduleType;

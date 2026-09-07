@@ -8,7 +8,7 @@
 > - teams 도메인 MVP 제외로 teamIds/teams 필드를 Request/Response에서 제거함.
 > - scheduleType enum: PRACTICE | MEETING / status enum: PLANNED | DONE | CANCELED (Prisma schema 기준)
 > - PATCH body 전체 필드 선택 (partial update 패턴). POST에서 memo, placeId, songIds, participants, externalLinks, referenceFiles는 선택.
-> - ⚠️ 변환 노트: [설계자 보완 2026-09-06] 세션 편성 추가 — 요청에 `participants: { bandMemberId, skillTypeId? }[]` 추가(기존 `participantBandMemberIds`는 deprecated이나 하위호환으로 계속 받으며, 둘 다 오면 `participants`가 우선), 상세 응답 participants에 `skillType` 추가, songs에 `key` 추가.
+> - ⚠️ 변환 노트: [설계자 보완 2026-09-06] 세션 편성 추가 — 참여자 입력을 `participants: { bandMemberId, skillTypeId? }[]` 하나로 통일(구형 `participantBandMemberIds` 제거), 상세 응답 participants에 `skillType` 추가, songs에 `key` 추가.
 
 ---
 
@@ -40,10 +40,6 @@
     { "bandMemberId": "band-member-uuid", "skillTypeId": "skill-type-uuid" },
     { "bandMemberId": "band-member-uuid", "skillTypeId": "other-skill-type-uuid" }
   ],
-  "participantBandMemberIds": [
-    "band-member-uuid-1",
-    "band-member-uuid-2"
-  ],
   "memo": "후반부 템포 점검",
   "externalLinks": ["https://example.com/notice"],
   "referenceFiles": [
@@ -55,7 +51,7 @@
 }
 ```
 
-> 선택 필드: placeId, songIds, participants, participantBandMemberIds(deprecated), memo, externalLinks, referenceFiles
+> 선택 필드: placeId, songIds, participants, memo, externalLinks, referenceFiles
 
 ### Response 200
 ```json
@@ -134,11 +130,6 @@
   "participants": [
     { "bandMemberId": "band-member-uuid", "skillTypeId": "skill-type-uuid" },
     { "bandMemberId": "band-member-uuid", "skillTypeId": "other-skill-type-uuid" }
-  ],
-  "participantBandMemberIds": [
-    "band-member-uuid-1",
-    "band-member-uuid-2",
-    "band-member-uuid-3"
   ],
   "memo": "후반부 템포 + 엔딩 합 맞추기",
   "externalLinks": [],
