@@ -94,8 +94,16 @@ export const ImageCropDialog = ({
     }
   };
 
+  // Radix는 Esc·바깥 클릭에서도 onOpenChange(false)를 부른다. 버튼만 잠그면
+  // 그 두 경로로 대기 파일이 비워진 뒤 크롭 결과가 도착해, 취소한 이미지가
+  // 그대로 폼에 실린다. 닫기 요청 자체를 여기서 막는다.
+  const handleOpenChange = (next: boolean) => {
+    if (!next && isCropping) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <AppDialogContent className="px-5 pt-5 pb-8">
         <AppDialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -148,8 +156,6 @@ export const ImageCropDialog = ({
             variant="outline"
             size="pill"
             className="border-grey-50 typo-base-b text-grey-50"
-            // 자르는 도중 닫으면 대기 파일이 비워진 뒤 결과가 도착해, 취소한 이미지가
-            // 그대로 폼에 실린다. 끝날 때까지 잠근다.
             disabled={isCropping}
             onClick={() => onOpenChange(false)}
           >
