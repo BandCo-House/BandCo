@@ -176,13 +176,20 @@ function AppDialogClose({
   );
 }
 
+/**
+ * 모달 헤더. 제목과 닫기(X)를 한 줄에 놓는다.
+ * 닫기를 흐름에 두므로 콘텐츠 패딩이 얼마든 좌우 그리드가 저절로 맞는다.
+ */
 function AppDialogHeader({
   className,
   ...props
 }: React.ComponentProps<typeof DialogHeader>) {
   return (
     <DialogHeader
-      className={cn('relative z-10 mb-2 shrink-0 text-left', className)}
+      className={cn(
+        'relative z-10 mb-2 flex shrink-0 flex-row items-start justify-between gap-4 text-left',
+        className,
+      )}
       {...props}
     />
   );

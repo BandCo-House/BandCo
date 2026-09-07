@@ -89,8 +89,7 @@ export const MemberSearchModal = ({
           이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.
         </DialogDescription>
 
-        <AppDialogClose className="top-5 right-5" />
-        <div className="relative z-10 flex items-center gap-8 pr-12">
+        <div className="relative z-10 flex items-center gap-8">
           <div className="flex flex-1 items-center gap-7 typo-lg-sb">
             <button
               type="button"
@@ -109,6 +108,7 @@ export const MemberSearchModal = ({
               팀 검색
             </button>
           </div>
+          <AppDialogClose />
         </div>
 
         <Input

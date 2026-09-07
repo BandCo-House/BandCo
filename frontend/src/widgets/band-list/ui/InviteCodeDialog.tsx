@@ -35,9 +35,9 @@ export const InviteCodeDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <AppDialogContent>
-        <AppDialogClose />
         <AppDialogHeader>
           <DialogTitle>초대코드 입력</DialogTitle>
+          <AppDialogClose />
         </AppDialogHeader>
         <AppDialogBody>
           <label htmlFor="invite-code" className="flex flex-col gap-3">

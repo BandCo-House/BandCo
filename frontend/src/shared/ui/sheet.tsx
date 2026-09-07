@@ -3,7 +3,10 @@ import { XIcon } from 'lucide-react';
 import { Dialog as SheetPrimitive } from 'radix-ui';
 
 import { cn } from '@/shared/lib/utils';
-import { CloseButtonContent, closeButtonClass } from '@/shared/ui/close-button';
+import {
+  CloseButtonContent,
+  closeButtonFloatingClass,
+} from '@/shared/ui/close-button';
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -21,7 +24,7 @@ function SheetClose({
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
-/** 시트 우상단 닫기(X). 모달의 AppDialogClose와 같은 스타일을 공유한다. */
+/** 시트 우상단 닫기(X). 시트는 제목이 가운데 오는 경우가 있어 부유형을 쓴다. */
 function AppSheetClose({
   className,
   children,
@@ -30,7 +33,7 @@ function AppSheetClose({
   return (
     <SheetClose
       type="button"
-      className={cn(closeButtonClass, className)}
+      className={cn(closeButtonFloatingClass, className)}
       {...props}
     >
       {children ?? <CloseButtonContent />}

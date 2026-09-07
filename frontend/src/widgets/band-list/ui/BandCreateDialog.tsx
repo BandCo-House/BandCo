@@ -42,10 +42,9 @@ export const BandCreateDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <AppDialogContent>
-        <AppDialogClose />
-
         <AppDialogHeader>
           <DialogTitle>밴드 만들기</DialogTitle>
+          <AppDialogClose />
         </AppDialogHeader>
 
         <AppDialogBody>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import { useSearchTracks } from '@/entities/song/api/useSearchTracks';
 import { formatSongLength } from '@/entities/song/lib/song-length';
 import type { SongPreview } from '@/entities/song/model/types';
@@ -7,7 +6,7 @@ import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
 import {
   AppDialogContent,
   Dialog,
-  DialogClose,
+  AppDialogClose,
   DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
@@ -113,13 +112,7 @@ export const SongSearchModal = ({
 
         <div className="relative z-10 flex items-start gap-8 py-1">
           <DialogTitle className="min-w-0 flex-1">곡 검색</DialogTitle>
-          <DialogClose
-            type="button"
-            aria-label="곡 검색 닫기"
-            className="-m-2 flex shrink-0 items-center justify-center p-2 text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <X aria-hidden="true" className="size-6" />
-          </DialogClose>
+          <AppDialogClose aria-label="곡 검색 닫기" className="text-grey-50" />
         </div>
 
         <Input

@@ -4,6 +4,7 @@ import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
 import {
   AppDialogBody,
   AppDialogClose,
+  AppDialogHeader,
   AppDialogContent,
   Dialog,
   DialogTitle,
@@ -13,6 +14,7 @@ import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
 import { Switch } from '@/shared/ui/switch';
 import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
+import { WheelFieldCard } from '@/shared/ui/wheel-field-card';
 import {
   toDateString,
   toWheelDate,
@@ -99,11 +101,10 @@ export const SpaceCreateModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AppDialogContent className="flex max-h-[85dvh] flex-col gap-10 p-5 text-grey-50">
-        <AppDialogClose
-          className="top-5 right-5"
-          aria-label="합주 공간 만들기 닫기"
-        />
-        <DialogTitle className="pr-12">합주 공간 만들기</DialogTitle>
+        <AppDialogHeader className="mb-0">
+          <DialogTitle>합주 공간 만들기</DialogTitle>
+          <AppDialogClose aria-label="합주 공간 만들기 닫기" />
+        </AppDialogHeader>
 
         <AppDialogBody className="gap-9 overflow-y-auto">
           <Field
@@ -150,7 +151,7 @@ export const SpaceCreateModal = ({
             </div>
 
             {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
-            <div className="flex h-[232px] flex-col justify-center gap-6 rounded-md field-border border-surface-1 bg-grey-600/20 px-2.5 backdrop-blur-md">
+            <WheelFieldCard className="h-[232px] justify-center px-2.5 py-0">
               <WheelDatePicker
                 label="시작"
                 value={startDate}
@@ -167,7 +168,7 @@ export const SpaceCreateModal = ({
                   정해진 기간이 없는 합주 공간
                 </p>
               )}
-            </div>
+            </WheelFieldCard>
             {/* 주변에 다른 요소가 없어 absolute로 띄워 레이아웃을 밀지 않는다. */}
             {endBeforeStart && (
               <p className="absolute top-full mt-1 typo-sm-r text-destructive">
