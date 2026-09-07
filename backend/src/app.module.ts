@@ -9,6 +9,7 @@ import { CommonModule } from './modules/common/common.module';
 import { LinkPreviewsModule } from './modules/link-previews/link-previews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PlacesModule } from './modules/places/places.module';
+import { SchedulePollsModule } from './modules/schedule-polls/schedule-polls.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SongsModule } from './modules/songs/songs.module';
 import { TeamsModule } from './modules/teams/teams.module';
@@ -29,6 +30,7 @@ import { StorageModule } from './storage/storage.module';
     SongsModule,
     UsersModule,
     BandsModule,
+    SchedulePollsModule,
     SchedulesModule,
     CommonModule,
     LinkPreviewsModule,
