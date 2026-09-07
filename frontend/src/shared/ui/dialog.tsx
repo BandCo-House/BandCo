@@ -121,6 +121,9 @@ function DialogFooter({
   );
 }
 
+// 유리 카드의 테두리 선. 실제 border가 아니라 inset ring으로 그린다 — 이유는 아래.
+const RIM_COLOR = 'color-mix(in srgb, var(--surface-1) 40%, transparent)';
+
 function AppDialogContent({
   className,
   children,
@@ -148,12 +151,22 @@ function AppDialogContent({
         className,
       )}
       style={{
-        borderStyle: 'solid',
-        borderWidth: '0.5px 1px 2px 0.5px',
-        borderColor: 'color-mix(in srgb, var(--surface-1) 40%, transparent)',
-        // 바깥 그림자 + 위/아래 안쪽 흰 하이라이트(유리 두께감).
-        boxShadow:
-          '0 3px 6px 2px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(255,255,255,0.3)',
+        // 테두리를 실제 border로 그리면 border box와 padding box가 어긋난다.
+        // GlassRim·GlowBlob은 inset-0이라 padding box까지만 깔리므로, 그 사이
+        // 0.5~2px 링에는 글로우가 닿지 않는다. 그 링만 색이 달라 카드 사방에
+        // 얇은 막이 덧대인 것처럼 보였다(오른쪽·아래가 두꺼워 제일 눈에 띔).
+        // 같은 두께를 inset ring으로 옮기면 두 박스가 일치해 틈이 사라진다.
+        boxShadow: [
+          // 바깥 그림자 + 위/아래 안쪽 흰 하이라이트(유리 두께감).
+          '0 3px 6px 2px rgba(255, 255, 255, 0.16)',
+          'inset 0 1px 0 rgba(255,255,255,0.6)',
+          'inset 0 -1px 0 rgba(255,255,255,0.3)',
+          // 아래·오른쪽을 두껍게 둔 비대칭 테두리(빛이 좌상단에서 온다).
+          `inset 0 0.5px 0 0 ${RIM_COLOR}`,
+          `inset -1px 0 0 0 ${RIM_COLOR}`,
+          `inset 0 -2px 0 0 ${RIM_COLOR}`,
+          `inset 0.5px 0 0 0 ${RIM_COLOR}`,
+        ].join(', '),
         ...style,
       }}
       {...props}
