@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi } from 'vitest';
-import type { ComponentPropsWithoutRef } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import { TeamDetailView } from './TeamDetailView';
 import type { TeamDetail, TeamMember } from '@/entities/team/model/types';
 
@@ -60,6 +61,18 @@ const MOCK_MEMBERS: TeamMember[] = [
   },
 ];
 
+// 세션 선택 드롭다운이 useSkillTypes(useQuery)를 쓰므로 Provider가 필요하다.
+const renderWithQuery = (ui: ReactNode) =>
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      {ui}
+    </QueryClientProvider>,
+  );
+
 describe('TeamDetailView', () => {
   const defaultProps = {
     team: MOCK_TEAM,
@@ -73,7 +86,7 @@ describe('TeamDetailView', () => {
   };
 
   it('팀원 목록, 합주 공간 섹션을 올바르게 렌더링한다', () => {
-    render(<TeamDetailView {...defaultProps} />);
+    renderWithQuery(<TeamDetailView {...defaultProps} />);
 
     expect(screen.getByText('듀얼 기타 편성')).toBeInTheDocument();
     expect(screen.getByText('팀원 목록')).toBeInTheDocument();
@@ -87,7 +100,7 @@ describe('TeamDetailView', () => {
 
   it('수정 버튼 클릭 시 onToggleEdit 콜백을 호출한다', () => {
     const handleToggleEdit = vi.fn();
-    render(
+    renderWithQuery(
       <TeamDetailView {...defaultProps} onToggleEdit={handleToggleEdit} />,
     );
 
@@ -97,7 +110,7 @@ describe('TeamDetailView', () => {
   });
 
   it('isEditing이 true일 때 팀원 추가 버튼 및 세션 검색 돋보기 버튼만 노출되고 합주 공간/곡/파일 섹션은 숨겨진다', () => {
-    render(<TeamDetailView {...defaultProps} isEditing={true} />);
+    renderWithQuery(<TeamDetailView {...defaultProps} isEditing={true} />);
 
     expect(
       screen.getByRole('button', { name: '팀원 추가' }),
