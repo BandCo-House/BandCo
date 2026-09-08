@@ -83,7 +83,10 @@ export const MemberSearchModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="max-h-[70dvh] gap-8 text-grey-50">
+      <AppDialogContent
+        size="full"
+        className="max-h-[70dvh] gap-8 text-grey-50"
+      >
         <DialogTitle className="sr-only">멤버·팀 검색</DialogTitle>
         <DialogDescription className="sr-only">
           이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.

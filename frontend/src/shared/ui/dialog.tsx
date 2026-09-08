@@ -124,14 +124,27 @@ function DialogFooter({
 // 유리 카드의 테두리 선. 실제 border가 아니라 inset ring으로 그린다 — 이유는 아래.
 const RIM_COLOR = 'color-mix(in srgb, var(--surface-1) 40%, transparent)';
 
+/**
+ * 모달의 두 종류.
+ *
+ * compact  확인·단문 입력. 화면을 다 쓸 일이 없어 양옆 여백을 남긴다. (기본값)
+ * full     폼·목록. 내용이 길어 화면을 쓸 수 있다. 좌우 여백 없이 앱 셸 폭을 채운다.
+ *
+ * 기본값이 compact인 이유: 빠뜨렸을 때 폼 모달이 조금 좁아지는 건 넘어갈 수 있지만,
+ * 확인창이 화면을 꽉 채우면 깨져 보인다. 덜 나쁜 쪽을 기본으로 둔다.
+ */
+type AppDialogSize = 'compact' | 'full';
+
 function AppDialogContent({
   className,
   children,
   showGlow = true,
+  size = 'compact',
   style,
   ...props
 }: React.ComponentProps<typeof DialogContent> & {
   showGlow?: boolean;
+  size?: AppDialogSize;
 }) {
   return (
     <DialogContent
@@ -147,11 +160,14 @@ function AppDialogContent({
         // 값이라 아무도 고른 적이 없었고, 그래서 모달마다 20·32로 제각각
         // 오버라이드하며 피해 다녔다(4종류).
         // 하단을 32로 키우지 않는 이유: 푸터 간격은 AppDialogFooter의 mt-8이 맡는다.
-        // 폭은 앱 셸(max-w-[648px])과 같게 두고 좌우 여백을 두지 않는다. shadcn 기본값
-        // max-w-[calc(100%-2rem)]는 작은 화면에서 양옆 16px을 남겨, 가뜩이나 좁은
-        // 폰에서 내용을 한 번 더 조인다. 시트(max-w-[648px])와도 폭이 어긋났다.
-        'w-full max-w-[648px] sm:max-w-[648px]',
-        'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-5 text-grey-100 shadow-none backdrop-blur-md',
+        'flex flex-col overflow-hidden rounded-md border-0 bg-white/24 p-5 text-grey-100 shadow-none backdrop-blur-md',
+        size === 'full'
+          ? // 앱 셸(max-w-[648px])과 같은 폭. shadcn 기본값 max-w-[calc(100%-2rem)]는
+            // 작은 화면에서 양옆 16px을 남겨 가뜩이나 좁은 폰에서 내용을 한 번 더
+            // 조이고, 시트(max-w-[648px])와도 폭이 어긋났다.
+            'max-h-dvh w-full max-w-[648px] sm:max-w-[648px]'
+          : // 확인창은 양옆 여백이 있어야 "화면 위에 뜬 작은 창"으로 읽힌다.
+            'max-h-[85dvh]',
         className,
       )}
       style={{

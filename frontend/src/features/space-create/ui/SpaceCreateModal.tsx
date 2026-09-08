@@ -106,7 +106,7 @@ export const SpaceCreateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="gap-10 text-grey-50">
+      <AppDialogContent size="full" className="gap-10 text-grey-50">
         <AppDialogHeader className="mb-0">
           <DialogTitle>합주 공간 만들기</DialogTitle>
           <AppDialogClose aria-label="합주 공간 만들기 닫기" />
