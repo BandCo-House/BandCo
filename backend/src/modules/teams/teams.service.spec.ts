@@ -912,6 +912,47 @@ describe('TeamsService', () => {
       await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(NotFoundException);
     });
 
+    it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: OTHER_BAND_MEMBER_ID } }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createTeamsRepositoryStub({
+        teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+        onUpdateTeamMemberSession: () => {},
+      });
+
+      repository.findTeamForUpdate = async (_teamId, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_TEAM_FOR_UPDATE;
+      };
+      repository.findBandMemberByBandIdAndUserId = async (_bandId, _userId, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_BAND_MEMBER;
+      };
+      repository.findExistingSkillTypeIds = async (skillTypeIds, tx) => {
+        capturedTransactions.push(tx);
+        return skillTypeIds.filter(id => id === VOCAL_SKILL_ID);
+      };
+      repository.updateTeamMemberSession = async (teamMemberId, skillTypeId, tx) => {
+        capturedTransactions.push(tx);
+        return { ...DEFAULT_ADD_MEMBER_RESULT, teamMemberId, skillType: skillTypeId ? { skillTypeId, name: '보컬' } : null };
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID);
+
+      expect(capturedTransactions.length).toBeGreaterThan(0);
+      const firstTx = capturedTransactions[0];
+      capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
+    });
+
     it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
       const externalTx = { transactionClient: true };
       const service = new TeamsService(
