@@ -147,6 +147,10 @@ function AppDialogContent({
         // 값이라 아무도 고른 적이 없었고, 그래서 모달마다 20·32로 제각각
         // 오버라이드하며 피해 다녔다(4종류).
         // 하단을 32로 키우지 않는 이유: 푸터 간격은 AppDialogFooter의 mt-8이 맡는다.
+        // 폭은 앱 셸(max-w-[648px])과 같게 두고 좌우 여백을 두지 않는다. shadcn 기본값
+        // max-w-[calc(100%-2rem)]는 작은 화면에서 양옆 16px을 남겨, 가뜩이나 좁은
+        // 폰에서 내용을 한 번 더 조인다. 시트(max-w-[648px])와도 폭이 어긋났다.
+        'w-full max-w-[648px] sm:max-w-[648px]',
         'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-5 text-grey-100 shadow-none backdrop-blur-md',
         className,
       )}

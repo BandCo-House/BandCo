@@ -325,7 +325,7 @@ function ProfileRoutePage() {
           open={isLeaveEditDialogOpen}
           onOpenChange={setIsLeaveEditDialogOpen}
         >
-          <AppDialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
+          <AppDialogContent>
             <AppDialogBody className="items-center gap-6 text-center">
               <DialogTitle className="typo-xl-sb text-grey-50">
                 편집 모드를 나가시겠습니까?
