@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pencil, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { useSkillTypes } from '@/entities/skill/api/useSkillTypes';
+import { SelectField } from '@/shared/ui/select-field';
 import type { TeamMember } from '@/entities/team/model/types';
 
 interface TeamMemberListSectionProps {
@@ -9,6 +11,11 @@ interface TeamMemberListSectionProps {
   onToggleEdit?: () => void;
   onOpenSearchForSession: (index: number) => void;
   onOpenSearchForNewMember: () => void;
+  /** 팀에서 맡을 세션을 바꾼다. 수정 모드에서만 쓰인다. */
+  onChangeSession?: (
+    index: number,
+    skillType: { skillTypeId: string; name: string } | null,
+  ) => void;
 }
 
 export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
@@ -17,8 +24,22 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
   onToggleEdit,
   onOpenSearchForSession,
   onOpenSearchForNewMember,
+  onChangeSession,
 }) => {
+  // 실패를 []로 뭉개면 "세션이 하나도 없는 팀"처럼 보여서, 사용자는 왜 못 고르는지
+  // 알 수 없다. 로딩 중에는 잠그고 실패는 인라인으로 알린다.
+  const {
+    data: skillTypes = [],
+    isLoading: isSkillTypesLoading,
+    isError: isSkillTypesError,
+  } = useSkillTypes(isEditing);
+
+  /**
+   * 팀에서 맡은 세션. `skillType`이 실제 편성이고, 없을 때만 보유 스킬로 대신 채운다.
+   * 둘은 다른 값이라 — 편성이 정해지면 그걸 우선한다.
+   */
   const getSessionName = (member: TeamMember, defaultIndex?: number) => {
+    if (member.skillType) return member.skillType.name;
     if (member.skills && member.skills.length > 0) {
       return member.skills.map((s) => s.skillName).join(', ');
     }
@@ -74,16 +95,44 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
       ) : (
         /* 피그마 팀원 수정 모드: (라임 #ECFCAB 밑줄 Input + 40px 원형 🔍 돋보기 버튼) */
         <div className="flex w-full flex-col gap-4 pt-1">
+          {/* placeholder 문구만으로는 스크린리더에 변화가 전달되지 않는다. */}
+          {isSkillTypesError && (
+            <p role="alert" className="typo-sm-r text-destructive">
+              세션 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+            </p>
+          )}
           {members.map((member, idx) => (
             <div
               key={member.teamMemberId}
               className="flex w-full items-center gap-2 py-0.5"
             >
-              {/* 좌측 세션명 + 라임 #ECFCAB 밑줄 */}
-              <div className="flex h-[54px] flex-1 items-center border-b border-[#ECFCAB] px-3 py-4">
-                <span className="typo-base-sb text-grey-50">
-                  {getSessionName(member, idx)}
-                </span>
+              {/* 좌측 세션 선택 — 팀에서 맡을 자리를 직접 고른다 */}
+              <div className="flex-1">
+                <SelectField
+                  value={member.skillType?.skillTypeId ?? null}
+                  onValueChange={(skillTypeId) => {
+                    const picked = skillTypes.find((s) => s.id === skillTypeId);
+                    if (picked) {
+                      onChangeSession?.(idx, {
+                        skillTypeId: picked.id,
+                        name: picked.name,
+                      });
+                    }
+                  }}
+                  options={skillTypes.map((skill) => ({
+                    value: skill.id,
+                    label: skill.name,
+                  }))}
+                  placeholder={
+                    isSkillTypesLoading
+                      ? '세션 불러오는 중…'
+                      : isSkillTypesError
+                        ? '세션을 불러오지 못했어요'
+                        : `세션${idx + 1}`
+                  }
+                  disabled={isSkillTypesLoading || isSkillTypesError}
+                  ariaLabel={`${member.user.nickname} 세션 선택`}
+                />
               </div>
 
               {/* 멤버 칩 */}

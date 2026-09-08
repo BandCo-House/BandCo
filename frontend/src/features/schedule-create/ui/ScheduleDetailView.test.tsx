@@ -18,7 +18,14 @@ const createDetail = (
   endAt: '2026-03-19T12:00:00.000Z',
   status: 'PLANNED',
   place: { placeId: 'place-1', name: 'QA 합주실', address: '서울시' },
-  songs: [{ songId: 'song-1', title: '밤편지', artistName: '아이유' }],
+  songs: [
+    {
+      songId: 'song-1',
+      title: '밤편지',
+      artistName: '아이유',
+      key: 'A_MINOR',
+    },
+  ],
   participants: [],
   memo: null,
   externalLinks: [],
@@ -53,6 +60,12 @@ describe('ScheduleDetailView', () => {
     renderDetail(createDetail({ scheduleType: 'MEETING', memo: '안건 정리' }));
 
     expect(screen.queryByText('밤편지')).not.toBeInTheDocument();
+  });
+
+  it('곡 키를 표기 형태로 보여준다', () => {
+    renderDetail(createDetail());
+
+    expect(screen.getByText('A Minor')).toBeInTheDocument();
   });
 
   it('회의 메모(안건)도 상세에 보인다', () => {

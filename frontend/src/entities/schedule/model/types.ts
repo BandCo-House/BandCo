@@ -14,6 +14,12 @@ export interface ScheduleReferenceFile extends ScheduleReferenceFileInput {
   createdAt: string;
 }
 
+/** 생성·수정 요청의 참여자 한 명. skillTypeId는 합주 전용. */
+export interface ScheduleParticipantInput {
+  bandMemberId: string;
+  skillTypeId?: string;
+}
+
 export interface CreateScheduleRequest {
   title: string;
   scheduleType: ScheduleType;
@@ -25,8 +31,11 @@ export interface CreateScheduleRequest {
   // 연습(PRACTICE) 전용. 백엔드는 곡을 배열로 받는다(단일 선택도 [id]).
   songIds?: string[];
   teamId?: string;
-  // 참가자는 userId가 아니라 bandMemberId로 보낸다.
-  participantBandMemberIds?: string[];
+  /**
+   * 참가자. bandMemberId로 보내며, 합주는 세션(skillTypeId)까지 함께 싣는다.
+   * 한 사람이 여러 세션을 맡으면 같은 bandMemberId가 세션별로 여러 번 들어간다.
+   */
+  participants?: ScheduleParticipantInput[];
   // 외부 링크. 프론트가 canonical URL로 정규화해 보낸다. 전체 교체 방식.
   externalLinks?: string[];
   // 참고자료 파일(업로드 후 objectUrl + 원본 파일명). 전체 교체 방식.
@@ -61,6 +70,8 @@ export interface ScheduleSong {
   songId: string;
   title: string;
   artistName: string;
+  /** 곡 키(SongKey enum 값). 미입력이면 null. */
+  key: string | null;
 }
 
 /**
@@ -109,6 +120,12 @@ export interface GetSchedulesResponse {
   meta: ScheduleListMeta;
 }
 
+/** 이 일정에서 맡은 세션. 회의 참여자는 null이다. */
+export interface ScheduleParticipantSkillType {
+  skillTypeId: string;
+  name: string;
+}
+
 /** 일정 상세(GET /schedules/:id)의 참여자. note는 악기/지참사항 등 자유 메모. */
 export interface ScheduleParticipantDetail {
   participantId: string;
@@ -118,6 +135,11 @@ export interface ScheduleParticipantDetail {
   avatarUrl: string | null;
   attendanceStatus: string | null;
   note: string | null;
+  /**
+   * 이 일정에서 맡은 세션. 회의는 null.
+   * 한 사람이 보컬·기타를 겸하면 같은 bandMemberId가 세션별로 여러 항목에 나온다.
+   */
+  skillType: ScheduleParticipantSkillType | null;
 }
 
 /** 일정 상세(GET /schedules/:id) 응답의 schedule 본문. */

@@ -23,10 +23,12 @@ interface MemberSearchModalProps {
   selectedIds: string[];
   /** 멤버 행 탭 시 추가/해제. 선택된 멤버 전체 정보를 넘긴다. */
   onToggleMember: (member: BandMemberListItem) => void;
-  /** 팀 행 탭 시 그 팀 전체를 참여자로 넣는다. */
+  /** 팀 행 탭 시 그 팀을 통째로 반영한다. */
   onSelectTeam?: (teamId: string) => void;
   /** 팀 조회가 도는 중. 응답을 기다리는 동안 팀 행을 잠근다. */
   isSelectingTeam?: boolean;
+  /** 세션 편성처럼 한 명만 고르는 화면. 행에 라디오 의미를 준다. */
+  singleSelect?: boolean;
 }
 
 type Tab = 'member' | 'team';
@@ -47,8 +49,9 @@ const RowLink = ({ label }: { label: string }) => (
 );
 
 /**
- * 멤버/팀 검색 모달. 멤버 탭은 행을 탭할 때마다 참여자를 추가/해제하고(다중 선택),
- * 팀 탭은 행을 탭하면 그 팀 멤버를 한 번에 넣는다.
+ * 멤버/팀 검색 모달.
+ * - 멤버 탭: 기본은 여러 명 토글, `singleSelect`면 한 명만 고르고 닫힌다
+ * - 팀 탭: 행을 탭하면 그 팀을 통째로 반영한다
  * 프로필/상세보기 라우팅은 아직 미연동.
  */
 export const MemberSearchModal = ({
@@ -59,6 +62,7 @@ export const MemberSearchModal = ({
   onToggleMember,
   onSelectTeam,
   isSelectingTeam = false,
+  singleSelect = false,
 }: MemberSearchModalProps) => {
   const [tab, setTab] = useState<Tab>('member');
   const [query, setQuery] = useState('');
@@ -120,7 +124,13 @@ export const MemberSearchModal = ({
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
         />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+        <div
+          className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+          role={singleSelect && tab === 'member' ? 'radiogroup' : undefined}
+          aria-label={
+            singleSelect && tab === 'member' ? '멤버 선택' : undefined
+          }
+        >
           {tab === 'member' ? (
             filteredMembers.length === 0 ? (
               <p className="py-8 text-center typo-sm-r text-grey-300">
@@ -134,7 +144,17 @@ export const MemberSearchModal = ({
                 >
                   <button
                     type="button"
-                    aria-pressed={selected.has(member.bandMemberId)}
+                    role={singleSelect ? 'radio' : undefined}
+                    aria-checked={
+                      singleSelect
+                        ? selected.has(member.bandMemberId)
+                        : undefined
+                    }
+                    aria-pressed={
+                      singleSelect
+                        ? undefined
+                        : selected.has(member.bandMemberId)
+                    }
                     onClick={() => onToggleMember(member)}
                     className={cn(
                       'flex flex-1 items-center justify-between gap-2 rounded-[20px] border bg-surface-3 p-2 transition-colors',

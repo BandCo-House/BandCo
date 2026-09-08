@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apiGet, apiPost, apiDelete } from '@/shared/api';
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/shared/api';
 import {
   bandTeamListItemSchema,
   teamDetailSchema,
@@ -77,14 +77,34 @@ export const getTeamMembers = async (
 
 /**
  * 팀 멤버를 추가한다. (POST /teams/:teamId/members)
+ * skillTypeId를 주면 그 세션으로 배정한다. 같은 멤버를 다른 세션으로 여러 번 넣을 수 있다.
  */
 export const addTeamMember = async (
   teamId: string,
   bandMemberId: string,
+  skillTypeId?: string,
 ): Promise<TeamMember> => {
   const data = await apiPost<unknown>(`/teams/${teamId}/members`, {
     bandMemberId,
+    ...(skillTypeId ? { skillTypeId } : {}),
   });
+  return teamMemberSchema.parse(data);
+};
+
+/**
+ * 팀 멤버의 세션 배정을 바꾼다. (PATCH /teams/:teamId/members/:teamMemberId)
+ * null이면 미배정으로 되돌린다. 세션 변경은 제거+재추가가 아니라 이걸 쓴다 —
+ * 제거가 성공하고 추가가 실패하면 멀쩡히 있던 사람이 팀에서 빠진다.
+ */
+export const updateTeamMemberSession = async (
+  teamId: string,
+  teamMemberId: string,
+  skillTypeId: string | null,
+): Promise<TeamMember> => {
+  const data = await apiPatch<unknown>(
+    `/teams/${teamId}/members/${teamMemberId}`,
+    { skillTypeId },
+  );
   return teamMemberSchema.parse(data);
 };
 
