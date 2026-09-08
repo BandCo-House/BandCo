@@ -104,7 +104,7 @@ export const ImageCropDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <AppDialogContent className="px-5 pt-5 pb-8">
+      <AppDialogContent size="full">
         <AppDialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="typo-sm-r text-grey-200">
