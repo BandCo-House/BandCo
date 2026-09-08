@@ -6,9 +6,9 @@
 
 ---
 
-## PATCH /teams/{teamId}/members/{teamMemberId}
+## #67 PATCH /teams/{teamId}/members/{teamMemberId}
 
-`#67` 팀 멤버 세션 변경. 세션만 바꾸는 건 UPDATE 한 번이면 된다 — 제거 후 재추가로 흉내 내면 중간에 실패했을 때 멀쩡히 있던 사람이 팀에서 빠진다.
+팀 멤버 세션 변경. 세션만 바꾸는 건 UPDATE 한 번이면 된다 — 제거 후 재추가로 흉내 내면 중간에 실패했을 때 멀쩡히 있던 사람이 팀에서 빠진다.
 
 ### Request
 

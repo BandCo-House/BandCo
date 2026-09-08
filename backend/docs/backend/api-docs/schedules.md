@@ -37,8 +37,9 @@
     "song-uuid"
   ],
   "participants": [
-    { "bandMemberId": "band-member-uuid", "skillTypeId": "skill-type-uuid" },
-    { "bandMemberId": "band-member-uuid", "skillTypeId": "other-skill-type-uuid" }
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "vocal-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "guitar-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-2", "skillTypeId": "bass-skill-type-uuid" }
   ],
   "memo": "후반부 템포 점검",
   "externalLinks": ["https://example.com/notice"],
@@ -52,6 +53,8 @@
 ```
 
 > 선택 필드: placeId, songIds, participants, memo, externalLinks, referenceFiles
+>
+> `participants`는 (멤버, 세션) 단위라 한 사람이 여러 세션을 겸하면 항목이 여러 개다. 응답의 `participantCount`는 **행 수가 아니라 고유 멤버 수**다 — 위 예시는 항목 3개, `participantCount` 2다.
 
 ### Response 200
 ```json
@@ -128,8 +131,10 @@
     "song-uuid"
   ],
   "participants": [
-    { "bandMemberId": "band-member-uuid", "skillTypeId": "skill-type-uuid" },
-    { "bandMemberId": "band-member-uuid", "skillTypeId": "other-skill-type-uuid" }
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "vocal-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "guitar-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-2", "skillTypeId": "bass-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-3", "skillTypeId": "drum-skill-type-uuid" }
   ],
   "memo": "후반부 템포 + 엔딩 합 맞추기",
   "externalLinks": [],

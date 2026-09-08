@@ -921,6 +921,20 @@ describe('TeamsService', () => {
       await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(ForbiddenException);
     });
 
+    it('동시 요청으로 P2002가 발생하면 ConflictException으로 변환한다', async () => {
+      // 중복 조회와 UPDATE 사이가 잠겨 있지 않아 같은 세션을 노린 요청이 겹칠 수 있다.
+      const repository = createTeamsRepositoryStub({
+        teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+      });
+      repository.updateTeamMemberSession = async () => {
+        throw new Prisma.PrismaClientKnownRequestError('unique', { code: 'P2002', clientVersion: 'test' });
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(ConflictException);
+    });
+
     it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
       const capturedTransactions: unknown[] = [];
       const repository = createTeamsRepositoryStub({

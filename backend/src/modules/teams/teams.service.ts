@@ -258,7 +258,17 @@ export class TeamsService {
         throw new ConflictException('이미 같은 세션으로 등록된 팀 멤버입니다.');
       }
 
-      return this.teamsRepository.updateTeamMemberSession(teamMemberId, skillTypeId, client);
+      // 위 중복 조회와 UPDATE 사이는 잠겨 있지 않다. 같은 세션을 노리는 요청이
+      // 동시에 들어오면 둘 다 통과한 뒤 하나가 @@unique에 걸린다.
+      // addTeamMember와 같이 P2002를 409로 옮겨 500으로 새지 않게 한다.
+      try {
+        return await this.teamsRepository.updateTeamMemberSession(teamMemberId, skillTypeId, client);
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+          throw new ConflictException('이미 같은 세션으로 등록된 팀 멤버입니다.');
+        }
+        throw e;
+      }
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);
