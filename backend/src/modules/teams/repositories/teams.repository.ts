@@ -13,6 +13,7 @@ import type { GetMyTeamsResult } from '../types/get-my-teams-result.type';
 import type { GetTeamMembersResult } from '../types/get-team-members-result.type';
 import type { GetTeamResult } from '../types/get-team-result.type';
 import type { RemoveTeamMemberResult } from '../types/remove-team-member-result.type';
+import type { UpdateTeamMemberSessionResult } from '../types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from '../types/update-team-result.type';
 
 export const TEAMS_REPOSITORY = Symbol('TEAMS_REPOSITORY');
@@ -64,10 +65,14 @@ export interface TeamsRepository {
     teamLeaderBandMemberId: string | null;
   } | null>;
 
-  /** 팀 멤버십 확인 (팀 내 특정 밴드 멤버 조회) */
+  /**
+   * 팀 멤버십 확인 (팀 내 특정 밴드 멤버 + 세션 조회).
+   * 한 사람이 팀 안에서 여러 세션을 맡을 수 있어 세션까지 같아야 같은 배정이다.
+   */
   findTeamMemberByTeamAndBandMember(
     teamId: string,
     bandMemberId: string,
+    skillTypeId?: string | null,
     tx?: Prisma.TransactionClient,
   ): Promise<{
     id: string;
@@ -101,7 +106,22 @@ export interface TeamsRepository {
   findMyTeams(userId: string, query: GetMyTeamsQuery, tx?: Prisma.TransactionClient): Promise<GetMyTeamsResult>;
 
   /** 팀 멤버 추가 */
-  addTeamMember(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+  addTeamMember(teamId: string, bandMemberId: string, skillTypeId?: string | null, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+
+  /**
+   * 팀 멤버의 세션 배정을 바꾼다. 세션 변경은 행을 지웠다 다시 만들 일이 아니다.
+   * null이면 미배정으로 되돌린다.
+   */
+  updateTeamMemberSession(teamMemberId: string, skillTypeId: string | null, tx?: Prisma.TransactionClient): Promise<UpdateTeamMemberSessionResult>;
+
+  /**
+   * 팀 안에서 그 사람이 가진 세션 배정 행 수를 센다.
+   * 리더의 마지막 배정인지(=팀에서 빠지는지) 판단할 때 쓴다.
+   */
+  countTeamMemberAssignments(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number>;
+
+  /** 존재하는 skillType ID만 추려 돌려준다. 세션 배정 검증용. */
+  findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
 
   /** 팀 삭제 (hard delete, TeamMember cascade) */
   deleteTeam(teamId: string, tx?: Prisma.TransactionClient): Promise<DeleteTeamResult>;

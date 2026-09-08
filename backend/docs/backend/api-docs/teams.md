@@ -1,6 +1,8 @@
 # teams API
 
 > 최종 동기화: 2026-06-28
+>
+> ⚠️ 변환 노트: [설계자 보완 2026-09-06] 팀 세션 편성 추가 — `POST /teams/{teamId}/members` 요청에 `skillTypeId?` 추가(같은 멤버를 다른 세션으로 여러 번 추가 가능), 팀 멤버 응답에 `skillType: { skillTypeId, name } | null` 추가. 기존 `skills`(개인 보유 스킬)와 다른 값이다. `#67 PATCH /teams/{teamId}/members/{teamMemberId}` 신규 추가 — 세션 변경을 제거+재추가가 아니라 UPDATE로 처리한다.
 
 ---
 
@@ -563,3 +565,52 @@
 | 401 | 인증 실패 |
 | 403 | 권한 없음 (팀 리더 아님) |
 | 404 | 팀 없음 |
+
+---
+
+## #67 PATCH /teams/{teamId}/members/{teamMemberId}
+
+팀 멤버 세션 변경. 세션만 바꾸는 건 UPDATE 한 번이면 된다 — 제거 후 재추가로 흉내 내면 중간에 실패했을 때 멀쩡히 있던 사람이 팀에서 빠진다.
+
+### Request
+
+```json
+{
+  "skillTypeId": "skill-type-uuid"
+}
+```
+
+> `skillTypeId`를 `null`로 주면 세션 미배정으로 되돌린다. 생략(undefined)과 `null`은 같은 결과다.
+
+### Response 200
+
+```json
+{
+  "status": "success",
+  "error": null,
+  "message": "팀 멤버 세션 변경 성공",
+  "data": {
+    "teamMemberId": "team-member-uuid",
+    "teamId": "team-uuid",
+    "bandMemberId": "band-member-uuid",
+    "user": {
+      "userId": "user-uuid",
+      "nickname": "김민수",
+      "profileImageUrl": null
+    },
+    "teamRole": "MEMBER",
+    "joinedAt": "2026-05-01T12:00:00.000Z",
+    "skillType": { "skillTypeId": "skill-type-uuid", "name": "보컬" }
+  }
+}
+```
+
+### Error Responses
+
+| 코드 | 조건 |
+|------|------|
+| 400 | 존재하지 않는 세션 |
+| 401 | 인증 실패 |
+| 403 | 팀 리더 권한 필요 |
+| 404 | 팀 또는 팀 멤버를 찾을 수 없음 |
+| 409 | 같은 사람이 이미 같은 세션을 맡고 있음 |

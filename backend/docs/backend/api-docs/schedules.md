@@ -7,7 +7,8 @@
 > - #48 일정 목록 조회(밴드 기준) 응답 JSON 원본이 여는 중괄호(`{`) 없이 시작하는 오기가 있어 수정하여 기록함.
 > - teams 도메인 MVP 제외로 teamIds/teams 필드를 Request/Response에서 제거함.
 > - scheduleType enum: PRACTICE | MEETING / status enum: PLANNED | DONE | CANCELED (Prisma schema 기준)
-> - PATCH body 전체 필드 선택 (partial update 패턴). POST에서 memo, placeId, songIds, participantBandMemberIds, externalLinks, referenceFiles는 선택.
+> - PATCH body 전체 필드 선택 (partial update 패턴). POST에서 memo, placeId, songIds, participants, externalLinks, referenceFiles는 선택.
+> - ⚠️ 변환 노트: [설계자 보완 2026-09-06] 세션 편성 추가 — 참여자 입력을 `participants: { bandMemberId, skillTypeId? }[]` 하나로 통일(구형 `participantBandMemberIds` 제거), 상세 응답 participants에 `skillType` 추가, songs에 `key` 추가.
 
 ---
 
@@ -35,9 +36,10 @@
   "songIds": [
     "song-uuid"
   ],
-  "participantBandMemberIds": [
-    "band-member-uuid-1",
-    "band-member-uuid-2"
+  "participants": [
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "vocal-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "guitar-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-2", "skillTypeId": "bass-skill-type-uuid" }
   ],
   "memo": "후반부 템포 점검",
   "externalLinks": ["https://example.com/notice"],
@@ -50,7 +52,9 @@
 }
 ```
 
-> 선택 필드: placeId, songIds, participantBandMemberIds, memo, externalLinks, referenceFiles
+> 선택 필드: placeId, songIds, participants, memo, externalLinks, referenceFiles
+>
+> `participants`는 (멤버, 세션) 단위라 한 사람이 여러 세션을 겸하면 항목이 여러 개다. 응답의 `participantCount`는 **행 수가 아니라 고유 멤버 수**다 — 위 예시는 항목 3개, `participantCount` 2다.
 
 ### Response 200
 ```json
@@ -72,7 +76,8 @@
       {
         "songId": "song-uuid",
         "title": "좋은 날",
-        "artistName": "IU"
+        "artistName": "IU",
+        "key": "F_SHARP_MINOR"
       }
     ],
     "participantCount": 2,
@@ -125,10 +130,11 @@
   "songIds": [
     "song-uuid"
   ],
-  "participantBandMemberIds": [
-    "band-member-uuid-1",
-    "band-member-uuid-2",
-    "band-member-uuid-3"
+  "participants": [
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "vocal-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-1", "skillTypeId": "guitar-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-2", "skillTypeId": "bass-skill-type-uuid" },
+    { "bandMemberId": "band-member-uuid-3", "skillTypeId": "drum-skill-type-uuid" }
   ],
   "memo": "후반부 템포 + 엔딩 합 맞추기",
   "externalLinks": [],
@@ -254,7 +260,8 @@
           {
             "songId": "song-uuid",
             "title": "좋은 날",
-            "artistName": "IU"
+            "artistName": "IU",
+          "key": "F_SHARP_MINOR"
           }
         ],
         "participantCount": 4,
@@ -386,7 +393,8 @@
         {
           "songId": "song-uuid",
           "title": "좋은 날",
-          "artistName": "IU"
+          "artistName": "IU",
+          "key": "F_SHARP_MINOR"
         }
       ],
       "participants": [
@@ -394,7 +402,8 @@
           "participantId": "participant-uuid",
           "bandMemberId": "band-member-uuid",
           "attendanceStatus": "PENDING",
-          "note": null
+          "note": null,
+          "skillType": { "skillTypeId": "skill-type-uuid", "name": "보컬" }
         }
       ],
       "memo": "후렴 파트 합 맞추기",
