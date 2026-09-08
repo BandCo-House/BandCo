@@ -23,6 +23,8 @@ const BAND_ID = '22222222-2222-4222-8222-222222222222';
 const TEAM_ID = '33333333-3333-4333-8333-333333333333';
 const BAND_MEMBER_ID = '44444444-4444-4444-8444-444444444444';
 const TEAM_MEMBER_ID = '55555555-5555-4555-8555-555555555555';
+const VOCAL_SKILL_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const UNKNOWN_SKILL_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const OTHER_BAND_MEMBER_ID = '66666666-6666-4666-8666-666666666666';
 const OTHER_TEAM_MEMBER_ID = '77777777-7777-4777-8777-777777777777';
 
@@ -112,6 +114,7 @@ const DEFAULT_ADD_MEMBER_RESULT: AddTeamMemberResult = {
   user: { userId: USER_ID, nickname: '새 멤버', profileImageUrl: null },
   teamRole: 'MEMBER',
   joinedAt: '2026-01-01T00:00:00.000Z',
+  skillType: null,
 };
 
 const DEFAULT_DELETE_RESULT: DeleteTeamResult = {
@@ -151,6 +154,9 @@ function createTeamsRepositoryStub(options?: {
   onChangeTeamLeader?: (teamId: string, newLeaderTeamMemberId: string, tx: unknown) => void;
   onRemoveTeamMember?: (teamMemberId: string, teamId: string, tx: unknown) => void;
   onAddTeamMember?: (teamId: string, bandMemberId: string, tx: unknown) => void;
+  onAddTeamMemberWithSkill?: (teamId: string, bandMemberId: string, skillTypeId: string | null) => void;
+  teamMemberAssignmentCount?: number;
+  onUpdateTeamMemberSession?: (teamMemberId: string, skillTypeId: string | null) => void;
   onDeleteTeam?: (teamId: string, tx: unknown) => void;
 }): TeamsRepository {
   return {
@@ -176,7 +182,7 @@ function createTeamsRepositoryStub(options?: {
     async findTeamForUpdate(_teamId, _tx) {
       return options?.teamForUpdate !== undefined ? options.teamForUpdate : DEFAULT_TEAM_FOR_UPDATE;
     },
-    async findTeamMemberByTeamAndBandMember(_teamId, _bandMemberId, _tx) {
+    async findTeamMemberByTeamAndBandMember(_teamId, _bandMemberId, _skillTypeId, _tx) {
       return options?.teamMemberByTeamAndBandMember !== undefined ? options.teamMemberByTeamAndBandMember : null;
     },
     async findTeamMemberById(_teamMemberId, _tx) {
@@ -200,9 +206,21 @@ function createTeamsRepositoryStub(options?: {
     async findMyTeams(_userId, _query, _tx) {
       return DEFAULT_MY_TEAMS_RESULT;
     },
-    async addTeamMember(teamId, bandMemberId, tx) {
+    async addTeamMember(teamId, bandMemberId, skillTypeId, tx) {
       options?.onAddTeamMember?.(teamId, bandMemberId, tx);
+      options?.onAddTeamMemberWithSkill?.(teamId, bandMemberId, skillTypeId ?? null);
+
       return DEFAULT_ADD_MEMBER_RESULT;
+    },
+    async findExistingSkillTypeIds(skillTypeIds, _tx) {
+      return skillTypeIds.filter(id => id === VOCAL_SKILL_ID);
+    },
+    async countTeamMemberAssignments(_teamId, _bandMemberId, _tx) {
+      return options?.teamMemberAssignmentCount ?? 1;
+    },
+    async updateTeamMemberSession(teamMemberId, skillTypeId, _tx) {
+      options?.onUpdateTeamMemberSession?.(teamMemberId, skillTypeId);
+      return { ...DEFAULT_ADD_MEMBER_RESULT, teamMemberId, skillType: skillTypeId ? { skillTypeId, name: '보컬' } : null };
     },
     async deleteTeam(teamId, tx) {
       options?.onDeleteTeam?.(teamId, tx);
@@ -623,6 +641,32 @@ describe('TeamsService', () => {
       await expect(service.removeTeamMember(USER_ID, TEAM_ID, OTHER_TEAM_MEMBER_ID, externalTx as never)).resolves.toBeDefined();
       expect(capturedTx).toBe(externalTx);
     });
+
+    it('리더라도 세션 배정이 더 남아 있으면 그 배정만 제거할 수 있다', async () => {
+      // teamRole은 사람 단위인데 행은 세션마다 나뉜다. 남은 배정이 있으면
+      // 팀에서 빠지는 게 아니라 그 세션만 비우는 것이다.
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'LEADER' },
+          teamMemberAssignmentCount: 2,
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.removeTeamMember(USER_ID, TEAM_ID, TEAM_MEMBER_ID)).resolves.toBeDefined();
+    });
+
+    it('리더의 마지막 배정은 제거할 수 없다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'LEADER' },
+          teamMemberAssignmentCount: 1,
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.removeTeamMember(USER_ID, TEAM_ID, TEAM_MEMBER_ID)).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('getMyTeams', () => {
@@ -697,6 +741,35 @@ describe('TeamsService', () => {
       await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID)).rejects.toThrow(ConflictException);
     });
 
+    it('세션과 함께 추가하면 skillTypeId를 Repository에 전달한다', async () => {
+      let captured: string | null = 'unset';
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          bandMemberById: otherBandMemberRecord,
+          onAddTeamMemberWithSkill: (_teamId, _bandMemberId, skillTypeId) => {
+            captured = skillTypeId;
+          },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, VOCAL_SKILL_ID);
+
+      expect(captured).toBe(VOCAL_SKILL_ID);
+    });
+
+    it('존재하지 않는 세션이면 BadRequestException을 던진다', async () => {
+      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberById: otherBandMemberRecord }), createPrismaServiceStub());
+
+      await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, UNKNOWN_SKILL_ID)).rejects.toThrow(BadRequestException);
+    });
+
+    it('skillTypeId가 null이면 세션 검증을 건너뛴다', async () => {
+      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberById: otherBandMemberRecord }), createPrismaServiceStub());
+
+      await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, null as never)).resolves.toBeDefined();
+    });
+
     it('동시 요청으로 P2002가 발생하면 ConflictException으로 변환한다', async () => {
       const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: '0' });
       const repository = createTeamsRepositoryStub({
@@ -730,7 +803,7 @@ describe('TeamsService', () => {
         capturedTransactions.push(tx);
         return otherBandMemberRecord;
       };
-      repository.findTeamMemberByTeamAndBandMember = async (_teamId, _bandMemberId, tx) => {
+      repository.findTeamMemberByTeamAndBandMember = async (_teamId, _bandMemberId, _skillTypeId, tx) => {
         capturedTransactions.push(tx);
         return null;
       };
@@ -756,8 +829,154 @@ describe('TeamsService', () => {
         createPrismaServiceFailingTransactionStub(),
       );
 
-      await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, externalTx as never)).resolves.toBeDefined();
+      await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID, undefined, externalTx as never)).resolves.toBeDefined();
       expect(capturedTx).toBe(externalTx);
+    });
+  });
+
+  describe('updateTeamMemberSession', () => {
+    it('세션을 바꾸면 UPDATE로 처리한다(제거 후 재추가가 아니다)', async () => {
+      let captured: [string, string | null] | null = null;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+          onUpdateTeamMemberSession: (teamMemberId, skillTypeId) => {
+            captured = [teamMemberId, skillTypeId];
+          },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      const result = await service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID);
+
+      expect(captured).toEqual([TEAM_MEMBER_ID, VOCAL_SKILL_ID]);
+      expect(result.skillType).toEqual({ skillTypeId: VOCAL_SKILL_ID, name: '보컬' });
+    });
+
+    it('null이면 세션 미배정으로 되돌린다', async () => {
+      let captured: [string, string | null] | null = null;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+          onUpdateTeamMemberSession: (teamMemberId, skillTypeId) => {
+            captured = [teamMemberId, skillTypeId];
+          },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, null);
+
+      expect(captured).toEqual([TEAM_MEMBER_ID, null]);
+    });
+
+    it('존재하지 않는 세션이면 BadRequestException을 던진다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, UNKNOWN_SKILL_ID)).rejects.toThrow(BadRequestException);
+    });
+
+    it('같은 사람이 같은 세션을 이미 맡고 있으면 ConflictException을 던진다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+          // 자기 자신이 아닌 다른 행이 같은 세션을 이미 차지하고 있다.
+          teamMemberByTeamAndBandMember: { id: OTHER_TEAM_MEMBER_ID, teamRole: 'MEMBER' },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(ConflictException);
+    });
+
+    it('자기 자신이 잡히는 건 중복으로 보지 않는다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+          teamMemberByTeamAndBandMember: { id: TEAM_MEMBER_ID, teamRole: 'MEMBER' },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).resolves.toBeDefined();
+    });
+
+    it('팀이 없으면 NotFoundException을 던진다', async () => {
+      const service = new TeamsService(createTeamsRepositoryStub({ teamForUpdate: null }), createPrismaServiceStub());
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: OTHER_BAND_MEMBER_ID } }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('동시 요청으로 P2002가 발생하면 ConflictException으로 변환한다', async () => {
+      // 중복 조회와 UPDATE 사이가 잠겨 있지 않아 같은 세션을 노린 요청이 겹칠 수 있다.
+      const repository = createTeamsRepositoryStub({
+        teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+      });
+      repository.updateTeamMemberSession = async () => {
+        throw new Prisma.PrismaClientKnownRequestError('unique', { code: 'P2002', clientVersion: 'test' });
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID)).rejects.toThrow(ConflictException);
+    });
+
+    it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createTeamsRepositoryStub({
+        teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+        onUpdateTeamMemberSession: () => {},
+      });
+
+      repository.findTeamForUpdate = async (_teamId, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_TEAM_FOR_UPDATE;
+      };
+      repository.findBandMemberByBandIdAndUserId = async (_bandId, _userId, tx) => {
+        capturedTransactions.push(tx);
+        return DEFAULT_BAND_MEMBER;
+      };
+      repository.findExistingSkillTypeIds = async (skillTypeIds, tx) => {
+        capturedTransactions.push(tx);
+        return skillTypeIds.filter(id => id === VOCAL_SKILL_ID);
+      };
+      repository.updateTeamMemberSession = async (teamMemberId, skillTypeId, tx) => {
+        capturedTransactions.push(tx);
+        return { ...DEFAULT_ADD_MEMBER_RESULT, teamMemberId, skillType: skillTypeId ? { skillTypeId, name: '보컬' } : null };
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID);
+
+      expect(capturedTransactions.length).toBeGreaterThan(0);
+      const firstTx = capturedTransactions[0];
+      capturedTransactions.forEach(tx => expect(tx).toBe(firstTx));
+    });
+
+    it('외부 tx가 있으면 새 $transaction을 열지 않는다', async () => {
+      const externalTx = { transactionClient: true };
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberById: { id: TEAM_MEMBER_ID, teamId: TEAM_ID, bandMemberId: BAND_MEMBER_ID, teamRole: 'MEMBER' },
+        }),
+        createPrismaServiceFailingTransactionStub(),
+      );
+
+      await expect(service.updateTeamMemberSession(USER_ID, TEAM_ID, TEAM_MEMBER_ID, VOCAL_SKILL_ID, externalTx as never)).resolves.toBeDefined();
     });
   });
 
