@@ -83,14 +83,16 @@ export const MemberSearchModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[70dvh] flex-col gap-8 px-5 pt-5 pb-8 text-grey-50">
+      <AppDialogContent
+        size="full"
+        className="max-h-[70dvh] gap-8 text-grey-50"
+      >
         <DialogTitle className="sr-only">멤버·팀 검색</DialogTitle>
         <DialogDescription className="sr-only">
           이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.
         </DialogDescription>
 
-        <AppDialogClose className="top-5 right-5" />
-        <div className="relative z-10 flex items-center gap-8 pr-12">
+        <div className="relative z-10 flex items-center gap-8">
           <div className="flex flex-1 items-center gap-7 typo-lg-sb">
             <button
               type="button"
@@ -109,6 +111,7 @@ export const MemberSearchModal = ({
               팀 검색
             </button>
           </div>
+          <AppDialogClose />
         </div>
 
         <Input
@@ -125,7 +128,7 @@ export const MemberSearchModal = ({
         />
 
         <div
-          className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+          className="relative z-10 flex min-h-0 scrollbar-glass flex-1 flex-col gap-2 overflow-y-auto"
           role={singleSelect && tab === 'member' ? 'radiogroup' : undefined}
           aria-label={
             singleSelect && tab === 'member' ? '멤버 선택' : undefined

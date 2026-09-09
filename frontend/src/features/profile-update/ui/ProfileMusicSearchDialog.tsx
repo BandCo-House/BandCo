@@ -8,6 +8,7 @@ import {
   AppDialogContent,
   AppDialogHeader,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import {
@@ -82,11 +83,14 @@ export function ProfileMusicSearchDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <AppDialogContent className="p-8 text-grey-50">
-        <AppDialogClose aria-label="곡 검색 닫기" />
+      <AppDialogContent size="full" className="text-grey-50">
         <AppDialogHeader>
           <DialogTitle>곡 검색</DialogTitle>
+          <AppDialogClose aria-label="곡 검색 닫기" />
         </AppDialogHeader>
+        <DialogDescription className="sr-only">
+          제목이나 가수로 곡을 검색해 프로필 음악을 고릅니다.
+        </DialogDescription>
 
         <AppDialogBody className="gap-0">
           <div className="relative">

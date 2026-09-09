@@ -121,14 +121,42 @@ function DialogFooter({
   );
 }
 
+// 유리 카드의 테두리 선. 실제 border가 아니라 inset ring으로 그린다 — 이유는 아래.
+const RIM_COLOR = 'color-mix(in srgb, var(--surface-1) 40%, transparent)';
+
+/**
+ * 모달 폭. 새 모달을 만들 때 반드시 둘 중 하나를 고른다.
+ *
+ * 판단 기준은 하나다 — **내용이 늘어나 스크롤이 생길 수 있는가.**
+ *
+ * - `full`: 스크롤이 생길 수 있는 모달(폼·목록·검색). 좌우 여백 없이 앱 셸 폭
+ *   (648)을 채우고, 내용이 길면 화면 높이까지 쓴다.
+ *   밴드 만들기 · 합주 공간 만들기 · 곡 검색 · 멤버 검색 · 프로필 곡 검색
+ *
+ * - `compact`: 한 화면에 다 들어가고 앞으로도 늘어날 일이 없는 모달. 양옆 16px을
+ *   남겨 "화면 위에 뜬 작은 창"으로 읽히게 한다.
+ *   확인창(ConfirmDialog) · 편집 나가기 · 초대코드 입력
+ *
+ * **헷갈리면 full이다.** compact인데 내용이 늘면 좁은 폰에서 스크롤이 생기는 데다
+ * 양옆 여백까지 더해져 두 번 조인다. 반대 실수(full인데 짧은 모달)는 폭만 넓어질
+ * 뿐 내용이 짧으면 높이도 짧게 서서 손해가 적다.
+ *
+ * 그런데도 기본값이 compact인 건 "빠뜨렸을 때" 기준이 다르기 때문이다. 폼이 16px
+ * 좁아지는 것보다 확인창이 화면을 꽉 채우는 쪽이 훨씬 눈에 띄게 깨진다.
+ * 고를 때는 full 쪽으로 기울고, 안 고르면 안전한 쪽으로 떨어지게 둔다.
+ */
+type AppDialogSize = 'compact' | 'full';
+
 function AppDialogContent({
   className,
   children,
   showGlow = true,
+  size = 'compact',
   style,
   ...props
 }: React.ComponentProps<typeof DialogContent> & {
   showGlow?: boolean;
+  size?: AppDialogSize;
 }) {
   return (
     <DialogContent
@@ -139,16 +167,38 @@ function AppDialogContent({
         // 길어질 때 overflow-hidden에 잘려 나가고 스크롤도 안 돼, 아래쪽 CTA에
         // 아예 손이 닿지 않는다(예: 360x568에서 커버를 고른 밴드 만들기).
         // 스크롤은 AppDialogBody가 맡는다.
-        'flex max-h-[85dvh] flex-col overflow-hidden rounded-md border-0 bg-white/24 p-6 text-grey-100 shadow-none backdrop-blur-md',
+        //
+        // 패딩 20은 화면별로 덮어쓰지 않는다. 이전 기본값 24는 shadcn에서 물려받은
+        // 값이라 아무도 고른 적이 없었고, 그래서 모달마다 20·32로 제각각
+        // 오버라이드하며 피해 다녔다(4종류).
+        // 하단을 32로 키우지 않는 이유: 푸터 간격은 AppDialogFooter의 mt-8이 맡는다.
+        'flex flex-col overflow-hidden rounded-md border-0 bg-white/24 p-5 text-grey-100 shadow-none backdrop-blur-md',
+        size === 'full'
+          ? // 앱 셸(max-w-[648px])과 같은 폭. shadcn 기본값 max-w-[calc(100%-2rem)]는
+            // 작은 화면에서 양옆 16px을 남겨 가뜩이나 좁은 폰에서 내용을 한 번 더
+            // 조이고, 시트(max-w-[648px])와도 폭이 어긋났다.
+            'max-h-dvh w-full max-w-[648px] sm:max-w-[648px]'
+          : // 확인창은 양옆 여백이 있어야 "화면 위에 뜬 작은 창"으로 읽힌다.
+            'max-h-[85dvh]',
         className,
       )}
       style={{
-        borderStyle: 'solid',
-        borderWidth: '0.5px 1px 2px 0.5px',
-        borderColor: 'color-mix(in srgb, var(--surface-1) 40%, transparent)',
-        // 바깥 그림자 + 위/아래 안쪽 흰 하이라이트(유리 두께감).
-        boxShadow:
-          '0 3px 6px 2px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(255,255,255,0.3)',
+        // 테두리를 실제 border로 그리면 border box와 padding box가 어긋난다.
+        // GlassRim·GlowBlob은 inset-0이라 padding box까지만 깔리므로, 그 사이
+        // 0.5~2px 링에는 글로우가 닿지 않는다. 그 링만 색이 달라 카드 사방에
+        // 얇은 막이 덧대인 것처럼 보였다(오른쪽·아래가 두꺼워 제일 눈에 띔).
+        // 같은 두께를 inset ring으로 옮기면 두 박스가 일치해 틈이 사라진다.
+        boxShadow: [
+          // 바깥 그림자 + 위/아래 안쪽 흰 하이라이트(유리 두께감).
+          '0 3px 6px 2px rgba(255, 255, 255, 0.16)',
+          'inset 0 1px 0 rgba(255,255,255,0.6)',
+          'inset 0 -1px 0 rgba(255,255,255,0.3)',
+          // 아래·오른쪽을 두껍게 둔 비대칭 테두리(빛이 좌상단에서 온다).
+          `inset 0 0.5px 0 0 ${RIM_COLOR}`,
+          `inset -1px 0 0 0 ${RIM_COLOR}`,
+          `inset 0 -2px 0 0 ${RIM_COLOR}`,
+          `inset 0.5px 0 0 0 ${RIM_COLOR}`,
+        ].join(', '),
         ...style,
       }}
       {...props}
@@ -176,13 +226,20 @@ function AppDialogClose({
   );
 }
 
+/**
+ * 모달 헤더. 제목과 닫기(X)를 한 줄에 놓는다.
+ * 닫기를 흐름에 두므로 콘텐츠 패딩이 얼마든 좌우 그리드가 저절로 맞는다.
+ */
 function AppDialogHeader({
   className,
   ...props
 }: React.ComponentProps<typeof DialogHeader>) {
   return (
     <DialogHeader
-      className={cn('relative z-10 mb-2 shrink-0 text-left', className)}
+      className={cn(
+        'relative z-10 mb-2 flex shrink-0 flex-row items-start justify-between gap-4 text-left',
+        className,
+      )}
       {...props}
     />
   );
@@ -193,7 +250,7 @@ function AppDialogBody({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       className={cn(
         // min-h-0가 있어야 flex 자식이 실제로 줄어들며 스크롤이 생긴다.
-        'relative z-10 flex min-h-0 flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
+        'relative z-10 flex min-h-0 scrollbar-glass flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
         className,
       )}
       {...props}
@@ -220,8 +277,10 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      // 모달 제목 공용 스타일. 시트 제목(sheet.tsx)과 같은 typo-lg-sb를 쓴다.
-      className={cn('typo-lg-sb text-grey-100', className)}
+      // index.css 타이포 스케일에서 24는 "페이지·모달·상세 제목" 자리다.
+      // 18을 쓰면 바로 아래 섹션 라벨(밴드 이름·밴드 커버…)과 같은 크기가 되어
+      // 제목이 목록의 한 항목처럼 읽힌다. 시트 제목은 앱바에 가까워 18을 유지한다.
+      className={cn('typo-xl-sb text-grey-100', className)}
       {...props}
     />
   );
