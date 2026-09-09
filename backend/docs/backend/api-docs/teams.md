@@ -614,3 +614,78 @@
 | 403 | 팀 리더 권한 필요 |
 | 404 | 팀 또는 팀 멤버를 찾을 수 없음 |
 | 409 | 같은 사람이 이미 같은 세션을 맡고 있음 |
+
+---
+
+## PUT /teams/{teamId}/members
+
+팀 명단 일괄 교체. 추가·제거·세션 변경을 한 트랜잭션에서 끝낸다.
+
+단건 API를 여러 번 부르면 DELETE는 성공했는데 POST가 실패하는 순간 사람이 사라진 채로 남는다. 화면은 "저장 실패"만 보여주고 사용자는 팀이 이미 바뀐 걸 모른다. 명단 전체를 받아 서버가 한 번에 맞추면 그 중간 상태가 없어진다.
+
+### Request
+
+```json
+{
+  "members": [
+    { "teamMemberId": "team-member-uuid", "bandMemberId": "band-member-uuid", "skillTypeId": "skill-type-uuid" },
+    { "teamMemberId": "team-member-uuid-2", "bandMemberId": "band-member-uuid-2", "skillTypeId": null },
+    { "bandMemberId": "band-member-uuid-3" }
+  ]
+}
+```
+
+> `members`는 **교체 후 명단 전체**다. 여기 없는 기존 행은 삭제된다.
+>
+> `teamMemberId`는 기존 행을 이어받겠다는 표시다. 보내면 그 행의 `joinedAt`·`teamRole`이 유지되고, 생략하면 새 행으로 만들어진다. 같은 `teamMemberId`에 다른 `bandMemberId`를 주면 **사람이 바뀐 것**으로 보고 지우고 새로 만든다 — 다른 사람의 가입일을 물려받지 않게 하기 위해서다.
+>
+> `skillTypeId`는 생략하거나 `null`이면 미배정이다.
+
+### 처리 규칙
+
+| 요청 행 | 처리 |
+|---------|------|
+| `teamMemberId` 있음 + 사람·세션 모두 그대로 | 손대지 않음 |
+| `teamMemberId` 있음 + 세션만 다름 | 다시 생성 (`joinedAt`·`teamRole` 그대로 이월) |
+| `teamMemberId` 있음 + `bandMemberId` 다름 | 다시 생성 (다른 사람이므로 `joinedAt`은 새로 찍힘) |
+| `teamMemberId` 없음 | 생성 |
+| 기존 행이 `members`에 없음 | 삭제 |
+
+> 세션이 바뀐 행은 `UPDATE`가 아니라 **삭제 후 재생성**이다. `UPDATE`로 옮기면 중간 상태가 `team_members_team_member_no_skill_key`(부분 unique)에 걸린다 — 같은 사람의 행이 잠깐이라도 동시에 `skill_type_id IS NULL`이 되는 순간 위반이다. 한 트랜잭션 안이라 재생성에 따르는 위험은 없고, `joinedAt`·`teamRole`은 그대로 옮긴다. **다만 그 행의 `teamMemberId`는 새로 발급된다.**
+
+### Response 200
+
+```json
+{
+  "status": "success",
+  "error": null,
+  "message": "팀 명단 교체 성공",
+  "data": {
+    "teamId": "team-uuid",
+    "members": [
+      {
+        "teamMemberId": "team-member-uuid",
+        "bandMemberId": "band-member-uuid",
+        "user": { "userId": "user-uuid", "nickname": "김민수", "profileImageUrl": null },
+        "teamRole": "LEADER",
+        "joinedAt": "2026-05-01T12:00:00.000Z",
+        "skillType": { "skillTypeId": "skill-type-uuid", "name": "보컬" },
+        "skills": []
+      }
+    ]
+  }
+}
+```
+
+### Error Responses
+
+| 코드 | 조건 |
+|------|------|
+| 400 | 한 세션에 두 명 / 같은 멤버를 같은 세션에 두 번 / 다른 밴드 멤버 / 존재하지 않는 세션 / 리더를 명단에서 제외 / 이 팀에 없는 `teamMemberId` |
+| 401 | 인증 실패 |
+| 403 | 팀 리더 권한 필요 |
+| 404 | 팀을 찾을 수 없음 |
+
+> **한 세션에는 한 명만.** `@@unique([teamId, bandMemberId, skillTypeId])`는 "같은 사람 + 같은 세션"만 막아서, 다른 사람이 같은 세션을 맡는 건 DB가 통과시킨다. 이 규칙은 서버가 검증한다.
+>
+> 한 사람이 여러 세션을 겸하는 건 허용한다(보컬 겸 기타). 중복 판정은 사람이 아니라 세션 기준이다.
