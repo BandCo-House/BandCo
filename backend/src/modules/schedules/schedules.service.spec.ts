@@ -17,6 +17,9 @@ const SCHEDULE_ID = '22222222-2222-4222-8222-222222222222';
 const BAND_ID = '33333333-3333-4333-8333-333333333333';
 const BAND_MEMBER_ID = '44444444-4444-4444-8444-444444444444';
 const TEAM_ID = '77777777-7777-4777-8777-777777777777';
+const VOCAL_SKILL_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const GUITAR_SKILL_ID = '99999999-9999-4999-8999-999999999999';
+const UNKNOWN_SKILL_ID = '88888888-8888-4888-8888-888888888888';
 const USER_ID = '66666666-6666-4666-8666-666666666666';
 const SONG_ID = '55555555-5555-4555-8555-555555555555';
 const MEMBER_USER_ID_1 = 'aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -68,7 +71,7 @@ const scheduleDetailResult: GetScheduleDetailResult = {
     endAt: '2026-06-01T16:00:00.000Z',
     status: 'PLANNED',
     place: null,
-    songs: [{ songId: SONG_ID, title: '좋은 날', artistName: 'IU' }],
+    songs: [{ songId: SONG_ID, title: '좋은 날', artistName: 'IU', key: 'F_SHARP_MINOR' }],
     participants: [
       {
         participantId: 'p-001',
@@ -78,6 +81,7 @@ const scheduleDetailResult: GetScheduleDetailResult = {
         avatarUrl: null,
         attendanceStatus: 'PENDING',
         note: null,
+        skillType: { skillTypeId: VOCAL_SKILL_ID, name: '보컬' },
       },
     ],
     memo: null,
@@ -158,6 +162,9 @@ function createRepositoryStub(overrides?: Partial<SchedulesRepository>): Schedul
     },
     async findTeamInSameBandAsSpace(teamId, bandSpaceId) {
       return teamId === TEAM_ID && bandSpaceId === BAND_SPACE_ID ? { id: TEAM_ID } : null;
+    },
+    async findExistingSkillTypeIds(skillTypeIds) {
+      return skillTypeIds.filter(id => id === VOCAL_SKILL_ID || id === GUITAR_SKILL_ID);
     },
     async findSpaceMemberUserIds() {
       return [MEMBER_USER_ID_1, MEMBER_USER_ID_2];
@@ -283,6 +290,110 @@ describe('SchedulesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('participants로 넘긴 세션 배정을 그대로 Repository에 전달한다', async () => {
+      let captured: unknown;
+      const service = new SchedulesService(
+        createRepositoryStub({
+          async createSchedule(_spaceId, _memberId, input) {
+            captured = input.participants;
+            return createScheduleResult;
+          },
+        }),
+        createPrismaServiceStub(),
+        createNotificationsServiceMock(),
+      );
+
+      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
+        title: '합주',
+        scheduleType: ScheduleType.PRACTICE,
+        startAt: '2026-06-01T14:00:00+09:00',
+        endAt: '2026-06-01T16:00:00+09:00',
+        status: ScheduleStatus.PLANNED,
+        participants: [
+          { bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID },
+          { bandMemberId: BAND_MEMBER_ID, skillTypeId: GUITAR_SKILL_ID },
+        ],
+      });
+
+      expect(captured).toEqual([
+        { bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID },
+        { bandMemberId: BAND_MEMBER_ID, skillTypeId: GUITAR_SKILL_ID },
+      ]);
+    });
+
+    it('존재하지 않는 세션이면 BadRequestException을 던진다', async () => {
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.createSchedule(BAND_SPACE_ID, USER_ID, {
+          title: '합주',
+          scheduleType: ScheduleType.PRACTICE,
+          startAt: '2026-06-01T14:00:00+09:00',
+          endAt: '2026-06-01T16:00:00+09:00',
+          status: ScheduleStatus.PLANNED,
+          participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: UNKNOWN_SKILL_ID }],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('회의에 세션을 배정하면 BadRequestException을 던진다', async () => {
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.createSchedule(BAND_SPACE_ID, USER_ID, {
+          title: '회의',
+          scheduleType: ScheduleType.MEETING,
+          startAt: '2026-06-01T14:00:00+09:00',
+          endAt: '2026-06-01T16:00:00+09:00',
+          status: ScheduleStatus.PLANNED,
+          participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('participants가 null로 오면 참여자를 건드리지 않는다(500 방지)', async () => {
+      // @IsOptional()은 null도 검증에서 빼주므로 null이 그대로 Service까지 온다.
+      let captured: unknown = 'unset';
+      const service = new SchedulesService(
+        createRepositoryStub({
+          async createSchedule(_spaceId, _memberId, input) {
+            captured = input.participants;
+            return createScheduleResult;
+          },
+        }),
+        createPrismaServiceStub(),
+        createNotificationsServiceMock(),
+      );
+
+      await service.createSchedule(BAND_SPACE_ID, USER_ID, {
+        title: '합주',
+        scheduleType: ScheduleType.PRACTICE,
+        startAt: '2026-06-01T14:00:00+09:00',
+        endAt: '2026-06-01T16:00:00+09:00',
+        status: ScheduleStatus.PLANNED,
+        participants: null as never,
+      });
+
+      expect(captured).toEqual([]);
+    });
+
+    it('skillTypeId가 null이면 세션 배정으로 보지 않는다', async () => {
+      // @IsOptional()이 null을 통과시키므로 Service까지 null이 온다.
+      // 걸러내지 않으면 회의에서 헛된 400, 합주에서는 `in: [null]`로 500이 난다.
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.createSchedule(BAND_SPACE_ID, USER_ID, {
+          title: '회의',
+          scheduleType: ScheduleType.MEETING,
+          startAt: '2026-06-01T14:00:00+09:00',
+          endAt: '2026-06-01T16:00:00+09:00',
+          status: ScheduleStatus.PLANNED,
+          participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: null as never }],
+        }),
+      ).resolves.toBeDefined();
+    });
+
     it('createSchedule 내부 호출이 같은 tx로 처리된다', async () => {
       const capturedTransactions: unknown[] = [];
       const stub = createRepositoryStub({
@@ -355,6 +466,37 @@ describe('SchedulesService', () => {
       const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
 
       await expect(service.updateSchedule(SCHEDULE_ID, { endAt: '2026-06-01T10:00:00+09:00' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('합주를 회의로 바꾸면서 세션을 함께 보내면 BadRequestException을 던진다', async () => {
+      const service = new SchedulesService(createRepositoryStub(), createPrismaServiceStub(), createNotificationsServiceMock());
+
+      await expect(
+        service.updateSchedule(SCHEDULE_ID, {
+          scheduleType: ScheduleType.MEETING,
+          participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('유형을 안 보내면 기존 유형(합주) 기준으로 세션 배정을 허용한다', async () => {
+      let captured: unknown;
+      const service = new SchedulesService(
+        createRepositoryStub({
+          async updateSchedule(_scheduleId, input) {
+            captured = input.participants;
+            return updateScheduleResult;
+          },
+        }),
+        createPrismaServiceStub(),
+        createNotificationsServiceMock(),
+      );
+
+      await service.updateSchedule(SCHEDULE_ID, {
+        participants: [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }],
+      });
+
+      expect(captured).toEqual([{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }]);
     });
 
     it('updateSchedule 내부 호출이 같은 tx로 처리된다', async () => {

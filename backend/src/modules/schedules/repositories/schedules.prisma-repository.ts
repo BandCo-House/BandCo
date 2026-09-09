@@ -5,6 +5,7 @@ import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import type { CreateScheduleInput } from '../dto/create-schedule.dto';
 import type { GetSchedulesQuery } from '../dto/get-schedules-query.dto';
+import type { ScheduleParticipantInput } from '../dto/schedule-participant.dto';
 import type { UpdateScheduleInput } from '../dto/update-schedule.dto';
 import type { BandScheduleListItem, GetBandSchedulesResult } from '../types/band-schedule-list-item.type';
 import type { CreateScheduleResult, ScheduleSongItem } from '../types/create-schedule-result.type';
@@ -28,7 +29,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     const client = tx ?? this.prisma;
 
     const songIds = [...new Set(input.songIds ?? [])];
-    const participantBandMemberIds = [...new Set(input.participantBandMemberIds ?? [])];
+    const participants = this.dedupeParticipants(input.participants ?? []);
 
     const schedule = await client.schedule.create({
       data: {
@@ -51,11 +52,12 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       });
     }
 
-    if (participantBandMemberIds.length > 0) {
+    if (participants.length > 0) {
       await client.scheduleParticipant.createMany({
-        data: participantBandMemberIds.map(bandMemberId => ({
+        data: participants.map(participant => ({
           scheduleId: schedule.id,
-          bandMemberId,
+          bandMemberId: participant.bandMemberId,
+          skillTypeId: participant.skillTypeId ?? null,
         })),
       });
     }
@@ -80,11 +82,12 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       songIds.length > 0
         ? await client.song.findMany({
             where: { id: { in: songIds } },
-            select: { id: true, title: true, artistName: true },
+            select: { id: true, title: true, artistName: true, key: true },
           })
         : [];
 
-    const participantCount = participantBandMemberIds.length;
+    // 한 사람이 여러 세션을 맡으면 행이 여러 개가 되므로 사람 수는 중복을 뺀 값이다.
+    const participantCount = new Set(participants.map(participant => participant.bandMemberId)).size;
 
     const referenceFiles = await client.scheduleReferenceFile.findMany({
       where: { scheduleId: schedule.id },
@@ -101,7 +104,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       startAt: schedule.startAt?.toISOString() ?? null,
       endAt: schedule.endAt?.toISOString() ?? null,
       status: schedule.status,
-      songs: songs.map(s => ({ songId: s.id, title: s.title, artistName: s.artistName })),
+      songs: songs.map(s => ({ songId: s.id, title: s.title, artistName: s.artistName, key: s.key ?? null })),
       participantCount,
       teamId: input.teamId ?? null,
       memo: schedule.memo,
@@ -109,6 +112,44 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       referenceFiles: this.mapReferenceFiles(referenceFiles),
       createdAt: schedule.createdAt.toISOString(),
     };
+  }
+
+  /**
+   * (밴드 멤버, 세션) 조합 기준으로 중복을 제거한다.
+   * 같은 사람을 같은 세션에 두 번 넣는 건 사용자 실수라 에러 대신 하나로 접는다.
+   *
+   * @param {ScheduleParticipantInput[]} participants - 정규화된 참여자 목록
+   * @returns {ScheduleParticipantInput[]} 중복이 제거된 목록(입력 순서 유지)
+   */
+  private dedupeParticipants(participants: ScheduleParticipantInput[]): ScheduleParticipantInput[] {
+    const seen = new Set<string>();
+    return participants.filter(participant => {
+      const key = `${participant.bandMemberId}|${participant.skillTypeId ?? ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  /**
+   * 조회 결과의 참여자 행을 밴드 멤버 기준으로 접는다.
+   * 세션 편성 때문에 한 사람이 여러 행으로 나오므로 인원수·미리보기는 이 값으로 센다.
+   *
+   * @param {T[]} rows - bandMemberId를 가진 참여자 행 목록
+   * @returns {T[]} 멤버마다 첫 행만 남긴 목록
+   */
+  private dedupeParticipantRowsByMember<T extends { bandMemberId: string }>(rows: T[]): T[] {
+    return [...new Map(rows.map(row => [row.bandMemberId, row])).values()];
+  }
+
+  async findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    if (skillTypeIds.length === 0) return [];
+    const rows = await client.skillType.findMany({
+      where: { id: { in: skillTypeIds } },
+      select: { id: true },
+    });
+    return rows.map(row => row.id);
   }
 
   async findTeamInSameBandAsSpace(teamId: string, bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
@@ -143,7 +184,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       where: { id: scheduleId },
       include: {
         place: { select: { id: true, name: true, address: true } },
-        scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
+        scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true, key: true } } } },
         createdByBandMember: { select: { userId: true } },
         participants: {
           select: {
@@ -151,6 +192,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
             bandMemberId: true,
             attendanceStatus: true,
             note: true,
+            skillType: { select: { id: true, name: true } },
             bandMember: {
               select: {
                 userId: true,
@@ -178,7 +220,9 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         endAt: row.endAt?.toISOString() ?? null,
         status: row.status,
         place: row.place ? { placeId: row.place.id, name: row.place.name, address: row.place.address } : null,
-        songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName }) as ScheduleSongItem),
+        songs: row.scheduleSongs.map(
+          ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName, key: ss.song.key ?? null }) as ScheduleSongItem,
+        ),
         participants: row.participants.map(p => ({
           participantId: p.id,
           bandMemberId: p.bandMemberId,
@@ -187,6 +231,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
           avatarUrl: p.bandMember.user.profile?.avatarUrl ?? null,
           attendanceStatus: p.attendanceStatus ?? null,
           note: p.note ?? null,
+          skillType: p.skillType ? { skillTypeId: p.skillType.id, name: p.skillType.name } : null,
         })),
         memo: row.memo,
         externalLinks: row.externalLinks,
@@ -225,13 +270,53 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       }
     }
 
-    if (input.participantBandMemberIds !== undefined) {
+    if (input.participants !== undefined) {
+      const participants = this.dedupeParticipants(input.participants);
       await client.scheduleParticipant.deleteMany({ where: { scheduleId } });
-      if (input.participantBandMemberIds.length > 0) {
+      if (participants.length > 0) {
         await client.scheduleParticipant.createMany({
-          data: input.participantBandMemberIds.map(bandMemberId => ({ scheduleId, bandMemberId })),
+          data: participants.map(participant => ({
+            scheduleId,
+            bandMemberId: participant.bandMemberId,
+            skillTypeId: participant.skillTypeId ?? null,
+          })),
         });
       }
+    } else if (updated.scheduleType === 'MEETING') {
+      // 참여자를 그대로 두고 합주 → 회의로만 바꾼 경우. 세션이 붙은 행이 남으면
+      // 회의인데 세션 편성이 있는 상태가 되므로 여기서 정리한다.
+      //
+      // 그냥 updateMany로 밀면 안 된다 — 겸업 참여자(보컬+기타)는 행이 둘이라
+      // 둘 다 (scheduleId, bandMemberId, NULL)이 되어 partial unique index
+      // (schedule_participants_schedule_member_no_skill_key)를 위반하고
+      // PATCH 전체가 롤백된다. 멤버당 한 행만 남기고 나머지를 먼저 지운다.
+      //
+      // 남길 행은 id 오름차순 첫 번째다. 행을 지웠다 다시 만들지 않는 이유는
+      // attendanceStatus·note를 잃지 않기 위해서다.
+      const existingRows = await client.scheduleParticipant.findMany({
+        where: { scheduleId },
+        select: { id: true, bandMemberId: true },
+        orderBy: { id: 'asc' },
+      });
+
+      const keptIdByMember = new Map<string, string>();
+      const duplicatedIds: string[] = [];
+      for (const row of existingRows) {
+        if (keptIdByMember.has(row.bandMemberId)) {
+          duplicatedIds.push(row.id);
+          continue;
+        }
+        keptIdByMember.set(row.bandMemberId, row.id);
+      }
+
+      if (duplicatedIds.length > 0) {
+        await client.scheduleParticipant.deleteMany({ where: { id: { in: duplicatedIds } } });
+      }
+
+      await client.scheduleParticipant.updateMany({
+        where: { scheduleId, skillTypeId: { not: null } },
+        data: { skillTypeId: null },
+      });
     }
 
     if (input.referenceFiles !== undefined) {
@@ -252,7 +337,9 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         ? input.songIds
         : (await client.scheduleSong.findMany({ where: { scheduleId }, select: { songId: true } })).map(s => s.songId);
 
-    const participantCount = await client.scheduleParticipant.count({ where: { scheduleId } });
+    // 세션마다 행이 나뉘므로 distinct로 사람 수를 센다.
+    const participantRows = await client.scheduleParticipant.findMany({ where: { scheduleId }, select: { bandMemberId: true } });
+    const participantCount = new Set(participantRows.map(row => row.bandMemberId)).size;
 
     const referenceFiles = await client.scheduleReferenceFile.findMany({
       where: { scheduleId },
@@ -423,7 +510,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
       include: {
         place: { select: { id: true, name: true } },
         scheduleTeams: { select: { team: { select: { id: true, name: true } } }, take: 1 },
-        scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true } } } },
+        scheduleSongs: { include: { song: { select: { id: true, title: true, artistName: true, key: true } } } },
         createdByBandMember: { select: { userId: true } },
         participants: {
           select: {
@@ -460,9 +547,10 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         endAt: row.endAt?.toISOString() ?? null,
         place: row.place ? { placeId: row.place.id, name: row.place.name } : null,
         team: row.scheduleTeams[0] ? { teamId: row.scheduleTeams[0].team.id, name: row.scheduleTeams[0].team.name } : null,
-        songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName })),
-        participantCount: row.participants.length,
-        participants: row.participants.map(p => ({
+        songs: row.scheduleSongs.map(ss => ({ songId: ss.song.id, title: ss.song.title, artistName: ss.song.artistName, key: ss.song.key ?? null })),
+        // 세션마다 행이 나뉘므로 겸업 참여자는 여러 번 나온다. 사람 기준으로 접는다.
+        participantCount: this.dedupeParticipantRowsByMember(row.participants).length,
+        participants: this.dedupeParticipantRowsByMember(row.participants).map(p => ({
           bandMemberId: p.bandMemberId,
           nickname: p.bandMember.user.profile?.nickname ?? '',
           profileImageUrl: p.bandMember.user.profile?.avatarUrl ?? null,

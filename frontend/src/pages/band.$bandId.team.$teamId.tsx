@@ -15,6 +15,7 @@ import {
   useTeamDetail,
   useTeamMembers,
   useAddTeamMember,
+  useUpdateTeamMemberSession,
   useRemoveTeamMember,
 } from '@/entities/team/api/queries';
 import { deleteTeam } from '@/entities/team/api/team-api';
@@ -103,12 +104,15 @@ function BandTeamDetailRoutePage() {
     searchModalOpen,
     setSearchModalOpen,
     handleToggleMember,
+    handleChangeSession,
     handleOpenSearchForSession,
     handleOpenSearchForNewMember,
   } = useTeamMemberEdit({ propMembers: initialMembers });
 
   const { mutateAsync: addMember } = useAddTeamMember(teamId);
   const { mutateAsync: removeMember } = useRemoveTeamMember(teamId);
+  const { mutateAsync: updateMemberSession } =
+    useUpdateTeamMemberSession(teamId);
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -130,23 +134,71 @@ function BandTeamDetailRoutePage() {
   }, [teamId, bandId, navigate, queryClient]);
 
   const handleSaveMembers = useCallback(async () => {
+    // UI에서 막고 있지만 저장 직전에 한 번 더 본다. 상세에서 불러온 편성이 이미
+    // 중복이었거나(과거 데이터) 화면을 거치지 않고 상태가 바뀌면 여기가 마지막
+    // 방어선이다 — 넘어가면 중복 skillTypeId 요청이 그대로 나간다.
+    const assignedSessions = currentMembers
+      .map((m) => m.skillType?.skillTypeId)
+      .filter((id): id is string => !!id);
+    if (new Set(assignedSessions).size !== assignedSessions.length) {
+      toast.error('한 세션에는 한 명만 배정할 수 있어요.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const originalIds = new Set(initialMembers.map((m) => m.bandMemberId));
-      const updatedIds = new Set(currentMembers.map((m) => m.bandMemberId));
+      // teamMemberId는 편집 중에도 그대로라 원본 행과 짝지을 수 있다.
+      // 이걸로 "무엇이 바뀌었는지"를 갈라야 세션만 바꾼 경우를 UPDATE로 보낼 수 있다.
+      const originalById = new Map(
+        initialMembers.map((m) => [m.teamMemberId, m]),
+      );
+      const currentIds = new Set(currentMembers.map((m) => m.teamMemberId));
+      const skillTypeIdOf = (m: (typeof currentMembers)[number]) =>
+        m.skillType?.skillTypeId ?? null;
 
-      // 제거된 멤버: 원본에 있고 편집 후에 없는 것
-      const toRemove = initialMembers.filter(
-        (m) => !updatedIds.has(m.bandMemberId),
-      );
-      // 추가된 멤버: 편집 후에 있고 원본에 없는 것
-      const toAdd = currentMembers.filter(
-        (m) => !originalIds.has(m.bandMemberId),
-      );
+      // 세션만 바뀐 행: 사람은 그대로다. 제거+재추가로 흉내 내면 중간에 실패했을 때
+      // 멀쩡히 있던 사람이 팀에서 빠지므로 PATCH 한 번으로 끝낸다.
+      const toUpdateSession = currentMembers.filter((m) => {
+        const origin = originalById.get(m.teamMemberId);
+        return (
+          origin !== undefined &&
+          origin.bandMemberId === m.bandMemberId &&
+          skillTypeIdOf(origin) !== skillTypeIdOf(m)
+        );
+      });
+
+      // 사람이 바뀐 행은 다른 사람이라 제거+추가가 맞다.
+      const replaced = currentMembers.filter((m) => {
+        const origin = originalById.get(m.teamMemberId);
+        return origin !== undefined && origin.bandMemberId !== m.bandMemberId;
+      });
+
+      const toRemove = [
+        // 편집에서 사라진 행
+        ...initialMembers.filter((m) => !currentIds.has(m.teamMemberId)),
+        // 사람이 교체된 행의 원본
+        ...replaced.map((m) => originalById.get(m.teamMemberId)!),
+      ];
+      const toAdd = [
+        // 새로 추가된 행(임시 teamMemberId라 원본에 없다)
+        ...currentMembers.filter((m) => !originalById.has(m.teamMemberId)),
+        ...replaced,
+      ];
 
       await Promise.all([
+        ...toUpdateSession.map((m) =>
+          updateMemberSession({
+            teamMemberId: m.teamMemberId,
+            skillTypeId: skillTypeIdOf(m),
+          }),
+        ),
         ...toRemove.map((m) => removeMember(m.teamMemberId)),
-        ...toAdd.map((m) => addMember(m.bandMemberId)),
+        ...toAdd.map((m) =>
+          addMember({
+            bandMemberId: m.bandMemberId,
+            skillTypeId: m.skillType?.skillTypeId,
+          }),
+        ),
       ]);
 
       toast.success('팀원 설정이 저장되었습니다.');
@@ -156,7 +208,14 @@ function BandTeamDetailRoutePage() {
     } finally {
       setIsSaving(false);
     }
-  }, [initialMembers, currentMembers, addMember, removeMember, navigate]);
+  }, [
+    initialMembers,
+    currentMembers,
+    addMember,
+    removeMember,
+    updateMemberSession,
+    navigate,
+  ]);
 
   const handleToggleEdit = useCallback(() => {
     navigate({
@@ -205,6 +264,7 @@ function BandTeamDetailRoutePage() {
         onToggleEdit={handleToggleEdit}
         onOpenSearchForSession={handleOpenSearchForSession}
         onOpenSearchForNewMember={handleOpenSearchForNewMember}
+        onChangeSession={handleChangeSession}
         searchModalOpen={searchModalOpen}
         setSearchModalOpen={setSearchModalOpen}
         handleToggleMember={handleToggleMember}

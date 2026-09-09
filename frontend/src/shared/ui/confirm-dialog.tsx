@@ -31,7 +31,7 @@ export const ConfirmDialog = ({
 }: ConfirmDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="px-5 pt-5 pb-8">
+      <AppDialogContent>
         <AppDialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </AppDialogHeader>

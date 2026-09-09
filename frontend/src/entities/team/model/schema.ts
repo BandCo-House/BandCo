@@ -49,6 +49,12 @@ export const teamMemberSkillSchema = z.object({
 });
 
 /** 팀 멤버(GET /teams/:teamId/members) item 스키마 */
+/** 이 팀에서 맡은 세션. 개인이 보유한 스킬(skills)과 다른 값이다. */
+export const teamMemberSkillTypeSchema = z.object({
+  skillTypeId: z.string(),
+  name: z.string(),
+});
+
 export const teamMemberSchema = z.object({
   teamMemberId: z.string(),
   bandMemberId: z.string(),
@@ -59,6 +65,12 @@ export const teamMemberSchema = z.object({
   }),
   teamRole: z.string().default('MEMBER'),
   joinedAt: z.string().optional(),
+  /**
+   * 팀 편성상 맡은 세션. 미배정이면 null.
+   * optional로 둔 이유: 백엔드가 먼저 배포되기 전까지 이 필드가 없는 응답이 온다.
+   */
+  skillType: teamMemberSkillTypeSchema.nullable().optional(),
+  /** 그 사람이 보유한 스킬 전체. 팀 배정과 무관하다. */
   skills: z.array(teamMemberSkillSchema).default([]),
   sessionName: z.string().optional(), // UI용 세션명 호환
 });

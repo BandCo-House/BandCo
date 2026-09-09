@@ -1,6 +1,6 @@
 import type { TeamMemberSkillType, TeamMemberUserInfo } from './get-team-members-result.type';
 
-export interface AddTeamMemberResult {
+export interface UpdateTeamMemberSessionResult {
   teamMemberId: string;
   teamId: string;
   bandMemberId: string;

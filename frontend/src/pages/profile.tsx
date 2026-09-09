@@ -17,7 +17,6 @@ import { GenreEditSection } from '@/features/profile-update/ui/GenreEditSection'
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
-import { compressProfileImage } from '@/features/profile-update/model/image-compression';
 import { uploadFile } from '@/shared/api/upload';
 import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
 import {
@@ -25,9 +24,12 @@ import {
   AppDialogContent,
   AppDialogFooter,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
 
 // UI Imports
 
@@ -107,6 +109,7 @@ function ProfileRoutePage() {
   const [isMusicSearchOpen, setIsMusicSearchOpen] = useState(false);
   const [isLeaveEditDialogOpen, setIsLeaveEditDialogOpen] = useState(false);
   const avatarPreviewUrlRef = useRef<string | null>(null);
+  const { selectFile, cropDialogProps } = useImageCrop();
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -274,22 +277,7 @@ function ProfileRoutePage() {
           onInvite={() => setIsInviting(true)}
           onToggleEdit={requestExitEditMode}
           onSave={handleSave}
-          onAvatarFileSelect={(file) => {
-            void compressProfileImage(file)
-              .then(({ file: compressedFile, previewUrl }) => {
-                revokeAvatarPreviewUrl();
-                avatarPreviewUrlRef.current = previewUrl;
-                setAvatarFile(compressedFile);
-                setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
-              })
-              .catch((error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : '이미지 처리 도중 에러가 발생했습니다.',
-                );
-              });
-          }}
+          onAvatarFileSelect={selectFile}
           onOpenMusicSearch={() => setIsMusicSearchOpen(true)}
         />
         <div className="bg-gradient-top pb-6">
@@ -337,14 +325,14 @@ function ProfileRoutePage() {
           open={isLeaveEditDialogOpen}
           onOpenChange={setIsLeaveEditDialogOpen}
         >
-          <AppDialogContent className="max-w-[calc(100%-2rem)] p-8 sm:max-w-2xl">
+          <AppDialogContent>
             <AppDialogBody className="items-center gap-6 text-center">
               <DialogTitle className="typo-xl-sb text-grey-50">
                 편집 모드를 나가시겠습니까?
               </DialogTitle>
-              <p className="typo-lg-sb text-grey-100">
+              <DialogDescription className="typo-lg-sb text-grey-100">
                 변경사항이 저장되지 않습니다
-              </p>
+              </DialogDescription>
             </AppDialogBody>
             <AppDialogFooter className="mt-8 flex-row gap-4">
               <Button
@@ -369,6 +357,19 @@ function ProfileRoutePage() {
             </AppDialogFooter>
           </AppDialogContent>
         </Dialog>
+
+        <ImageCropDialog
+          {...cropDialogProps}
+          aspect={CROP_ASPECT.profileBanner}
+          title="프로필 배경 자르기"
+          onCropped={(file) => {
+            revokeAvatarPreviewUrl();
+            const previewUrl = URL.createObjectURL(file);
+            avatarPreviewUrlRef.current = previewUrl;
+            setAvatarFile(file);
+            setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
+          }}
+        />
       </div>
     </div>
   );

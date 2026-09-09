@@ -6,6 +6,7 @@ import {
   getTeamDetail,
   getTeamMembers,
   removeTeamMember,
+  updateTeamMemberSession,
   type CreateTeamRequest,
   type GetBandTeamsParams,
 } from './team-api';
@@ -61,7 +62,35 @@ export const useTeamMembers = (teamId: string) =>
 export const useAddTeamMember = (teamId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (bandMemberId: string) => addTeamMember(teamId, bandMemberId),
+    mutationFn: ({
+      bandMemberId,
+      skillTypeId,
+    }: {
+      bandMemberId: string;
+      skillTypeId?: string;
+    }) => addTeamMember(teamId, bandMemberId, skillTypeId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: teamKeys.members(teamId),
+      });
+    },
+  });
+};
+
+/**
+ * 팀 멤버 세션 변경 훅 (PATCH /teams/:teamId/members/:teamMemberId)
+ */
+export const useUpdateTeamMemberSession = (teamId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      teamMemberId,
+      skillTypeId,
+    }: {
+      teamMemberId: string;
+      skillTypeId: string | null;
+    }) => updateTeamMemberSession(teamId, teamMemberId, skillTypeId),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: teamKeys.members(teamId),

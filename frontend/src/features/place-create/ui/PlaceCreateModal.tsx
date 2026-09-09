@@ -10,6 +10,8 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/shared/ui/sheet';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
@@ -40,6 +42,7 @@ export const PlaceCreateModal = ({
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const { selectFile, cropDialogProps } = useImageCrop();
 
   // 열릴 때 폼을 초기화한다(effect 대신 렌더 중 파생).
   const [prevOpen, setPrevOpen] = useState(open);
@@ -67,8 +70,13 @@ export const PlaceCreateModal = ({
   };
 
   const handleCoverSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    selectFile(event.target.files?.[0]);
+    // 같은 파일을 다시 골라도 change가 발생하도록 값을 비운다(크롭을 취소한 뒤 재시도).
+    event.target.value = '';
+  };
+
+  /** 크롭 모달이 돌려준 파일만 폼에 들어간다. 원본은 여기까지 오지 않는다. */
+  const applyCroppedCover = (file: File) => {
     setCoverFile(file);
     setCoverPreview(URL.createObjectURL(file));
   };
@@ -216,6 +224,13 @@ export const PlaceCreateModal = ({
           </Button>
         </div>
       </SheetContent>
+
+      <ImageCropDialog
+        {...cropDialogProps}
+        aspect={CROP_ASPECT.square}
+        title="장소 커버 자르기"
+        onCropped={applyCroppedCover}
+      />
     </Sheet>
   );
 };

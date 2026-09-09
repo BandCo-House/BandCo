@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import { useSearchTracks } from '@/entities/song/api/useSearchTracks';
 import { formatSongLength } from '@/entities/song/lib/song-length';
 import type { SongPreview } from '@/entities/song/model/types';
 import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
+import { cn } from '@/shared/lib/utils';
 import {
   AppDialogContent,
   Dialog,
-  DialogClose,
+  AppDialogClose,
   DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
@@ -42,7 +42,9 @@ export const SongSearchModal = ({
 
   const {
     data: tracks = [],
+    isLoading,
     isFetching,
+    isPlaceholderData,
     isError,
   } = useSearchTracks(keyword, open);
 
@@ -59,7 +61,18 @@ export const SongSearchModal = ({
     if (!hasKeyword) {
       return <EmptyState title="제목이나 가수로 곡을 검색하세요." />;
     }
-    if (isFetching) return <EmptyState title="검색 중이에요." />;
+    // isFetching이 아니라 isLoading인 이유: isFetching은 이미 결과가 있는 상태의
+    // 재조회에도 참이라, 글자를 더 칠 때마다 목록이 빈 화면으로 교체됐다.
+    // 보여줄 게 아직 없을 때만 이 자리를 쓴다.
+    //
+    // 두 번째 조건이 필요한 이유: 직전 결과가 빈 배열이면 keepPreviousData가 그
+    // 빈 배열을 그대로 물려줘 query가 success 상태가 된다(isLoading=false).
+    // 그대로 두면 응답도 오기 전에 "결과 없음 + 직접 입력하기"가 떠, 있는 곡을
+    // 없다고 단정하게 된다.
+    const hasNothingToShow = isPlaceholderData && tracks.length === 0;
+    if (isLoading || hasNothingToShow) {
+      return <EmptyState title="검색 중이에요." />;
+    }
     if (isError) {
       return <EmptyState title="곡을 검색하지 못했어요." />;
     }
@@ -106,20 +119,14 @@ export const SongSearchModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[70dvh] flex-col gap-10 px-5 pt-5 pb-8">
+      <AppDialogContent size="full" className="max-h-[70dvh] gap-10">
         <DialogDescription className="sr-only">
           제목이나 가수로 곡을 검색해 합주곡 정보를 채웁니다.
         </DialogDescription>
 
         <div className="relative z-10 flex items-start gap-8 py-1">
           <DialogTitle className="min-w-0 flex-1">곡 검색</DialogTitle>
-          <DialogClose
-            type="button"
-            aria-label="곡 검색 닫기"
-            className="-m-2 flex shrink-0 items-center justify-center p-2 text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <X aria-hidden="true" className="size-6" />
-          </DialogClose>
+          <AppDialogClose aria-label="곡 검색 닫기" className="text-grey-50" />
         </div>
 
         <Input
@@ -131,7 +138,15 @@ export const SongSearchModal = ({
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
         />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {/* 갱신 중에는 목록을 지우는 대신 흐리게 둔다. 자리가 유지돼야 방금 보던
+            행이 어디 있었는지 잃지 않는다. aria-busy로 스크린리더에도 알린다. */}
+        <div
+          aria-busy={isFetching}
+          className={cn(
+            'relative z-10 flex min-h-0 scrollbar-glass flex-1 flex-col overflow-y-auto transition-opacity',
+            isFetching && !isLoading && 'opacity-50',
+          )}
+        >
           {renderResults()}
         </div>
       </AppDialogContent>

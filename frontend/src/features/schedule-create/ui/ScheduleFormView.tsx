@@ -18,6 +18,7 @@ import {
 } from '../model/reference-files';
 import { ScheduleTimeSheet } from './components/ScheduleTimeSheet';
 import { ParticipantSection } from './components/ParticipantSection';
+import { SessionSection } from './components/SessionSection';
 
 interface ScheduleFormViewProps {
   form: ScheduleFormState;
@@ -71,8 +72,9 @@ const LinkButton = ({
 );
 
 /**
- * 합주/회의 공용 일정 입력 폼. 유형 토글로 합주 전용(곡) 필드를 켜고,
- * 참여자 선택은 합주·회의 공통 ParticipantSection으로 통일한다.
+ * 합주/회의 공용 일정 입력 폼. 유형 토글로 합주 전용(곡) 필드를 켠다.
+ * 사람 선택은 유형에 따라 갈린다 — 합주는 세션 편성(SessionSection),
+ * 회의는 참여자 목록(ParticipantSection)이다.
  */
 export const ScheduleFormView = ({
   form,
@@ -295,14 +297,22 @@ export const ScheduleFormView = ({
         </>
       )}
 
-      {/* 참여자 (합주·회의 공통) */}
-      <ParticipantSection
-        bandId={bandId}
-        value={form.participantBandMemberIds}
-        onChange={(participantBandMemberIds) =>
-          onChange({ participantBandMemberIds })
-        }
-      />
+      {/* 합주는 세션 편성이 곧 참여자다. 회의는 세션 없이 사람만 고른다. */}
+      {isPractice ? (
+        <SessionSection
+          bandId={bandId}
+          value={form.sessionAssignments}
+          onChange={(sessionAssignments) => onChange({ sessionAssignments })}
+        />
+      ) : (
+        <ParticipantSection
+          bandId={bandId}
+          value={form.participantBandMemberIds}
+          onChange={(participantBandMemberIds) =>
+            onChange({ participantBandMemberIds })
+          }
+        />
+      )}
 
       <Divider />
 

@@ -76,7 +76,10 @@ export function ReceivedInviteSheet({
         className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[80dvh] w-full max-w-[648px] flex-col rounded-t-[24px] border-t border-[#DFDFE1] bg-gradient-to-b from-[#F9F8F0] to-[#E6E9F0] p-6 shadow-[0_-3px_9px_2px_rgba(0,0,0,0.1)] outline-none"
         showCloseButton={false}
       >
-        <AppSheetClose className="text-gradient-top hover:bg-black/5 hover:text-gradient-top active:bg-black/10" />
+        <AppSheetClose
+          floating
+          className="text-gradient-top hover:bg-black/5 hover:text-gradient-top active:bg-black/10"
+        />
 
         {/* 헤더 및 타이틀 */}
         <SheetHeader className="mt-4 flex flex-col items-center gap-2 p-0 text-center">
