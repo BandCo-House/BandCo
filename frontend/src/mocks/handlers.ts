@@ -1,3 +1,4 @@
+import { assistantHandlers } from './assistant/handlers';
 import { authHandlers } from './auth/handlers';
 import { bandHandlers } from './band/handlers';
 import { inviteHandlers } from './invite/handlers';
@@ -16,6 +17,7 @@ import { skillHandlers } from './skill/handlers';
 import { genreHandlers } from './genre/handlers';
 
 export const handlers = [
+  ...assistantHandlers,
   ...authHandlers,
   ...bandHandlers,
   ...inviteHandlers,

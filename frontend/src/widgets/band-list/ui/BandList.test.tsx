@@ -46,8 +46,13 @@ describe('BandList', () => {
           error: null,
           message: '내 밴드 목록 조회 성공',
           data: {
-            totalCount: 0,
             items: [],
+            meta: {
+              count: 0,
+              take: 20,
+              cursor: null,
+              next: null,
+            },
           },
         });
       }),

@@ -1,5 +1,7 @@
 import { redirect, type ParsedLocation } from '@tanstack/react-router';
 import type { UserAccess } from '@/app/providers/auth-context';
+import { getAccessToken } from '@/shared/lib/auth-storage';
+import { getUserIdFromToken, isTokenExpired } from '@/shared/lib/jwt';
 
 export type RouterContext = {
   user: UserAccess;
@@ -12,12 +14,27 @@ const PUBLIC_ONLY_PATHS = new Set(['/login', '/signup', '/forgot-password']);
 
 /**
  * 라우터 진입 전 사용자 상태 동기화 지점
- * 현재는 AuthProvider의 값을 그대로 사용하고, 추후 토큰 재검증/권한 동기화 로직을 붙일 수 있다.
+ *
+ * 로그인 직후에는 AuthProvider의 상태 변경이 아직 라우터 컨텍스트에 반영되지 않은 채로
+ * 첫 이동이 일어난다. 그때 컨텍스트만 믿으면 방금 로그인한 사용자를 로그인 화면으로 되돌리게 되므로,
+ * 컨텍스트가 비로그인일 때만 저장된 토큰을 확인해 보정한다.
  */
 export const syncAuthenticatedUser = async (
   user: UserAccess,
 ): Promise<UserAccess> => {
-  return user;
+  if (user.isLoggedIn) {
+    return user;
+  }
+
+  const accessToken = getAccessToken();
+
+  if (!accessToken || isTokenExpired(accessToken)) {
+    return user;
+  }
+
+  const id = getUserIdFromToken(accessToken);
+
+  return id ? { ...user, isLoggedIn: true, id } : user;
 };
 
 /**

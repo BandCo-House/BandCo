@@ -1,0 +1,153 @@
+import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+
+import { LLM_PROVIDER_GROUPS, type LlmProvider, type LlmProviderGroup } from './providers/llm-provider';
+import type { LlmStructuredRequest } from './types/llm-request.type';
+import type { LlmStructuredResponse } from './types/llm-response.type';
+import { AI_CONFIG, type AiConfig } from './ai.config';
+import { LlmRateLimitError, LlmUnavailableError } from './llm.errors';
+
+@Injectable()
+export class LlmService {
+  private readonly logger = new Logger(LlmService.name);
+  private readonly keyCursorByProvider = new Map<string, number>();
+  private providerCursor = 0;
+
+  constructor(
+    @Inject(LLM_PROVIDER_GROUPS) private readonly providerGroups: LlmProviderGroup[],
+    @Inject(AI_CONFIG) private readonly config: AiConfig,
+  ) {}
+
+  /**
+   * 등록된 provider를 우선순위대로 시도해 구조화 응답을 얻는다.
+   * 일시 오류는 같은 provider로 backoff 재시도하고, 호출량 제한은 즉시 다음 provider로 넘긴다.
+   *
+   * @param {LlmStructuredRequest} request - 시스템 지시문, 사용자 질문, 응답 스키마
+   * @returns {Promise<LlmStructuredResponse>} 가장 먼저 성공한 provider의 응답
+   */
+  async generateStructured(request: LlmStructuredRequest): Promise<LlmStructuredResponse> {
+    if (this.providerGroups.length === 0) {
+      throw new ServiceUnavailableException('사용 가능한 AI provider가 설정되지 않았습니다.');
+    }
+
+    const groups = this.selectProviderGroups();
+
+    for (const group of groups) {
+      const response = await this.tryProviderGroup(group, request);
+
+      if (response !== null) {
+        return response;
+      }
+    }
+
+    throw new ServiceUnavailableException('AI 응답을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  }
+
+  /** provider rotation이 켜지면 요청마다 시작 provider를 한 칸 옮기고, 꺼지면 첫 provider만 사용한다. */
+  private selectProviderGroups(): LlmProviderGroup[] {
+    if (!this.config.providerRotationEnabled || this.providerGroups.length <= 1) {
+      return this.providerGroups.slice(0, 1);
+    }
+
+    const normalizedIndex = this.providerCursor % this.providerGroups.length;
+    const ordered = [...this.providerGroups.slice(normalizedIndex), ...this.providerGroups.slice(0, normalizedIndex)];
+
+    this.providerCursor = normalizedIndex + 1;
+
+    return ordered;
+  }
+
+  /** 같은 provider의 credential을 설정된 순서에 따라 시도한다. */
+  private async tryProviderGroup(group: LlmProviderGroup, request: LlmStructuredRequest): Promise<LlmStructuredResponse | null> {
+    const credentials = this.selectCredentials(group);
+
+    for (const provider of credentials) {
+      const response = await this.tryProvider(provider, request);
+
+      if (response !== null) {
+        return response;
+      }
+    }
+
+    return null;
+  }
+
+  /** rotation이 켜지면 요청마다 시작 credential을 한 칸 옮기고, 꺼지면 첫 credential만 사용한다. */
+  private selectCredentials(group: LlmProviderGroup): LlmProvider[] {
+    if (!this.config.keyRotationEnabled || group.credentials.length <= 1) {
+      return group.credentials.slice(0, 1);
+    }
+
+    const startIndex = this.keyCursorByProvider.get(group.name) ?? 0;
+    const normalizedIndex = startIndex % group.credentials.length;
+    const ordered = [...group.credentials.slice(normalizedIndex), ...group.credentials.slice(0, normalizedIndex)];
+
+    this.keyCursorByProvider.set(group.name, normalizedIndex + 1);
+
+    return ordered;
+  }
+
+  /**
+   * provider 하나를 재시도 정책에 따라 호출한다.
+   * 이 provider로는 더 시도할 의미가 없다고 판단되면 null을 돌려 호출자가 다음 provider로 넘어가게 한다.
+   *
+   * @param {LlmProvider} provider - 호출할 provider
+   * @param {LlmStructuredRequest} request - 생성 요청
+   * @returns {Promise<LlmStructuredResponse | null>} 성공 응답, 실패 시 null
+   */
+  private async tryProvider(provider: LlmProvider, request: LlmStructuredRequest): Promise<LlmStructuredResponse | null> {
+    for (let attempt = 0; attempt <= this.config.maxRetriesPerProvider; attempt += 1) {
+      try {
+        return await provider.generateStructured(request, this.config.requestTimeoutMs);
+      } catch (error) {
+        if (error instanceof LlmRateLimitError) {
+          this.logger.warn(`[${provider.name}] 호출량 제한으로 다음 호출 대상으로 전환합니다.`);
+          return null;
+        }
+
+        if (error instanceof LlmUnavailableError && attempt < this.config.maxRetriesPerProvider) {
+          const delayMs = this.calculateBackoffDelay(attempt);
+          this.logger.warn(`[${provider.name}] 일시 오류로 ${delayMs}ms 후 재시도합니다. (${attempt + 1}/${this.config.maxRetriesPerProvider})`);
+          await delay(delayMs);
+          continue;
+        }
+
+        this.logger.warn(`[${provider.name}] 호출에 실패해 다음 호출 대상으로 전환합니다: ${toMessage(error)}`);
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 지수 백오프에 jitter를 더해 재시도가 한 시점에 몰리지 않게 한다.
+   *
+   * @param {number} attempt - 0부터 시작하는 시도 회차
+   * @returns {number} 대기할 밀리초
+   */
+  private calculateBackoffDelay(attempt: number): number {
+    const exponential = this.config.retryBaseDelayMs * 2 ** attempt;
+
+    return exponential + Math.floor(Math.random() * this.config.retryBaseDelayMs);
+  }
+}
+
+/**
+ * 재시도 사이 대기.
+ *
+ * @param {number} milliseconds - 대기 시간
+ * @returns {Promise<void>} 대기 완료
+ */
+function delay(milliseconds: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+/**
+ * 알 수 없는 예외에서 로그용 메시지를 뽑는다.
+ *
+ * @param {unknown} error - 발생한 예외
+ * @returns {string} 메시지 문자열
+ */
+function toMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

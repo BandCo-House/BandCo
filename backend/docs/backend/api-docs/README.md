@@ -34,4 +34,5 @@ API 엔드포인트, 요청 DTO, 응답 DTO, 응답 예시를 작성하거나 �
 - [장소 API 명세](./place.md)
 - [알림 API 명세](./notification.md)
 - [팀 API 명세](./teams.md)
+- [자연어 밴드 조회 API 명세](./assistant.md)
 - [공통(Common) API 명세](./common.md)
