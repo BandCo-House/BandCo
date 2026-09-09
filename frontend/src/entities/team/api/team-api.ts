@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apiGet, apiPost, apiPatch, apiDelete } from '@/shared/api';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/shared/api';
 import {
   bandTeamListItemSchema,
   teamDetailSchema,
@@ -79,6 +79,10 @@ export const getTeamMembers = async (
  * 팀 멤버를 추가한다. (POST /teams/:teamId/members)
  * skillTypeId를 주면 그 세션으로 배정한다. 같은 멤버를 다른 세션으로 여러 번 넣을 수 있다.
  */
+/**
+ * 팀 멤버를 한 명 추가한다. (POST /teams/:teamId/members)
+ * 팀 생성 직후 초기 멤버를 넣을 때 쓴다 — 그때는 교체할 기존 명단이 없다.
+ */
 export const addTeamMember = async (
   teamId: string,
   bandMemberId: string,
@@ -91,33 +95,32 @@ export const addTeamMember = async (
   return teamMemberSchema.parse(data);
 };
 
-/**
- * 팀 멤버의 세션 배정을 바꾼다. (PATCH /teams/:teamId/members/:teamMemberId)
- * null이면 미배정으로 되돌린다. 세션 변경은 제거+재추가가 아니라 이걸 쓴다 —
- * 제거가 성공하고 추가가 실패하면 멀쩡히 있던 사람이 팀에서 빠진다.
- */
-export const updateTeamMemberSession = async (
-  teamId: string,
-  teamMemberId: string,
-  skillTypeId: string | null,
-): Promise<TeamMember> => {
-  const data = await apiPatch<unknown>(
-    `/teams/${teamId}/members/${teamMemberId}`,
-    { skillTypeId },
-  );
-  return teamMemberSchema.parse(data);
-};
+/** 명단 일괄 교체 요청의 한 행. */
+export interface ReplaceTeamMemberInput {
+  /** 기존 행을 이어받겠다는 표시. 새로 추가하는 행은 보내지 않는다. */
+  teamMemberId?: string;
+  bandMemberId: string;
+  skillTypeId: string | null;
+}
+
+/** 명단 일괄 교체(PUT /teams/:teamId/members) 결과. */
+const replaceTeamMembersResultSchema = z.object({
+  members: z.array(teamMemberSchema),
+});
 
 /**
- * 팀 멤버를 제거한다. (DELETE /teams/:teamId/members/:teamMemberId)
+ * 팀 명단을 통째로 교체한다. (PUT /teams/:teamId/members)
+ *
+ * 추가·제거·세션 변경을 서버가 한 트랜잭션에서 맞춘다. 단건 API를 여러 번 부르면
+ * DELETE는 성공했는데 POST가 실패하는 순간 사람이 사라진 채로 남는다.
  */
-export const removeTeamMember = (
+export const replaceTeamMembers = async (
   teamId: string,
-  teamMemberId: string,
-): Promise<{ teamMemberId: string; removed: boolean }> =>
-  apiDelete<{ teamMemberId: string; removed: boolean }>(
-    `/teams/${teamId}/members/${teamMemberId}`,
-  );
+  members: ReplaceTeamMemberInput[],
+): Promise<TeamMember[]> => {
+  const data = await apiPut<unknown>(`/teams/${teamId}/members`, { members });
+  return replaceTeamMembersResultSchema.parse(data).members;
+};
 
 export interface CreateTeamRequest {
   name: string;
