@@ -5,7 +5,7 @@ import {
   deleteTeam,
   getTeamMembers,
   addTeamMember,
-  removeTeamMember,
+  replaceTeamMembers,
 } from './team-api';
 
 // mocks/team/handlers.ts의 인메모리 스토어를 그대로 쓴다. 삭제는 다른 케이스에 영향을 주므로 마지막에 둔다.
@@ -37,10 +37,21 @@ describe('team-api 계약 테스트', () => {
     expect(newMember.user.nickname).toBe('이준호');
   });
 
-  it('팀 멤버를 올바르게 제거한다', async () => {
-    const result = await removeTeamMember('team-1', 'tm-1-2');
-    expect(result.teamMemberId).toBe('tm-1-2');
-    expect(result.removed).toBe(true);
+  it('명단을 통째로 보내면 그대로 교체된 목록이 돌아온다', async () => {
+    const before = await getTeamMembers('team-1');
+    const kept = before.slice(0, 1);
+
+    const after = await replaceTeamMembers(
+      'team-1',
+      kept.map((member) => ({
+        teamMemberId: member.teamMemberId,
+        bandMemberId: member.bandMemberId,
+        skillTypeId: member.skillType?.skillTypeId ?? null,
+      })),
+    );
+
+    expect(after).toHaveLength(kept.length);
+    expect(after[0].bandMemberId).toBe(kept[0].bandMemberId);
   });
 
   it('팀을 올바르게 삭제한다', async () => {

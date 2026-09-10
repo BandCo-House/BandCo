@@ -14,9 +14,7 @@ import {
   teamKeys,
   useTeamDetail,
   useTeamMembers,
-  useAddTeamMember,
-  useUpdateTeamMemberSession,
-  useRemoveTeamMember,
+  useReplaceTeamMembers,
 } from '@/entities/team/api/queries';
 import { deleteTeam } from '@/entities/team/api/team-api';
 import {
@@ -109,10 +107,7 @@ function BandTeamDetailRoutePage() {
     handleOpenSearchForNewMember,
   } = useTeamMemberEdit({ propMembers: initialMembers });
 
-  const { mutateAsync: addMember } = useAddTeamMember(teamId);
-  const { mutateAsync: removeMember } = useRemoveTeamMember(teamId);
-  const { mutateAsync: updateMemberSession } =
-    useUpdateTeamMemberSession(teamId);
+  const { mutateAsync: replaceMembers } = useReplaceTeamMembers(teamId);
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -147,59 +142,22 @@ function BandTeamDetailRoutePage() {
 
     setIsSaving(true);
     try {
-      // teamMemberId는 편집 중에도 그대로라 원본 행과 짝지을 수 있다.
-      // 이걸로 "무엇이 바뀌었는지"를 갈라야 세션만 바꾼 경우를 UPDATE로 보낼 수 있다.
-      const originalById = new Map(
-        initialMembers.map((m) => [m.teamMemberId, m]),
+      // 명단 전체를 그대로 보낸다. 무엇이 추가·제거·변경됐는지는 서버가 가른다 —
+      // 여기서 diff해 요청 셋을 나눠 던지면 일부만 성공한 상태가 남을 수 있다.
+      //
+      // teamMemberId는 "기존 행을 이어받아라"는 표시라 원본에 있던 행에만 붙인다.
+      // 새 행의 임시 id(tm-${Date.now()})는 UUID가 아니라 그대로 보내면 400이다.
+      const originalIds = new Set(initialMembers.map((m) => m.teamMemberId));
+
+      await replaceMembers(
+        currentMembers.map((member) => ({
+          ...(originalIds.has(member.teamMemberId)
+            ? { teamMemberId: member.teamMemberId }
+            : {}),
+          bandMemberId: member.bandMemberId,
+          skillTypeId: member.skillType?.skillTypeId ?? null,
+        })),
       );
-      const currentIds = new Set(currentMembers.map((m) => m.teamMemberId));
-      const skillTypeIdOf = (m: (typeof currentMembers)[number]) =>
-        m.skillType?.skillTypeId ?? null;
-
-      // 세션만 바뀐 행: 사람은 그대로다. 제거+재추가로 흉내 내면 중간에 실패했을 때
-      // 멀쩡히 있던 사람이 팀에서 빠지므로 PATCH 한 번으로 끝낸다.
-      const toUpdateSession = currentMembers.filter((m) => {
-        const origin = originalById.get(m.teamMemberId);
-        return (
-          origin !== undefined &&
-          origin.bandMemberId === m.bandMemberId &&
-          skillTypeIdOf(origin) !== skillTypeIdOf(m)
-        );
-      });
-
-      // 사람이 바뀐 행은 다른 사람이라 제거+추가가 맞다.
-      const replaced = currentMembers.filter((m) => {
-        const origin = originalById.get(m.teamMemberId);
-        return origin !== undefined && origin.bandMemberId !== m.bandMemberId;
-      });
-
-      const toRemove = [
-        // 편집에서 사라진 행
-        ...initialMembers.filter((m) => !currentIds.has(m.teamMemberId)),
-        // 사람이 교체된 행의 원본
-        ...replaced.map((m) => originalById.get(m.teamMemberId)!),
-      ];
-      const toAdd = [
-        // 새로 추가된 행(임시 teamMemberId라 원본에 없다)
-        ...currentMembers.filter((m) => !originalById.has(m.teamMemberId)),
-        ...replaced,
-      ];
-
-      await Promise.all([
-        ...toUpdateSession.map((m) =>
-          updateMemberSession({
-            teamMemberId: m.teamMemberId,
-            skillTypeId: skillTypeIdOf(m),
-          }),
-        ),
-        ...toRemove.map((m) => removeMember(m.teamMemberId)),
-        ...toAdd.map((m) =>
-          addMember({
-            bandMemberId: m.bandMemberId,
-            skillTypeId: m.skillType?.skillTypeId,
-          }),
-        ),
-      ]);
 
       toast.success('팀원 설정이 저장되었습니다.');
       navigate({ search: {} });
@@ -208,14 +166,7 @@ function BandTeamDetailRoutePage() {
     } finally {
       setIsSaving(false);
     }
-  }, [
-    initialMembers,
-    currentMembers,
-    addMember,
-    removeMember,
-    updateMemberSession,
-    navigate,
-  ]);
+  }, [initialMembers, currentMembers, replaceMembers, navigate]);
 
   const handleToggleEdit = useCallback(() => {
     navigate({

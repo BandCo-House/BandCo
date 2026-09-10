@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { parseToPrismaQuery } from '../../../common/query';
 import { buildNextPath } from '../../../common/url';
 import { PrismaService } from '../../../database/prisma';
-import type { Prisma } from '../../../generated/prisma';
+import type { Prisma, TeamMemberRole } from '../../../generated/prisma';
 import type { GetBandTeamsQuery } from '../dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from '../dto/get-my-teams-query.dto';
 import type { GetTeamMembersQuery } from '../dto/get-team-members-query.dto';
@@ -347,6 +347,102 @@ export class TeamsPrismaRepository implements TeamsRepository {
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<GetTeamMembersResult>} 팀 멤버 목록
    */
+  async findTeamMemberRows(
+    teamId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string; bandMemberId: string; skillTypeId: string | null; teamRole: string; joinedAt: Date }[]> {
+    const client = tx ?? this.prisma;
+    return client.teamMember.findMany({
+      where: { teamId },
+      select: { id: true, bandMemberId: true, skillTypeId: true, teamRole: true, joinedAt: true },
+      orderBy: { joinedAt: 'asc' },
+    });
+  }
+
+  async findBandMemberIdsInBand(bandId: string, bandMemberIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    if (bandMemberIds.length === 0) return [];
+    const rows = await client.bandMember.findMany({
+      where: { bandId, id: { in: bandMemberIds } },
+      select: { id: true },
+    });
+    return rows.map(row => row.id);
+  }
+
+  async deleteTeamMemberRows(teamId: string, teamMemberIds: string[], tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+    if (teamMemberIds.length === 0) return;
+    // teamId를 함께 걸어 다른 팀의 행을 지우는 요청을 막는다.
+    await client.teamMember.deleteMany({ where: { teamId, id: { in: teamMemberIds } } });
+  }
+
+  async createTeamMemberRows(
+    teamId: string,
+    rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole?: string }[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx ?? this.prisma;
+    if (rows.length === 0) return;
+    await client.teamMember.createMany({
+      data: rows.map(row => ({
+        teamId,
+        bandMemberId: row.bandMemberId,
+        skillTypeId: row.skillTypeId,
+        // 기존 행을 옮겨 담는 경우에만 온다. 없으면 스키마 기본값(now / MEMBER)을 쓴다.
+        ...(row.joinedAt !== undefined && { joinedAt: row.joinedAt }),
+        ...(row.teamRole !== undefined && { teamRole: row.teamRole as TeamMemberRole }),
+      })),
+    });
+  }
+
+  async findAllTeamMembers(teamId: string, tx?: Prisma.TransactionClient): Promise<TeamMemberListItem[]> {
+    const client = tx ?? this.prisma;
+    const rows = await client.teamMember.findMany({
+      where: { teamId },
+      select: {
+        id: true,
+        bandMemberId: true,
+        teamRole: true,
+        joinedAt: true,
+        skillType: { select: { id: true, name: true } },
+        bandMember: {
+          select: {
+            userId: true,
+            user: {
+              select: {
+                profile: { select: { nickname: true, avatarUrl: true } },
+                userSkills: {
+                  select: { skillTypeId: true, skillLevel: true, isPrimary: true, skillType: { select: { name: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
+    });
+
+    return rows.map(member => ({
+      teamMemberId: member.id,
+      bandMemberId: member.bandMemberId,
+      skillType: member.skillType ? { skillTypeId: member.skillType.id, name: member.skillType.name } : null,
+      user: {
+        userId: member.bandMember.userId,
+        nickname: member.bandMember.user?.profile?.nickname ?? '',
+        profileImageUrl: member.bandMember.user?.profile?.avatarUrl ?? null,
+      },
+      teamRole: member.teamRole,
+      joinedAt: member.joinedAt.toISOString(),
+      skills:
+        member.bandMember.user?.userSkills?.map(skill => ({
+          skillTypeId: skill.skillTypeId,
+          skillName: skill.skillType.name,
+          skillLevel: skill.skillLevel,
+          isPrimary: skill.isPrimary,
+        })) ?? [],
+    }));
+  }
+
   async findTeamMembers(teamId: string, query: GetTeamMembersQuery, tx?: Prisma.TransactionClient): Promise<GetTeamMembersResult> {
     const client = tx ?? this.prisma;
     const { orderBy } = parseToPrismaQuery(query);
