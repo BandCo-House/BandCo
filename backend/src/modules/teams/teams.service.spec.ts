@@ -1300,7 +1300,7 @@ describe('TeamsService', () => {
       await expect(service.replaceTeamMembers(USER_ID, TEAM_ID, [{ bandMemberId: OTHER_BAND_MEMBER_ID }])).rejects.toThrow(BadRequestException);
     });
 
-    it('이 팀에 없는 teamMemberId를 보내면 BadRequestException을 던진다', async () => {
+    it('이 팀에 없는 teamMemberId를 보내면 NotFoundException을 던진다', async () => {
       const service = new TeamsService(createTeamsRepositoryStub({ teamMemberRows: [LEADER_ROW] }), createPrismaServiceStub());
 
       await expect(
@@ -1308,7 +1308,7 @@ describe('TeamsService', () => {
           { teamMemberId: TEAM_MEMBER_ID, bandMemberId: BAND_MEMBER_ID },
           { teamMemberId: OTHER_TEAM_MEMBER_ID, bandMemberId: OTHER_BAND_MEMBER_ID },
         ]),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('팀이 없으면 NotFoundException을 던진다', async () => {

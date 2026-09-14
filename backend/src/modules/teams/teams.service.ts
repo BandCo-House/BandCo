@@ -364,7 +364,7 @@ export class TeamsService {
       for (const member of normalized) {
         const origin = member.teamMemberId ? currentById.get(member.teamMemberId) : undefined;
         if (member.teamMemberId && !origin) {
-          throw new BadRequestException('해당 팀에 없는 팀 멤버입니다.');
+          throw new NotFoundException('해당 팀에서 대상 멤버를 찾을 수 없습니다.');
         }
 
         const teamRole = roleOf(member.bandMemberId);
