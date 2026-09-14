@@ -160,7 +160,8 @@ function createTeamsRepositoryStub(options?: {
   teamMemberRows?: { id: string; bandMemberId: string; skillTypeId: string | null; teamRole: string; joinedAt: Date }[];
   bandMemberIdsInBand?: string[];
   onDeleteTeamMemberRows?: (teamId: string, teamMemberIds: string[]) => void;
-  onCreateTeamMemberRows?: (teamId: string, rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole?: string }[]) => void;
+  onCreateTeamMemberRows?: (teamId: string, rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole: string }[]) => void;
+  onLockTeamForReplace?: (teamId: string, tx: unknown) => void;
   onDeleteTeam?: (teamId: string, tx: unknown) => void;
 }): TeamsRepository {
   return {
@@ -225,6 +226,9 @@ function createTeamsRepositoryStub(options?: {
     async updateTeamMemberSession(teamMemberId, skillTypeId, _tx) {
       options?.onUpdateTeamMemberSession?.(teamMemberId, skillTypeId);
       return { ...DEFAULT_ADD_MEMBER_RESULT, teamMemberId, skillType: skillTypeId ? { skillTypeId, name: '보컬' } : null };
+    },
+    async lockTeamForReplace(teamId, tx) {
+      options?.onLockTeamForReplace?.(teamId, tx);
     },
     async findTeamMemberRows(_teamId, _tx) {
       return options?.teamMemberRows ?? [];
@@ -1065,6 +1069,67 @@ describe('TeamsService', () => {
     const JOINED_AT = new Date('2026-01-01T00:00:00.000Z');
     const LEADER_ROW = { id: TEAM_MEMBER_ID, bandMemberId: BAND_MEMBER_ID, skillTypeId: null, teamRole: 'LEADER', joinedAt: JOINED_AT };
 
+    it('teamMemberId 없이 추가한 리더의 새 배정은 LEADER로 생성되어야 한다', async () => {
+      // 리더가 기존 배정을 빼고 새 배정만 넣는 경우. 역할을 원래 행에서만 가져오면
+      // 새 행이 MEMBER가 되어 LEADER 행이 0개가 된다.
+      const created: { bandMemberId: string; skillTypeId: string | null; teamRole: string }[] = [];
+      let deletedIds: string[] = [];
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberRows: [LEADER_ROW],
+          onCreateTeamMemberRows: (_teamId, rows) => created.push(...rows),
+          onDeleteTeamMemberRows: (_teamId, ids) => {
+            deletedIds = ids;
+          },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await service.replaceTeamMembers(USER_ID, TEAM_ID, [{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID }]);
+
+      expect(deletedIds).toEqual([TEAM_MEMBER_ID]);
+      expect(created).toEqual([{ bandMemberId: BAND_MEMBER_ID, skillTypeId: VOCAL_SKILL_ID, teamRole: 'LEADER' }]);
+    });
+
+    it('리더인데 MEMBER로 저장된 기존 행은 이어받을 때 LEADER로 바로잡아야 한다', async () => {
+      const created: { bandMemberId: string; teamRole: string; joinedAt?: Date }[] = [];
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamMemberRows: [{ ...LEADER_ROW, teamRole: 'MEMBER' }],
+          onCreateTeamMemberRows: (_teamId, rows) => created.push(...rows),
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await service.replaceTeamMembers(USER_ID, TEAM_ID, [{ teamMemberId: TEAM_MEMBER_ID, bandMemberId: BAND_MEMBER_ID }]);
+
+      expect(created).toEqual([{ bandMemberId: BAND_MEMBER_ID, skillTypeId: null, teamRole: 'LEADER', joinedAt: JOINED_AT }]);
+    });
+
+    it('현재 명단을 읽기 전에 같은 트랜잭션에서 teams 행을 잠가야 한다', async () => {
+      const order: string[] = [];
+      const lockedWith: unknown[] = [];
+      const repository = createTeamsRepositoryStub({
+        teamMemberRows: [LEADER_ROW],
+        onLockTeamForReplace: (_teamId, tx) => {
+          order.push('lock');
+          lockedWith.push(tx);
+        },
+      });
+      const findRows = repository.findTeamMemberRows.bind(repository);
+      repository.findTeamMemberRows = async (teamId, tx) => {
+        order.push('read');
+        lockedWith.push(tx);
+        return findRows(teamId, tx);
+      };
+
+      const service = new TeamsService(repository, createPrismaServiceStub());
+      await service.replaceTeamMembers(USER_ID, TEAM_ID, [{ teamMemberId: TEAM_MEMBER_ID, bandMemberId: BAND_MEMBER_ID }]);
+
+      expect(order).toEqual(['lock', 'read']);
+      expect(lockedWith[0]).toBe(lockedWith[1]);
+    });
+
     it('세션이 바뀐 행은 다시 만들되 joinedAt·teamRole을 그대로 옮긴다', async () => {
       const created: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole?: string }[] = [];
       let deletedIds: string[] = [];
@@ -1157,7 +1222,7 @@ describe('TeamsService', () => {
       ]);
 
       expect(deletedIds).toEqual([OTHER_TEAM_MEMBER_ID]);
-      expect(created).toEqual([{ bandMemberId: NEW_BAND_MEMBER_ID, skillTypeId: null }]);
+      expect(created).toEqual([{ bandMemberId: NEW_BAND_MEMBER_ID, skillTypeId: null, teamRole: 'MEMBER' }]);
     });
 
     it('명단에서 빠진 행은 삭제한다', async () => {

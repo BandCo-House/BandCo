@@ -347,6 +347,11 @@ export class TeamsPrismaRepository implements TeamsRepository {
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<GetTeamMembersResult>} 팀 멤버 목록
    */
+  async lockTeamForReplace(teamId: string, tx: Prisma.TransactionClient): Promise<void> {
+    // Prisma 쿼리 API에는 행 잠금이 없어 raw로 건다. 태그드 템플릿이라 teamId는 파라미터로 바인딩된다.
+    await tx.$queryRaw`SELECT id FROM teams WHERE id = ${teamId}::uuid FOR UPDATE`;
+  }
+
   async findTeamMemberRows(
     teamId: string,
     tx?: Prisma.TransactionClient,
@@ -378,7 +383,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
 
   async createTeamMemberRows(
     teamId: string,
-    rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole?: string }[],
+    rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole: string }[],
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const client = tx ?? this.prisma;
@@ -388,9 +393,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
         teamId,
         bandMemberId: row.bandMemberId,
         skillTypeId: row.skillTypeId,
-        // 기존 행을 옮겨 담는 경우에만 온다. 없으면 스키마 기본값(now / MEMBER)을 쓴다.
+        // joinedAt은 같은 사람의 행을 옮겨 담을 때만 온다. 없으면 스키마 기본값(now)을 쓴다.
         ...(row.joinedAt !== undefined && { joinedAt: row.joinedAt }),
-        ...(row.teamRole !== undefined && { teamRole: row.teamRole as TeamMemberRole }),
+        teamRole: row.teamRole as TeamMemberRole,
       })),
     });
   }

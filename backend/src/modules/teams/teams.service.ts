@@ -283,9 +283,8 @@ export class TeamsService {
    * 사라진 채로 남는다. 화면은 "저장 실패"만 보여주고 사용자는 팀이 이미 바뀐 걸
    * 모른다. 명단 전체를 받아 서버가 한 번에 맞추면 그 중간 상태가 없어진다.
    *
-   * 행을 전부 지웠다 다시 만들지 않는 이유: joinedAt(가입일)과 teamRole이
-   * 기본값으로 되돌아가 리더가 조용히 MEMBER가 된다. teamMemberId로 같은 행을
-   * 이어받아 세션만 바뀐 경우는 UPDATE로 처리한다.
+   * 행을 전부 지웠다 다시 만들지 않는 이유: joinedAt(가입일)이 오늘로 리셋된다.
+   * teamMemberId로 같은 사람의 행을 짚어 가입일을 이어받는다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} teamId - 대상 팀 ID
@@ -300,6 +299,11 @@ export class TeamsService {
     tx?: Prisma.TransactionClient,
   ): Promise<ReplaceTeamMembersResult> {
     const run = async (client: Prisma.TransactionClient): Promise<ReplaceTeamMembersResult> => {
+      // 현재 명단을 읽기 전에 teams 행을 잠근다. 동시 저장 둘이 같은 명단을 읽고
+      // 각자 지우고 만들면, unique에 걸리지 않는 한 두 결과의 합집합이 남아 "교체"가
+      // 깨진다. 뒤에 온 요청은 앞 요청이 커밋될 때까지 기다린 뒤 새 명단을 읽는다.
+      await this.teamsRepository.lockTeamForReplace(teamId, client);
+
       const team = await this.teamsRepository.findTeamForUpdate(teamId, client);
       if (!team) {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
@@ -349,9 +353,13 @@ export class TeamsService {
       const currentRows = await this.teamsRepository.findTeamMemberRows(teamId, client);
       const currentById = new Map(currentRows.map(row => [row.id, row]));
 
-      // 손대지 않는 행 / 세션이 바뀌어 다시 만들 행 / 새로 만들 행으로 가른다.
+      // 역할은 원래 행이 아니라 팀의 리더 지정에서 정한다. 원래 행에서 가져오면
+      // teamMemberId 없이 추가한 리더의 새 배정이 MEMBER로 만들어져, 리더가
+      // LEADER·MEMBER 행을 섞어 갖거나 기존 배정을 빼는 순간 LEADER 행이 0개가 된다.
+      const roleOf = (bandMemberId: string) => (bandMemberId === team.teamLeaderBandMemberId ? 'LEADER' : 'MEMBER');
+
       const untouchedRowIds = new Set<string>();
-      const rowsToCreate: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole?: string }[] = [];
+      const rowsToCreate: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole: string }[] = [];
 
       for (const member of normalized) {
         const origin = member.teamMemberId ? currentById.get(member.teamMemberId) : undefined;
@@ -359,26 +367,23 @@ export class TeamsService {
           throw new BadRequestException('해당 팀에 없는 팀 멤버입니다.');
         }
 
-        // 사람도 세션도 그대로면 건드릴 이유가 없다.
-        if (origin && origin.bandMemberId === member.bandMemberId && origin.skillTypeId === member.skillTypeId) {
+        const teamRole = roleOf(member.bandMemberId);
+        const isSamePerson = origin !== undefined && origin.bandMemberId === member.bandMemberId;
+
+        // 사람·세션·역할이 모두 그대로면 건드릴 이유가 없다. 역할까지 보는 건 예전
+        // 경로로 어긋나게 저장된 행(리더인데 MEMBER)을 이번 저장에서 바로잡기 위해서다.
+        if (isSamePerson && origin.skillTypeId === member.skillTypeId && origin.teamRole === teamRole) {
           untouchedRowIds.add(origin.id);
           continue;
         }
 
-        // 같은 사람의 세션만 바뀐 경우. 행을 다시 만들되 가입일과 역할을 그대로 옮겨
-        // 담는다 — 지웠다 만드는 건 행의 정체성이 아니라 쓰기 순서 문제를 피하려는 것이다.
-        if (origin && origin.bandMemberId === member.bandMemberId) {
-          rowsToCreate.push({
-            bandMemberId: member.bandMemberId,
-            skillTypeId: member.skillTypeId,
-            joinedAt: origin.joinedAt,
-            teamRole: origin.teamRole,
-          });
-          continue;
-        }
-
-        // 사람이 바뀌었거나 새 행이다. 다른 사람이 들어오는 것이므로 가입일은 새로 찍힌다.
-        rowsToCreate.push({ bandMemberId: member.bandMemberId, skillTypeId: member.skillTypeId });
+        // 같은 사람이면 가입일을 이어받는다. 다른 사람이거나 새 행이면 새로 찍힌다.
+        rowsToCreate.push({
+          bandMemberId: member.bandMemberId,
+          skillTypeId: member.skillTypeId,
+          teamRole,
+          ...(isSamePerson && { joinedAt: origin.joinedAt }),
+        });
       }
 
       // 삭제를 먼저 끝내야 생성이 unique와 부딪히지 않는다.
@@ -388,7 +393,7 @@ export class TeamsService {
       // team_members_team_member_no_skill_key가 (team_id, band_member_id)의 NULL 행을
       // 하나로 제한해서, 같은 사람의 행이 동시에 NULL이 되는 순간 위반이다.
       // 한 트랜잭션 안이라 지웠다 만드는 데 따르는 위험은 없고, 잃을 뻔한
-      // joinedAt·teamRole은 위에서 그대로 옮긴다.
+      // joinedAt은 위에서 그대로 옮긴다.
       const toDeleteIds = currentRows.filter(row => !untouchedRowIds.has(row.id)).map(row => row.id);
       await this.teamsRepository.deleteTeamMemberRows(teamId, toDeleteIds, client);
       await this.teamsRepository.createTeamMemberRows(teamId, rowsToCreate, client);

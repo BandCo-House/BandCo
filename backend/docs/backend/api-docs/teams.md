@@ -637,7 +637,7 @@
 
 > `members`는 **교체 후 명단 전체**다. 여기 없는 기존 행은 삭제된다.
 >
-> `teamMemberId`는 기존 행을 이어받겠다는 표시다. 보내면 그 행의 `joinedAt`·`teamRole`이 유지되고, 생략하면 새 행으로 만들어진다. 같은 `teamMemberId`에 다른 `bandMemberId`를 주면 **사람이 바뀐 것**으로 보고 지우고 새로 만든다 — 다른 사람의 가입일을 물려받지 않게 하기 위해서다.
+> `teamMemberId`는 기존 행을 이어받겠다는 표시다. 보내면 그 행의 `joinedAt`이 유지되고, 생략하면 새 행으로 만들어진다. 같은 `teamMemberId`에 다른 `bandMemberId`를 주면 **사람이 바뀐 것**으로 보고 지우고 새로 만든다 — 다른 사람의 가입일을 물려받지 않게 하기 위해서다.
 >
 > `skillTypeId`는 생략하거나 `null`이면 미배정이다.
 
@@ -645,13 +645,17 @@
 
 | 요청 행 | 처리 |
 |---------|------|
-| `teamMemberId` 있음 + 사람·세션 모두 그대로 | 손대지 않음 |
-| `teamMemberId` 있음 + 세션만 다름 | 다시 생성 (`joinedAt`·`teamRole` 그대로 이월) |
+| `teamMemberId` 있음 + 사람·세션·역할 모두 그대로 | 손대지 않음 |
+| `teamMemberId` 있음 + 같은 사람, 세션 또는 역할이 다름 | 다시 생성 (`joinedAt` 이월) |
 | `teamMemberId` 있음 + `bandMemberId` 다름 | 다시 생성 (다른 사람이므로 `joinedAt`은 새로 찍힘) |
 | `teamMemberId` 없음 | 생성 |
 | 기존 행이 `members`에 없음 | 삭제 |
 
-> 세션이 바뀐 행은 `UPDATE`가 아니라 **삭제 후 재생성**이다. `UPDATE`로 옮기면 중간 상태가 `team_members_team_member_no_skill_key`(부분 unique)에 걸린다 — 같은 사람의 행이 잠깐이라도 동시에 `skill_type_id IS NULL`이 되는 순간 위반이다. 한 트랜잭션 안이라 재생성에 따르는 위험은 없고, `joinedAt`·`teamRole`은 그대로 옮긴다. **다만 그 행의 `teamMemberId`는 새로 발급된다.**
+> `teamRole`은 요청 행이나 원래 행이 아니라 **팀의 리더 지정(`teamLeaderBandMemberId`)으로 정한다.** 리더의 행은 전부 `LEADER`, 나머지는 `MEMBER`다. `teamMemberId` 없이 추가한 리더의 새 배정도 `LEADER`로 만들어지고, 예전 경로로 어긋나게 저장된 행은 이번 저장에서 바로잡힌다.
+>
+> 요청은 `teams` 행을 잠근 뒤(`SELECT … FOR UPDATE`) 현재 명단을 읽는다. 같은 팀에 교체 요청이 동시에 오면 뒤 요청은 앞 요청이 커밋될 때까지 기다린다 — 둘이 같은 명단을 읽고 각자 지우고 만들면 두 결과의 합집합이 남기 때문이다. 앞 요청이 행을 재생성했다면 뒤 요청의 `teamMemberId`는 더 이상 없으므로 400으로 거절된다.
+
+> 세션이 바뀐 행은 `UPDATE`가 아니라 **삭제 후 재생성**이다. `UPDATE`로 옮기면 중간 상태가 `team_members_team_member_no_skill_key`(부분 unique)에 걸린다 — 같은 사람의 행이 잠깐이라도 동시에 `skill_type_id IS NULL`이 되는 순간 위반이다. 한 트랜잭션 안이라 재생성에 따르는 위험은 없고, `joinedAt`은 그대로 옮긴다. **다만 그 행의 `teamMemberId`는 새로 발급된다.**
 
 ### Response 200
 
