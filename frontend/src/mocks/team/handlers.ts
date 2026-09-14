@@ -410,6 +410,92 @@ export const teamHandlers = [
     },
   ),
 
+  // PUT /teams/:teamId/members — 명단 일괄 교체
+  http.put(`${API_URL}/teams/:teamId/members`, async ({ params, request }) => {
+    const { teamId } = params as { teamId: string };
+    const body = (await request.json()) as {
+      members: {
+        teamMemberId?: string;
+        bandMemberId: string;
+        skillTypeId?: string | null;
+      }[];
+    };
+
+    const store = getTeamMembers(teamId);
+    const byId = new Map(store.map((member) => [member.teamMemberId, member]));
+    // 백엔드는 teams.teamLeaderBandMemberId로 역할을 정한다. 목에는 그 필드가 없어
+    // 교체 전 명단의 LEADER 행에서 리더를 읽는다.
+    const leaderBandMemberId = store.find(
+      (member) => member.teamRole === 'LEADER',
+    )?.bandMemberId;
+    const roleOf = (bandMemberId: string) =>
+      bandMemberId === leaderBandMemberId ? 'LEADER' : 'MEMBER';
+
+    // 백엔드와 같은 규칙으로 접는다. 사람·세션·역할이 그대로면 행을 유지하고,
+    // 같은 사람의 세션이나 역할이 바뀌면 joinedAt을 옮겨 다시 만든다.
+    const next: StoreMember[] = body.members.map((input) => {
+      const origin = input.teamMemberId
+        ? byId.get(input.teamMemberId)
+        : undefined;
+      const skillTypeId = input.skillTypeId ?? null;
+      const matchedBandMember = BAND_MEMBERS.find(
+        (m) => m.bandMemberId === input.bandMemberId,
+      );
+      const isSameRow = origin?.bandMemberId === input.bandMemberId;
+      const skillType = skillTypeId
+        ? {
+            skillTypeId,
+            name:
+              SESSION_SKILL_NAMES[skillTypeId] ??
+              matchedBandMember?.skills[0]?.skillName ??
+              '세션',
+          }
+        : null;
+
+      const teamRole = roleOf(input.bandMemberId);
+
+      if (origin && isSameRow) {
+        const keepsRow =
+          (origin.skillType?.skillTypeId ?? null) === skillTypeId &&
+          origin.teamRole === teamRole;
+        return {
+          ...origin,
+          teamRole,
+          // 세션이 바뀌면 백엔드가 행을 다시 만들어 teamMemberId가 새로 발급된다.
+          teamMemberId: keepsRow
+            ? origin.teamMemberId
+            : `tm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          skillType,
+        };
+      }
+
+      return {
+        teamMemberId: `tm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        bandMemberId: input.bandMemberId,
+        user: {
+          userId: matchedBandMember?.userId ?? `u-${input.bandMemberId}`,
+          nickname:
+            matchedBandMember?.nickname ??
+            `멤버(${input.bandMemberId.slice(-4)})`,
+          profileImageUrl: matchedBandMember?.avatarUrl ?? null,
+        },
+        teamRole,
+        joinedAt: new Date().toISOString(),
+        skillType,
+        skills: matchedBandMember?.skills ?? [],
+      };
+    });
+
+    store.splice(0, store.length, ...next);
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '팀 명단 교체 성공',
+      data: { teamId, members: next },
+    });
+  }),
+
   http.post(`${API_URL}/teams/:teamId/members`, async ({ params, request }) => {
     const { teamId } = params as { teamId: string };
     const body = (await request.json()) as {

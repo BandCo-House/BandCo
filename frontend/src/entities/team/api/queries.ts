@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  addTeamMember,
   createTeam,
   getBandTeams,
   getTeamDetail,
   getTeamMembers,
-  removeTeamMember,
-  updateTeamMemberSession,
+  replaceTeamMembers,
   type CreateTeamRequest,
   type GetBandTeamsParams,
+  type ReplaceTeamMemberInput,
 } from './team-api';
 
 /**
@@ -57,56 +56,16 @@ export const useTeamMembers = (teamId: string) =>
   });
 
 /**
- * 팀 멤버 추가 훅 (POST /teams/:teamId/members)
+ * 팀 명단 일괄 교체 훅 (PUT /teams/:teamId/members)
+ *
+ * 추가·제거·세션 변경을 한 요청으로 보낸다. 단건 API 셋을 Promise.all로 함께
+ * 던지면 DELETE만 성공하고 POST가 실패했을 때 사람이 사라진 채로 남는다.
  */
-export const useAddTeamMember = (teamId: string) => {
+export const useReplaceTeamMembers = (teamId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      bandMemberId,
-      skillTypeId,
-    }: {
-      bandMemberId: string;
-      skillTypeId?: string;
-    }) => addTeamMember(teamId, bandMemberId, skillTypeId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: teamKeys.members(teamId),
-      });
-    },
-  });
-};
-
-/**
- * 팀 멤버 세션 변경 훅 (PATCH /teams/:teamId/members/:teamMemberId)
- */
-export const useUpdateTeamMemberSession = (teamId: string) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      teamMemberId,
-      skillTypeId,
-    }: {
-      teamMemberId: string;
-      skillTypeId: string | null;
-    }) => updateTeamMemberSession(teamId, teamMemberId, skillTypeId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: teamKeys.members(teamId),
-      });
-    },
-  });
-};
-
-/**
- * 팀 멤버 제거 훅 (DELETE /teams/:teamId/members/:teamMemberId)
- */
-export const useRemoveTeamMember = (teamId: string) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (teamMemberId: string) =>
-      removeTeamMember(teamId, teamMemberId),
+    mutationFn: (members: ReplaceTeamMemberInput[]) =>
+      replaceTeamMembers(teamId, members),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: teamKeys.members(teamId),
