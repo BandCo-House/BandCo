@@ -294,11 +294,11 @@ model BandSpace {
 model SchedulePoll {
   id                    String               @id @default(uuid()) @db.Uuid
   bandSpaceId           String               @map("band_space_id") @db.Uuid
-  createdByBandMemberId String               @map("created_by_band_member_id") @db.Uuid
+  createdByBandMemberId String?              @map("created_by_band_member_id") @db.Uuid
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   bandSpace             BandSpace            @relation(fields: [bandSpaceId], references: [id], onDelete: Cascade)
-  createdByBandMember   BandMember           @relation("SchedulePollCreator", fields: [createdByBandMemberId], references: [id], onDelete: Cascade)
+  createdByBandMember   BandMember?          @relation("SchedulePollCreator", fields: [createdByBandMemberId], references: [id], onDelete: SetNull)
   options               SchedulePollOption[]
 
   @@index([bandSpaceId, createdAt])

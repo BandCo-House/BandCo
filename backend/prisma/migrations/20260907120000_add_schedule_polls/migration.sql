@@ -2,7 +2,7 @@
 CREATE TABLE "schedule_polls" (
     "id" UUID NOT NULL,
     "band_space_id" UUID NOT NULL,
-    "created_by_band_member_id" UUID NOT NULL,
+    "created_by_band_member_id" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -46,7 +46,7 @@ CREATE INDEX "schedule_poll_votes_band_member_id_idx" ON "schedule_poll_votes"("
 ALTER TABLE "schedule_polls" ADD CONSTRAINT "schedule_polls_band_space_id_fkey" FOREIGN KEY ("band_space_id") REFERENCES "band_spaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "schedule_polls" ADD CONSTRAINT "schedule_polls_created_by_band_member_id_fkey" FOREIGN KEY ("created_by_band_member_id") REFERENCES "band_members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "schedule_polls" ADD CONSTRAINT "schedule_polls_created_by_band_member_id_fkey" FOREIGN KEY ("created_by_band_member_id") REFERENCES "band_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "schedule_poll_options" ADD CONSTRAINT "schedule_poll_options_schedule_poll_id_fkey" FOREIGN KEY ("schedule_poll_id") REFERENCES "schedule_polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
