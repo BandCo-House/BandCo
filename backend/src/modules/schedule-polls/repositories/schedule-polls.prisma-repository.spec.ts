@@ -1,5 +1,4 @@
 import type { PrismaService } from 'src/database/prisma';
-import { BandSpaceMemberStatus } from 'src/generated/prisma';
 
 import { SchedulePollsPrismaRepository } from './schedule-polls.prisma-repository';
 
@@ -8,6 +7,7 @@ const BAND_SPACE_ID = '22222222-2222-4222-8222-222222222222';
 const BAND_MEMBER_ID = '33333333-3333-4333-8333-333333333333';
 const SCHEDULE_POLL_ID = '44444444-4444-4444-8444-444444444444';
 const OPTION_ID = '55555555-5555-4555-8555-555555555555';
+const OTHER_MEMBER_ID = '88888888-8888-4888-8888-888888888888';
 
 const POLL_ROW = {
   id: SCHEDULE_POLL_ID,
@@ -61,10 +61,11 @@ const POLL_ROW = {
 function createPrismaMock() {
   return {
     bandSpace: { findFirst: jest.fn() },
-    spaceMember: { findFirst: jest.fn() },
-    schedulePoll: { create: jest.fn(), findFirst: jest.fn() },
+    bandMember: { findFirst: jest.fn() },
+    schedulePoll: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), delete: jest.fn() },
     schedulePollOption: { count: jest.fn() },
     schedulePollVote: { deleteMany: jest.fn(), createMany: jest.fn() },
+    $queryRaw: jest.fn(),
   };
 }
 
@@ -88,19 +89,74 @@ describe('SchedulePollsPrismaRepository', () => {
     });
   });
 
-  it('활성 합주 공간 멤버의 밴드 멤버 ID를 조회한다', async () => {
-    prisma.spaceMember.findFirst.mockResolvedValue({ bandMemberId: BAND_MEMBER_ID });
+  it('합주 공간이 속한 밴드에서 요청자의 밴드 멤버 ID와 역할을 조회한다', async () => {
+    prisma.bandMember.findFirst.mockResolvedValue({ id: BAND_MEMBER_ID, role: 'MEMBER' });
 
-    await repository.findActiveSpaceMemberByUserId(BAND_SPACE_ID, USER_ID);
+    await repository.findBandMemberByBandSpaceIdAndUserId(BAND_SPACE_ID, USER_ID);
 
-    expect(prisma.spaceMember.findFirst).toHaveBeenCalledWith({
+    expect(prisma.bandMember.findFirst).toHaveBeenCalledWith({
       where: {
-        bandSpaceId: BAND_SPACE_ID,
-        status: BandSpaceMemberStatus.ACTIVE,
-        bandMember: { userId: USER_ID },
+        userId: USER_ID,
+        band: { bandSpaces: { some: { id: BAND_SPACE_ID, deletedAt: null } } },
       },
-      select: { bandMemberId: true },
+      select: { id: true, role: true },
     });
+  });
+
+  it('투표 교체용으로 밴드 멤버 행을 FOR UPDATE로 잠근다', async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    await repository.lockBandMemberForVote(BAND_MEMBER_ID, prisma as never);
+
+    const [sqlParts, boundId] = prisma.$queryRaw.mock.calls[0] as [TemplateStringsArray, string];
+    expect(sqlParts.join('?')).toContain('FOR UPDATE');
+    expect(boundId).toBe(BAND_MEMBER_ID);
+  });
+
+  it('투표 목록에서 여러 후보를 고른 멤버를 한 명으로 세고 내 참여 여부를 반환한다', async () => {
+    prisma.schedulePoll.findMany.mockResolvedValue([
+      {
+        id: SCHEDULE_POLL_ID,
+        bandSpaceId: BAND_SPACE_ID,
+        createdByBandMemberId: null,
+        createdAt: new Date('2026-09-07T00:00:00.000Z'),
+        updatedAt: new Date('2026-09-07T00:00:00.000Z'),
+        options: [
+          { votes: [{ bandMemberId: BAND_MEMBER_ID }, { bandMemberId: OTHER_MEMBER_ID }] },
+          { votes: [{ bandMemberId: BAND_MEMBER_ID }] },
+          { votes: [] },
+        ],
+      },
+    ]);
+
+    const result = await repository.findSchedulePollsByBandSpaceId(BAND_SPACE_ID, BAND_MEMBER_ID);
+
+    expect(prisma.schedulePoll.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { bandSpaceId: BAND_SPACE_ID },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      }),
+    );
+    expect(result).toEqual([
+      {
+        schedulePollId: SCHEDULE_POLL_ID,
+        bandSpaceId: BAND_SPACE_ID,
+        createdByBandMemberId: null,
+        optionCount: 3,
+        voterCount: 2,
+        hasVoted: true,
+        createdAt: '2026-09-07T00:00:00.000Z',
+        updatedAt: '2026-09-07T00:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('투표를 삭제한다', async () => {
+    prisma.schedulePoll.delete.mockResolvedValue({ id: SCHEDULE_POLL_ID });
+
+    await repository.deleteSchedulePoll(SCHEDULE_POLL_ID);
+
+    expect(prisma.schedulePoll.delete).toHaveBeenCalledWith({ where: { id: SCHEDULE_POLL_ID } });
   });
 
   it('후보 시간을 중첩 생성하고 생성 결과를 매핑한다', async () => {

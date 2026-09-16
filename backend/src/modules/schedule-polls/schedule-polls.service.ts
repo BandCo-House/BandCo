@@ -1,12 +1,16 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import type { Prisma } from '../../generated/prisma';
+import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import type { CreateSchedulePollInput } from './dto/create-schedule-poll.dto';
 import type { UpdateSchedulePollVoteInput } from './dto/update-schedule-poll-vote.dto';
 import { SCHEDULE_POLLS_REPOSITORY, type SchedulePollsRepository } from './repositories/schedule-polls.repository';
-import type { SchedulePollData, SchedulePollResult } from './types/schedule-poll.type';
+import type { DeleteSchedulePollResult, GetSchedulePollsResult, SchedulePollData, SchedulePollResult } from './types/schedule-poll.type';
+
+const BAND_SPACE_NOT_FOUND_MESSAGE = '요청한 합주 공간을 찾을 수 없습니다.';
+const SCHEDULE_POLL_NOT_FOUND_MESSAGE = '요청한 일정 투표를 찾을 수 없습니다.';
+const NOT_BAND_SPACE_MEMBER_MESSAGE = '해당 합주 공간의 멤버가 아닙니다.';
 
 @Injectable()
 export class SchedulePollsService {
@@ -17,7 +21,7 @@ export class SchedulePollsService {
   ) {}
 
   /**
-   * 활성 합주 공간 멤버의 일정 조율 투표 생성을 처리한다.
+   * 합주 공간이 속한 밴드 멤버의 일정 조율 투표 생성을 처리한다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} bandSpaceId - 투표를 생성할 합주 공간 ID
@@ -35,18 +39,18 @@ export class SchedulePollsService {
       const bandSpace = await this.schedulePollsRepository.findActiveBandSpaceById(bandSpaceId, client);
 
       if (bandSpace === null) {
-        throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
+        throw new NotFoundException(BAND_SPACE_NOT_FOUND_MESSAGE);
       }
 
-      const member = await this.schedulePollsRepository.findActiveSpaceMemberByUserId(bandSpaceId, userId, client);
+      const member = await this.schedulePollsRepository.findBandMemberByBandSpaceIdAndUserId(bandSpaceId, userId, client);
 
       if (member === null) {
-        throw new ForbiddenException('활성 합주 공간 멤버만 일정 투표를 생성할 수 있습니다.');
+        throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
       }
 
       this.validateSchedulePollOptions(input);
 
-      const poll = await this.schedulePollsRepository.createSchedulePoll(bandSpaceId, member.bandMemberId, input, client);
+      const poll = await this.schedulePollsRepository.createSchedulePoll(bandSpaceId, member.id, input, client);
       return this.buildSchedulePollResult(poll);
     };
 
@@ -58,7 +62,32 @@ export class SchedulePollsService {
   }
 
   /**
-   * 활성 합주 공간 멤버에게 후보별 투표자와 추천 후보를 제공한다.
+   * 합주 공간의 일정 조율 투표 목록을 최신 생성순으로 제공한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} bandSpaceId - 조회할 합주 공간 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetSchedulePollsResult>} 일정 조율 투표 목록
+   */
+  async getSchedulePolls(userId: string, bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<GetSchedulePollsResult> {
+    const bandSpace = await this.schedulePollsRepository.findActiveBandSpaceById(bandSpaceId, tx);
+
+    if (bandSpace === null) {
+      throw new NotFoundException(BAND_SPACE_NOT_FOUND_MESSAGE);
+    }
+
+    const member = await this.schedulePollsRepository.findBandMemberByBandSpaceIdAndUserId(bandSpaceId, userId, tx);
+
+    if (member === null) {
+      throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
+    }
+
+    const items = await this.schedulePollsRepository.findSchedulePollsByBandSpaceId(bandSpaceId, member.id, tx);
+    return { items };
+  }
+
+  /**
+   * 합주 공간이 속한 밴드 멤버에게 후보별 투표자와 추천 후보를 제공한다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} schedulePollId - 조회할 일정 조율 투표 ID
@@ -69,26 +98,28 @@ export class SchedulePollsService {
     const context = await this.schedulePollsRepository.findSchedulePollContextById(schedulePollId, tx);
 
     if (context === null) {
-      throw new NotFoundException('요청한 일정 투표를 찾을 수 없습니다.');
+      throw new NotFoundException(SCHEDULE_POLL_NOT_FOUND_MESSAGE);
     }
 
-    const member = await this.schedulePollsRepository.findActiveSpaceMemberByUserId(context.bandSpaceId, userId, tx);
+    const member = await this.schedulePollsRepository.findBandMemberByBandSpaceIdAndUserId(context.bandSpaceId, userId, tx);
 
     if (member === null) {
-      throw new ForbiddenException('활성 합주 공간 멤버만 일정 투표를 조회할 수 있습니다.');
+      throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
     }
 
-    const poll = await this.schedulePollsRepository.findSchedulePollById(schedulePollId, member.bandMemberId, tx);
+    const poll = await this.schedulePollsRepository.findSchedulePollById(schedulePollId, member.id, tx);
 
     if (poll === null) {
-      throw new NotFoundException('요청한 일정 투표를 찾을 수 없습니다.');
+      throw new NotFoundException(SCHEDULE_POLL_NOT_FOUND_MESSAGE);
     }
 
     return this.buildSchedulePollResult(poll);
   }
 
   /**
-   * 활성 합주 공간 멤버의 후보 선택을 전량 교체한다.
+   * 밴드 멤버의 후보 선택을 전량 교체한다.
+   *
+   * 삭제 후 삽입 구조라 같은 멤버의 요청이 겹치면 unique 제약에 걸리므로, 멤버 행을 잠가 순차 실행한다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} schedulePollId - 투표할 일정 조율 투표 ID
@@ -106,13 +137,13 @@ export class SchedulePollsService {
       const context = await this.schedulePollsRepository.findSchedulePollContextById(schedulePollId, client);
 
       if (context === null) {
-        throw new NotFoundException('요청한 일정 투표를 찾을 수 없습니다.');
+        throw new NotFoundException(SCHEDULE_POLL_NOT_FOUND_MESSAGE);
       }
 
-      const member = await this.schedulePollsRepository.findActiveSpaceMemberByUserId(context.bandSpaceId, userId, client);
+      const member = await this.schedulePollsRepository.findBandMemberByBandSpaceIdAndUserId(context.bandSpaceId, userId, client);
 
       if (member === null) {
-        throw new ForbiddenException('활성 합주 공간 멤버만 일정 투표에 참여할 수 있습니다.');
+        throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
       }
 
       const uniqueOptionIds = new Set(input.schedulePollOptionIds);
@@ -128,15 +159,58 @@ export class SchedulePollsService {
         throw new BadRequestException('해당 일정 투표에 속하지 않은 후보 시간이 포함되어 있습니다.');
       }
 
-      await this.schedulePollsRepository.replaceSchedulePollVotes(schedulePollId, member.bandMemberId, optionIds, client);
+      await this.schedulePollsRepository.lockBandMemberForVote(member.id, client);
+      await this.schedulePollsRepository.replaceSchedulePollVotes(schedulePollId, member.id, optionIds, client);
 
-      const poll = await this.schedulePollsRepository.findSchedulePollById(schedulePollId, member.bandMemberId, client);
+      const poll = await this.schedulePollsRepository.findSchedulePollById(schedulePollId, member.id, client);
 
       if (poll === null) {
-        throw new NotFoundException('요청한 일정 투표를 찾을 수 없습니다.');
+        throw new NotFoundException(SCHEDULE_POLL_NOT_FOUND_MESSAGE);
       }
 
       return this.buildSchedulePollResult(poll);
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 투표 생성자 또는 밴드 리더·부리더의 일정 조율 투표 삭제를 처리한다.
+   *
+   * 생성자가 밴드를 떠나면 생성자 ID가 비므로, 남은 투표를 정리할 수 있도록 리더·부리더에게도 삭제를 허용한다.
+   *
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} schedulePollId - 삭제할 일정 조율 투표 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<DeleteSchedulePollResult>} 삭제된 일정 조율 투표 ID
+   */
+  async deleteSchedulePoll(userId: string, schedulePollId: string, tx?: Prisma.TransactionClient): Promise<DeleteSchedulePollResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<DeleteSchedulePollResult> => {
+      const context = await this.schedulePollsRepository.findSchedulePollContextById(schedulePollId, client);
+
+      if (context === null) {
+        throw new NotFoundException(SCHEDULE_POLL_NOT_FOUND_MESSAGE);
+      }
+
+      const member = await this.schedulePollsRepository.findBandMemberByBandSpaceIdAndUserId(context.bandSpaceId, userId, client);
+
+      if (member === null) {
+        throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
+      }
+
+      const isCreator = context.createdByBandMemberId === member.id;
+      const isBandManager = member.role === BandMemberRole.BM || member.role === BandMemberRole.ADMIN;
+
+      if (!isCreator && !isBandManager) {
+        throw new ForbiddenException('투표 생성자 또는 밴드 리더·부리더만 일정 투표를 삭제할 수 있습니다.');
+      }
+
+      await this.schedulePollsRepository.deleteSchedulePoll(schedulePollId, client);
+      return { schedulePollId };
     };
 
     if (tx !== undefined) {

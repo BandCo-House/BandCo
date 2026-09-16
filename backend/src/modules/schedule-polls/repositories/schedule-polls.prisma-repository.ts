@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
-import { BandSpaceMemberStatus, type Prisma } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { CreateSchedulePollInput } from '../dto/create-schedule-poll.dto';
-import type { SchedulePollData, SchedulePollOptionData } from '../types/schedule-poll.type';
+import type { SchedulePollData, SchedulePollListItem, SchedulePollOptionData } from '../types/schedule-poll.type';
 
 import type { SchedulePollsRepository } from './schedule-polls.repository';
 
@@ -40,18 +40,25 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
     });
   }
 
-  async findActiveSpaceMemberByUserId(bandSpaceId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ bandMemberId: string } | null> {
+  async findBandMemberByBandSpaceIdAndUserId(
+    bandSpaceId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string; role: BandMemberRole } | null> {
     const client = tx ?? this.prisma;
-    const spaceMember = await client.spaceMember.findFirst({
-      where: {
-        bandSpaceId,
-        status: BandSpaceMemberStatus.ACTIVE,
-        bandMember: { userId },
-      },
-      select: { bandMemberId: true },
-    });
 
-    return spaceMember;
+    return client.bandMember.findFirst({
+      where: {
+        userId,
+        band: { bandSpaces: { some: { id: bandSpaceId, deletedAt: null } } },
+      },
+      select: { id: true, role: true },
+    });
+  }
+
+  async lockBandMemberForVote(bandMemberId: string, tx: Prisma.TransactionClient): Promise<void> {
+    // Prisma 쿼리 API에는 행 잠금이 없어 raw로 건다. 태그드 템플릿이라 bandMemberId는 파라미터로 바인딩된다.
+    await tx.$queryRaw`SELECT id FROM band_members WHERE id = ${bandMemberId}::uuid FOR UPDATE`;
   }
 
   async createSchedulePoll(
@@ -89,12 +96,15 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
     return this.mapSchedulePoll(row, createdByBandMemberId);
   }
 
-  async findSchedulePollContextById(schedulePollId: string, tx?: Prisma.TransactionClient): Promise<{ bandSpaceId: string } | null> {
+  async findSchedulePollContextById(
+    schedulePollId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ bandSpaceId: string; createdByBandMemberId: string | null } | null> {
     const client = tx ?? this.prisma;
 
     return client.schedulePoll.findFirst({
       where: { id: schedulePollId, bandSpace: { deletedAt: null } },
-      select: { bandSpaceId: true },
+      select: { bandSpaceId: true, createdByBandMemberId: true },
     });
   }
 
@@ -122,6 +132,39 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
     }
 
     return this.mapSchedulePoll(row, currentBandMemberId);
+  }
+
+  async findSchedulePollsByBandSpaceId(
+    bandSpaceId: string,
+    currentBandMemberId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<SchedulePollListItem[]> {
+    const client = tx ?? this.prisma;
+    const rows = await client.schedulePoll.findMany({
+      where: { bandSpaceId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      include: {
+        options: {
+          select: { votes: { select: { bandMemberId: true } } },
+        },
+      },
+    });
+
+    return rows.map(row => {
+      // 한 멤버가 여러 후보를 골라도 투표자는 한 명으로 센다.
+      const voterIds = new Set(row.options.flatMap(option => option.votes.map(vote => vote.bandMemberId)));
+
+      return {
+        schedulePollId: row.id,
+        bandSpaceId: row.bandSpaceId,
+        createdByBandMemberId: row.createdByBandMemberId,
+        optionCount: row.options.length,
+        voterCount: voterIds.size,
+        hasVoted: voterIds.has(currentBandMemberId),
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    });
   }
 
   async countSchedulePollOptionsByIds(schedulePollId: string, optionIds: string[], tx?: Prisma.TransactionClient): Promise<number> {
@@ -152,6 +195,12 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
         bandMemberId,
       })),
     });
+  }
+
+  async deleteSchedulePoll(schedulePollId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+
+    await client.schedulePoll.delete({ where: { id: schedulePollId } });
   }
 
   private mapSchedulePoll(row: SchedulePollRow, currentBandMemberId: string): SchedulePollData {

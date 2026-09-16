@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
+import { BandMemberRole } from 'src/generated/prisma';
 
 import type { CreateSchedulePollInput } from './dto/create-schedule-poll.dto';
 import type { SchedulePollsRepository } from './repositories/schedule-polls.repository';
-import type { SchedulePollData } from './types/schedule-poll.type';
+import type { SchedulePollData, SchedulePollListItem } from './types/schedule-poll.type';
 import { SchedulePollsService } from './schedule-polls.service';
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
@@ -47,6 +48,17 @@ const DEFAULT_POLL: SchedulePollData = {
   updatedAt: '2026-09-07T00:00:00.000Z',
 };
 
+const DEFAULT_POLL_LIST_ITEM: SchedulePollListItem = {
+  schedulePollId: SCHEDULE_POLL_ID,
+  bandSpaceId: BAND_SPACE_ID,
+  createdByBandMemberId: BAND_MEMBER_ID,
+  optionCount: 2,
+  voterCount: 2,
+  hasVoted: true,
+  createdAt: '2026-09-07T00:00:00.000Z',
+  updatedAt: '2026-09-07T00:00:00.000Z',
+};
+
 function createPrismaServiceStub(): PrismaService {
   const transactionClient = { transactionClient: true };
 
@@ -67,21 +79,25 @@ function createPrismaServiceFailingTransactionStub(): PrismaService {
 
 function createSchedulePollsRepositoryStub(options?: {
   bandSpace?: { id: string } | null;
-  member?: { bandMemberId: string } | null;
-  context?: { bandSpaceId: string } | null;
+  member?: { id: string; role: BandMemberRole } | null;
+  context?: { bandSpaceId: string; createdByBandMemberId: string | null } | null;
   poll?: SchedulePollData | null;
   matchingOptionCount?: number;
   onCall?: (method: string, tx: unknown) => void;
   onReplaceVotes?: (optionIds: string[]) => void;
+  onDelete?: (schedulePollId: string) => void;
 }): SchedulePollsRepository {
   return {
     async findActiveBandSpaceById(_bandSpaceId, tx) {
       options?.onCall?.('findActiveBandSpaceById', tx);
       return options?.bandSpace !== undefined ? options.bandSpace : { id: BAND_SPACE_ID };
     },
-    async findActiveSpaceMemberByUserId(_bandSpaceId, _userId, tx) {
-      options?.onCall?.('findActiveSpaceMemberByUserId', tx);
-      return options?.member !== undefined ? options.member : { bandMemberId: BAND_MEMBER_ID };
+    async findBandMemberByBandSpaceIdAndUserId(_bandSpaceId, _userId, tx) {
+      options?.onCall?.('findBandMemberByBandSpaceIdAndUserId', tx);
+      return options?.member !== undefined ? options.member : { id: BAND_MEMBER_ID, role: BandMemberRole.MEMBER };
+    },
+    async lockBandMemberForVote(_bandMemberId, tx) {
+      options?.onCall?.('lockBandMemberForVote', tx);
     },
     async createSchedulePoll(_bandSpaceId, _createdByBandMemberId, _input, tx) {
       options?.onCall?.('createSchedulePoll', tx);
@@ -89,11 +105,15 @@ function createSchedulePollsRepositoryStub(options?: {
     },
     async findSchedulePollContextById(_schedulePollId, tx) {
       options?.onCall?.('findSchedulePollContextById', tx);
-      return options?.context !== undefined ? options.context : { bandSpaceId: BAND_SPACE_ID };
+      return options?.context !== undefined ? options.context : { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: BAND_MEMBER_ID };
     },
     async findSchedulePollById(_schedulePollId, _currentBandMemberId, tx) {
       options?.onCall?.('findSchedulePollById', tx);
       return options?.poll !== undefined ? options.poll : DEFAULT_POLL;
+    },
+    async findSchedulePollsByBandSpaceId(_bandSpaceId, _currentBandMemberId, tx) {
+      options?.onCall?.('findSchedulePollsByBandSpaceId', tx);
+      return [DEFAULT_POLL_LIST_ITEM];
     },
     async countSchedulePollOptionsByIds(_schedulePollId, optionIds, tx) {
       options?.onCall?.('countSchedulePollOptionsByIds', tx);
@@ -103,12 +123,16 @@ function createSchedulePollsRepositoryStub(options?: {
       options?.onCall?.('replaceSchedulePollVotes', tx);
       options?.onReplaceVotes?.(optionIds);
     },
+    async deleteSchedulePoll(schedulePollId, tx) {
+      options?.onCall?.('deleteSchedulePoll', tx);
+      options?.onDelete?.(schedulePollId);
+    },
   };
 }
 
 describe('SchedulePollsService', () => {
   describe('createSchedulePoll', () => {
-    it('활성 합주 공간 멤버가 일정 조율 투표를 생성한다', async () => {
+    it('합주 공간이 속한 밴드의 멤버가 일정 조율 투표를 생성한다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceStub());
 
       const result = await service.createSchedulePoll(USER_ID, BAND_SPACE_ID, DEFAULT_INPUT);
@@ -125,7 +149,7 @@ describe('SchedulePollsService', () => {
       await expect(service.createSchedulePoll(USER_ID, BAND_SPACE_ID, DEFAULT_INPUT)).rejects.toThrow(NotFoundException);
     });
 
-    it('활성 합주 공간 멤버가 아니면 ForbiddenException을 던진다', async () => {
+    it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
 
       await expect(service.createSchedulePoll(USER_ID, BAND_SPACE_ID, DEFAULT_INPUT)).rejects.toThrow(ForbiddenException);
@@ -209,7 +233,7 @@ describe('SchedulePollsService', () => {
       await expect(service.getSchedulePoll(USER_ID, SCHEDULE_POLL_ID)).rejects.toThrow(NotFoundException);
     });
 
-    it('활성 합주 공간 멤버가 아니면 ForbiddenException을 던진다', async () => {
+    it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
 
       await expect(service.getSchedulePoll(USER_ID, SCHEDULE_POLL_ID)).rejects.toThrow(ForbiddenException);
@@ -270,7 +294,7 @@ describe('SchedulePollsService', () => {
       );
     });
 
-    it('활성 합주 공간 멤버가 아니면 ForbiddenException을 던진다', async () => {
+    it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
 
       await expect(service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] })).rejects.toThrow(
@@ -303,8 +327,21 @@ describe('SchedulePollsService', () => {
 
       await service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] });
 
-      expect(capturedTransactions).toHaveLength(5);
+      expect(capturedTransactions).toHaveLength(6);
       capturedTransactions.forEach(tx => expect(tx).toBe(capturedTransactions[0]));
+    });
+
+    it('투표 교체 전에 같은 멤버의 동시 요청을 막기 위해 멤버 행을 잠근다', async () => {
+      const calledMethods: string[] = [];
+      const repository = createSchedulePollsRepositoryStub({
+        onCall: method => calledMethods.push(method),
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      await service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] });
+
+      expect(calledMethods.indexOf('lockBandMemberForVote')).toBeGreaterThanOrEqual(0);
+      expect(calledMethods.indexOf('lockBandMemberForVote')).toBeLessThan(calledMethods.indexOf('replaceSchedulePollVotes'));
     });
 
     it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
@@ -314,6 +351,128 @@ describe('SchedulePollsService', () => {
       await expect(
         service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] }, externalTx as never),
       ).resolves.toBeDefined();
+    });
+  });
+
+  describe('getSchedulePolls', () => {
+    it('합주 공간의 일정 조율 투표 목록을 조회한다', async () => {
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceStub());
+
+      const result = await service.getSchedulePolls(USER_ID, BAND_SPACE_ID);
+
+      expect(result.items).toEqual([DEFAULT_POLL_LIST_ITEM]);
+    });
+
+    it('합주 공간이 없으면 NotFoundException을 던진다', async () => {
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ bandSpace: null }), createPrismaServiceStub());
+
+      await expect(service.getSchedulePolls(USER_ID, BAND_SPACE_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
+
+      await expect(service.getSchedulePolls(USER_ID, BAND_SPACE_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('외부 transaction client를 모든 Repository 조회에 전달한다', async () => {
+      const externalTx = { transactionClient: true };
+      const capturedTransactions: unknown[] = [];
+      const repository = createSchedulePollsRepositoryStub({
+        onCall: (_method, tx) => capturedTransactions.push(tx),
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceFailingTransactionStub());
+
+      await service.getSchedulePolls(USER_ID, BAND_SPACE_ID, externalTx as never);
+
+      expect(capturedTransactions).toHaveLength(3);
+      capturedTransactions.forEach(tx => expect(tx).toBe(externalTx));
+    });
+  });
+
+  describe('deleteSchedulePoll', () => {
+    it('투표 생성자가 요청하면 삭제된다', async () => {
+      let deletedPollId: string | null = null;
+      const repository = createSchedulePollsRepositoryStub({
+        onDelete: schedulePollId => {
+          deletedPollId = schedulePollId;
+        },
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      const result = await service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
+
+      expect(deletedPollId).toBe(SCHEDULE_POLL_ID);
+      expect(result).toEqual({ schedulePollId: SCHEDULE_POLL_ID });
+    });
+
+    it('생성자가 밴드를 떠난 투표도 밴드 리더가 요청하면 삭제된다', async () => {
+      let deletedPollId: string | null = null;
+      const repository = createSchedulePollsRepositoryStub({
+        context: { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: null },
+        member: { id: OTHER_MEMBER_ID, role: BandMemberRole.BM },
+        onDelete: schedulePollId => {
+          deletedPollId = schedulePollId;
+        },
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      await service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
+
+      expect(deletedPollId).toBe(SCHEDULE_POLL_ID);
+    });
+
+    it('밴드 부리더가 요청하면 삭제된다', async () => {
+      const repository = createSchedulePollsRepositoryStub({ member: { id: OTHER_MEMBER_ID, role: BandMemberRole.ADMIN } });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      await expect(service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID)).resolves.toEqual({ schedulePollId: SCHEDULE_POLL_ID });
+    });
+
+    it('생성자도 리더·부리더도 아니면 ForbiddenException을 던지고 삭제하지 않는다', async () => {
+      let deleteCalled = false;
+      const repository = createSchedulePollsRepositoryStub({
+        member: { id: OTHER_MEMBER_ID, role: BandMemberRole.MEMBER },
+        onDelete: () => {
+          deleteCalled = true;
+        },
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      await expect(service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID)).rejects.toThrow(ForbiddenException);
+      expect(deleteCalled).toBe(false);
+    });
+
+    it('일정 투표가 없으면 NotFoundException을 던진다', async () => {
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ context: null }), createPrismaServiceStub());
+
+      await expect(service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
+
+      await expect(service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('검증과 삭제를 같은 transaction client로 처리한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createSchedulePollsRepositoryStub({
+        onCall: (_method, tx) => capturedTransactions.push(tx),
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      await service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
+
+      expect(capturedTransactions).toHaveLength(3);
+      capturedTransactions.forEach(tx => expect(tx).toBe(capturedTransactions[0]));
+    });
+
+    it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
+      const externalTx = { transactionClient: true };
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceFailingTransactionStub());
+
+      await expect(service.deleteSchedulePoll(USER_ID, SCHEDULE_POLL_ID, externalTx as never)).resolves.toBeDefined();
     });
   });
 });
