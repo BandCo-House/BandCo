@@ -126,9 +126,9 @@ describe('SchedulePollsPrismaRepository', () => {
         createdAt: new Date('2026-09-07T00:00:00.000Z'),
         updatedAt: new Date('2026-09-07T00:00:00.000Z'),
         options: [
-          { votes: [{ bandMemberId: BAND_MEMBER_ID }, { bandMemberId: OTHER_MEMBER_ID }] },
-          { votes: [{ bandMemberId: BAND_MEMBER_ID }] },
-          { votes: [] },
+          { startAt: new Date('2026-09-13T12:00:00.000Z'), votes: [{ bandMemberId: BAND_MEMBER_ID }, { bandMemberId: OTHER_MEMBER_ID }] },
+          { startAt: new Date('2026-09-14T12:00:00.000Z'), votes: [{ bandMemberId: BAND_MEMBER_ID }] },
+          { startAt: new Date('2026-09-15T12:00:00.000Z'), votes: [] },
         ],
       },
     ]);
@@ -148,6 +148,7 @@ describe('SchedulePollsPrismaRepository', () => {
         createdByBandMemberId: null,
         name: '좋은 날 오프닝 연습',
         closesAt: '2026-10-05T10:00:00.000Z',
+        optionStartAts: ['2026-09-13T12:00:00.000Z', '2026-09-14T12:00:00.000Z', '2026-09-15T12:00:00.000Z'],
         optionCount: 3,
         voterCount: 2,
         hasVoted: true,

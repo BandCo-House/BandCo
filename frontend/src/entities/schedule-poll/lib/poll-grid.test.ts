@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SchedulePollOption, SchedulePollVoter } from '../model/types';
 import {
   buildPollGrid,
+  dateKeysFromStartAts,
   chunkDateKeys,
   collectPollVoters,
   formatDateRanges,
@@ -73,6 +74,19 @@ describe('buildPollGrid', () => {
       grid.cells.get(pollCellKey('2026-09-22', '14:00~15:00'))
         ?.schedulePollOptionId,
     ).toBe('long');
+  });
+});
+
+describe('dateKeysFromStartAts', () => {
+  it('시작 시각 목록을 중복 없는 로컬 날짜 키 오름차순으로 만든다', () => {
+    const day1Morning = new Date(2026, 8, 23, 9, 0).toISOString();
+    const day1Evening = new Date(2026, 8, 23, 20, 0).toISOString();
+    const day2 = new Date(2026, 8, 22, 14, 30).toISOString();
+
+    expect(dateKeysFromStartAts([day1Morning, day1Evening, day2])).toEqual([
+      '2026-09-22',
+      '2026-09-23',
+    ]);
   });
 });
 

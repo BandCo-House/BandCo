@@ -2,15 +2,11 @@ import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useSpace } from '@/entities/space/api/useSpace';
+import { useSchedulePolls } from '@/entities/schedule-poll/model/queries';
 import {
-  useSchedulePollDetails,
-  useSchedulePolls,
-} from '@/entities/schedule-poll/model/queries';
-import {
-  buildPollGrid,
+  dateKeysFromStartAts,
   formatDateRanges,
 } from '@/entities/schedule-poll/lib/poll-grid';
-import type { SchedulePoll } from '@/entities/schedule-poll/model/types';
 import { formatClockTime, formatDotDate } from '@/shared/lib/date';
 import { Button } from '@/shared/ui/button';
 import { EmptyState } from '@/shared/ui/empty-state';
@@ -43,7 +39,7 @@ const SchedulePollCard = ({
   closesAt,
   voterCount,
   memberCount,
-  detail,
+  optionStartAts,
 }: {
   bandId: string;
   spaceId: string;
@@ -52,11 +48,9 @@ const SchedulePollCard = ({
   closesAt: string;
   voterCount: number;
   memberCount: number | undefined;
-  detail: SchedulePoll | undefined;
+  optionStartAts: string[];
 }) => {
-  const dateRanges = detail
-    ? formatDateRanges(buildPollGrid(detail.options).dateKeys)
-    : [];
+  const dateRanges = formatDateRanges(dateKeysFromStartAts(optionStartAts));
 
   return (
     <Link
@@ -94,23 +88,13 @@ const SchedulePollCard = ({
   );
 };
 
-/** 일정 투표 목록. 카드의 날짜는 상세 조회를 함께 받아 채운다. */
+/** 일정 투표 목록. 카드의 날짜 구간은 목록 응답의 optionStartAts로 그린다. */
 export const SchedulePollList = ({
   bandId,
   spaceId,
 }: SchedulePollListProps) => {
   const { data: items = [], isPending, isError } = useSchedulePolls(spaceId);
   const { data: spaceDetail } = useSpace(spaceId);
-  const detailResults = useSchedulePollDetails(
-    items.map((item) => item.schedulePollId),
-  );
-
-  const detailById = new Map(
-    detailResults
-      .map((result) => result.data)
-      .filter((data): data is SchedulePoll => data !== undefined)
-      .map((data) => [data.schedulePollId, data]),
-  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -158,7 +142,7 @@ export const SchedulePollList = ({
                 closesAt={item.closesAt}
                 voterCount={item.voterCount}
                 memberCount={spaceDetail?.memberCount}
-                detail={detailById.get(item.schedulePollId)}
+                optionStartAts={item.optionStartAts}
               />
             </li>
           ))}

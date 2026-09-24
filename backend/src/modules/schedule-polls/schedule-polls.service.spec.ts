@@ -62,6 +62,7 @@ const DEFAULT_POLL_LIST_ITEM: SchedulePollListItem = {
   createdByBandMemberId: BAND_MEMBER_ID,
   name: '좋은 날 오프닝 연습',
   closesAt: FUTURE_CLOSES_AT,
+  optionStartAts: ['2026-09-13T12:00:00.000Z', '2026-09-14T12:00:00.000Z'],
   optionCount: 2,
   voterCount: 2,
   hasVoted: true,

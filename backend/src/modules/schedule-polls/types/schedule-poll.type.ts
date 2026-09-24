@@ -40,6 +40,8 @@ export interface SchedulePollListItem {
   createdByBandMemberId: string | null;
   name: string;
   closesAt: string;
+  /** 후보 시작 시각(ISO, 시작 오름차순). 목록 카드가 상세 조회 없이 날짜 구간을 그리기 위한 값. */
+  optionStartAts: string[];
   optionCount: number;
   voterCount: number;
   hasVoted: boolean;

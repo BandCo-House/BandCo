@@ -63,6 +63,10 @@ export const chunkDateKeys = (dateKeys: PollDateKey[]): PollDateKey[][] => {
   return pages;
 };
 
+/** 후보 시작 시각(ISO) 목록 → 로컬 날짜 키 목록(중복 제거·오름차순). 목록 카드의 날짜 구간용. */
+export const dateKeysFromStartAts = (startAts: string[]): PollDateKey[] =>
+  [...new Set(startAts.map((iso) => formatLocalDate(new Date(iso))))].sort();
+
 const parseDateKey = (dateKey: PollDateKey): Date => {
   const [year = 0, month = 1, day = 1] = dateKey.split('-').map(Number);
   return new Date(year, month - 1, day);

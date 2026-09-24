@@ -104,6 +104,11 @@
         "createdByBandMemberId": "member-uuid",
         "name": "좋은 날 오프닝 연습",
         "closesAt": "2026-10-05T10:00:00.000Z",
+        "optionStartAts": [
+          "2026-09-13T12:00:00.000Z",
+          "2026-09-14T12:00:00.000Z",
+          "2026-09-15T12:00:00.000Z"
+        ],
         "optionCount": 3,
         "voterCount": 2,
         "hasVoted": true,
@@ -118,6 +123,7 @@
 - 공간당 투표 수가 많지 않아 페이지네이션 없이 전체를 반환한다.
 - `voterCount`는 한 명이 여러 후보를 골라도 한 명으로 센다.
 - `hasVoted`는 요청자가 한 후보 이상 선택했는지를 나타낸다.
+- `optionStartAts`는 후보 시작 시각(시작 오름차순)이다. 목록 카드가 상세 조회 없이 날짜 구간을 그릴 수 있게 한다(후보는 최대 20개라 크기가 유한하다).
 
 ### Error Responses
 

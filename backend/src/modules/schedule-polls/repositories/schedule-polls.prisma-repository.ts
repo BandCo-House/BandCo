@@ -147,7 +147,8 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         options: {
-          select: { votes: { select: { bandMemberId: true } } },
+          orderBy: [{ startAt: 'asc' }, { endAt: 'asc' }, { id: 'asc' }],
+          select: { startAt: true, votes: { select: { bandMemberId: true } } },
         },
       },
     });
@@ -162,6 +163,7 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
         createdByBandMemberId: row.createdByBandMemberId,
         name: row.name,
         closesAt: row.closesAt.toISOString(),
+        optionStartAts: row.options.map(option => option.startAt.toISOString()),
         optionCount: row.options.length,
         voterCount: voterIds.size,
         hasVoted: voterIds.has(currentBandMemberId),

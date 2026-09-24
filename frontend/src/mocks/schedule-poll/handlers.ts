@@ -166,6 +166,7 @@ const toListItem = (poll: MockPoll): SchedulePollListItem => ({
   createdByBandMemberId: poll.createdByBandMemberId,
   name: poll.name,
   closesAt: poll.closesAt,
+  optionStartAts: poll.options.map((option) => option.startAt).sort(),
   optionCount: poll.options.length,
   voterCount: distinctVoterCount(poll),
   hasVoted: poll.options.some((option) =>
