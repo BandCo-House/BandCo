@@ -20,6 +20,10 @@ export const Route = createFileRoute('/login')({
     redirect: sanitizeRedirectSearch(search.redirect),
   }),
   component: LoginPage,
+  // 한 화면 고정 레이아웃이라 레이아웃 기본 py-8을 빼고 폼이 여백을 직접 관리한다
+  staticData: {
+    fullBleed: true,
+  },
 });
 
 export function LoginPage() {
@@ -94,7 +98,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full flex-col justify-center">
+    <div className="mx-auto flex min-h-[calc(100dvh-env(safe-area-inset-top))] w-full flex-col">
       <LoginForm
         onSubmit={handleLogin}
         onGoogleLogin={handleGoogleLogin}

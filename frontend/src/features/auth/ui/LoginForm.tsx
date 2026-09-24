@@ -146,61 +146,73 @@ export const LoginForm = ({
     onSubmit(email, password);
   };
 
+  // 고정 마진 스택(mb-16·mt-20…)은 작은 화면에서 콘텐츠를 뷰포트보다 길게 만들어
+  // 스크롤을 유발한다. 큰 여백을 전부 flex 스페이서(min-h는 바닥값)로 바꿔,
+  // 남는 공간이 있을 때만 벌어지고 좁은 화면에선 바닥값까지 줄어들게 한다.
+  // 상단 스페이서 가중치를 조금 높여 로고 위 공간을 더 확보한다.
   return (
-    <div className="flex min-h-full w-full flex-col justify-center px-4 py-10 text-muted">
-      <div className="mb-16 text-center">
+    <div className="flex w-full flex-1 flex-col px-5 py-4 text-muted">
+      <div className="min-h-6 flex-[1.2]" />
+      <div className="text-center">
         <h1 className="text-[3rem] font-extrabold tracking-tight text-grey-50">
           BandCo
         </h1>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
-        <AuthRoundedInput
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="이메일을 입력하세요."
-          hasError={!!errors.email}
-          errorMessage={errors.email}
-        />
-        <AuthRoundedInput
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="비밀번호를 입력하세요."
-          hasError={!!errors.password}
-          errorMessage={errors.password}
-        />
+      <div className="min-h-6 flex-1" />
 
-        <Button
-          type="submit"
-          variant="shining"
-          size="lg"
-          disabled={isLoading || !isFormValid}
-          className="mt-4 w-full"
+      <div>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-3"
+          noValidate
         >
-          {isLoading ? '로그인 중...' : '로그인'}
-        </Button>
-      </form>
+          <AuthRoundedInput
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="이메일을 입력하세요."
+            hasError={!!errors.email}
+            errorMessage={errors.email}
+          />
+          <AuthRoundedInput
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="비밀번호를 입력하세요."
+            hasError={!!errors.password}
+            errorMessage={errors.password}
+          />
+
+          <Button
+            type="submit"
+            variant="shining"
+            size="lg"
+            disabled={isLoading || !isFormValid}
+            className="mt-4 w-full"
+          >
+            {isLoading ? '로그인 중...' : '로그인'}
+          </Button>
+        </form>
+
+        <SplitLinkRow
+          className="mt-7"
+          left={
+            <AuthRowLink to="/signup" search={{ redirect }}>
+              회원가입
+            </AuthRowLink>
+          }
+          right={<AuthRowLink to="/forgot-password">비밀번호 찾기</AuthRowLink>}
+        />
+      </div>
+      <div className="min-h-8 flex-1" />
+
+      <SocialLoginSection onGoogleCredential={onGoogleLogin} />
+      <div className="min-h-6 flex-1" />
 
       <SplitLinkRow
-        className="mt-7"
-        left={
-          <AuthRowLink to="/signup" search={{ redirect }}>
-            회원가입
-          </AuthRowLink>
-        }
-        right={<AuthRowLink to="/forgot-password">비밀번호 찾기</AuthRowLink>}
-      />
-
-      <SocialLoginSection
-        className="mt-20"
-        onGoogleCredential={onGoogleLogin}
-      />
-
-      <SplitLinkRow
-        className="mt-10 typo-sm-r"
+        className="typo-sm-r"
         left={
           <AuthRowLink onClick={() => undefined}>개인정보처리방침</AuthRowLink>
         }
