@@ -10,11 +10,12 @@ import { BottomNavBar } from '@/widgets/bottom-nav';
 /** 하단 네비게이션을 표시하지 않을 경로 목록 */
 const HIDDEN_NAV_PATHS = ['/login', '/signup', '/onboarding'];
 
+// 헤더(fixed)가 safe area만큼 아래로 밀리므로 본문 상단 여백에도 같은 값을 더한다.
 const HEIGHT_MARGIN_CLASSES = {
-  xs: 'mt-9',
-  sm: 'mt-14',
-  md: 'mt-[60px]',
-  lg: 'mt-16',
+  xs: 'mt-[calc(2.25rem_+_env(safe-area-inset-top))]',
+  sm: 'mt-[calc(3.5rem_+_env(safe-area-inset-top))]',
+  md: 'mt-[calc(60px_+_env(safe-area-inset-top))]',
+  lg: 'mt-[calc(4rem_+_env(safe-area-inset-top))]',
 };
 
 export const RootLayout = () => {
@@ -42,11 +43,12 @@ export const RootLayout = () => {
       <main
         className={cn(
           'mx-auto min-h-0 w-full flex-1',
-          !header && 'min-h-screen',
-          showBottomNav && 'mb-16',
+          !header && 'min-h-screen pt-[env(safe-area-inset-top)]',
+          // 4.5rem = BottomNavBar의 h-18. 값이 어긋나면 마지막 콘텐츠가 네비 뒤에 가려진다.
+          showBottomNav && 'mb-[calc(4.5rem_+_env(safe-area-inset-bottom))]',
           header &&
             (header.renderBottom
-              ? 'mt-[120px]'
+              ? 'mt-[calc(120px_+_env(safe-area-inset-top))]'
               : HEIGHT_MARGIN_CLASSES[header.heightVariant || 'lg']),
         )}
       >

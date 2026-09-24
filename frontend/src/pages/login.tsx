@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/app/providers/auth-context';
 import { loginEmail, loginGoogle } from '@/features/auth/api/auth.service';
 import { LoginForm } from '@/features/auth/ui/LoginForm';
-import { requireGuest } from '@/app/router-guards';
+import { requireGuest, sanitizeRedirectSearch } from '@/app/router-guards';
 import { getApiErrorMessage } from '@/shared/api/error';
 import { reportClientError } from '@/shared/lib/report-client-error';
 import axios from 'axios';
@@ -14,20 +14,30 @@ const GOOGLE_LOGIN_FALLBACK_MESSAGE =
 
 export const Route = createFileRoute('/login')({
   beforeLoad: requireGuest,
+  // 보호 라우트에서 튕겨올 때 원래 목적지를 들고 온다. 내부 경로만 허용(오픈 리다이렉트 방지).
+  // 반환 타입을 optional로 명시해야 기존 `to: '/login'` 링크들이 search 없이도 컴파일된다.
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: sanitizeRedirectSearch(search.redirect),
+  }),
   component: LoginPage,
 });
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [isLoading, setIsLoading] = useState(false);
+  // redirect는 search·hash가 섞인 href 문자열이라 to가 아니라 href로 넘긴다.
+  // to는 경로 패턴 전용이라 '?tab=…' 같은 값이 붙으면 매칭·복원이 깨진다.
+  const redirectAfterLogin = () =>
+    redirect ? navigate({ href: redirect }) : navigate({ to: '/' });
 
   const handleLogin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       const res = await loginEmail(email, password);
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/' });
+      await redirectAfterLogin();
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
         if (
@@ -61,7 +71,7 @@ export function LoginPage() {
       setIsLoading(true);
       const res = await loginGoogle(idToken);
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/' });
+      await redirectAfterLogin();
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -89,6 +99,7 @@ export function LoginPage() {
         onSubmit={handleLogin}
         onGoogleLogin={handleGoogleLogin}
         isLoading={isLoading}
+        redirect={redirect}
       />
     </div>
   );

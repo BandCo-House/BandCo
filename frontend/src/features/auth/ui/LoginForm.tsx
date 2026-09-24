@@ -11,6 +11,8 @@ interface LoginFormProps {
   onSubmit: (email: string, password: string) => void;
   onGoogleLogin?: (idToken: string) => void;
   isLoading?: boolean;
+  /** 로그인 후 복귀할 내부 경로. 회원가입으로 넘어가도 유실되지 않게 링크에 실어 보낸다. */
+  redirect?: string;
 }
 
 interface AuthRoundedInputProps {
@@ -33,11 +35,13 @@ type AuthRowLinkProps =
   | {
       children: ReactNode;
       to: '/signup' | '/forgot-password';
+      search?: { redirect?: string };
       onClick?: never;
     }
   | {
       children: ReactNode;
       to?: never;
+      search?: never;
       onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     };
 
@@ -86,10 +90,10 @@ const SplitLinkRow = ({ left, right, className }: SplitLinkRowProps) => {
 const authRowLinkClassName =
   'inline-flex w-full justify-center whitespace-nowrap px-2 py-1 text-center text-grey-200 transition-colors hover:text-grey-50 hover:underline focus-visible:text-grey-50 focus-visible:underline';
 
-const AuthRowLink = ({ children, to, onClick }: AuthRowLinkProps) => {
+const AuthRowLink = ({ children, to, search, onClick }: AuthRowLinkProps) => {
   if (to) {
     return (
-      <Link to={to} className={authRowLinkClassName}>
+      <Link to={to} search={search} className={authRowLinkClassName}>
         {children}
       </Link>
     );
@@ -109,6 +113,7 @@ export const LoginForm = ({
   onSubmit,
   onGoogleLogin,
   isLoading = false,
+  redirect,
 }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -181,7 +186,11 @@ export const LoginForm = ({
 
       <SplitLinkRow
         className="mt-7"
-        left={<AuthRowLink to="/signup">회원가입</AuthRowLink>}
+        left={
+          <AuthRowLink to="/signup" search={{ redirect }}>
+            회원가입
+          </AuthRowLink>
+        }
         right={<AuthRowLink to="/forgot-password">비밀번호 찾기</AuthRowLink>}
       />
 

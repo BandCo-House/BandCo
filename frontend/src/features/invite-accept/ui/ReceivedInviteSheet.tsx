@@ -1,18 +1,14 @@
-import { Users } from 'lucide-react';
-import {
-  AppSheetClose,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/shared/ui/sheet';
 import { useNavigate } from '@tanstack/react-router';
 import type { NotificationItem } from '@/entities/notification/model/types';
 import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
-import { getKoreanParticle } from '@/shared/lib/korean-particle';
 import { useBandInvitation } from '@/entities/invite/api/useBandInvitation';
 import { useBand } from '@/entities/band/api/useBand';
 import { useReceivedInvite } from '../model/useReceivedInvite';
+import {
+  InviteSheetLayout,
+  inviteSheetOutlineButtonClass,
+  inviteSheetPrimaryButtonClass,
+} from './InviteSheetLayout';
 
 interface ReceivedInviteSheetProps {
   isOpen: boolean;
@@ -70,88 +66,44 @@ export function ReceivedInviteSheet({
   const memberCount = bandDetail?.memberCount;
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[80dvh] w-full max-w-[648px] flex-col rounded-t-[24px] border-t border-[#DFDFE1] bg-gradient-to-b from-[#F9F8F0] to-[#E6E9F0] p-6 shadow-[0_-3px_9px_2px_rgba(0,0,0,0.1)] outline-none"
-        showCloseButton={false}
-      >
-        <AppSheetClose
-          floating
-          className="text-gradient-top hover:bg-black/5 hover:text-gradient-top active:bg-black/10"
-        />
-
-        {/* 헤더 및 타이틀 */}
-        <SheetHeader className="mt-4 flex flex-col items-center gap-2 p-0 text-center">
-          <SheetTitle className="typo-lg-sb text-gradient-top">
-            밴드 초대장
-          </SheetTitle>
-          <div className="flex flex-col typo-sm-sb text-gradient-top">
-            <span>{inviter}님이 회원님을</span>
-            <span>{band}에 초대했습니다</span>
+    <InviteSheetLayout
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      inviter={inviter}
+      band={band}
+      bandDescription={bandDescription}
+      memberCount={memberCount}
+      footer={
+        noti.reference?.status === 'DECLINED' ? (
+          <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
+            이미 거절한 초대장입니다
           </div>
-        </SheetHeader>
-
-        {/* 밴드 요약 정보 카드 */}
-        <div className="mt-8 flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto">
-          <span className="text-center typo-xs-r text-grey-300">
-            {band}
-            {getKoreanParticle(band, '은/는')} 이런 밴드에요
-          </span>
-
-          <div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6 shadow-sm">
-            {bandDescription && (
-              <p className="border-b border-[#DFDFE1] pb-4 text-center typo-sm-sb text-[#555568]">
-                "{bandDescription}"
-              </p>
-            )}
-
-            {/* 동적 통계 요약 (멤버 수) */}
-            <div className="flex w-full items-center justify-center px-6">
-              <div className="flex flex-col items-center gap-1">
-                <Users className="h-4 w-4 text-grey-300" />
-                <span className="typo-lg-sb text-gradient-top">
-                  {memberCount != null ? memberCount : '-'}
-                </span>
-                <span className="typo-xs-r text-grey-300">멤버</span>
-              </div>
-            </div>
+        ) : noti.reference?.status === 'ACCEPTED' ? (
+          <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
+            이미 수락한 초대장입니다
           </div>
-        </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleDecline}
+              className={inviteSheetOutlineButtonClass}
+            >
+              거절
+            </button>
 
-        {/* 하단 액션 버튼 그룹 또는 처리 완료 상태 표시 */}
-        <div className="mt-6 flex w-full shrink-0 justify-center gap-3">
-          {noti.reference?.status === 'DECLINED' ? (
-            <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
-              이미 거절한 초대장입니다
-            </div>
-          ) : noti.reference?.status === 'ACCEPTED' ? (
-            <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
-              이미 수락한 초대장입니다
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={handleDecline}
-                className="flex h-[50px] w-0 flex-1 cursor-pointer items-center justify-center rounded-[43px] border-[1.5px] border-[#1B1B32] text-center typo-sm-sb text-[#1B1B32] transition-colors hover:bg-black/5 active:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                거절
-              </button>
-
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={handleAccept}
-                className="flex h-[50px] w-0 flex-[3] cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                수락하고 참여하기
-              </button>
-            </>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleAccept}
+              className={inviteSheetPrimaryButtonClass}
+            >
+              수락하고 참여하기
+            </button>
+          </>
+        )
+      }
+    />
   );
 }

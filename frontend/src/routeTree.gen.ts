@@ -19,6 +19,7 @@ import { Route as LoginRouteImport } from './pages/login'
 import { Route as ForgotPasswordRouteImport } from './pages/forgot-password'
 import { Route as AdminRouteImport } from './pages/admin'
 import { Route as IndexRouteImport } from './pages/index'
+import { Route as InviteCodeRouteImport } from './pages/invite.$code'
 import { Route as BandBandIdRouteImport } from './pages/band.$bandId'
 import { Route as BandBandIdIndexRouteImport } from './pages/band.$bandId.index'
 import { Route as BandBandIdSongsRouteImport } from './pages/band.$bandId.songs'
@@ -81,6 +82,11 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteCodeRoute = InviteCodeRouteImport.update({
+  id: '/invite/$code',
+  path: '/invite/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BandBandIdRoute = BandBandIdRouteImport.update({
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
+  '/invite/$code': typeof InviteCodeRoute
   '/band/$bandId/archive': typeof BandBandIdArchiveRoute
   '/band/$bandId/library': typeof BandBandIdLibraryRoute
   '/band/$bandId/notices': typeof BandBandIdNoticesRouteWithChildren
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/band/$bandId/archive': typeof BandBandIdArchiveRoute
   '/band/$bandId/library': typeof BandBandIdLibraryRoute
   '/band/$bandId/notices': typeof BandBandIdNoticesRouteWithChildren
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/band/$bandId': typeof BandBandIdRouteWithChildren
+  '/invite/$code': typeof InviteCodeRoute
   '/band/$bandId/archive': typeof BandBandIdArchiveRoute
   '/band/$bandId/library': typeof BandBandIdLibraryRoute
   '/band/$bandId/notices': typeof BandBandIdNoticesRouteWithChildren
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/band/$bandId'
+    | '/invite/$code'
     | '/band/$bandId/archive'
     | '/band/$bandId/library'
     | '/band/$bandId/notices'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/search'
     | '/signup'
+    | '/invite/$code'
     | '/band/$bandId/archive'
     | '/band/$bandId/library'
     | '/band/$bandId/notices'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/band/$bandId'
+    | '/invite/$code'
     | '/band/$bandId/archive'
     | '/band/$bandId/library'
     | '/band/$bandId/notices'
@@ -314,6 +326,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SignupRoute: typeof SignupRoute
   BandBandIdRoute: typeof BandBandIdRouteWithChildren
+  InviteCodeRoute: typeof InviteCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -386,6 +399,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$code': {
+      id: '/invite/$code'
+      path: '/invite/$code'
+      fullPath: '/invite/$code'
+      preLoaderRoute: typeof InviteCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/band/$bandId': {
@@ -549,6 +569,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SignupRoute: SignupRoute,
   BandBandIdRoute: BandBandIdRouteWithChildren,
+  InviteCodeRoute: InviteCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
