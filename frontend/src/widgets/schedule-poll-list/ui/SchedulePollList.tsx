@@ -99,7 +99,7 @@ export const SchedulePollList = ({
   bandId,
   spaceId,
 }: SchedulePollListProps) => {
-  const { data: items = [], isPending } = useSchedulePolls(spaceId);
+  const { data: items = [], isPending, isError } = useSchedulePolls(spaceId);
   const { data: spaceDetail } = useSpace(spaceId);
   const detailResults = useSchedulePollDetails(
     items.map((item) => item.schedulePollId),
@@ -121,7 +121,14 @@ export const SchedulePollList = ({
         </p>
       </header>
 
-      {items.length === 0 ? (
+      {isError ? (
+        // 실패를 빈 목록과 같은 화면으로 보여주면 "투표가 없다"로 오해한다.
+        <EmptyState
+          title="일정 투표를 불러오지 못했어요"
+          description="잠시 후 다시 시도해 주세요"
+          className="py-4"
+        />
+      ) : items.length === 0 ? (
         !isPending && (
           <div className="flex flex-col items-center gap-2">
             <EmptyState

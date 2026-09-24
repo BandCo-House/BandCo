@@ -29,9 +29,13 @@ type SchedulePollGridProps = {
   cells: Map<string, SchedulePollOption>;
 } & (ResultModeProps | EditModeProps);
 
-/** 행 키 → '14 : 30' 표기(시작 시각만). */
+/** 행 키 → '14 : 30' 표기(시작 시각만, 시안의 행 라벨). */
 const formatTimeLabel = (timeKey: PollTimeKey): string =>
   pollTimeKeyLabel(timeKey).replace(':', ' : ');
+
+/** 행 키 → '14:30 ~ 15:00'. 시작이 같고 길이만 다른 후보를 보조기기에서 구별할 수 있게 한다. */
+const formatTimeRangeLabel = (timeKey: PollTimeKey): string =>
+  timeKey.replace('~', ' ~ ');
 
 const cellBorderClass = 'border-[0.5px] border-surface-3';
 
@@ -178,7 +182,7 @@ export const SchedulePollGrid = (props: SchedulePollGridProps) => {
                   key={option.schedulePollOptionId}
                   role="checkbox"
                   aria-checked={isSelected}
-                  aria-label={`${formatDateColumnLabel(dateKey)} ${formatTimeLabel(time)}`}
+                  aria-label={`${formatDateColumnLabel(dateKey)} ${formatTimeRangeLabel(time)}`}
                   tabIndex={0}
                   data-option-id={option.schedulePollOptionId}
                   onKeyDown={(event) =>

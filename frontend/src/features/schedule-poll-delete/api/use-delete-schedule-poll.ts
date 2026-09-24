@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { deleteSchedulePoll } from '@/entities/schedule-poll/api';
 import { schedulePollQueries } from '@/entities/schedule-poll/model/queries';
 
@@ -9,13 +13,21 @@ export const useDeleteSchedulePoll = (spaceId: string, pollId: string) => {
   return useMutation({
     mutationFn: () => deleteSchedulePoll(pollId),
     onSuccess: () => {
-      // 삭제된 투표는 더 이상 볼 수 없으므로 상세 캐시를 지운다(뒤로 가기로 남은 화면 방지).
-      queryClient.removeQueries({
-        queryKey: schedulePollQueries.detail(pollId),
-      });
       void queryClient.invalidateQueries({
         queryKey: schedulePollQueries.list(spaceId),
       });
     },
   });
+};
+
+/**
+ * 삭제된 투표의 상세 캐시를 지운다(뒤로 가기로 남은 화면 방지).
+ * 활성 구독이 남은 채 removeQueries를 부르면 다음 렌더에서 재요청이 나가 404를 만들 수 있어,
+ * 호출부가 라우트 이탈을 끝낸 뒤에 부른다.
+ */
+export const removeSchedulePollDetailCache = (
+  queryClient: QueryClient,
+  pollId: string,
+): void => {
+  queryClient.removeQueries({ queryKey: schedulePollQueries.detail(pollId) });
 };

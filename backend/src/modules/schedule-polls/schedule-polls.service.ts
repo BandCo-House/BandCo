@@ -167,6 +167,12 @@ export class SchedulePollsService {
       }
 
       await this.schedulePollsRepository.lockBandMemberForVote(member.id, client);
+
+      // 같은 멤버의 선행 요청이 잠금을 쥔 채 마감을 넘길 수 있어, 잠금 획득 직후 한 번 더 확인한다.
+      if (context.closesAt.getTime() <= Date.now()) {
+        throw new BadRequestException(SCHEDULE_POLL_CLOSED_MESSAGE);
+      }
+
       await this.schedulePollsRepository.replaceSchedulePollVotes(schedulePollId, member.id, optionIds, client);
 
       const poll = await this.schedulePollsRepository.findSchedulePollById(schedulePollId, member.id, client);

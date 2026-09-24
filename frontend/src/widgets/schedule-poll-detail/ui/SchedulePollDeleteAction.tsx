@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/providers/auth-context';
@@ -7,7 +8,10 @@ import { getApiErrorMessage } from '@/shared/api/error';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
 import { useSchedulePoll } from '@/entities/schedule-poll/model/queries';
-import { useDeleteSchedulePoll } from '@/features/schedule-poll-delete/api/use-delete-schedule-poll';
+import {
+  removeSchedulePollDetailCache,
+  useDeleteSchedulePoll,
+} from '@/features/schedule-poll-delete/api/use-delete-schedule-poll';
 
 const DELETABLE_ROLES = ['BM', 'ADMIN'];
 
@@ -22,6 +26,7 @@ export const SchedulePollDeleteAction = () => {
     pollId = '',
   } = useParams({ strict: false });
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -39,13 +44,18 @@ export const SchedulePollDeleteAction = () => {
   if (!canDelete) return null;
 
   const handleDelete = () => {
+    // 확인 버튼 연타로 삭제 요청이 중복 전송되지 않게 진행 중이면 무시하고 즉시 닫는다.
+    if (deletePoll.isPending) return;
+    setIsConfirmOpen(false);
     deletePoll.mutate(undefined, {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast.success('일정 투표를 삭제했어요.');
-        void navigate({
+        await navigate({
           to: '/band/$bandId/space/$spaceId/polls',
           params: { bandId, spaceId },
         });
+        // 상세 화면 구독이 해제된 뒤 지워야 제거 직후 재요청(404)이 나가지 않는다.
+        removeSchedulePollDetailCache(queryClient, pollId);
       },
       onError: (error) => {
         toast.error(getApiErrorMessage(error, '일정 투표 삭제에 실패했어요.'));

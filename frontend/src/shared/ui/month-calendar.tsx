@@ -116,10 +116,12 @@ export const MonthCalendar = ({
               disabled={isDisabled}
               onClick={() => toggleDate(dateKey)}
               className={cn(
-                'mx-auto flex size-11 items-center justify-center rounded-full typo-sm-r text-grey-300',
+                'mx-auto flex size-11 items-center justify-center rounded-full text-grey-300',
                 'focus-visible:outline-2 focus-visible:outline-primary',
+                // typo-* 는 tailwind-merge가 같은 그룹으로 못 묶어 둘 다 남는다. 하나만 조건부로 붙인다.
+                isSelected ? 'typo-sm-sb' : 'typo-sm-r',
                 isToday && !isSelected && 'border border-primary-light',
-                isSelected && 'bg-primary typo-sm-sb text-primary-dark',
+                isSelected && 'bg-primary text-primary-dark',
                 isDisabled && 'cursor-not-allowed text-grey-400',
               )}
             >

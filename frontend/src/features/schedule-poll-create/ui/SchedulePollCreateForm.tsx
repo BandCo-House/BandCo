@@ -180,8 +180,15 @@ export const SchedulePollCreateForm = ({
         <WheelFieldCard
           role="group"
           aria-label="시작·종료 시간"
-          aria-invalid={timeRangeInvalid || undefined}
-          aria-describedby={timeRangeInvalid ? TIME_RANGE_ERROR_ID : undefined}
+          aria-invalid={timeRangeInvalid || optionCountExceeded || undefined}
+          aria-describedby={
+            [
+              timeRangeInvalid && TIME_RANGE_ERROR_ID,
+              optionCountExceeded && OPTION_COUNT_ERROR_ID,
+            ]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
         >
           {[
             { key: 'start', time: startTime, onChange: setStartTime },

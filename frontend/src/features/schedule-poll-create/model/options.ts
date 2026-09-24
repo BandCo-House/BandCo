@@ -3,8 +3,6 @@ import type { CreateSchedulePollOptionInput } from '@/entities/schedule-poll/mod
 /** 후보 한 칸의 길이(분). 투표 그리드 행 단위와 같다. */
 export const POLL_SLOT_MINUTES = 30;
 
-const MS_PER_MINUTE = 60 * 1000;
-
 const timeToMinutes = (time: string): number => {
   const [hour = 0, minute = 0] = time.split(':').map(Number);
   return hour * 60 + minute;
@@ -33,15 +31,19 @@ export const buildPollOptions = (
 
   return dateKeys.flatMap((dateKey) => {
     const [year = 0, month = 1, day = 1] = dateKey.split('-').map(Number);
-    const dayStart = new Date(year, month - 1, day).getTime();
 
     return Array.from({ length: slotsPerDay }, (_, index) => {
-      const slotStart =
-        dayStart + (startMinutes + index * POLL_SLOT_MINUTES) * MS_PER_MINUTE;
+      // epoch 덧셈은 DST 전환일에 벽시계가 1시간 밀린다. Date 생성자에 분을 넘겨
+      // 로컬 벽시계 기준으로 정규화한다(자정부터 n분 = 사용자가 고른 시각).
+      const offsetMinutes = startMinutes + index * POLL_SLOT_MINUTES;
       return {
-        startAt: new Date(slotStart).toISOString(),
+        startAt: new Date(year, month - 1, day, 0, offsetMinutes).toISOString(),
         endAt: new Date(
-          slotStart + POLL_SLOT_MINUTES * MS_PER_MINUTE,
+          year,
+          month - 1,
+          day,
+          0,
+          offsetMinutes + POLL_SLOT_MINUTES,
         ).toISOString(),
       };
     });

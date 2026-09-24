@@ -326,6 +326,31 @@ describe('SchedulePollsService', () => {
       );
     });
 
+    it('잠금 대기 중 마감을 넘기면 투표를 반영하지 않고 BadRequestException을 던진다', async () => {
+      // 1차 마감 검사는 통과했지만 lockBandMemberForVote 대기 중에 마감을 넘긴 상황을 재현한다.
+      const closesAt = new Date('2026-10-05T10:00:00.000Z');
+      let lockAcquired = false;
+      let votesReplaced = false;
+      const repository = createSchedulePollsRepositoryStub({
+        context: { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: BAND_MEMBER_ID, closesAt },
+        onCall: method => {
+          if (method === 'lockBandMemberForVote') lockAcquired = true;
+          if (method === 'replaceSchedulePollVotes') votesReplaced = true;
+        },
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+      const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => (lockAcquired ? closesAt.getTime() + 1_000 : closesAt.getTime() - 60_000));
+
+      try {
+        await expect(service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] })).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(votesReplaced).toBe(false);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
     it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
 
