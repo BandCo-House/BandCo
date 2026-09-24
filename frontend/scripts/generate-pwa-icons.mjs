@@ -1,5 +1,5 @@
 // PWA 앱 아이콘 생성 스크립트 — src/assets/logo/logo.svg 를 다크 배경 위에 렌더링해 PNG 로 굽는다.
-// 실행: node ./scripts/generate-pwa-icons.mjs (frontend/ 에서)
+// 실행: pnpm run icons:generate (frontend/ 에서 — Chromium 바이너리 설치까지 포함)
 import { chromium } from '@playwright/test';
 import { readFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
