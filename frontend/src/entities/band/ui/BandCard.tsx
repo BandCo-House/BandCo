@@ -20,7 +20,7 @@ export const BandCard = ({ band }: BandCardProps) => {
     >
       <div aria-hidden="true" className="relative h-37.5 w-37.5 rounded-md">
         <img
-          src={'default-band.png'}
+          src={band.coverImgUrl ?? 'default-band.png'}
           alt={band.name}
           className="h-full w-full rounded-md object-cover"
         />

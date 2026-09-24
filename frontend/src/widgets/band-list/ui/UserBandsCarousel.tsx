@@ -56,7 +56,7 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
         >
           <div className="flex gap-2 pb-1">
             {bands.map((band) => {
-              const bandCoverUrl = 'default-band.png'; // 현재 백엔드 스키마에 밴드 리스트에 이미지가 없음... band.coverImgUrl가 안되니 일단은 기본 이미지로 제공..
+              const bandCoverUrl = band.coverImgUrl ?? 'default-band.png';
 
               return (
                 <Link
