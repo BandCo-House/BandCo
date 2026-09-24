@@ -69,3 +69,32 @@ export const buildSlotLabels = (
     },
   );
 };
+
+/** 하루의 30분 단위 시각('HH:mm'). 자정(24:00)은 끝 시각 전용으로 뒤에 붙는다. */
+const HALF_HOURS = Array.from({ length: 48 }, (_, i) => {
+  const minutes = i * POLL_SLOT_MINUTES;
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+});
+
+/** 시작 시각 선택지(00:00 ~ 23:30). */
+export const START_TIME_OPTIONS = HALF_HOURS;
+
+/**
+ * 끝 시각 선택지. 시작보다 뒤인 시각만 남겨 "끝이 시작보다 빠름"을 고를 수 없게 한다.
+ * 마지막 24:00은 자정까지를 뜻한다(날짜 넘김 없이 그 날의 끝).
+ */
+export const endTimeOptions = (startTime: string): string[] =>
+  [...HALF_HOURS, '24:00'].filter(
+    (time) => timeToMinutes(time) > timeToMinutes(startTime),
+  );
+
+/** 시작을 옮길 때 기존 길이를 유지한 끝 시각. 24:00을 넘지 않는다. */
+export const shiftEndTime = (
+  prevStart: string,
+  prevEnd: string,
+  nextStart: string,
+): string => {
+  const duration = timeToMinutes(prevEnd) - timeToMinutes(prevStart);
+  const nextEnd = Math.min(timeToMinutes(nextStart) + duration, 24 * 60);
+  return `${String(Math.floor(nextEnd / 60)).padStart(2, '0')}:${String(nextEnd % 60).padStart(2, '0')}`;
+};

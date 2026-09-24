@@ -8,19 +8,22 @@ import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Field, fieldSurfaceClass } from '@/shared/ui/field';
 import { Input } from '@/shared/ui/input';
+import { SelectField } from '@/shared/ui/select-field';
 import { MonthCalendar } from '@/shared/ui/month-calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
-import { WheelFieldCard } from '@/shared/ui/wheel-field-card';
 import { WheelTimePicker } from '@/shared/ui/wheel-time-picker';
 import { pad2, toWheelDate, type WheelDate } from '@/shared/ui/wheel-date';
 import { SCHEDULE_POLL_OPTION_MAX_COUNT } from '@/entities/schedule-poll/model/types';
 import { formatDateRanges } from '@/entities/schedule-poll/lib/poll-grid';
 import { useCreateSchedulePoll } from '../api/use-create-schedule-poll';
 import {
+  START_TIME_OPTIONS,
   buildPollOptions,
   buildSlotLabels,
   countSlotsPerDay,
+  endTimeOptions,
+  shiftEndTime,
 } from '../model/options';
 
 interface SchedulePollCreateFormProps {
@@ -29,7 +32,6 @@ interface SchedulePollCreateFormProps {
   onCreated: () => void;
 }
 
-const TIME_RANGE_ERROR_ID = 'poll-time-range-error';
 const DEADLINE_ERROR_ID = 'poll-deadline-error';
 
 /** WheelDate → '2026. 09. 05.' (마감 기한 버튼 표기). */
@@ -47,6 +49,10 @@ const toClosesAtIso = (date: WheelDate, time: string): string => {
     minute,
   ).toISOString();
 };
+
+/** 'HH:mm' 목록을 셀렉트 옵션으로. 라벨은 격자 행과 같은 24시간 표기로 맞춘다. */
+const toTimeOptions = (times: string[]) =>
+  times.map((time) => ({ value: time, label: time }));
 
 /** 한 줄에 보여줄 후보 시각 개수. 넘으면 말줄임으로 접는다. */
 const PREVIEW_SLOT_LIMIT = 5;
@@ -192,6 +198,12 @@ export const SchedulePollCreateForm = ({
     !deadlinePast &&
     !createPoll.isPending;
 
+  // 시작을 옮기면 기존 길이를 유지한 채 끝도 따라 옮긴다(끝이 시작보다 빨라지는 상태를 만들지 않는다).
+  const handleStartTimeChange = (nextStart: string) => {
+    setEndTime((prevEnd) => shiftEndTime(startTime, prevEnd, nextStart));
+    setStartTime(nextStart);
+  };
+
   const handleSubmit = () => {
     if (!canSubmit) return;
     if (optionCountExceeded) {
@@ -235,6 +247,42 @@ export const SchedulePollCreateForm = ({
         minDate={new Date(openedAt)}
       />
 
+      <Field label="후보 시간 범위" required>
+        {/* '시작/종료 시간'은 투표 자체의 기간으로 읽혀 마감 기한과 헷갈린다.
+            이 값은 "몇 시부터 몇 시까지를 후보로 둘지"다. */}
+        <p className="typo-sm-r text-grey-200">
+          고른 날짜마다 이 범위를 30분씩 쪼개 후보로 만들어요
+        </p>
+        <div className="flex items-center gap-2">
+          <SelectField
+            ariaLabel="후보 시작 시각"
+            value={startTime}
+            onValueChange={handleStartTimeChange}
+            options={toTimeOptions(START_TIME_OPTIONS)}
+            placeholder="시작"
+          />
+          <span
+            aria-hidden="true"
+            className="shrink-0 typo-base-sb text-grey-300"
+          >
+            ~
+          </span>
+          <SelectField
+            ariaLabel="후보 끝 시각"
+            value={endTime}
+            onValueChange={setEndTime}
+            options={toTimeOptions(endTimeOptions(startTime))}
+            placeholder="끝"
+          />
+        </div>
+        <SlotPreview
+          dateKeys={dateKeys}
+          slotLabels={slotLabels}
+          optionCount={optionCount}
+          exceeded={optionCountExceeded}
+        />
+      </Field>
+
       <Field label="일정 이름" required htmlFor="poll-name">
         <Input
           id="poll-name"
@@ -244,54 +292,6 @@ export const SchedulePollCreateForm = ({
           maxLength={40}
           className={cn(fieldSurfaceClass, 'typo-base-sb')}
         />
-      </Field>
-
-      <Field label="후보 시간 범위" required>
-        {/* '시작/종료 시간'은 투표 자체의 기간으로 읽혀 마감 기한과 헷갈린다.
-            이 값은 "몇 시부터 몇 시까지를 후보로 둘지"다. */}
-        <p className="typo-sm-r text-grey-200">
-          고른 날짜마다 이 범위를 30분씩 쪼개 후보로 만들어요
-        </p>
-        <WheelFieldCard
-          role="group"
-          aria-label="후보 시간대"
-          aria-invalid={timeRangeInvalid || undefined}
-          aria-describedby={timeRangeInvalid ? TIME_RANGE_ERROR_ID : undefined}
-        >
-          {[
-            {
-              key: 'start',
-              label: '시작',
-              time: startTime,
-              onChange: setStartTime,
-            },
-            { key: 'end', label: '끝', time: endTime, onChange: setEndTime },
-          ].map(({ key, label, time, onChange }) => (
-            <div
-              key={key}
-              className="relative z-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-5"
-            >
-              {/* 날짜를 쓰지 않는다 — 후보는 고른 날짜 전부에 생기는데 한 날짜만 적으면
-                  그 날짜만 대상인 것처럼 읽힌다. */}
-              <span className="min-w-[48px] typo-base-sb text-grey-50">
-                {label}
-              </span>
-              <WheelTimePicker value={time} onChange={onChange} />
-            </div>
-          ))}
-        </WheelFieldCard>
-        {timeRangeInvalid ? (
-          <p id={TIME_RANGE_ERROR_ID} className="typo-sm-r text-destructive">
-            끝 시각은 시작 시각보다 30분 이상 뒤여야 해요.
-          </p>
-        ) : (
-          <SlotPreview
-            dateKeys={dateKeys}
-            slotLabels={slotLabels}
-            optionCount={optionCount}
-            exceeded={optionCountExceeded}
-          />
-        )}
       </Field>
 
       <Field label="투표 마감 기한" required>

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildPollOptions, buildSlotLabels, countSlotsPerDay } from './options';
+import {
+  buildPollOptions,
+  buildSlotLabels,
+  countSlotsPerDay,
+  endTimeOptions,
+  shiftEndTime,
+} from './options';
 
 describe('countSlotsPerDay', () => {
   it('시작~종료 범위를 30분 칸 수로 계산한다', () => {
@@ -52,5 +58,21 @@ describe('buildSlotLabels', () => {
 
   it('범위가 잘못되면 빈 목록이다', () => {
     expect(buildSlotLabels('15:00', '14:00')).toEqual([]);
+  });
+});
+
+describe('endTimeOptions / shiftEndTime', () => {
+  it('끝 선택지는 시작보다 뒤인 시각만 남긴다', () => {
+    const options = endTimeOptions('22:30');
+
+    expect(options).toEqual(['23:00', '23:30', '24:00']);
+  });
+
+  it('시작을 옮기면 기존 길이를 유지한 끝 시각을 준다', () => {
+    expect(shiftEndTime('14:00', '17:00', '15:00')).toBe('18:00');
+  });
+
+  it('끝이 자정을 넘기면 24:00에서 멈춘다', () => {
+    expect(shiftEndTime('14:00', '17:00', '23:00')).toBe('24:00');
   });
 });
