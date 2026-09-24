@@ -36,6 +36,12 @@ describe('extractInviteCode', () => {
     );
   });
 
+  it('scheme 없는 주소의 쿼리에만 /invite/가 있으면 경로 코드로 오인하지 않는다', () => {
+    expect(extractInviteCode('funda.website?next=/invite/OTHER')).toBe(
+      'funda.website?next=/invite/OTHER',
+    );
+  });
+
   it('코드 없이 /invite/로 끝나는 잘린 링크는 원문을 돌려준다', () => {
     expect(extractInviteCode('https://funda.website/invite/')).toBe(
       'https://funda.website/invite/',

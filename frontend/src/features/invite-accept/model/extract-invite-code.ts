@@ -7,13 +7,18 @@ export const extractInviteCode = (input: string): string => {
   const trimmed = input.trim();
   const marker = '/invite/';
 
-  // 절대 URL이면 pathname에서만 찾는다. 쿼리에 다른 /invite/가 섞여 있어도
+  // pathname에서만 찾는다. 쿼리에 다른 /invite/가 섞여 있어도
   // (예: ?next=/invite/OTHER) 경로의 코드가 사용자가 의도한 코드다.
-  let target = trimmed;
+  // scheme 없는 주소도 base를 붙여 파싱하면 쿼리·해시가 pathname에서 분리된다.
+  let target: string;
   try {
     target = new URL(trimmed).pathname;
   } catch {
-    // URL이 아니면(코드만 입력, scheme 없는 주소 등) 원문에서 찾는다.
+    try {
+      target = new URL(trimmed, 'https://placeholder.invalid').pathname;
+    } catch {
+      target = trimmed;
+    }
   }
 
   const markerIndex = target.indexOf(marker);
