@@ -3,12 +3,14 @@ import type {
   Band,
   BandDetail,
   BandInviteLink,
+  JoinBandResult,
   UpdateBandRequest,
   UpdatedBand,
 } from '../model/types';
 import {
   bandDetailSchema,
   bandInviteLinkSchema,
+  joinBandResultSchema,
   updatedBandSchema,
   bandListResultSchema,
 } from '../model/schema';
@@ -56,6 +58,10 @@ export const createBandInviteLink = async (
 export const revokeBandInviteLink = (bandId: string): Promise<unknown> =>
   apiDelete(`/bands/${bandId}/invite-link`);
 
-/** 초대 코드로 밴드에 가입한다(POST /invite-links/:code/join). */
-export const joinBandByInviteCode = (code: string): Promise<unknown> =>
-  apiPost(`/invite-links/${code}/join`);
+/** 초대 코드로 밴드에 가입한다(POST /invite-links/:code/join). 가입한 밴드 ID를 돌려준다. */
+export const joinBandByInviteCode = async (
+  code: string,
+): Promise<JoinBandResult> => {
+  const data = await apiPost<unknown>(`/invite-links/${code}/join`);
+  return joinBandResultSchema.parse(data);
+};

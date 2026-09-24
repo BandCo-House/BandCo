@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { requireLogin } from '@/app/router-guards';
+import { requireLogin, sanitizeRedirectSearch } from '@/app/router-guards';
 import { useGenres } from '@/entities/genre/api/useGenres';
 import { useSkillTypes } from '@/entities/skill/api/useSkillTypes';
 import type { OnboardingOption } from '@/features/onboarding/model/onboarding-options';
@@ -13,12 +13,15 @@ import { useAuth } from '@/app/providers/auth-context';
 
 type OnboardingSearch = {
   name?: string;
+  /** 가입 전에 가려던 경로(예: 초대 링크). 온보딩을 마치면 여기로 복귀한다. */
+  redirect?: string;
 };
 
 export const Route = createFileRoute('/onboarding')({
   beforeLoad: requireLogin,
   validateSearch: (search: Record<string, unknown>): OnboardingSearch => ({
     name: typeof search.name === 'string' ? search.name : undefined,
+    redirect: sanitizeRedirectSearch(search.redirect),
   }),
   component: OnboardingPage,
 });
@@ -29,7 +32,7 @@ export const Route = createFileRoute('/onboarding')({
 function OnboardingPage() {
   const navigate = useNavigate();
   const auth = useAuth();
-  const { name } = Route.useSearch();
+  const { name, redirect } = Route.useSearch();
   // 장르·파트는 공용 목록(/common/*)을 쓰고, 온보딩 선택지 형태로만 옮긴다.
   const genreOptionsQuery = useGenres();
   const partOptionsQuery = useSkillTypes();
@@ -67,7 +70,8 @@ function OnboardingPage() {
         '온보딩 정보를 저장하지 못했어요. 프로필에서 다시 설정할 수 있어요.',
       );
     } finally {
-      await navigate({ to: '/' });
+      // redirect는 search가 섞일 수 있는 href 문자열이라 to가 아니라 href로 넘긴다.
+      await (redirect ? navigate({ href: redirect }) : navigate({ to: '/' }));
     }
   };
 

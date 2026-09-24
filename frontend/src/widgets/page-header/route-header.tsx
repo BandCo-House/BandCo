@@ -169,7 +169,7 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
   return (
     <header
       className={cn(
-        'fixed top-0 z-50 w-full max-w-[648px] shrink-0 bg-gradient-top/65 backdrop-blur-sm',
+        'fixed top-0 z-50 w-full max-w-[648px] shrink-0 bg-gradient-top/65 pt-[env(safe-area-inset-top)] backdrop-blur-sm',
         header.bottomBlur && 'header-glow',
       )}
     >
