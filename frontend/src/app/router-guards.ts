@@ -1,5 +1,7 @@
 import { redirect, type ParsedLocation } from '@tanstack/react-router';
 import type { UserAccess } from '@/app/providers/auth-context';
+import { getAccessToken, getRefreshToken } from '@/shared/lib/auth-storage';
+import { getUserIdFromToken, isTokenExpired } from '@/shared/lib/jwt';
 
 export type RouterContext = {
   user: UserAccess;
@@ -23,12 +25,31 @@ export const sanitizeRedirectSearch = (value: unknown): string | undefined => {
 };
 
 /**
- * 라우터 진입 전 사용자 상태 동기화 지점
- * 현재는 AuthProvider의 값을 그대로 사용하고, 추후 토큰 재검증/권한 동기화 로직을 붙일 수 있다.
+ * 라우터 진입 전 사용자 상태 동기화 지점.
+ * login()은 토큰을 저장소에 동기로 쓰지만 컨텍스트 반영은 React 재렌더 뒤라,
+ * 로그인/가입 직후의 navigate는 가드가 옛 상태(비로그인)로 판정하는 레이스가 있다
+ * (회원가입 → 온보딩 진입이 홈으로 튕기던 원인). 저장소를 진실로 삼아 보정한다.
  */
 export const syncAuthenticatedUser = async (
   user: UserAccess,
 ): Promise<UserAccess> => {
+  if (user.isLoggedIn) return user;
+
+  // 판정 규칙은 AuthProvider 초기화와 동일해야 한다: 액세스가 유효하거나,
+  // 만료됐어도 리프레시가 살아 있으면 로그인으로 본다. 액세스만 보면
+  // 리프레시로 연장 가능한 세션(만료 직후 새로고침 등)을 비로그인 취급한다.
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  const userId = getUserIdFromToken(accessToken);
+  const isLoggedIn =
+    !!userId &&
+    (!isTokenExpired(accessToken) ||
+      (!!refreshToken && !isTokenExpired(refreshToken)));
+
+  if (isLoggedIn) {
+    return { isLoggedIn: true, isAdmin: user.isAdmin, id: userId };
+  }
+
   return user;
 };
 
