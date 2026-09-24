@@ -190,11 +190,12 @@ export const SchedulePollDetail = ({
         </div>
       </div>
 
-      {/* 하단 고정 CTA. 헤더와 같은 방식(fixed + max-w)으로 앱 셸 폭에 맞춘다. 마감 후에는 숨긴다. */}
+      {/* 하단 고정 CTA. 헤더와 같은 방식(fixed + max-w)으로 앱 셸 폭에 맞춘다. 마감 후에는 숨긴다.
+          네비 높이는 RootLayout이 --bottom-nav-clearance로 알려준다(직접 상수를 복제하지 않는다). */}
       {!isClosed && (
         <div
           className={cn(
-            'fixed bottom-16 z-40 w-full max-w-[648px] p-5',
+            'fixed bottom-[var(--bottom-nav-clearance,0px)] z-40 w-full max-w-[648px] p-5',
             'bg-gradient-bottom/60 shadow-[0px_-4px_40px_0px_rgba(255,255,255,0.1)] backdrop-blur-sm',
           )}
         >
