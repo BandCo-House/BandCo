@@ -4,7 +4,9 @@ import type { SchedulePollOption } from '../model/types';
 import {
   formatDateColumnLabel,
   pollCellKey,
+  pollTimeKeyLabel,
   type PollDateKey,
+  type PollTimeKey,
 } from '../lib/poll-grid';
 
 interface ResultModeProps {
@@ -22,13 +24,14 @@ interface EditModeProps {
 type SchedulePollGridProps = {
   /** 이 페이지에 그릴 날짜(열) 목록. */
   dateKeys: PollDateKey[];
-  /** 전체 행(후보 시작 시각 'HH:mm') 목록. 페이지가 바뀌어도 행은 같다. */
-  timeLabels: string[];
+  /** 전체 행(후보 시간) 키 목록. 페이지가 바뀌어도 행은 같다. */
+  timeKeys: PollTimeKey[];
   cells: Map<string, SchedulePollOption>;
 } & (ResultModeProps | EditModeProps);
 
-/** 'HH:mm' → '14 : 30' 표기. */
-const formatTimeLabel = (time: string): string => time.replace(':', ' : ');
+/** 행 키 → '14 : 30' 표기(시작 시각만). */
+const formatTimeLabel = (timeKey: PollTimeKey): string =>
+  pollTimeKeyLabel(timeKey).replace(':', ' : ');
 
 const cellBorderClass = 'border-[0.5px] border-surface-3';
 
@@ -37,7 +40,7 @@ const cellBorderClass = 'border-[0.5px] border-surface-3';
  * result 모드는 후보별 득표 수를 농도로, edit 모드는 드래그로 내 참여 시간을 고른다.
  */
 export const SchedulePollGrid = (props: SchedulePollGridProps) => {
-  const { dateKeys, timeLabels, cells } = props;
+  const { dateKeys, timeKeys, cells } = props;
   // 드래그 중 적용할 상태(true=선택, false=해제). null이면 드래그 아님.
   const dragSelectingRef = useRef<boolean | null>(null);
 
@@ -70,6 +73,8 @@ export const SchedulePollGrid = (props: SchedulePollGridProps) => {
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    // 드래그 중이 아니면 elementFromPoint 히트테스트 자체를 건너뛴다(결과 모드 hover 낭비 방지).
+    if (!isEdit || dragSelectingRef.current === null) return;
     const optionId = optionIdFromPoint(event);
     if (optionId) applyDrag(optionId);
   };
@@ -106,7 +111,7 @@ export const SchedulePollGrid = (props: SchedulePollGridProps) => {
       <div className="flex w-full">
         {/* 시작 시각(행) 라벨 */}
         <div className="flex w-14 shrink-0 flex-col pr-3">
-          {timeLabels.map((time) => (
+          {timeKeys.map((time) => (
             <p
               key={time}
               className="flex h-12 items-start justify-end typo-xs-r whitespace-nowrap text-grey-200"
@@ -129,7 +134,7 @@ export const SchedulePollGrid = (props: SchedulePollGridProps) => {
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          {timeLabels.map((time) =>
+          {timeKeys.map((time) =>
             dateKeys.map((dateKey) => {
               const option = cells.get(pollCellKey(dateKey, time));
               if (!option) {

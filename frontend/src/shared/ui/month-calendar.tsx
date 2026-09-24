@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { formatLocalDate, startOfDay } from '@/shared/lib/date';
+import { WEEKDAY_LABELS, formatLocalDate, startOfDay } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
-
-const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 interface MonthCalendarProps {
   /** 선택된 날짜('YYYY-MM-DD') 목록. */

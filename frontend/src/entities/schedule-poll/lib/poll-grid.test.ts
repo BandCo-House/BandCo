@@ -44,12 +44,35 @@ describe('buildPollGrid', () => {
     ]);
 
     expect(grid.dateKeys).toEqual(['2026-09-22', '2026-09-23']);
-    expect(grid.timeLabels).toEqual(['14:30', '15:00']);
+    expect(grid.timeKeys).toEqual(['14:30~15:00', '15:00~15:30']);
     expect(
-      grid.cells.get(pollCellKey('2026-09-22', '14:30'))?.schedulePollOptionId,
+      grid.cells.get(pollCellKey('2026-09-22', '14:30~15:00'))
+        ?.schedulePollOptionId,
     ).toBe('a');
     // 없는 조합은 셀이 비어 있다
-    expect(grid.cells.has(pollCellKey('2026-09-23', '14:30'))).toBe(false);
+    expect(grid.cells.has(pollCellKey('2026-09-23', '14:30~15:00'))).toBe(
+      false,
+    );
+  });
+
+  it('시작이 같고 길이만 다른 후보는 서로 다른 행으로 남는다', () => {
+    const short = option('short', [2026, 9, 22], [14, 0]);
+    const long = {
+      ...option('long', [2026, 9, 22], [14, 0]),
+      endAt: new Date(2026, 8, 22, 15, 0).toISOString(),
+    };
+
+    const grid = buildPollGrid([short, long]);
+
+    expect(grid.timeKeys).toEqual(['14:00~14:30', '14:00~15:00']);
+    expect(
+      grid.cells.get(pollCellKey('2026-09-22', '14:00~14:30'))
+        ?.schedulePollOptionId,
+    ).toBe('short');
+    expect(
+      grid.cells.get(pollCellKey('2026-09-22', '14:00~15:00'))
+        ?.schedulePollOptionId,
+    ).toBe('long');
   });
 });
 

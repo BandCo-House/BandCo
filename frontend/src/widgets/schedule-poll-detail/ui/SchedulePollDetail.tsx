@@ -35,6 +35,8 @@ export const SchedulePollDetail = ({
   const [pageIndex, setPageIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [draftOptionIds, setDraftOptionIds] = useState<string[]>([]);
+  // 렌더 순수성 규칙 때문에 현재 시각은 마운트 시점에 한 번만 잡는다(화면 진입 기준 마감 판정).
+  const [enteredAt] = useState(() => Date.now());
 
   if (!poll) return null;
 
@@ -43,6 +45,8 @@ export const SchedulePollDetail = ({
   const page = Math.min(pageIndex, Math.max(pages.length - 1, 0));
   const voters = collectPollVoters(poll.options);
   const hasVoted = poll.myOptionIds.length > 0;
+  // 마감된 투표는 백엔드가 투표 등록·수정을 400으로 거부하므로 편집 진입 자체를 막는다.
+  const isClosed = new Date(poll.closesAt).getTime() <= enteredAt;
 
   const startEditing = () => {
     setDraftOptionIds(poll.myOptionIds);
@@ -59,9 +63,12 @@ export const SchedulePollDetail = ({
   };
 
   const handleToggleOption = (optionId: string, selected: boolean) => {
-    setDraftOptionIds((prev) =>
-      selected ? [...prev, optionId] : prev.filter((id) => id !== optionId),
-    );
+    // 터치 드래그는 재렌더 전에 같은 셀 이벤트가 연달아 올 수 있어 중복 추가를 막는다.
+    // 중복 ID가 실리면 백엔드가 400으로 투표 전체를 거부한다.
+    setDraftOptionIds((prev) => {
+      if (!selected) return prev.filter((id) => id !== optionId);
+      return prev.includes(optionId) ? prev : [...prev, optionId];
+    });
   };
 
   const ctaLabel = isEditing
@@ -87,6 +94,7 @@ export const SchedulePollDetail = ({
               <p className="typo-sm-r text-grey-50">
                 {formatDotDate(poll.closesAt)}
               </p>
+              {isClosed && <p className="typo-sm-r text-destructive">마감됨</p>}
             </div>
             <div className="flex items-center gap-3">
               <p className="typo-sm-r text-grey-200">참여 인원</p>
@@ -165,7 +173,7 @@ export const SchedulePollDetail = ({
               <SchedulePollGrid
                 mode="edit"
                 dateKeys={pages[page]}
-                timeLabels={grid.timeLabels}
+                timeKeys={grid.timeKeys}
                 cells={grid.cells}
                 selectedIds={draftOptionIds}
                 onToggle={handleToggleOption}
@@ -174,7 +182,7 @@ export const SchedulePollDetail = ({
               <SchedulePollGrid
                 mode="result"
                 dateKeys={pages[page]}
-                timeLabels={grid.timeLabels}
+                timeKeys={grid.timeKeys}
                 cells={grid.cells}
                 maxCount={maxVoteCount(poll.options)}
               />
@@ -182,24 +190,26 @@ export const SchedulePollDetail = ({
         </div>
       </div>
 
-      {/* 하단 고정 CTA. 헤더와 같은 방식(fixed + max-w)으로 앱 셸 폭에 맞춘다. */}
-      <div
-        className={cn(
-          'fixed bottom-16 z-40 w-full max-w-[648px] p-5',
-          'bg-gradient-bottom/60 shadow-[0px_-4px_40px_0px_rgba(255,255,255,0.1)] backdrop-blur-sm',
-        )}
-      >
-        <Button
-          type="button"
-          variant="shining"
-          size="lg"
-          className="w-full"
-          isLoading={updateVote.isPending}
-          onClick={isEditing ? submitVote : startEditing}
+      {/* 하단 고정 CTA. 헤더와 같은 방식(fixed + max-w)으로 앱 셸 폭에 맞춘다. 마감 후에는 숨긴다. */}
+      {!isClosed && (
+        <div
+          className={cn(
+            'fixed bottom-16 z-40 w-full max-w-[648px] p-5',
+            'bg-gradient-bottom/60 shadow-[0px_-4px_40px_0px_rgba(255,255,255,0.1)] backdrop-blur-sm',
+          )}
         >
-          {ctaLabel}
-        </Button>
-      </div>
+          <Button
+            type="button"
+            variant="shining"
+            size="lg"
+            className="w-full"
+            isLoading={updateVote.isPending}
+            onClick={isEditing ? submitVote : startEditing}
+          >
+            {ctaLabel}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

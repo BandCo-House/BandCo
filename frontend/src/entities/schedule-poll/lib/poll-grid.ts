@@ -1,15 +1,9 @@
-import { formatClockTime, formatLocalDate } from '@/shared/lib/date';
+import {
+  WEEKDAY_LABELS,
+  formatClockTime,
+  formatLocalDate,
+} from '@/shared/lib/date';
 import type { SchedulePollOption } from '../model/types';
-
-export const WEEKDAY_LABELS = [
-  '일',
-  '월',
-  '화',
-  '수',
-  '목',
-  '금',
-  '토',
-] as const;
 
 /** 상세 그리드에서 한 페이지에 보여줄 날짜(열) 수. */
 export const POLL_GRID_DATES_PER_PAGE = 3;
@@ -17,36 +11,45 @@ export const POLL_GRID_DATES_PER_PAGE = 3;
 /** 'YYYY-MM-DD' 로컬 날짜 키. */
 export type PollDateKey = string;
 
+/** 행 키 'HH:mm~HH:mm'(시작~종료). 시작이 같고 길이만 다른 후보가 겹쳐 지워지지 않게 종료까지 포함한다. */
+export type PollTimeKey = string;
+
 export interface PollGrid {
   /** 후보가 있는 날짜(열) 목록. 오름차순. */
   dateKeys: PollDateKey[];
-  /** 후보 시작 시각 'HH:mm'(행) 목록. 오름차순. */
-  timeLabels: string[];
-  /** `${dateKey} ${timeLabel}` → 후보. 없는 조합은 비어 있는 셀로 그린다. */
+  /** 후보 시간(행) 키 목록. 시작 시각 오름차순. */
+  timeKeys: PollTimeKey[];
+  /** `${dateKey} ${timeKey}` → 후보. 없는 조합은 비어 있는 셀로 그린다. */
   cells: Map<string, SchedulePollOption>;
 }
 
-export const pollCellKey = (dateKey: PollDateKey, timeLabel: string): string =>
-  `${dateKey} ${timeLabel}`;
+export const pollCellKey = (
+  dateKey: PollDateKey,
+  timeKey: PollTimeKey,
+): string => `${dateKey} ${timeKey}`;
 
-/** 후보 목록을 날짜(열)×시작 시각(행) 그리드로 변환한다. */
+/** 행 키에서 표시용 시작 시각 'HH:mm'을 꺼낸다. */
+export const pollTimeKeyLabel = (timeKey: PollTimeKey): string =>
+  timeKey.split('~')[0] ?? timeKey;
+
+/** 후보 목록을 날짜(열)×시간(행) 그리드로 변환한다. */
 export const buildPollGrid = (options: SchedulePollOption[]): PollGrid => {
   const dateKeys = new Set<string>();
-  const timeLabels = new Set<string>();
+  const timeKeys = new Set<string>();
   const cells = new Map<string, SchedulePollOption>();
 
   for (const option of options) {
     const date = new Date(option.startAt);
     const dateKey = formatLocalDate(date);
-    const timeLabel = formatClockTime(option.startAt);
+    const timeKey = `${formatClockTime(option.startAt)}~${formatClockTime(option.endAt)}`;
     dateKeys.add(dateKey);
-    timeLabels.add(timeLabel);
-    cells.set(pollCellKey(dateKey, timeLabel), option);
+    timeKeys.add(timeKey);
+    cells.set(pollCellKey(dateKey, timeKey), option);
   }
 
   return {
     dateKeys: [...dateKeys].sort(),
-    timeLabels: [...timeLabels].sort(),
+    timeKeys: [...timeKeys].sort(),
     cells,
   };
 };
@@ -95,8 +98,11 @@ export const formatDateRanges = (dateKeys: PollDateKey[]): string[] => {
   };
 
   for (const current of sorted.slice(1)) {
-    const isConsecutive =
-      current.getTime() - prev.getTime() === 24 * 60 * 60 * 1000;
+    // DST가 있는 타임존은 자정 간격이 23~25시간이라 정확히 24시간 비교 대신 일수로 반올림한다.
+    const dayDiff = Math.round(
+      (current.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    const isConsecutive = dayDiff === 1;
     if (!isConsecutive) {
       pushRange(start, prev);
       start = current;

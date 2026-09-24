@@ -25,6 +25,7 @@ interface SchedulePollCreateFormProps {
 
 const TIME_RANGE_ERROR_ID = 'poll-time-range-error';
 const OPTION_COUNT_ERROR_ID = 'poll-option-count-error';
+const DEADLINE_ERROR_ID = 'poll-deadline-error';
 
 /** WheelDate → '26 - 03 - 01' (시작/종료 시간 카드의 날짜 표기). */
 const formatWheelDateShort = (d: WheelDate): string =>
@@ -52,16 +53,20 @@ const DeadlineTriggerButton = ({
   value,
   placeholder,
   icon,
+  invalid,
 }: {
   label: string;
   value: string | null;
   placeholder: string;
   icon: ReactNode;
+  invalid?: boolean;
 }) => (
   <PopoverTrigger asChild>
     <button
       type="button"
       aria-label={label}
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? DEADLINE_ERROR_ID : undefined}
       className={cn(
         fieldSurfaceClass,
         'flex min-w-0 flex-1 items-center gap-2 outline-1 outline-transparent outline-solid',
@@ -207,12 +212,7 @@ export const SchedulePollCreateForm = ({
       </Field>
 
       <Field label="투표 마감 기한" required>
-        <div
-          className="flex gap-2"
-          aria-describedby={
-            optionCountExceeded ? OPTION_COUNT_ERROR_ID : undefined
-          }
-        >
+        <div className="flex gap-2">
           {/* 팝오버를 여는 순간 현재 표시값(오늘/19:00)을 상태로 확정해,
               휠을 안 굴리고 닫아도 값이 비지 않게 한다. */}
           <Popover
@@ -224,6 +224,7 @@ export const SchedulePollCreateForm = ({
               label="마감 날짜 선택"
               value={deadlineDate ? formatWheelDateDot(deadlineDate) : null}
               placeholder="날짜 선택"
+              invalid={deadlinePast}
               icon={
                 <CalendarIcon
                   aria-hidden="true"
@@ -250,6 +251,7 @@ export const SchedulePollCreateForm = ({
               label="마감 시간 선택"
               value={deadlineTime}
               placeholder="시간 선택"
+              invalid={deadlinePast}
               icon={
                 <Clock
                   aria-hidden="true"
@@ -266,7 +268,7 @@ export const SchedulePollCreateForm = ({
           </Popover>
         </div>
         {deadlinePast && (
-          <p className="typo-sm-r text-destructive">
+          <p id={DEADLINE_ERROR_ID} className="typo-sm-r text-destructive">
             마감 기한은 현재 시각 이후여야 해요.
           </p>
         )}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { addDays } from '@/shared/lib/date';
+import { WEEKDAY_LABELS, addDays } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
 import { useSpace } from '@/entities/space/api/useSpace';
 import { useDaySchedules } from '@/entities/schedule/model/queries';
@@ -17,8 +17,6 @@ import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreat
 import { WeekDatePicker } from '@/shared/ui/week-date-picker';
 import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
 import { DayTimeline } from './DayTimeline';
-
-const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 const formatCompactDate = (date: Date): string =>
   `${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAY_LABELS[date.getDay()]})`;
