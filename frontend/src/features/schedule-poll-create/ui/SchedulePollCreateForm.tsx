@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Clock } from 'lucide-react';
 import CalendarIcon from '@/assets/icons/calendar.svg?react';
 import { getApiErrorMessage } from '@/shared/api/error';
+import { addDays } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Field, fieldSurfaceClass } from '@/shared/ui/field';
@@ -98,13 +99,11 @@ const SlotPreview = ({
 const DeadlineTriggerButton = ({
   label,
   value,
-  placeholder,
   icon,
   invalid,
 }: {
   label: string;
-  value: string | null;
-  placeholder: string;
+  value: string;
   icon: ReactNode;
   invalid?: boolean;
 }) => (
@@ -120,13 +119,8 @@ const DeadlineTriggerButton = ({
         'hover:outline-primary focus-visible:outline-2 focus-visible:outline-primary',
       )}
     >
-      <span
-        className={cn(
-          'min-w-0 flex-1 truncate text-left typo-base-sb',
-          value ? 'text-grey-50' : 'text-grey-300',
-        )}
-      >
-        {value ?? placeholder}
+      <span className="min-w-0 flex-1 truncate text-left typo-base-sb text-grey-50">
+        {value}
       </span>
       {icon}
     </button>
@@ -142,10 +136,42 @@ export const SchedulePollCreateForm = ({
   const [name, setName] = useState('');
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('17:00');
-  const [deadlineDate, setDeadlineDate] = useState<WheelDate | null>(null);
-  const [deadlineTime, setDeadlineTime] = useState<string | null>(null);
+  // 마감 기한은 대부분 기본값으로 충분해 접어 둔다. '변경'을 눌렀을 때만 피커를 편다.
+  const [customDeadline, setCustomDeadline] = useState<{
+    date: WheelDate;
+    time: string;
+  } | null>(null);
+  const [isEditingDeadline, setIsEditingDeadline] = useState(false);
 
   const createPoll = useCreateSchedulePoll(spaceId);
+
+  // 렌더 순수성 규칙 때문에 현재 시각은 마운트 시점에 한 번만 잡는다(기본값·과거 판정 기준).
+  const [openedAt] = useState(() => Date.now());
+
+  // 기본 마감: 첫 후보 날짜 전날 19:00. 그게 이미 지났으면(후보가 코앞) 한 시간 뒤로 민다.
+  const defaultDeadline = useMemo(() => {
+    const firstDate = dateKeys[0];
+    const base = firstDate
+      ? new Date(
+          Number(firstDate.slice(0, 4)),
+          Number(firstDate.slice(5, 7)) - 1,
+          Number(firstDate.slice(8, 10)),
+        )
+      : addDays(new Date(openedAt), 2);
+    const dayBefore = addDays(base, -1);
+    dayBefore.setHours(19, 0, 0, 0);
+
+    const soonest = new Date(openedAt + 60 * 60 * 1000);
+    const resolved = dayBefore > soonest ? dayBefore : soonest;
+    return {
+      date: toWheelDate(resolved),
+      time: `${pad2(resolved.getHours())}:${pad2(resolved.getMinutes())}`,
+    };
+  }, [dateKeys, openedAt]);
+
+  const deadline = customDeadline ?? defaultDeadline;
+  const deadlineDate = deadline.date;
+  const deadlineTime = deadline.time;
 
   const slotsPerDay = countSlotsPerDay(startTime, endTime);
   const optionCount = dateKeys.length * slotsPerDay;
@@ -153,12 +179,9 @@ export const SchedulePollCreateForm = ({
 
   const timeRangeInvalid = slotsPerDay === 0;
   const optionCountExceeded = optionCount > SCHEDULE_POLL_OPTION_MAX_COUNT;
-  const closesAt =
-    deadlineDate !== null && deadlineTime !== null
-      ? toClosesAtIso(deadlineDate, deadlineTime)
-      : null;
+  const closesAt = toClosesAtIso(deadlineDate, deadlineTime);
   // 백엔드도 거부하지만, 제출 전에 미리 알 수 있게 인라인으로 막는다.
-  const deadlinePast = closesAt !== null && new Date(closesAt) <= new Date();
+  const deadlinePast = new Date(closesAt).getTime() <= openedAt;
 
   // 후보 개수 초과는 날짜×시간 조합의 결과라 어느 칸의 잘못인지 특정할 수 없다.
   // 버튼을 잠그면 이유를 알 수 없으니, 누를 수는 있게 두고 제출 시 toast로 알린다.
@@ -166,12 +189,11 @@ export const SchedulePollCreateForm = ({
     dateKeys.length > 0 &&
     name.trim().length > 0 &&
     !timeRangeInvalid &&
-    closesAt !== null &&
     !deadlinePast &&
     !createPoll.isPending;
 
   const handleSubmit = () => {
-    if (!canSubmit || closesAt === null) return;
+    if (!canSubmit) return;
     if (optionCountExceeded) {
       toast.error(
         `후보는 최대 ${SCHEDULE_POLL_OPTION_MAX_COUNT}개까지 만들 수 있어요. 날짜나 시간 범위를 줄여주세요. (현재 ${optionCount}개)`,
@@ -210,7 +232,7 @@ export const SchedulePollCreateForm = ({
       <MonthCalendar
         value={dateKeys}
         onChange={setDateKeys}
-        minDate={new Date()}
+        minDate={new Date(openedAt)}
       />
 
       <Field label="일정 이름" required htmlFor="poll-name">
@@ -276,61 +298,75 @@ export const SchedulePollCreateForm = ({
         <p className="typo-sm-r text-grey-200">
           이 시각이 지나면 투표할 수 없어요
         </p>
-        <div className="flex gap-2">
-          {/* 팝오버를 여는 순간 현재 표시값(오늘/19:00)을 상태로 확정해,
-              휠을 안 굴리고 닫아도 값이 비지 않게 한다. */}
-          <Popover
-            onOpenChange={(open) => {
-              if (open) setDeadlineDate((d) => d ?? toWheelDate(new Date()));
-            }}
-          >
-            <DeadlineTriggerButton
-              label="마감 날짜 선택"
-              value={deadlineDate ? formatWheelDateDot(deadlineDate) : null}
-              placeholder="날짜 선택"
-              invalid={deadlinePast}
-              icon={
-                <CalendarIcon
-                  aria-hidden="true"
-                  className="size-5 shrink-0 text-grey-300"
-                />
-              }
-            />
-            <PopoverContent className="w-80 rounded-md bg-gradient-top p-4">
-              <WheelDatePicker
-                label="마감"
-                value={deadlineDate ?? toWheelDate(new Date())}
-                onChange={setDeadlineDate}
-                minYear={new Date().getFullYear()}
-              />
-            </PopoverContent>
-          </Popover>
 
-          <Popover
-            onOpenChange={(open) => {
-              if (open) setDeadlineTime((t) => t ?? '19:00');
-            }}
-          >
-            <DeadlineTriggerButton
-              label="마감 시간 선택"
-              value={deadlineTime}
-              placeholder="시간 선택"
-              invalid={deadlinePast}
-              icon={
-                <Clock
-                  aria-hidden="true"
-                  className="size-5 shrink-0 text-grey-300"
-                />
-              }
-            />
-            <PopoverContent className="w-72 rounded-md bg-gradient-top p-4">
-              <WheelTimePicker
-                value={deadlineTime ?? '19:00'}
-                onChange={setDeadlineTime}
+        {isEditingDeadline ? (
+          <div className="flex gap-2">
+            <Popover>
+              <DeadlineTriggerButton
+                label="마감 날짜 선택"
+                value={formatWheelDateDot(deadlineDate)}
+                invalid={deadlinePast}
+                icon={
+                  <CalendarIcon
+                    aria-hidden="true"
+                    className="size-5 shrink-0 text-grey-300"
+                  />
+                }
               />
-            </PopoverContent>
-          </Popover>
-        </div>
+              <PopoverContent className="w-80 rounded-md bg-gradient-top p-4">
+                <WheelDatePicker
+                  label="마감"
+                  value={deadlineDate}
+                  onChange={(date) =>
+                    setCustomDeadline({ date, time: deadlineTime })
+                  }
+                  minYear={new Date(openedAt).getFullYear()}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <DeadlineTriggerButton
+                label="마감 시간 선택"
+                value={deadlineTime}
+                invalid={deadlinePast}
+                icon={
+                  <Clock
+                    aria-hidden="true"
+                    className="size-5 shrink-0 text-grey-300"
+                  />
+                }
+              />
+              <PopoverContent className="w-72 rounded-md bg-gradient-top p-4">
+                <WheelTimePicker
+                  value={deadlineTime}
+                  onChange={(time) =>
+                    setCustomDeadline({ date: deadlineDate, time })
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        ) : (
+          <div
+            className={cn(
+              fieldSurfaceClass,
+              'flex items-center justify-between gap-3',
+            )}
+          >
+            <p className="min-w-0 truncate typo-base-sb text-grey-50">
+              {formatWheelDateDot(deadlineDate)} {deadlineTime}
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsEditingDeadline(true)}
+              className="-m-2 shrink-0 p-2 typo-sm-sb text-grey-300 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              변경
+            </button>
+          </div>
+        )}
+
         {deadlinePast && (
           <p id={DEADLINE_ERROR_ID} className="typo-sm-r text-destructive">
             마감 기한은 현재 시각 이후여야 해요.
