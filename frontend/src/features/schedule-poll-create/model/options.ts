@@ -49,3 +49,23 @@ export const buildPollOptions = (
     });
   });
 };
+
+/**
+ * 하루치 후보의 시작 시각 라벨('HH:mm')을 만든다.
+ * "이 범위가 30분 후보로 쪼개진다"를 말 대신 실제 값으로 보여주는 미리보기에 쓴다.
+ */
+export const buildSlotLabels = (
+  startTime: string,
+  endTime: string,
+): string[] => {
+  const startMinutes = timeToMinutes(startTime);
+
+  return Array.from(
+    { length: countSlotsPerDay(startTime, endTime) },
+    (_, i) => {
+      const minutes = startMinutes + i * POLL_SLOT_MINUTES;
+      const hour = Math.floor(minutes / 60) % 24;
+      return `${String(hour).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    },
+  );
+};

@@ -14,8 +14,13 @@ import { WheelFieldCard } from '@/shared/ui/wheel-field-card';
 import { WheelTimePicker } from '@/shared/ui/wheel-time-picker';
 import { pad2, toWheelDate, type WheelDate } from '@/shared/ui/wheel-date';
 import { SCHEDULE_POLL_OPTION_MAX_COUNT } from '@/entities/schedule-poll/model/types';
+import { formatDateRanges } from '@/entities/schedule-poll/lib/poll-grid';
 import { useCreateSchedulePoll } from '../api/use-create-schedule-poll';
-import { buildPollOptions, countSlotsPerDay } from '../model/options';
+import {
+  buildPollOptions,
+  buildSlotLabels,
+  countSlotsPerDay,
+} from '../model/options';
 
 interface SchedulePollCreateFormProps {
   spaceId: string;
@@ -24,7 +29,6 @@ interface SchedulePollCreateFormProps {
 }
 
 const TIME_RANGE_ERROR_ID = 'poll-time-range-error';
-const OPTION_COUNT_ERROR_ID = 'poll-option-count-error';
 const DEADLINE_ERROR_ID = 'poll-deadline-error';
 
 /** WheelDate → '2026. 09. 05.' (마감 기한 버튼 표기). */
@@ -41,6 +45,53 @@ const toClosesAtIso = (date: WheelDate, time: string): string => {
     hour,
     minute,
   ).toISOString();
+};
+
+/** 한 줄에 보여줄 후보 시각 개수. 넘으면 말줄임으로 접는다. */
+const PREVIEW_SLOT_LIMIT = 5;
+
+/**
+ * 고른 날짜·시간 범위로 실제 무엇이 만들어지는지 보여주는 미리보기.
+ * "30분 단위 후보"라는 설명만으로는 감이 오지 않아, 생성될 값을 그대로 보여준다.
+ */
+const SlotPreview = ({
+  dateKeys,
+  slotLabels,
+  optionCount,
+  exceeded,
+}: {
+  dateKeys: string[];
+  slotLabels: string[];
+  optionCount: number;
+  exceeded: boolean;
+}) => {
+  if (dateKeys.length === 0 || slotLabels.length === 0) return null;
+
+  const shown = slotLabels.slice(0, PREVIEW_SLOT_LIMIT);
+  const restCount = slotLabels.length - shown.length;
+
+  return (
+    <div className="flex flex-col gap-1.5 rounded-sm bg-surface-3 px-4 py-3">
+      <p className="typo-xs-sb text-grey-100">이렇게 만들어져요</p>
+      <p className="typo-xs-r text-grey-200">
+        {formatDateRanges(dateKeys).join(', ')}
+      </p>
+      <p className="typo-xs-r text-grey-200">
+        {shown.join(' · ')}
+        {restCount > 0 ? ` 외 ${restCount}개` : ''}
+      </p>
+      <p
+        className={cn(
+          'typo-xs-sb',
+          exceeded ? 'text-destructive' : 'text-grey-100',
+        )}
+      >
+        날짜 {dateKeys.length}일 × 하루 {slotLabels.length}칸 = 후보{' '}
+        {optionCount}개
+        {exceeded ? ` (최대 ${SCHEDULE_POLL_OPTION_MAX_COUNT}개)` : ''}
+      </p>
+    </div>
+  );
 };
 
 /** 마감 기한 캡슐 버튼(값 + 아이콘). 누르면 팝오버로 휠 피커를 연다. */
@@ -98,6 +149,7 @@ export const SchedulePollCreateForm = ({
 
   const slotsPerDay = countSlotsPerDay(startTime, endTime);
   const optionCount = dateKeys.length * slotsPerDay;
+  const slotLabels = buildSlotLabels(startTime, endTime);
 
   const timeRangeInvalid = slotsPerDay === 0;
   const optionCountExceeded = optionCount > SCHEDULE_POLL_OPTION_MAX_COUNT;
@@ -108,17 +160,24 @@ export const SchedulePollCreateForm = ({
   // 백엔드도 거부하지만, 제출 전에 미리 알 수 있게 인라인으로 막는다.
   const deadlinePast = closesAt !== null && new Date(closesAt) <= new Date();
 
+  // 후보 개수 초과는 날짜×시간 조합의 결과라 어느 칸의 잘못인지 특정할 수 없다.
+  // 버튼을 잠그면 이유를 알 수 없으니, 누를 수는 있게 두고 제출 시 toast로 알린다.
   const canSubmit =
     dateKeys.length > 0 &&
     name.trim().length > 0 &&
     !timeRangeInvalid &&
-    !optionCountExceeded &&
     closesAt !== null &&
     !deadlinePast &&
     !createPoll.isPending;
 
   const handleSubmit = () => {
     if (!canSubmit || closesAt === null) return;
+    if (optionCountExceeded) {
+      toast.error(
+        `후보는 최대 ${SCHEDULE_POLL_OPTION_MAX_COUNT}개까지 만들 수 있어요. 날짜나 시간 범위를 줄여주세요. (현재 ${optionCount}개)`,
+      );
+      return;
+    }
     createPoll.mutate(
       {
         name: name.trim(),
@@ -143,7 +202,9 @@ export const SchedulePollCreateForm = ({
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h2 className="typo-lg-sb text-grey-50">날짜 선택</h2>
-        <p className="typo-sm-r text-grey-200">투표할 날짜를 선택해주세요</p>
+        <p className="typo-sm-r text-grey-200">
+          멤버들이 가능한 시간을 고를 수 있게 후보 날짜를 정해요
+        </p>
       </header>
 
       <MonthCalendar
@@ -167,20 +228,13 @@ export const SchedulePollCreateForm = ({
         {/* '시작/종료 시간'은 투표 자체의 기간으로 읽혀 마감 기한과 헷갈린다.
             이 값은 "몇 시부터 몇 시까지를 후보로 둘지"다. */}
         <p className="typo-sm-r text-grey-200">
-          고른 날짜마다 이 범위가 30분 단위 후보가 돼요
+          고른 날짜마다 이 범위를 30분씩 쪼개 후보로 만들어요
         </p>
         <WheelFieldCard
           role="group"
           aria-label="후보 시간대"
-          aria-invalid={timeRangeInvalid || optionCountExceeded || undefined}
-          aria-describedby={
-            [
-              timeRangeInvalid && TIME_RANGE_ERROR_ID,
-              optionCountExceeded && OPTION_COUNT_ERROR_ID,
-            ]
-              .filter(Boolean)
-              .join(' ') || undefined
-          }
+          aria-invalid={timeRangeInvalid || undefined}
+          aria-describedby={timeRangeInvalid ? TIME_RANGE_ERROR_ID : undefined}
         >
           {[
             {
@@ -204,16 +258,17 @@ export const SchedulePollCreateForm = ({
             </div>
           ))}
         </WheelFieldCard>
-        {timeRangeInvalid && (
+        {timeRangeInvalid ? (
           <p id={TIME_RANGE_ERROR_ID} className="typo-sm-r text-destructive">
             끝 시각은 시작 시각보다 30분 이상 뒤여야 해요.
           </p>
-        )}
-        {optionCountExceeded && (
-          <p id={OPTION_COUNT_ERROR_ID} className="typo-sm-r text-destructive">
-            후보 시간은 최대 {SCHEDULE_POLL_OPTION_MAX_COUNT}개까지 만들 수
-            있어요. 날짜나 시간 범위를 줄여주세요. (현재 {optionCount}개)
-          </p>
+        ) : (
+          <SlotPreview
+            dateKeys={dateKeys}
+            slotLabels={slotLabels}
+            optionCount={optionCount}
+            exceeded={optionCountExceeded}
+          />
         )}
       </Field>
 

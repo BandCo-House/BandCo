@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPollOptions, countSlotsPerDay } from './options';
+import { buildPollOptions, buildSlotLabels, countSlotsPerDay } from './options';
 
 describe('countSlotsPerDay', () => {
   it('시작~종료 범위를 30분 칸 수로 계산한다', () => {
@@ -37,5 +37,20 @@ describe('buildPollOptions', () => {
 
   it('시간 범위가 잘못되면 빈 목록을 돌려준다', () => {
     expect(buildPollOptions(['2026-09-22'], '15:00', '14:00')).toEqual([]);
+  });
+});
+
+describe('buildSlotLabels', () => {
+  it('시작~끝 범위를 30분 간격 시작 시각 라벨로 펼친다', () => {
+    expect(buildSlotLabels('14:00', '16:00')).toEqual([
+      '14:00',
+      '14:30',
+      '15:00',
+      '15:30',
+    ]);
+  });
+
+  it('범위가 잘못되면 빈 목록이다', () => {
+    expect(buildSlotLabels('15:00', '14:00')).toEqual([]);
   });
 });
