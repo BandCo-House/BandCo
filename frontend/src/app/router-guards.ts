@@ -11,6 +11,18 @@ type UserGuardPredicate = (user: UserAccess) => boolean;
 const PUBLIC_ONLY_PATHS = new Set(['/login', '/signup', '/forgot-password']);
 
 /**
+ * 로그인/회원가입의 `?redirect=` 값 검증. 내부 경로만 통과시킨다.
+ * '//evil.com'(프로토콜 상대 URL)과 '/\evil.com'(브라우저가 //로 정규화)은
+ * startsWith('/')를 통과하므로 명시적으로 걸러야 오픈 리다이렉트가 막힌다.
+ */
+export const sanitizeRedirectSearch = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  if (!value.startsWith('/')) return undefined;
+  if (value.startsWith('//') || value.startsWith('/\\')) return undefined;
+  return value;
+};
+
+/**
  * 라우터 진입 전 사용자 상태 동기화 지점
  * 현재는 AuthProvider의 값을 그대로 사용하고, 추후 토큰 재검증/권한 동기화 로직을 붙일 수 있다.
  */

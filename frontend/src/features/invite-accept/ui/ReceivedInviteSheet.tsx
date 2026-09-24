@@ -4,7 +4,11 @@ import { resolveInviteId } from '@/entities/notification/lib/resolve-invite-id';
 import { useBandInvitation } from '@/entities/invite/api/useBandInvitation';
 import { useBand } from '@/entities/band/api/useBand';
 import { useReceivedInvite } from '../model/useReceivedInvite';
-import { InviteSheetLayout } from './InviteSheetLayout';
+import {
+  InviteSheetLayout,
+  inviteSheetOutlineButtonClass,
+  inviteSheetPrimaryButtonClass,
+} from './InviteSheetLayout';
 
 interface ReceivedInviteSheetProps {
   isOpen: boolean;
@@ -84,7 +88,7 @@ export function ReceivedInviteSheet({
               type="button"
               disabled={isSubmitting}
               onClick={handleDecline}
-              className="flex h-[50px] w-0 flex-1 cursor-pointer items-center justify-center rounded-[43px] border-[1.5px] border-[#1B1B32] text-center typo-sm-sb text-[#1B1B32] transition-colors hover:bg-black/5 active:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className={inviteSheetOutlineButtonClass}
             >
               거절
             </button>
@@ -93,7 +97,7 @@ export function ReceivedInviteSheet({
               type="button"
               disabled={isSubmitting}
               onClick={handleAccept}
-              className="flex h-[50px] w-0 flex-[3] cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className={inviteSheetPrimaryButtonClass}
             >
               수락하고 참여하기
             </button>

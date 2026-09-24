@@ -44,7 +44,8 @@ export const RootLayout = () => {
         className={cn(
           'mx-auto min-h-0 w-full flex-1',
           !header && 'min-h-screen pt-[env(safe-area-inset-top)]',
-          showBottomNav && 'mb-[calc(4rem_+_env(safe-area-inset-bottom))]',
+          // 4.5rem = BottomNavBar의 h-18. 값이 어긋나면 마지막 콘텐츠가 네비 뒤에 가려진다.
+          showBottomNav && 'mb-[calc(4.5rem_+_env(safe-area-inset-bottom))]',
           header &&
             (header.renderBottom
               ? 'mt-[calc(120px_+_env(safe-area-inset-top))]'

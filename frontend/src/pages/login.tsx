@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/app/providers/auth-context';
 import { loginEmail, loginGoogle } from '@/features/auth/api/auth.service';
 import { LoginForm } from '@/features/auth/ui/LoginForm';
-import { requireGuest } from '@/app/router-guards';
+import { requireGuest, sanitizeRedirectSearch } from '@/app/router-guards';
 import { getApiErrorMessage } from '@/shared/api/error';
 import { reportClientError } from '@/shared/lib/report-client-error';
 import axios from 'axios';
@@ -14,13 +14,10 @@ const GOOGLE_LOGIN_FALLBACK_MESSAGE =
 
 export const Route = createFileRoute('/login')({
   beforeLoad: requireGuest,
-  // 보호 라우트에서 튕겨올 때 원래 목적지를 들고 온다. 내부 경로('/...')만 허용해 오픈 리다이렉트를 막는다.
+  // 보호 라우트에서 튕겨올 때 원래 목적지를 들고 온다. 내부 경로만 허용(오픈 리다이렉트 방지).
   // 반환 타입을 optional로 명시해야 기존 `to: '/login'` 링크들이 search 없이도 컴파일된다.
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
-    redirect:
-      typeof search.redirect === 'string' && search.redirect.startsWith('/')
-        ? search.redirect
-        : undefined,
+    redirect: sanitizeRedirectSearch(search.redirect),
   }),
   component: LoginPage,
 });
@@ -102,6 +99,7 @@ export function LoginPage() {
         onSubmit={handleLogin}
         onGoogleLogin={handleGoogleLogin}
         isLoading={isLoading}
+        redirect={redirect}
       />
     </div>
   );

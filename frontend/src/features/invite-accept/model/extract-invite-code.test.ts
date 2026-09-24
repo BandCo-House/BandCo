@@ -36,6 +36,12 @@ describe('extractInviteCode', () => {
     );
   });
 
+  it('코드 없이 /invite/로 끝나는 잘린 링크는 원문을 돌려준다', () => {
+    expect(extractInviteCode('https://funda.website/invite/')).toBe(
+      'https://funda.website/invite/',
+    );
+  });
+
   it('/invite/가 없는 문자열은 손대지 않는다', () => {
     expect(extractInviteCode('https://funda.website/band/abc')).toBe(
       'https://funda.website/band/abc',

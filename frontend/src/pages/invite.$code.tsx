@@ -6,7 +6,12 @@ import { useAuth } from '@/app/providers/auth-context';
 import { joinBandByInviteCode } from '@/entities/band/api/band-api';
 import { bandKeys } from '@/entities/band/api/useBands';
 import { getApiErrorMessage } from '@/shared/api/error';
-import { InviteSheetLayout } from '@/features/invite-accept/ui/InviteSheetLayout';
+import {
+  InviteSheetLayout,
+  inviteSheetFullButtonClass,
+  inviteSheetOutlineButtonClass,
+  inviteSheetPrimaryButtonClass,
+} from '@/features/invite-accept/ui/InviteSheetLayout';
 
 export const Route = createFileRoute('/invite/$code')({
   component: InviteJoinPage,
@@ -91,7 +96,7 @@ function InviteJoinPage() {
               type="button"
               disabled={isPending}
               onClick={leave}
-              className="flex h-[50px] w-0 flex-1 cursor-pointer items-center justify-center rounded-[43px] border-[1.5px] border-[#1B1B32] text-center typo-sm-sb text-[#1B1B32] transition-colors hover:bg-black/5 active:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className={inviteSheetOutlineButtonClass}
             >
               거절
             </button>
@@ -100,7 +105,7 @@ function InviteJoinPage() {
               type="button"
               disabled={isPending}
               onClick={() => join()}
-              className="flex h-[50px] w-0 flex-[3] cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className={inviteSheetPrimaryButtonClass}
             >
               {isPending ? '가입 중...' : '수락하고 참여하기'}
             </button>
@@ -109,7 +114,7 @@ function InviteJoinPage() {
           <button
             type="button"
             onClick={handleLoginFirst}
-            className="flex h-[50px] w-full cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95"
+            className={inviteSheetFullButtonClass}
           >
             로그인하고 가입하기
           </button>

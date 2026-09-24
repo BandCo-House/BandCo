@@ -9,6 +9,19 @@ import {
 } from '@/shared/ui/sheet';
 import { getKoreanParticle } from '@/shared/lib/korean-particle';
 
+/**
+ * footer에 꽂는 공용 버튼 스타일. 시트가 라이트 톤 고정 디자인이라 시트와 같은 hex를 쓴다.
+ * (다크 테마 토큰과 별개 팔레트 — 시트 전체 리스타일링 때 함께 토큰화한다)
+ */
+export const inviteSheetOutlineButtonClass =
+  'flex h-[50px] w-0 flex-1 cursor-pointer items-center justify-center rounded-[43px] border-[1.5px] border-[#1B1B32] text-center typo-sm-sb text-[#1B1B32] transition-colors hover:bg-black/5 active:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50';
+
+export const inviteSheetPrimaryButtonClass =
+  'flex h-[50px] w-0 flex-[3] cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
+
+export const inviteSheetFullButtonClass =
+  'flex h-[50px] w-full cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
+
 interface InviteSheetLayoutProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,7 +51,7 @@ export function InviteSheetLayout({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[80dvh] w-full max-w-[648px] flex-col rounded-t-[24px] border-t border-[#DFDFE1] bg-gradient-to-b from-[#F9F8F0] to-[#E6E9F0] p-6 shadow-[0_-3px_9px_2px_rgba(0,0,0,0.1)] outline-none"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[80dvh] w-full max-w-[648px] flex-col rounded-t-[24px] border-t border-[#DFDFE1] bg-gradient-to-b from-[#F9F8F0] to-[#E6E9F0] p-6 pb-[calc(1.5rem_+_env(safe-area-inset-bottom))] shadow-[0_-3px_9px_2px_rgba(0,0,0,0.1)] outline-none"
         showCloseButton={false}
       >
         <AppSheetClose
