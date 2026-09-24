@@ -62,7 +62,8 @@ function SearchPage() {
           e.preventDefault();
           handleSearchSubmit(inputValue);
         }}
-        className="sticky top-0 z-30 flex min-h-16 items-center gap-3 px-5 py-2.5 backdrop-blur-md"
+        // 공통 RouteHeader와 같은 프로스트+글로우로 맞춘다(검색은 입력창 때문에 커스텀 헤더).
+        className="sticky top-0 z-30 flex min-h-19 items-center gap-3 bg-gradient-top/65 px-5 py-4 header-glow backdrop-blur-sm"
       >
         <button
           type="button"
@@ -76,7 +77,7 @@ function SearchPage() {
             className="size-6 rotate-180"
           />
         </button>
-        <div className="relative flex h-[42px] flex-1 items-center rounded-full bg-[rgba(220,226,249,0.4)] focus-within:ring-2 focus-within:ring-primary">
+        <div className="relative flex h-11 flex-1 items-center rounded-full bg-surface-1 focus-within:ring-2 focus-within:ring-primary">
           <SearchIcon
             size={16}
             className="pointer-events-none absolute left-[14px] text-grey-200"

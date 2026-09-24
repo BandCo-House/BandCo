@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { getSchedulePoll } from '@/entities/schedule-poll/api';
 import type { HeaderResolveContext } from '@/widgets/page-header';
-import { SpaceTabs } from '@/widgets/space-tabs';
+import { renderSpaceTabs } from './-space-header';
 import { SchedulePollDetail } from '@/widgets/schedule-poll-detail/ui/SchedulePollDetail';
 import { SchedulePollDeleteAction } from '@/widgets/schedule-poll-detail/ui/SchedulePollDeleteAction';
 
@@ -15,18 +15,16 @@ export const Route = createFileRoute(
     fullBleed: true,
     header: {
       title: '일정 투표',
-      titleSize: 'md',
       resolve: ({ loaderData }: HeaderResolveContext) => ({
         title: (loaderData as { name?: string } | undefined)?.name,
       }),
       renderRight: () => <SchedulePollDeleteAction />,
-      bottomBlur: true,
       backTo: '/band/$bandId/space/$spaceId/polls',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
         spaceId: params.spaceId,
       }),
-      renderBottom: () => <SpaceTabs />,
+      renderBottom: renderSpaceTabs,
     },
   },
 });

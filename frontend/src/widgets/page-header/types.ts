@@ -31,6 +31,7 @@ export type HeaderResolveContext = {
  */
 export type HeaderResolveResult = {
   title?: string | (() => ReactNode);
+  /** 기본 18px(typo-lg-sb). 'lg'는 홈·내 밴드 같은 최상위 화면 전용 24px. */
   titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { SpaceTabs } from '@/widgets/space-tabs';
+import { renderSpaceTabs } from './-space-header';
 import { SchedulePollList } from '@/widgets/schedule-poll-list/ui/SchedulePollList';
 
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/polls/')({
@@ -8,14 +8,12 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/polls/')({
     fullBleed: true,
     header: {
       title: '투표 목록',
-      titleSize: 'md',
-      bottomBlur: true,
       backTo: '/band/$bandId/space/$spaceId',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
         spaceId: params.spaceId,
       }),
-      renderBottom: () => <SpaceTabs />,
+      renderBottom: renderSpaceTabs,
     },
   },
 });

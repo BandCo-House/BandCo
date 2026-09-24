@@ -14,7 +14,6 @@ export const Route = createFileRoute('/band/$bandId/settings')({
   staticData: {
     header: {
       title: '밴드 설정',
-      titleSize: 'md',
       backTo: '/band/$bandId',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
