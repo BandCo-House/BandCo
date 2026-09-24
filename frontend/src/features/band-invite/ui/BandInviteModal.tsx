@@ -40,7 +40,12 @@ export function BandInviteModal({
 
   useEffect(() => {
     if (open && availableBands.length > 0) {
-      setSelectedBandId((prev) => prev || availableBands[0].id);
+      // 목록이 갱신돼 기존 선택이 초대 가능 밴드에서 빠지면 첫 항목으로 되돌린다.
+      setSelectedBandId((prev) =>
+        prev && availableBands.some((b) => b.id === prev)
+          ? prev
+          : availableBands[0].id,
+      );
     }
   }, [open, availableBands]);
 

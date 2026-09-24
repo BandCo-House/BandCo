@@ -56,7 +56,8 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
         >
           <div className="flex gap-2 pb-1">
             {bands.map((band) => {
-              const bandCoverUrl = band.coverImgUrl ?? 'default-band.png';
+              // ||: 빈 문자열로 저장된 커버도 기본 이미지로 폴백한다.
+              const bandCoverUrl = band.coverImgUrl || 'default-band.png';
 
               return (
                 <Link

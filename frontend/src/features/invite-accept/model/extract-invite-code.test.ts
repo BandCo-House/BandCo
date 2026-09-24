@@ -24,6 +24,18 @@ describe('extractInviteCode', () => {
     );
   });
 
+  it('쿼리에 다른 /invite/가 섞여 있어도 경로의 코드를 쓴다', () => {
+    expect(
+      extractInviteCode('https://funda.website/invite/REAL?next=/invite/OTHER'),
+    ).toBe('REAL');
+  });
+
+  it('scheme 없는 주소도 코드를 뽑는다', () => {
+    expect(extractInviteCode('funda.website/invite/INV123?utm=x')).toBe(
+      'INV123',
+    );
+  });
+
   it('/invite/가 없는 문자열은 손대지 않는다', () => {
     expect(extractInviteCode('https://funda.website/band/abc')).toBe(
       'https://funda.website/band/abc',

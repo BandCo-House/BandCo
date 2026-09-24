@@ -30,8 +30,10 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
   const [isLoading, setIsLoading] = useState(false);
-  // redirect는 런타임 문자열 경로라 라우터의 정적 경로 타입으로 좁힐 수 없다(NotificationList와 같은 사정).
-  const redirectAfterLogin = () => navigate({ to: (redirect ?? '/') as never });
+  // redirect는 search·hash가 섞인 href 문자열이라 to가 아니라 href로 넘긴다.
+  // to는 경로 패턴 전용이라 '?tab=…' 같은 값이 붙으면 매칭·복원이 깨진다.
+  const redirectAfterLogin = () =>
+    redirect ? navigate({ href: redirect }) : navigate({ to: '/' });
 
   const handleLogin = async (email: string, password: string) => {
     try {
