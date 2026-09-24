@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react';
 import { Outlet, useMatches, useRouterState } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
 import {
@@ -8,7 +9,12 @@ import {
 import { BottomNavBar } from '@/widgets/bottom-nav';
 
 /** 하단 네비게이션을 표시하지 않을 경로 목록 */
-const HIDDEN_NAV_PATHS = ['/login', '/signup', '/onboarding'];
+const HIDDEN_NAV_PATHS = [
+  '/login',
+  '/signup',
+  '/onboarding',
+  '/forgot-password',
+];
 
 // 헤더(fixed)가 safe area만큼 아래로 밀리므로 본문 상단 여백에도 같은 값을 더한다.
 const HEIGHT_MARGIN_CLASSES = {
@@ -25,6 +31,15 @@ export const RootLayout = () => {
   const showBottomNav = !HIDDEN_NAV_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
+
+  // 네비 높이를 CSS 변수로 노출한다. 레이아웃 밖(토스트)이나 페이지 안(프로필)에서
+  // "네비를 뺀 화면 높이"가 필요할 때 4.5rem 상수를 복제하지 않고 이 변수를 쓴다.
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty(
+      '--bottom-nav-clearance',
+      showBottomNav ? 'calc(4.5rem + env(safe-area-inset-bottom))' : '0px',
+    );
+  }, [showBottomNav]);
   const currentParams = (activeMatch?.params ?? {}) as Record<string, string>;
 
   const staticData = activeMatch?.staticData as RouteStaticData | undefined;
@@ -42,15 +57,11 @@ export const RootLayout = () => {
 
       <main
         className={cn(
+          // 높이는 부모(min-h-dvh flex-col)의 flex-1 스트레치가 잡는다. 여기에
+          // min-h-screen(100vh)을 얹으면 모바일 주소창 높이 + 네비 mb만큼 실제
+          // 화면보다 커져 콘텐츠가 없어도 유령 스크롤이 생긴다.
           'mx-auto min-h-0 w-full flex-1',
-          // 100vh(min-h-screen)는 모바일 주소창 높이를 포함해 실제 화면(dvh)보다 커서,
-          // 콘텐츠가 없어도 그만큼 유령 스크롤이 생긴다. 네비가 있으면 아래 mb와
-          // 이중 계상되지 않게 네비 높이만큼 빼고 잡는다.
           !header && 'pt-[env(safe-area-inset-top)]',
-          !header &&
-            (showBottomNav
-              ? 'min-h-[calc(100dvh_-_4.5rem_-_env(safe-area-inset-bottom))]'
-              : 'min-h-dvh'),
           // 4.5rem = BottomNavBar의 h-18. 값이 어긋나면 마지막 콘텐츠가 네비 뒤에 가려진다.
           showBottomNav && 'mb-[calc(4.5rem_+_env(safe-area-inset-bottom))]',
           header &&

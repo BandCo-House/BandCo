@@ -172,7 +172,8 @@ export function SkillEditSection({
         title="플레이 파트"
         items={availableSkills}
         selectedIds={skills.map((s) => s.skillTypeId)}
-        isLoading={skillsQuery.isLoading}
+        // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다
+        isLoading={skillsQuery.isPending}
         isError={skillsQuery.isError}
         onSave={handleSaveSkills}
       />
