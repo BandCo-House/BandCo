@@ -6,6 +6,7 @@ import { formatDotDate } from '@/shared/lib/date';
 import { getApiErrorMessage } from '@/shared/api/error';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
+import { GlassSurface } from '@/shared/ui/glass-surface';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { useSpace } from '@/entities/space/api/useSpace';
 import { useSchedulePoll } from '@/entities/schedule-poll/model/queries';
@@ -115,23 +116,27 @@ export const SchedulePollDetail = ({
                       명단 확인
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto max-w-72 rounded-sm border-0 bg-surface-2 px-5 py-3 backdrop-blur-md">
-                    {voters.length === 0 ? (
-                      <p className="typo-sm-r text-grey-200">
-                        아직 투표한 멤버가 없어요
-                      </p>
-                    ) : (
-                      <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
-                        {voters.map((voter) => (
-                          <li
-                            key={voter.bandMemberId}
-                            className="typo-sm-r text-grey-50"
-                          >
-                            {voter.nickname}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                  {/* 표면은 날짜·시간 휠 카드와 같은 유리(블러 + 림 + 글로우).
+                      PopoverContent는 위치만 잡고 배경·테두리는 GlassSurface에 맡긴다. */}
+                  <PopoverContent className="w-auto max-w-72 border-0 bg-transparent p-0 shadow-none">
+                    <GlassSurface className="rounded-md px-5 py-4">
+                      {voters.length === 0 ? (
+                        <p className="typo-sm-r text-grey-200">
+                          아직 투표한 멤버가 없어요
+                        </p>
+                      ) : (
+                        <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+                          {voters.map((voter) => (
+                            <li
+                              key={voter.bandMemberId}
+                              className="typo-sm-r text-grey-50"
+                            >
+                              {voter.nickname}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </GlassSurface>
                   </PopoverContent>
                 </Popover>
               </div>
