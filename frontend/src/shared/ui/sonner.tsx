@@ -8,6 +8,11 @@ import {
 import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
+// 하단 네비게이션(4rem, RootLayout mb-16과 동일) 위로 토스트를 y축으로 비켜 띄운다.
+// 오프셋 없이는 z만 높아 네비게이션을 덮은 채 그 위에 겹쳐 보인다.
+const BOTTOM_NAV_CLEARANCE =
+  'calc(4rem + env(safe-area-inset-bottom) + 0.75rem)';
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme();
 
@@ -15,6 +20,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps['theme']}
       className="toaster group"
+      offset={{ bottom: BOTTOM_NAV_CLEARANCE }}
+      mobileOffset={{ bottom: BOTTOM_NAV_CLEARANCE }}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,

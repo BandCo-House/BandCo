@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { SpaceTabs } from '@/widgets/space-tabs';
 import { SpaceCalendar } from '@/widgets/space-calendar/ui/SpaceCalendar';
 
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
@@ -16,6 +17,7 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
       }),
+      renderBottom: () => <SpaceTabs />,
     },
   },
 });

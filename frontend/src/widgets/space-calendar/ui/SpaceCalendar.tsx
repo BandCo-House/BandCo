@@ -23,7 +23,8 @@ const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as cons
 const formatCompactDate = (date: Date): string =>
   `${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAY_LABELS[date.getDay()]})`;
 
-const APP_HEADER_PX = 64;
+// 앱바(60~64) + 공간 탭(캘린더·일정 투표·투표 목록) 높이. RootLayout의 renderBottom 여백(mt-[120px])과 맞춘다.
+const APP_HEADER_PX = 120;
 
 /** 합주 공간 메인(단일 일 타임라인). */
 export const SpaceCalendar = () => {

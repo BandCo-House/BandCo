@@ -16,6 +16,8 @@ export interface SchedulePollData {
   schedulePollId: string;
   bandSpaceId: string;
   createdByBandMemberId: string | null;
+  name: string;
+  closesAt: string;
   options: SchedulePollOptionData[];
   myOptionIds: string[];
   createdAt: string;
@@ -36,6 +38,8 @@ export interface SchedulePollListItem {
   schedulePollId: string;
   bandSpaceId: string;
   createdByBandMemberId: string | null;
+  name: string;
+  closesAt: string;
   optionCount: number;
   voterCount: number;
   hasVoted: boolean;

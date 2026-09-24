@@ -11,6 +11,8 @@ import type { DeleteSchedulePollResult, GetSchedulePollsResult, SchedulePollData
 const BAND_SPACE_NOT_FOUND_MESSAGE = '요청한 합주 공간을 찾을 수 없습니다.';
 const SCHEDULE_POLL_NOT_FOUND_MESSAGE = '요청한 일정 투표를 찾을 수 없습니다.';
 const NOT_BAND_SPACE_MEMBER_MESSAGE = '해당 합주 공간의 멤버가 아닙니다.';
+const CLOSES_AT_NOT_FUTURE_MESSAGE = '투표 마감 기한은 현재 시각 이후여야 합니다.';
+const SCHEDULE_POLL_CLOSED_MESSAGE = '마감된 일정 투표에는 투표할 수 없습니다.';
 
 @Injectable()
 export class SchedulePollsService {
@@ -146,6 +148,11 @@ export class SchedulePollsService {
         throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
       }
 
+      // 마감 이후의 선택 변경(철회 포함)을 막아 집계 결과를 확정한다.
+      if (context.closesAt.getTime() <= Date.now()) {
+        throw new BadRequestException(SCHEDULE_POLL_CLOSED_MESSAGE);
+      }
+
       const uniqueOptionIds = new Set(input.schedulePollOptionIds);
 
       if (uniqueOptionIds.size !== input.schedulePollOptionIds.length) {
@@ -221,6 +228,10 @@ export class SchedulePollsService {
   }
 
   private validateSchedulePollOptions(input: CreateSchedulePollInput): void {
+    if (new Date(input.closesAt).getTime() <= Date.now()) {
+      throw new BadRequestException(CLOSES_AT_NOT_FUTURE_MESSAGE);
+    }
+
     const optionKeys = new Set<string>();
 
     for (const option of input.options) {

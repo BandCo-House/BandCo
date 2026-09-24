@@ -72,6 +72,8 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
       data: {
         bandSpaceId,
         createdByBandMemberId,
+        name: input.name,
+        closesAt: new Date(input.closesAt),
         options: {
           create: input.options.map(option => ({
             startAt: new Date(option.startAt),
@@ -99,12 +101,12 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
   async findSchedulePollContextById(
     schedulePollId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{ bandSpaceId: string; createdByBandMemberId: string | null } | null> {
+  ): Promise<{ bandSpaceId: string; createdByBandMemberId: string | null; closesAt: Date } | null> {
     const client = tx ?? this.prisma;
 
     return client.schedulePoll.findFirst({
       where: { id: schedulePollId, bandSpace: { deletedAt: null } },
-      select: { bandSpaceId: true, createdByBandMemberId: true },
+      select: { bandSpaceId: true, createdByBandMemberId: true, closesAt: true },
     });
   }
 
@@ -158,6 +160,8 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
         schedulePollId: row.id,
         bandSpaceId: row.bandSpaceId,
         createdByBandMemberId: row.createdByBandMemberId,
+        name: row.name,
+        closesAt: row.closesAt.toISOString(),
         optionCount: row.options.length,
         voterCount: voterIds.size,
         hasVoted: voterIds.has(currentBandMemberId),
@@ -224,6 +228,8 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
       schedulePollId: row.id,
       bandSpaceId: row.bandSpaceId,
       createdByBandMemberId: row.createdByBandMemberId,
+      name: row.name,
+      closesAt: row.closesAt.toISOString(),
       options,
       myOptionIds,
       createdAt: row.createdAt.toISOString(),
