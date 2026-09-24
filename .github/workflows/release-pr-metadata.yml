@@ -1,0 +1,96 @@
+name: release-pr-metadata
+
+# dev→main 릴리즈 PR의 제목·본문 규칙을 자동화한다.
+# 릴리즈는 머지 버튼(merge commit)으로 한다 — 룰셋이 main은 merge만,
+# dev는 squash만 허용하고, merge_commit_title=PR_TITLE 설정 덕에
+# main 커밋 제목이 "Release: … (#N)"이 된다. 본문(PR_BODY)은 커밋
+# 메시지로도 들어가므로 여기서 채우는 목록이 곧 릴리즈 기록이다.
+# - 본문: main..dev의 first-parent 커밋(= squash된 PR 제목들)을 마커 사이에 채운다.
+#   dev가 갱신되면(synchronize) 목록도 따라 갱신되고, 마커 밖 수동 메모는 보존된다.
+# - 제목: "Release:" 프리픽스가 아니면 실패시킨다.
+#
+# release-guard 잡은 main 룰셋의 필수 체크다: dev가 아닌 브랜치에서 main으로
+# 연 PR, 제목이 잘못된 PR은 머지가 막힌다. 비상시엔 admin이 룰셋 bypass로
+# 뚫을 수 있다.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# synchronize 연타 시 이전 실행을 취소해 본문 PATCH 경합을 막는다
+concurrency:
+  group: release-pr-metadata-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-guard:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      # 실패하면 이후 스텝은 스킵되고 잡 전체가 실패 → 필수 체크라 머지 불가
+      - name: main으로는 dev에서만 PR 허용
+        if: github.event.pull_request.head.ref != 'dev'
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          echo "::error::main으로 가는 PR은 dev에서만 열 수 있습니다 (현재: $HEAD_REF). 급한 수정도 dev를 거쳐 릴리즈해 주세요."
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: 본문에 포함 PR 목록 갱신
+        shell: python
+        run: |
+          import json
+          import os
+          import re
+          import subprocess
+
+          pr = os.environ["PR"]
+          titles = subprocess.check_output(
+              ["git", "log", "--first-parent", "--format=- %s", "origin/main..HEAD"],
+              text=True,
+          ).strip()
+          section = (
+              "<!-- release-prs:start -->\n## 포함된 PR\n\n"
+              + (titles or "- (없음)")
+              + "\n<!-- release-prs:end -->"
+          )
+
+          body = json.loads(
+              subprocess.check_output(
+                  ["gh", "pr", "view", pr, "--json", "body"], text=True
+              )
+          )["body"] or ""
+
+          if "release-prs:start" in body:
+              new = re.sub(
+                  r"<!-- release-prs:start -->.*?<!-- release-prs:end -->",
+                  lambda _: section,
+                  body,
+                  flags=re.S,
+              )
+          else:
+              new = (body.rstrip() + "\n\n" + section).lstrip()
+
+          # 변경 없으면 PATCH하지 않는다 — edited 이벤트 재트리거 루프 방지.
+          if new != body:
+              subprocess.run(["gh", "pr", "edit", pr, "--body", new], check=True)
+
+      - name: 제목 Release 프리픽스 검사
+        if: ${{ !startsWith(github.event.pull_request.title, 'Release:') }}
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "::error::릴리즈 PR 제목은 'Release: '로 시작해야 합니다 (현재: $TITLE)"
+          exit 1
