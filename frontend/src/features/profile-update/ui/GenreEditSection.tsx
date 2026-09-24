@@ -157,7 +157,9 @@ export function GenreEditSection({
         title="선호 장르"
         items={availableGenres}
         selectedIds={favoriteGenres.map((g) => g.genreId)}
-        isLoading={genresQuery.isLoading}
+        // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다
+        isLoading={genresQuery.isPending}
+        isError={genresQuery.isError}
         onSave={handleSaveGenres}
       />
     </section>

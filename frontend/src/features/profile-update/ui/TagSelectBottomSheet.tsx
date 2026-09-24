@@ -23,6 +23,7 @@ export interface TagSelectBottomSheetProps {
   selectedIds: string[];
   onSave?: (selectedIds: string[]) => void | Promise<void>;
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 export function TagSelectBottomSheet({
@@ -33,6 +34,7 @@ export function TagSelectBottomSheet({
   selectedIds,
   onSave,
   isLoading = false,
+  isError = false,
 }: TagSelectBottomSheetProps) {
   // 시트 안에서 고른 임시 선택. null이면 아직 손대지 않은 상태라 selectedIds를 그대로 쓴다.
   const [tempSelectedIds, setTempSelectedIds] = useState<string[] | null>(null);
@@ -85,6 +87,7 @@ export function TagSelectBottomSheet({
             items={items}
             initialSelectedIds={selectedIds}
             isLoading={isLoading}
+            isError={isError}
             onSelectionChange={setTempSelectedIds}
           />
         )}
@@ -97,6 +100,7 @@ interface TagSelectContentProps {
   items: TagItem[];
   initialSelectedIds: string[];
   isLoading: boolean;
+  isError: boolean;
   onSelectionChange: (ids: string[]) => void;
 }
 
@@ -104,6 +108,7 @@ function TagSelectContent({
   items,
   initialSelectedIds,
   isLoading,
+  isError,
   onSelectionChange,
 }: TagSelectContentProps) {
   const [tempSelectedIds, setTempSelectedIds] =
@@ -124,6 +129,17 @@ function TagSelectContent({
       <div className="flex flex-1 items-center justify-center gap-2 py-12 typo-sm-sb text-grey-300">
         <Loader2 className="size-5 animate-spin text-primary" />
         <span>목록을 불러오는 중...</span>
+      </div>
+    );
+  }
+
+  // 실패·빈 목록에서 조용히 빈 시트만 뜨면 버튼이 고장난 것처럼 보인다 — 상태를 말해준다.
+  if (isError || items.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center py-12 text-center typo-sm-r text-grey-300">
+        {isError
+          ? '목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+          : '선택할 수 있는 항목이 아직 없습니다.'}
       </div>
     );
   }

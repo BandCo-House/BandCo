@@ -258,8 +258,9 @@ function ProfileRoutePage() {
 
   const profileName = profile.profile?.nickname || '익명의 아티스트';
 
+  // 네비를 뺀 화면 높이만 최소로 잡는다 — 100dvh로 잡으면 네비 mb만큼 유령 스크롤이 생긴다
   return (
-    <div className="relative -mx-5 -my-8 min-h-screen">
+    <div className="relative -mx-5 -my-8 min-h-[calc(100dvh-var(--bottom-nav-clearance,0px))]">
       {/* Background Neon Blob Decoration */}
 
       <div className="relative z-10">
