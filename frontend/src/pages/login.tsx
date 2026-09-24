@@ -94,7 +94,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full flex-col justify-center">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full flex-col justify-center">
       <LoginForm
         onSubmit={handleLogin}
         onGoogleLogin={handleGoogleLogin}

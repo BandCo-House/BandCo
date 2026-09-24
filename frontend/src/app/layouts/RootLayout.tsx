@@ -43,7 +43,14 @@ export const RootLayout = () => {
       <main
         className={cn(
           'mx-auto min-h-0 w-full flex-1',
-          !header && 'min-h-screen pt-[env(safe-area-inset-top)]',
+          // 100vh(min-h-screen)는 모바일 주소창 높이를 포함해 실제 화면(dvh)보다 커서,
+          // 콘텐츠가 없어도 그만큼 유령 스크롤이 생긴다. 네비가 있으면 아래 mb와
+          // 이중 계상되지 않게 네비 높이만큼 빼고 잡는다.
+          !header && 'pt-[env(safe-area-inset-top)]',
+          !header &&
+            (showBottomNav
+              ? 'min-h-[calc(100dvh_-_4.5rem_-_env(safe-area-inset-bottom))]'
+              : 'min-h-dvh'),
           // 4.5rem = BottomNavBar의 h-18. 값이 어긋나면 마지막 콘텐츠가 네비 뒤에 가려진다.
           showBottomNav && 'mb-[calc(4.5rem_+_env(safe-area-inset-bottom))]',
           header &&

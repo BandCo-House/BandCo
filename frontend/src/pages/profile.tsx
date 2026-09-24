@@ -259,7 +259,7 @@ function ProfileRoutePage() {
   const profileName = profile.profile?.nickname || '익명의 아티스트';
 
   return (
-    <div className="relative -mx-5 -my-8 min-h-screen">
+    <div className="relative -mx-5 -my-8 min-h-dvh">
       {/* Background Neon Blob Decoration */}
 
       <div className="relative z-10">

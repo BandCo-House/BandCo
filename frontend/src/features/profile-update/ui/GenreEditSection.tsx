@@ -158,6 +158,7 @@ export function GenreEditSection({
         items={availableGenres}
         selectedIds={favoriteGenres.map((g) => g.genreId)}
         isLoading={genresQuery.isLoading}
+        isError={genresQuery.isError}
         onSave={handleSaveGenres}
       />
     </section>

@@ -32,6 +32,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       closeButton={false}
+      // 4.5rem = BottomNavBar의 h-18. 토스트가 하단 네비에 가려지지 않게 그 위로 띄운다.
+      offset={{
+        bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 0.75rem)',
+      }}
+      mobileOffset={{
+        bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 0.75rem)',
+      }}
       toastOptions={{
         closeButton: false,
         classNames: {

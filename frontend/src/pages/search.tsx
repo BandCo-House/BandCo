@@ -54,8 +54,9 @@ function SearchPage() {
     setSubmittedQuery('');
   };
 
+  // 하단 네비 여백은 RootLayout의 mb가 이미 확보한다 — 여기서 또 주면 빈 스크롤이 생긴다.
   return (
-    <div className="w-full pb-20" data-testid="search-page">
+    <div className="w-full" data-testid="search-page">
       <form
         onSubmit={(e) => {
           e.preventDefault();

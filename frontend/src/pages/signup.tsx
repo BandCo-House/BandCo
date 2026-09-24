@@ -47,7 +47,7 @@ export function SignupPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full flex-col">
       <SignupForm onSubmit={handleSignup} isLoading={isLoading} />
     </div>
   );

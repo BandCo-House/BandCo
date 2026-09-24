@@ -173,6 +173,7 @@ export function SkillEditSection({
         items={availableSkills}
         selectedIds={skills.map((s) => s.skillTypeId)}
         isLoading={skillsQuery.isLoading}
+        isError={skillsQuery.isError}
         onSave={handleSaveSkills}
       />
     </section>

@@ -75,6 +75,8 @@
   body {
     @apply text-foreground;
 
+    /* 콘텐츠가 화면에 다 들어와도 모바일에서 바운스(rubber-band)로 스크롤되는 것 방지 */
+    overscroll-behavior-y: none;
     background-color: var(--gradient-top);
     background-image: linear-gradient(
       135deg,

@@ -200,7 +200,7 @@ export const LoginForm = ({
       />
 
       <SplitLinkRow
-        className="mt-20 typo-base-sb"
+        className="mt-10 typo-sm-r"
         left={
           <AuthRowLink onClick={() => undefined}>개인정보처리방침</AuthRowLink>
         }
