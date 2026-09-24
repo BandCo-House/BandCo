@@ -81,7 +81,8 @@ export function ProfileCard({
           />
         </div>
       )}
-      <div className="absolute top-0 left-0 z-10 h-full w-full bg-linear-to-b from-[#020119] via-[#020119]/10 via-45% to-[#020119]" />
+      {/* 아래쪽 끝색은 다음 섹션 배경(bg-gradient-top)과 같아야 경계선이 안 보인다 */}
+      <div className="absolute top-0 left-0 z-10 h-full w-full bg-linear-to-b from-gradient-bottom via-gradient-bottom/10 via-45% to-gradient-top" />
 
       <div className="relative z-50 flex min-h-9 w-full items-center justify-between px-5 py-3">
         <h1 className="flex min-h-9 items-center gap-2 typo-lg-b text-grey-50">

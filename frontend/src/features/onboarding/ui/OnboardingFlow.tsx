@@ -90,7 +90,7 @@ export const OnboardingFlow = ({
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl flex-col text-grey-50">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col text-grey-50">
       <div className="mb-14 h-1.5 w-full overflow-hidden rounded-full bg-overlay-24">
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-300"

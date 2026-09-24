@@ -32,6 +32,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       closeButton={false}
+      // 하단 네비에 가려지지 않게 그 위로 띄운다. 변수는 RootLayout이 라우트별로
+      // 세팅하므로 네비 없는 화면(로그인 등)에서는 바닥 기본 위치로 돌아간다.
+      offset={{
+        bottom: 'calc(var(--bottom-nav-clearance, 0px) + 0.75rem)',
+      }}
+      mobileOffset={{
+        bottom: 'calc(var(--bottom-nav-clearance, 0px) + 0.75rem)',
+      }}
       toastOptions={{
         closeButton: false,
         classNames: {
