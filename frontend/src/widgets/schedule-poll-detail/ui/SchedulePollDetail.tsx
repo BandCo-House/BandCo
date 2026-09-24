@@ -110,7 +110,14 @@ export const SchedulePollDetail = ({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="-m-2 flex items-center gap-2 p-2 typo-sm-r text-grey-200 focus-visible:outline-2 focus-visible:outline-primary"
+                      className={cn(
+                        // -m-2 p-2: 아이콘·글자가 작아도 최소 터치 타깃을 확보한다(레이아웃은 -m으로 보정).
+                        '-m-2 flex items-center gap-2 rounded-full p-2 typo-sm-r text-grey-200 transition-colors',
+                        'hover:bg-white/5 hover:text-grey-50 active:bg-white/10',
+                        // 팝오버가 열려 있는 동안 눌린 상태로 남는다(Radix가 트리거에 data-state를 단다).
+                        'data-[state=open]:bg-white/10 data-[state=open]:text-grey-50',
+                        'focus-visible:outline-2 focus-visible:outline-primary',
+                      )}
                     >
                       <MemberIcon aria-hidden="true" className="size-5" />
                       명단 확인
