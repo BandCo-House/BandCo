@@ -14,20 +14,31 @@ const GOOGLE_LOGIN_FALLBACK_MESSAGE =
 
 export const Route = createFileRoute('/login')({
   beforeLoad: requireGuest,
+  // 보호 라우트에서 튕겨올 때 원래 목적지를 들고 온다. 내부 경로('/...')만 허용해 오픈 리다이렉트를 막는다.
+  // 반환 타입을 optional로 명시해야 기존 `to: '/login'` 링크들이 search 없이도 컴파일된다.
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect:
+      typeof search.redirect === 'string' && search.redirect.startsWith('/')
+        ? search.redirect
+        : undefined,
+  }),
   component: LoginPage,
 });
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [isLoading, setIsLoading] = useState(false);
+  // redirect는 런타임 문자열 경로라 라우터의 정적 경로 타입으로 좁힐 수 없다(NotificationList와 같은 사정).
+  const redirectAfterLogin = () => navigate({ to: (redirect ?? '/') as never });
 
   const handleLogin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       const res = await loginEmail(email, password);
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/' });
+      await redirectAfterLogin();
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
         if (
@@ -61,7 +72,7 @@ export function LoginPage() {
       setIsLoading(true);
       const res = await loginGoogle(idToken);
       login(res.accessToken, res.refreshToken);
-      await navigate({ to: '/' });
+      await redirectAfterLogin();
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;

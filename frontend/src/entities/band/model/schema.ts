@@ -15,6 +15,8 @@ export const bandSchema = bandSummarySchema.extend({
   myRole: bandRoleSchema,
   joinedAt: z.string(),
   memberCount: z.number().int().nonnegative().optional(),
+  // 백엔드가 아직 목록 응답에 안 주는 필드라 optional로 받는다. 오면 그대로 쓴다.
+  coverImgUrl: z.string().nullable().optional(),
 });
 
 export const bandGenreSchema = z.object({
@@ -70,6 +72,14 @@ export const bandInviteLinkSchema = z.object({
   bandId: z.string(),
   inviteCode: z.string(),
   expiredAt: z.string(),
+});
+
+/** 초대 코드 가입 결과(`POST /invite-links/:code/join`). 가입한 밴드로 이동할 때 bandId를 쓴다. */
+export const joinBandResultSchema = z.object({
+  bandId: z.string(),
+  userId: z.string(),
+  memberId: z.string(),
+  joinedAt: z.string(),
 });
 
 export const bandListMetaSchema = z.object({

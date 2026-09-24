@@ -26,6 +26,11 @@ export const syncAuthenticatedUser = async (
 export const isPublicGuestPath = (location: ParsedLocation): boolean => {
   const { pathname, search } = location;
 
+  // 초대 링크 랜딩은 로그인 없이 볼 수 있어야 한다. 로그인 유도는 수락 버튼에서 한다.
+  if (pathname.startsWith('/invite/')) {
+    return true;
+  }
+
   // 프로필 페이지이면서 검색 파라미터에 userId가 존재하는 경우 (방문자 모드) 예외 허용
   const searchObj = (search ?? {}) as Record<string, unknown>;
   if (
@@ -49,7 +54,14 @@ export const enforceProtectedRoute = ({
   location: ParsedLocation;
 }) => {
   if (!context.user.isLoggedIn && !isPublicGuestPath(location)) {
-    throw redirect({ to: '/login' });
+    // 원래 가려던 경로를 들고 가서 로그인 후 되돌아온다.
+    // 초대 링크(/invite/{code})처럼 비로그인 상태로 진입하는 딥링크가 살아남는 핵심.
+    throw redirect({
+      to: '/login',
+      search: {
+        redirect: location.pathname === '/' ? undefined : location.href,
+      },
+    });
   }
 };
 
