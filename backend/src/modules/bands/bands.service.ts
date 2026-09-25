@@ -173,6 +173,7 @@ export class BandsService {
       await this.createBandNotification(
         {
           userId: input.inviteeUserId,
+          type: NotificationType.INVITE,
           title: '밴드 초대가 도착했습니다.',
           description: '새 밴드 초대가 도착했습니다.',
           targetPath: `/invitations/received?invitationId=${result.invitationId}`,
@@ -257,9 +258,9 @@ export class BandsService {
       await this.createBandNotifications(
         targetUserIds.map(managerUserId => ({
           userId: managerUserId,
+          type: NotificationType.NOTICE,
           title: '밴드 가입 요청이 도착했습니다.',
           description: '새 밴드 가입 요청이 도착했습니다.',
-          targetPath: `/bands/${bandId}/join-requests`,
         })),
         client,
       );
@@ -423,9 +424,10 @@ export class BandsService {
       await this.createBandNotification(
         {
           userId: joinRequest.userId,
+          type: NotificationType.NOTICE,
           title: '밴드 가입 요청이 승인되었습니다.',
           description: '보낸 밴드 가입 요청이 승인되었습니다.',
-          targetPath: `/bands/${joinRequest.bandId}`,
+          targetPath: `/band/${joinRequest.bandId}`,
         },
         client,
       );
@@ -467,9 +469,9 @@ export class BandsService {
       await this.createBandNotification(
         {
           userId: joinRequest.userId,
+          type: NotificationType.NOTICE,
           title: '밴드 가입 요청이 거절되었습니다.',
           description: '보낸 밴드 가입 요청이 거절되었습니다.',
-          targetPath: '/join-requests/sent',
         },
         client,
       );
@@ -519,9 +521,10 @@ export class BandsService {
       await this.createBandNotification(
         {
           userId: invitation.inviterUserId,
+          type: NotificationType.NOTICE,
           title: '밴드 초대를 수락했습니다.',
           description: '보낸 밴드 초대가 수락되었습니다.',
-          targetPath: `/bands/${invitation.bandId}/members`,
+          targetPath: `/band/${invitation.bandId}`,
         },
         client,
       );
@@ -565,9 +568,9 @@ export class BandsService {
       await this.createBandNotification(
         {
           userId: invitation.inviterUserId,
+          type: NotificationType.NOTICE,
           title: '밴드 초대를 거절했습니다.',
           description: '보낸 밴드 초대가 거절되었습니다.',
-          targetPath: '/invitations/sent',
         },
         client,
       );
@@ -894,12 +897,22 @@ export class BandsService {
     }
   }
 
+  /**
+   * 밴드 이벤트 알림을 한 건 만든다.
+   *
+   * type은 호출부가 정한다 — 프론트는 INVITE를 "수락/거절할 초대장"으로 다뤄
+   * 초대장 탭에 수락 버튼을 띄우므로, 실제 초대장이 아닌 통지에 INVITE를 쓰면
+   * 수락 시 "유효하지 않은 초대 ID" 에러가 난다(#212 B-1).
+   * targetPath는 대응하는 프론트 라우트가 없으면 넘기지 않는다 — 넘기면 알림을
+   * 눌렀을 때 not-found로 떨어진다.
+   */
   private async createBandNotification(
     input: {
       userId: string;
+      type: NotificationType;
       title: string;
       description: string;
-      targetPath: string;
+      targetPath?: string;
       referenceType?: NotificationReferenceType;
       referenceId?: string;
     },
@@ -912,7 +925,7 @@ export class BandsService {
     await this.notificationsService.createNotification(
       {
         userId: input.userId,
-        type: NotificationType.INVITE,
+        type: input.type,
         title: input.title,
         description: input.description,
         targetPath: input.targetPath,
@@ -923,12 +936,14 @@ export class BandsService {
     );
   }
 
+  /** 밴드 이벤트 알림을 여러 건 만든다. type·targetPath 규칙은 createBandNotification과 같다. */
   private async createBandNotifications(
     inputs: Array<{
       userId: string;
+      type: NotificationType;
       title: string;
       description: string;
-      targetPath: string;
+      targetPath?: string;
     }>,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
@@ -939,7 +954,7 @@ export class BandsService {
     await this.notificationsService.createManyNotifications(
       inputs.map(input => ({
         userId: input.userId,
-        type: NotificationType.INVITE,
+        type: input.type,
         title: input.title,
         description: input.description,
         targetPath: input.targetPath,

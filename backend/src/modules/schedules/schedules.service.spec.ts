@@ -152,7 +152,7 @@ function createRepositoryStub(overrides?: Partial<SchedulesRepository>): Schedul
       return scheduleId === SCHEDULE_ID ? scheduleDetailResult : undefined;
     },
     async findBandSpaceById(bandSpaceId) {
-      return bandSpaceId === BAND_SPACE_ID ? { id: BAND_SPACE_ID } : null;
+      return bandSpaceId === BAND_SPACE_ID ? { id: BAND_SPACE_ID, bandId: BAND_ID } : null;
     },
     async findBandById(bandId) {
       return bandId === BAND_ID ? { id: BAND_ID } : null;
@@ -399,7 +399,7 @@ describe('SchedulesService', () => {
       const stub = createRepositoryStub({
         async findBandSpaceById(_id, tx) {
           capturedTransactions.push(tx);
-          return { id: BAND_SPACE_ID };
+          return { id: BAND_SPACE_ID, bandId: BAND_ID };
         },
         async findBandMemberByBandSpaceIdAndUserId(_spaceId, _userId, tx) {
           capturedTransactions.push(tx);

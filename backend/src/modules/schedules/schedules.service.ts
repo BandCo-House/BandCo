@@ -75,7 +75,7 @@ export class SchedulesService {
     input: CreateScheduleInput,
     tx?: Prisma.TransactionClient,
   ): Promise<CreateScheduleResult> {
-    const run = async (client: Prisma.TransactionClient): Promise<CreateScheduleResult> => {
+    const run = async (client: Prisma.TransactionClient): Promise<{ bandId: string; schedule: CreateScheduleResult }> => {
       const space = await this.schedulesRepository.findBandSpaceById(bandSpaceId, client);
       if (!space) throw new NotFoundException('요청한 합주 공간을 찾을 수 없습니다.');
 
@@ -94,10 +94,17 @@ export class SchedulesService {
       const participants = this.normalizeParticipants(input.participants);
       await this.validateParticipantSessions(participants, input.scheduleType, client);
 
-      return this.schedulesRepository.createSchedule(bandSpaceId, bandMember.id, { ...input, participants: participants ?? [] }, client);
+      const schedule = await this.schedulesRepository.createSchedule(
+        bandSpaceId,
+        bandMember.id,
+        { ...input, participants: participants ?? [] },
+        client,
+      );
+
+      return { bandId: space.bandId, schedule };
     };
 
-    const result = await (tx ? run(tx) : this.prisma.$transaction(run));
+    const { bandId, schedule: result } = await (tx ? run(tx) : this.prisma.$transaction(run));
 
     try {
       const memberUserIds = await this.schedulesRepository.findSpaceMemberUserIds(bandSpaceId);
@@ -108,7 +115,8 @@ export class SchedulesService {
             type: NotificationType.NOTICE,
             title: '새 합주 일정이 생성되었습니다',
             description: result.title,
-            targetPath: `/schedules/${result.scheduleId}`,
+            // 일정 상세 라우트가 없어 해당 일정이 보이는 공간 캘린더로 보낸다(#212 B-1).
+            targetPath: `/band/${bandId}/space/${bandSpaceId}`,
           })),
         );
       }

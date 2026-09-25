@@ -848,7 +848,7 @@ async function upsertNotifications(): Promise<void> {
       type: 'INVITE',
       title: '밴드 초대가 도착했습니다.',
       description: '이서연님이 합주하자 밴드로 초대했습니다.',
-      targetPath: `/invites/${seedIds.notifications.invite}`,
+      targetPath: `/invitations/received?invitationId=${seedIds.notifications.invite}`,
       isRead: false,
     },
     create: {
@@ -857,7 +857,7 @@ async function upsertNotifications(): Promise<void> {
       type: 'INVITE',
       title: '밴드 초대가 도착했습니다.',
       description: '이서연님이 합주하자 밴드로 초대했습니다.',
-      targetPath: `/invites/${seedIds.notifications.invite}`,
+      targetPath: `/invitations/received?invitationId=${seedIds.notifications.invite}`,
       isRead: false,
     },
   });
@@ -869,7 +869,7 @@ async function upsertNotifications(): Promise<void> {
       type: 'NOTICE',
       title: '밴드 공지가 등록되었습니다.',
       description: '정기 공연 공지 내용을 확인해주세요.',
-      targetPath: `/bands/${seedIds.band}/notices/${seedIds.notifications.notice}`,
+      targetPath: `/band/${seedIds.band}/notices/${seedIds.notifications.notice}`,
       isRead: true,
     },
     create: {
@@ -878,7 +878,7 @@ async function upsertNotifications(): Promise<void> {
       type: 'NOTICE',
       title: '밴드 공지가 등록되었습니다.',
       description: '정기 공연 공지 내용을 확인해주세요.',
-      targetPath: `/bands/${seedIds.band}/notices/${seedIds.notifications.notice}`,
+      targetPath: `/band/${seedIds.band}/notices/${seedIds.notifications.notice}`,
       isRead: true,
     },
   });
@@ -890,7 +890,7 @@ async function upsertNotifications(): Promise<void> {
       type: 'REMINDER',
       title: '오늘 합주 일정이 있습니다.',
       description: '오후 7시 연습실 합주 일정을 확인해주세요.',
-      targetPath: `/spaces/${seedIds.spaces.acousticSession}/schedules/${seedIds.schedules.acousticPractice}`,
+      targetPath: `/band/${seedIds.band}/space/${seedIds.spaces.acousticSession}`,
       isRead: false,
       remindsAt: new Date('2026-03-05T09:00:00.000Z'),
     },
@@ -900,7 +900,7 @@ async function upsertNotifications(): Promise<void> {
       type: 'REMINDER',
       title: '오늘 합주 일정이 있습니다.',
       description: '오후 7시 연습실 합주 일정을 확인해주세요.',
-      targetPath: `/spaces/${seedIds.spaces.acousticSession}/schedules/${seedIds.schedules.acousticPractice}`,
+      targetPath: `/band/${seedIds.band}/space/${seedIds.spaces.acousticSession}`,
       isRead: false,
       remindsAt: new Date('2026-03-05T09:00:00.000Z'),
     },
