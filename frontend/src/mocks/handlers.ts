@@ -8,6 +8,7 @@ import { notificationHandlers } from './notification/handlers';
 import { placeHandlers } from './place/handlers';
 import { profileHandlers } from './profile/handlers';
 import { scheduleHandlers } from './schedule/handlers';
+import { schedulePollHandlers } from './schedule-poll/handlers';
 import { songHandlers } from './song/handlers';
 import { spaceHandlers } from './space/handlers';
 import { storageHandlers } from './storage/handlers';
@@ -26,6 +27,7 @@ export const handlers = [
   ...placeHandlers,
   ...profileHandlers,
   ...scheduleHandlers,
+  ...schedulePollHandlers,
   ...songHandlers,
   ...spaceHandlers,
   ...storageHandlers,

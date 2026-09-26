@@ -15,7 +15,13 @@ const OPTION_ID_1 = '55555555-5555-4555-8555-555555555555';
 const OPTION_ID_2 = '66666666-6666-4666-8666-666666666666';
 const OTHER_MEMBER_ID = '77777777-7777-4777-8777-777777777777';
 
+// 마감 검증이 현재 시각 기준이라 고정 날짜를 쓰면 시간이 지나며 테스트가 썩는다. 실행 시점 기준으로 계산한다.
+const FUTURE_CLOSES_AT = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+const PAST_CLOSES_AT = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
 const DEFAULT_INPUT: CreateSchedulePollInput = {
+  name: '좋은 날 오프닝 연습',
+  closesAt: FUTURE_CLOSES_AT,
   options: [
     { startAt: '2026-09-13T12:00:00.000Z', endAt: '2026-09-13T14:00:00.000Z' },
     { startAt: '2026-09-14T12:00:00.000Z', endAt: '2026-09-14T14:00:00.000Z' },
@@ -26,6 +32,8 @@ const DEFAULT_POLL: SchedulePollData = {
   schedulePollId: SCHEDULE_POLL_ID,
   bandSpaceId: BAND_SPACE_ID,
   createdByBandMemberId: BAND_MEMBER_ID,
+  name: '좋은 날 오프닝 연습',
+  closesAt: FUTURE_CLOSES_AT,
   options: [
     {
       schedulePollOptionId: OPTION_ID_1,
@@ -52,6 +60,9 @@ const DEFAULT_POLL_LIST_ITEM: SchedulePollListItem = {
   schedulePollId: SCHEDULE_POLL_ID,
   bandSpaceId: BAND_SPACE_ID,
   createdByBandMemberId: BAND_MEMBER_ID,
+  name: '좋은 날 오프닝 연습',
+  closesAt: FUTURE_CLOSES_AT,
+  optionStartAts: ['2026-09-13T12:00:00.000Z', '2026-09-14T12:00:00.000Z'],
   optionCount: 2,
   voterCount: 2,
   hasVoted: true,
@@ -80,7 +91,7 @@ function createPrismaServiceFailingTransactionStub(): PrismaService {
 function createSchedulePollsRepositoryStub(options?: {
   bandSpace?: { id: string } | null;
   member?: { id: string; role: BandMemberRole } | null;
-  context?: { bandSpaceId: string; createdByBandMemberId: string | null } | null;
+  context?: { bandSpaceId: string; createdByBandMemberId: string | null; closesAt: Date } | null;
   poll?: SchedulePollData | null;
   matchingOptionCount?: number;
   onCall?: (method: string, tx: unknown) => void;
@@ -105,7 +116,9 @@ function createSchedulePollsRepositoryStub(options?: {
     },
     async findSchedulePollContextById(_schedulePollId, tx) {
       options?.onCall?.('findSchedulePollContextById', tx);
-      return options?.context !== undefined ? options.context : { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: BAND_MEMBER_ID };
+      return options?.context !== undefined
+        ? options.context
+        : { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: BAND_MEMBER_ID, closesAt: new Date(FUTURE_CLOSES_AT) };
     },
     async findSchedulePollById(_schedulePollId, _currentBandMemberId, tx) {
       options?.onCall?.('findSchedulePollById', tx);
@@ -138,9 +151,18 @@ describe('SchedulePollsService', () => {
       const result = await service.createSchedulePoll(USER_ID, BAND_SPACE_ID, DEFAULT_INPUT);
 
       expect(result.schedulePollId).toBe(SCHEDULE_POLL_ID);
+      expect(result.name).toBe('좋은 날 오프닝 연습');
+      expect(result.closesAt).toBe(FUTURE_CLOSES_AT);
       expect(result.voterCount).toBe(2);
       expect(result.options[0].isRecommended).toBe(true);
       expect(result.options[1].isRecommended).toBe(false);
+    });
+
+    it('마감 기한이 현재 시각 이후가 아니면 BadRequestException을 던진다', async () => {
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceStub());
+      const input = { ...DEFAULT_INPUT, closesAt: PAST_CLOSES_AT };
+
+      await expect(service.createSchedulePoll(USER_ID, BAND_SPACE_ID, input)).rejects.toThrow(BadRequestException);
     });
 
     it('합주 공간이 없으면 NotFoundException을 던진다', async () => {
@@ -157,14 +179,14 @@ describe('SchedulePollsService', () => {
 
     it('후보 종료 시간이 시작 시간보다 늦지 않으면 BadRequestException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceStub());
-      const input = { options: [{ startAt: '2026-09-13T14:00:00.000Z', endAt: '2026-09-13T12:00:00.000Z' }] };
+      const input = { ...DEFAULT_INPUT, options: [{ startAt: '2026-09-13T14:00:00.000Z', endAt: '2026-09-13T12:00:00.000Z' }] };
 
       await expect(service.createSchedulePoll(USER_ID, BAND_SPACE_ID, input)).rejects.toThrow(BadRequestException);
     });
 
     it('같은 후보 시간이 중복되면 BadRequestException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceStub());
-      const input = { options: [DEFAULT_INPUT.options[0], DEFAULT_INPUT.options[0]] };
+      const input = { ...DEFAULT_INPUT, options: [DEFAULT_INPUT.options[0], DEFAULT_INPUT.options[0]] };
 
       await expect(service.createSchedulePoll(USER_ID, BAND_SPACE_ID, input)).rejects.toThrow(BadRequestException);
     });
@@ -294,6 +316,42 @@ describe('SchedulePollsService', () => {
       );
     });
 
+    it('마감된 일정 투표에 투표하면 BadRequestException을 던진다', async () => {
+      const repository = createSchedulePollsRepositoryStub({
+        context: { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: BAND_MEMBER_ID, closesAt: new Date(PAST_CLOSES_AT) },
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+
+      await expect(service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('잠금 대기 중 마감을 넘기면 투표를 반영하지 않고 BadRequestException을 던진다', async () => {
+      // 1차 마감 검사는 통과했지만 lockBandMemberForVote 대기 중에 마감을 넘긴 상황을 재현한다.
+      const closesAt = new Date('2026-10-05T10:00:00.000Z');
+      let lockAcquired = false;
+      let votesReplaced = false;
+      const repository = createSchedulePollsRepositoryStub({
+        context: { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: BAND_MEMBER_ID, closesAt },
+        onCall: method => {
+          if (method === 'lockBandMemberForVote') lockAcquired = true;
+          if (method === 'replaceSchedulePollVotes') votesReplaced = true;
+        },
+      });
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+      const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => (lockAcquired ? closesAt.getTime() + 1_000 : closesAt.getTime() - 60_000));
+
+      try {
+        await expect(service.updateMySchedulePollVote(USER_ID, SCHEDULE_POLL_ID, { schedulePollOptionIds: [OPTION_ID_1] })).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(votesReplaced).toBe(false);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
     it('합주 공간이 속한 밴드의 멤버가 아니면 ForbiddenException을 던진다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ member: null }), createPrismaServiceStub());
 
@@ -409,7 +467,7 @@ describe('SchedulePollsService', () => {
     it('생성자가 밴드를 떠난 투표도 밴드 리더가 요청하면 삭제된다', async () => {
       let deletedPollId: string | null = null;
       const repository = createSchedulePollsRepositoryStub({
-        context: { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: null },
+        context: { bandSpaceId: BAND_SPACE_ID, createdByBandMemberId: null, closesAt: new Date(FUTURE_CLOSES_AT) },
         member: { id: OTHER_MEMBER_ID, role: BandMemberRole.BM },
         onDelete: schedulePollId => {
           deletedPollId = schedulePollId;

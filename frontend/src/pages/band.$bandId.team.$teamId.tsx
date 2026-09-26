@@ -43,7 +43,7 @@ export const Route = createFileRoute('/band/$bandId/team/$teamId')({
 /** 최상단 공통 RouteHeader에 동적으로 반영되는 옵저버 타이틀 렌더러 */
 function HeaderTitle() {
   const { isEditing } = useTeamHeaderState();
-  // 다른 밴드 하위 페이지(titleSize: 'md')와 같은 크기 — RouteHeader의 md 매핑과 맞춘다
+  // 다른 하위 페이지 기본 크기(typo-lg-sb)와 같게 — RouteHeader 기본 매핑과 맞춘다
   return (
     <h1 className="min-w-0 truncate typo-lg-sb text-grey-50">
       {isEditing ? '팀원 수정' : '팀 상세'}
