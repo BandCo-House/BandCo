@@ -9,6 +9,30 @@
 > - 컨트롤러 전체에 `AccessTokenGuard`가 적용되어 있어 모든 엔드포인트는 인증이 필요하다.
 > - `NotificationType` enum 값(`prisma/schema.prisma` 기준): `INVITE`, `NOTICE`, `REMINDER`.
 
+## type·targetPath 규칙
+
+`type`은 프론트 알림 탭을 가르고, `INVITE`는 프론트에서 **수락/거절할 초대장**으로 다뤄져
+카드에 수락 버튼이 붙는다. 그래서 실제 초대장이 아닌 통지에 `INVITE`를 쓰면 안 된다.
+`targetPath`는 프론트 라우트여야 하며, 대응하는 화면이 없으면 **넣지 않는다**(넣으면 not-found).
+
+| 이벤트 | 생성 위치 | type | targetPath |
+|--------|-----------|------|------------|
+| 밴드 초대 수신 | `bands.service.ts` `createBandInvitation` | `INVITE` | `/invitations/received?invitationId={invitationId}` |
+| 밴드 가입 요청 수신 | `createBandJoinRequest` | `NOTICE` | 없음 — 가입 요청 관리 화면 미구현 |
+| 가입 요청 승인 | `approveBandJoinRequest` | `NOTICE` | `/band/{bandId}` |
+| 가입 요청 거절 | `rejectBandJoinRequest` | `NOTICE` | 없음 — 보낸 가입 요청 화면 미구현 |
+| 초대 수락 통지 | `acceptBandInvitation` | `NOTICE` | `/band/{bandId}` |
+| 초대 거절 통지 | `declineBandInvitation` | `NOTICE` | 없음 — 보낸 초대 화면 미구현 |
+| 합주 공간 생성·멤버 추가·역할 변경 | `bandspaces.service.ts` | `NOTICE` | `/band/{bandId}/space/{spaceId}` |
+| 합주 공간 멤버 제거 | `removeBandSpaceMember` | `NOTICE` | 없음 |
+| 합주 일정 생성 | `schedules.service.ts` `createSchedule` | `NOTICE` | `/band/{bandId}/space/{bandSpaceId}` — 일정 상세 라우트 미구현 |
+| 합주 일정 삭제 | `deleteSchedule` | `NOTICE` | 없음 |
+
+> 초대 수신 알림의 `targetPath`는 프론트가 `invitationId`를 파싱하는 경로다(`resolveInviteId`).
+> `INVITE`는 카드에서 수락/거절을 처리하고 화면 이동을 하지 않으므로 라우트가 아니어도 된다.
+
+---
+
 ## API 목록
 
 | 번호 | 메서드 | 경로 | 설명 |
@@ -88,7 +112,7 @@
         "title": "밴드 초대가 도착했습니다.",
         "description": "김민준님이 합주하자 밴드에 초대했습니다.",
         "isRead": false,
-        "targetPath": "/bands/uuid",
+        "targetPath": "/invitations/received?invitationId=uuid",
         "createdAt": "2026-07-05T00:00:00.000Z"
       }
     ],
@@ -133,7 +157,7 @@
     "title": "밴드 초대가 도착했습니다.",
     "description": "김민준님이 합주하자 밴드에 초대했습니다.",
     "isRead": true,
-    "targetPath": "/bands/uuid",
+    "targetPath": "/invitations/received?invitationId=uuid",
     "createdAt": "2026-07-05T00:00:00.000Z"
   }
 }

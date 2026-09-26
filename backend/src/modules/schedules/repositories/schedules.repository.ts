@@ -53,8 +53,8 @@ export interface SchedulesRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<GetSpaceSchedulesResult>;
 
-  /** 밴드 공간 존재 여부를 확인한다 (deletedAt: null 조건 포함). */
-  findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
+  /** 밴드 공간 존재 여부를 확인한다 (deletedAt: null 조건 포함). bandId는 알림 targetPath에 쓴다. */
+  findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string; bandId: string } | null>;
 
   /** 합주 공간 멤버의 userId 목록을 반환한다. 알림 수신자 조회에 사용한다. */
   findSpaceMemberUserIds(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<string[]>;

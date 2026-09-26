@@ -169,9 +169,9 @@ class UpdateSpaceMemberRoleBodyDto {
 
 | 이벤트         | 트리거 메서드        | 수신자                | 제목                                  | targetPath        |
 | -------------- | -------------------- | --------------------- | ------------------------------------- | ----------------- |
-| 합주 공간 생성 | createBandSpace      | 밴드 멤버 전원        | `새 합주 공간이 생성되었습니다`       | `/bandspaces/:id` |
-| 멤버 추가      | addSpaceMember       | 추가된 멤버 본인      | `합주 공간에 추가되었습니다`          | `/bandspaces/:id` |
-| 멤버 역할 변경 | updateSpaceMemberRole| 역할 변경된 멤버 본인 | `합주 공간에서 역할이 변경되었습니다` | `/bandspaces/:id` |
+| 합주 공간 생성 | createBandSpace      | 밴드 멤버 전원        | `새 합주 공간이 생성되었습니다`       | `/band/:bandId/space/:spaceId` |
+| 멤버 추가      | addSpaceMember       | 추가된 멤버 본인      | `합주 공간에 추가되었습니다`          | `/band/:bandId/space/:spaceId` |
+| 멤버 역할 변경 | updateSpaceMemberRole| 역할 변경된 멤버 본인 | `합주 공간에서 역할이 변경되었습니다` | `/band/:bandId/space/:spaceId` |
 | 멤버 제거      | removeSpaceMember    | 제거된 멤버 본인      | `합주 공간에서 제거되었습니다`        | null              |
 
 > 알림은 주요 DB 작업 완료 후 독립 전송. 알림 실패가 주요 작업에 영향 없음.
