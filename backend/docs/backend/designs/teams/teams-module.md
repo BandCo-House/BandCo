@@ -7,6 +7,8 @@
 
 ## API 명세 보완 내역
 
+> ⚠️ 변환 노트: [설계자 보완 2026-09-27] 아래 Service 규칙의 "팀 리더만" 권한 검증(`assertTeamLeader`)은 `assertTeamManager`로 바뀌어 **팀 리더 또는 밴드장(BM)**을 통과시킨다(#212 C-1). 리더가 비어 있어도 밴드장은 통과한다. 밴드 나가기·강퇴 시 리더인 팀은 `BandsRepository.handOverLedTeamsToBandMaster`로 밴드장에게 넘긴다. 이 문서의 나머지 서술은 당시 설계 기준이다.
+>
 > ⚠️ 변환 노트: [설계자 보완 2026-06-28] #53 응답 필드 보완 — `teamLeaderUserId` 단일 필드 대신 teams.md에 없던 `teamLeaderBandMemberId`를 schema 기반으로 추가하고, 생성 응답에서는 리더 object 대신 단순 ID 반환으로 확정.
 
 **상세:**

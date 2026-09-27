@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { CreateTeamInput } from '../dto/create-team.dto';
 import type { GetBandTeamsQuery } from '../dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from '../dto/get-my-teams-query.dto';
@@ -28,13 +28,14 @@ export interface TeamsRepository {
   /** 삭제되지 않은 밴드 존재 여부 확인 */
   findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
 
-  /** 밴드 멤버 존재 여부 확인 */
+  /** 밴드 멤버 존재 여부 확인. role은 팀 관리 권한(리더 또는 밴드장) 판정에 쓴다. */
   findBandMemberByBandIdAndUserId(
     bandId: string,
     userId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{
     id: string;
+    role: BandMemberRole;
   } | null>;
 
   /** 밴드 멤버 단건 조회 (팀 멤버 추가 시 밴드 멤버 검증) */

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
-import { Prisma } from 'src/generated/prisma';
+import { BandMemberRole, Prisma } from 'src/generated/prisma';
 
 import type { GetBandTeamsQuery } from './dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from './dto/get-my-teams-query.dto';
@@ -28,7 +28,7 @@ const UNKNOWN_SKILL_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const OTHER_BAND_MEMBER_ID = '66666666-6666-4666-8666-666666666666';
 const OTHER_TEAM_MEMBER_ID = '77777777-7777-4777-8777-777777777777';
 
-const DEFAULT_BAND_MEMBER = { id: BAND_MEMBER_ID };
+const DEFAULT_BAND_MEMBER = { id: BAND_MEMBER_ID, role: BandMemberRole.MEMBER };
 const DEFAULT_BAND_MEMBER_RECORD = { id: BAND_MEMBER_ID, bandId: BAND_ID };
 
 const DEFAULT_TEAM_FOR_UPDATE = {
@@ -143,7 +143,7 @@ const DEFAULT_BAND = { id: BAND_ID };
 
 function createTeamsRepositoryStub(options?: {
   band?: { id: string } | null;
-  bandMemberByBandAndUser?: { id: string } | null;
+  bandMemberByBandAndUser?: { id: string; role: BandMemberRole } | null;
   bandMemberById?: { id: string; bandId: string } | null;
   teamForUpdate?: { id: string; bandId: string; teamLeaderBandMemberId: string | null } | null;
   teamById?: GetTeamResult | null;
@@ -413,7 +413,51 @@ describe('TeamsService', () => {
     });
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
-      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id' } }), createPrismaServiceStub());
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.MEMBER } }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeam(USER_ID, TEAM_ID, { name: '새 이름' })).rejects.toThrow(ForbiddenException);
+    });
+
+    // 리더가 밴드를 떠나 teamLeaderBandMemberId가 비면 예전엔 누구도 403을 넘지 못했다(#212 C-1).
+    // 밴드장은 리더 유무와 무관하게 통과하고, 일반 멤버는 리더가 없어도 여전히 막힌다.
+    it('밴드장은 팀 리더가 아니어도 팀 정보를 수정할 수 있다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.BM } }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeam(USER_ID, TEAM_ID, { name: '새 이름' })).resolves.toEqual(DEFAULT_UPDATE_RESULT);
+    });
+
+    it('리더가 없는 팀도 밴드장은 수정할 수 있다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamForUpdate: { ...DEFAULT_TEAM_FOR_UPDATE, teamLeaderBandMemberId: null },
+          bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.BM },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeam(USER_ID, TEAM_ID, { name: '새 이름' })).resolves.toEqual(DEFAULT_UPDATE_RESULT);
+    });
+
+    it('리더가 없는 팀을 일반 멤버가 수정하면 ForbiddenException을 던진다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamForUpdate: { ...DEFAULT_TEAM_FOR_UPDATE, teamLeaderBandMemberId: null },
+          bandMemberByBandAndUser: { id: BAND_MEMBER_ID, role: BandMemberRole.ADMIN },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.updateTeam(USER_ID, TEAM_ID, { name: '새 이름' })).rejects.toThrow(ForbiddenException);
+    });
+
+    it('밴드 멤버가 아니면 ForbiddenException을 던진다', async () => {
+      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberByBandAndUser: null }), createPrismaServiceStub());
 
       await expect(service.updateTeam(USER_ID, TEAM_ID, { name: '새 이름' })).rejects.toThrow(ForbiddenException);
     });
@@ -515,9 +559,30 @@ describe('TeamsService', () => {
     });
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
-      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id' } }), createPrismaServiceStub());
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.MEMBER } }),
+        createPrismaServiceStub(),
+      );
 
       await expect(service.changeTeamLeader(USER_ID, TEAM_ID, { teamMemberId: OTHER_TEAM_MEMBER_ID })).rejects.toThrow(ForbiddenException);
+    });
+
+    it('밴드장은 리더가 없는 팀에도 새 리더를 지정할 수 있다', async () => {
+      let capturedTeamMemberId: string | undefined;
+      const service = new TeamsService(
+        createTeamsRepositoryStub({
+          teamForUpdate: { ...DEFAULT_TEAM_FOR_UPDATE, teamLeaderBandMemberId: null },
+          bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.BM },
+          onChangeTeamLeader: (_teamId, newLeaderTeamMemberId) => {
+            capturedTeamMemberId = newLeaderTeamMemberId;
+          },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await service.changeTeamLeader(USER_ID, TEAM_ID, { teamMemberId: OTHER_TEAM_MEMBER_ID });
+
+      expect(capturedTeamMemberId).toBe(OTHER_TEAM_MEMBER_ID);
     });
 
     it('대상 팀 멤버가 팀에 없으면 NotFoundException을 던진다', async () => {
@@ -602,7 +667,10 @@ describe('TeamsService', () => {
     });
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
-      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id' } }), createPrismaServiceStub());
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.MEMBER } }),
+        createPrismaServiceStub(),
+      );
 
       await expect(service.removeTeamMember(USER_ID, TEAM_ID, OTHER_TEAM_MEMBER_ID)).rejects.toThrow(ForbiddenException);
     });
@@ -734,7 +802,10 @@ describe('TeamsService', () => {
     });
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
-      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id' } }), createPrismaServiceStub());
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.MEMBER } }),
+        createPrismaServiceStub(),
+      );
 
       await expect(service.addTeamMember(USER_ID, TEAM_ID, OTHER_BAND_MEMBER_ID)).rejects.toThrow(ForbiddenException);
     });
@@ -938,7 +1009,7 @@ describe('TeamsService', () => {
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
       const service = new TeamsService(
-        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: OTHER_BAND_MEMBER_ID } }),
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: OTHER_BAND_MEMBER_ID, role: BandMemberRole.MEMBER } }),
         createPrismaServiceStub(),
       );
 
@@ -1019,9 +1090,21 @@ describe('TeamsService', () => {
     });
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
-      const service = new TeamsService(createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id' } }), createPrismaServiceStub());
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.MEMBER } }),
+        createPrismaServiceStub(),
+      );
 
       await expect(service.deleteTeam(USER_ID, TEAM_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('밴드장은 팀 리더가 아니어도 팀을 삭제할 수 있다', async () => {
+      const service = new TeamsService(
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: 'different-id', role: BandMemberRole.BM } }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.deleteTeam(USER_ID, TEAM_ID)).resolves.toEqual(DEFAULT_DELETE_RESULT);
     });
 
     it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
@@ -1319,7 +1402,7 @@ describe('TeamsService', () => {
 
     it('팀 리더가 아니면 ForbiddenException을 던진다', async () => {
       const service = new TeamsService(
-        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: OTHER_BAND_MEMBER_ID } }),
+        createTeamsRepositoryStub({ bandMemberByBandAndUser: { id: OTHER_BAND_MEMBER_ID, role: BandMemberRole.MEMBER } }),
         createPrismaServiceStub(),
       );
 

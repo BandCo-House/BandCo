@@ -86,6 +86,12 @@ export interface BandsRepository {
     } | null;
   } | null>;
   leaveBand(bandMemberId: string, tx?: Prisma.TransactionClient): Promise<LeaveBandResult>;
+  /**
+   * 밴드를 떠나는 멤버가 리더로 있는 팀을 그 밴드의 밴드장(BM)에게 넘긴다.
+   * 밴드장이 해당 팀 멤버가 아니면 미배정 LEADER 행을 만들어 넣는다. 넘긴 팀 수를 돌려준다.
+   * 멤버 행을 지우기 전에 불러야 한다 — 지운 뒤에는 FK SetNull로 리더가 이미 비어 있다.
+   */
+  handOverLedTeamsToBandMaster(bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number>;
   findBandMembers(bandId: string, query: GetBandMembersQuery, tx?: Prisma.TransactionClient): Promise<GetBandMembersResult>;
   findMyBands(userId: string, query: GetMyBandsQuery, tx?: Prisma.TransactionClient): Promise<GetMyBandsResult>;
   findReceivedBandInvitations(
