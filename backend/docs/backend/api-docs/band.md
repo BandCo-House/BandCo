@@ -245,6 +245,7 @@
         "id": "a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1",
         "name": "합주하자",
         "description": "주 1회 합주",
+        "coverImgUrl": "https://cdn.example.com/bands/cover-1.png",
         "visibility": true,
         "myRole": "BM",
         "joinedAt": "2026-03-01T12:10:00.000+09:00",
@@ -255,6 +256,7 @@
         "id": "e2f9a1c1-3d4b-4f2a-9d1f-8a7c1f2d3e4a",
         "name": "락스타",
         "description": "im mother fukking rock star shit!",
+        "coverImgUrl": null,
         "visibility": true,
         "myRole": "MEMBER",
         "joinedAt": "2026-02-20T18:30:00.000+09:00",
@@ -395,6 +397,7 @@
         "bandId": "a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1",
         "name": "Rocking Stars",
         "description": "주 1회 합주하는 직장인 밴드",
+        "coverImgUrl": "https://cdn.example.com/bands/cover-1.png",
         "visibility": true,
         "memberCount": 5,
         "bandMaster": {

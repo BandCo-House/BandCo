@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
@@ -8,11 +8,15 @@ import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { SearchProfileMusicQueryDto } from './dto/search-profile-music-query.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { SelfUserGuard } from './guard/self-user.guard';
-import type { DeleteUserResult } from './repositoreis/user.repository';
+import type { AuthUser, DeleteUserResult } from './repositoreis/user.repository';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { GetUsersResult } from './types/user-list.type';
 import type { GetUserProfileResult } from './types/user-profile.type';
 import { UsersService } from './users.service';
+
+interface AuthenticatedRequest {
+  user: AuthUser;
+}
 
 @ApiTags('유저')
 @Controller('users')
@@ -20,9 +24,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '유저 목록 조회' })
   @ApiResponse({ status: 200, description: '유저 목록 조회 성공' })
   @ApiResponse({ status: 400, description: '유효성 검사 실패 (take 범위, order 값, cursor__id UUID 형식)' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async getUsers(@Query() query: GetUsersQueryDto): Promise<ApiSuccessResponse<GetUsersResult>> {
     const result = await this.usersService.getUsers(query);
     return createSuccessResponse('유저 목록 조회 성공', result);
@@ -39,13 +46,19 @@ export class UsersController {
   }
 
   @Get(':userId/profiles')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '유저 프로필 조회' })
   @ApiParam({ name: 'userId', description: '유저 ID (UUID)', type: String })
-  @ApiResponse({ status: 200, description: '유저 프로필 조회 성공' })
+  @ApiResponse({ status: 200, description: '유저 프로필 조회 성공 (email은 본인 조회 시에만 포함)' })
   @ApiResponse({ status: 400, description: 'userId가 UUID 형식이 아님' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   @ApiResponse({ status: 404, description: '존재하지 않는 유저' })
-  async getUserProfile(@Param('userId', ParseUUIDPipe) userId: string): Promise<ApiSuccessResponse<GetUserProfileResult>> {
-    const result = await this.usersService.getUserProfile(userId);
+  async getUserProfile(
+    @Req() request: AuthenticatedRequest,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<ApiSuccessResponse<GetUserProfileResult>> {
+    const result = await this.usersService.getUserProfile(userId, request.user.id);
     return createSuccessResponse('유저 프로필 조회 성공', result);
   }
 

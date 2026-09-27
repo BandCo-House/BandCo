@@ -150,7 +150,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 - Method: `GET`
 - Path: `/users`
-- 인증: 없음 (공개)
+- 인증: AccessToken (2026-09-26 변경: 비로그인에 이메일이 노출돼 인증 필수로 전환, 응답에서 `email` 제거 — #212 B-4)
 
 ### Query Parameters
 
@@ -174,7 +174,6 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
     "items": [
       {
         "id": "uuid",
-        "email": "user@example.com",
         "nickname": "홍길동",
         "status": "ACTIVE",
         "avatarUrl": null,
@@ -196,6 +195,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | 코드 | 사유 |
 |------|------|
 | 400 | `take` 범위 오류, `order` 값 오류, `cursor__id` UUID 형식 오류 |
+| 401 | 인증 실패 |
 
 ---
 
@@ -407,7 +407,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 - Method: `GET`
 - Path: `/users/:userId/profiles`
-- 인증: 없음 (공개)
+- 인증: AccessToken (2026-09-26 변경: 비로그인에 이메일이 노출돼 인증 필수로 전환 — #212 B-4)
+- `user.email`은 본인 프로필을 조회할 때만 담기고, 다른 사용자의 프로필에서는 `null`이다
 
 ### Path Parameters
 
@@ -469,6 +470,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | 코드 | 사유 |
 |------|------|
 | 400 | `userId`가 UUID 형식이 아님 |
+| 401 | 인증 실패 |
 | 404 | 존재하지 않는 유저 |
 
 ---
@@ -529,7 +531,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 | 코드 | 사유 |
 |------|------|
-| 400 | 잘못된 입력값 |
+| 400 | 잘못된 입력값 / 존재하지 않는 `skillTypeId`·`genreId` (2026-09-26 전: FK 오류가 500으로 나갔다 — #212 B-4) |
 | 401 | 인증 실패 |
 | 403 | 본인 프로필만 수정 가능 |
 | 404 | 존재하지 않는 유저 |

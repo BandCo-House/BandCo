@@ -1185,7 +1185,7 @@ describe('BandsPrismaRepository', () => {
   });
 
   describe('findBandJoinRequestByBandIdAndUserId', () => {
-    it('밴드와 사용자 기준으로 기존 가입 요청을 조회한다', async () => {
+    it('밴드와 사용자 기준으로 대기 중인 가입 요청만 조회한다', async () => {
       const prisma = createPrismaMock();
       prisma.bandJoinRequest.findFirst.mockResolvedValue({
         id: 'join-request-001',
@@ -1199,6 +1199,7 @@ describe('BandsPrismaRepository', () => {
         where: {
           bandId: 'band-001',
           userId: 'user-002',
+          status: 'PENDING',
         },
         select: {
           id: true,
@@ -1252,7 +1253,7 @@ describe('BandsPrismaRepository', () => {
   });
 
   describe('findBandInvitationByBandIdAndInviteeUserId', () => {
-    it('밴드와 초대 대상 기준으로 기존 초대를 조회한다', async () => {
+    it('밴드와 초대 대상 기준으로 대기 중인 초대만 조회한다', async () => {
       const prisma = createPrismaMock();
       prisma.bandInvitation.findFirst.mockResolvedValue({
         id: 'invitation-001',
@@ -1266,6 +1267,7 @@ describe('BandsPrismaRepository', () => {
         where: {
           bandId: 'band-001',
           inviteeUserId: 'user-002',
+          status: 'PENDING',
         },
         select: {
           id: true,
@@ -1498,6 +1500,7 @@ describe('BandsPrismaRepository', () => {
       id,
       name: `Band-${id}`,
       description: null,
+      coverImgUrl: 'https://cdn.example.com/cover.png',
       visibility: true,
       createdAt,
       bandMasterUserId: 'user-bm',
@@ -1550,6 +1553,20 @@ describe('BandsPrismaRepository', () => {
 
       expect(result.meta.next).toContain('where__name__contain=rock');
     });
+
+    it('목록 항목에 coverImgUrl을 포함한다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.searchBands({
+        order__created_at: 'desc',
+        order__id: 'desc',
+        take: 20,
+      });
+
+      expect(result.items[0].coverImgUrl).toBe('https://cdn.example.com/cover.png');
+    });
   });
 
   describe('findMyBands', () => {
@@ -1557,6 +1574,7 @@ describe('BandsPrismaRepository', () => {
       id,
       name: `Band-${id}`,
       description: null,
+      coverImgUrl: null,
       visibility: true,
       createdAt,
       bandMasterUserId: 'user-bm',
@@ -1585,6 +1603,16 @@ describe('BandsPrismaRepository', () => {
       expect(result.meta.next).toContain('/bands/me');
       expect(result.meta.next).toContain('cursor__created_at=');
       expect(result.meta.next).toContain('cursor__id=b1');
+    });
+
+    it('커버 이미지가 없으면 coverImgUrl이 null이다', async () => {
+      const prisma = createPrismaMock();
+      prisma.band.findMany.mockResolvedValue([makeBandRow('b1', mockCreatedAt)]);
+      const repository = new BandsPrismaRepository(prisma as unknown as PrismaService);
+
+      const result = await repository.findMyBands('user-001', { take: 20 });
+
+      expect(result.items[0].coverImgUrl).toBeNull();
     });
   });
 });

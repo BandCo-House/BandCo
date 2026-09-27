@@ -178,7 +178,9 @@ model BandJoinRequest {
   band      Band              @relation(fields: [bandId], references: [id], onDelete: Cascade)
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([bandId, userId])
+  // (band_id, user_id) 유니크는 PENDING 행에만 걸리는 부분 인덱스로 DB에만 있다
+  // (migrations/20260926120000_pending_only_unique_invitations). Prisma는 부분 인덱스를
+  // 표현하지 못해 여기엔 없고, migrate diff가 이를 드리프트로 보고하는 것은 정상이다.
   @@map("band_join_requests")
 }
 
@@ -195,7 +197,9 @@ model BandInvitation {
   inviteeUser         User                 @relation("BandInvitationInvitee", fields: [inviteeUserId], references: [id], onDelete: Cascade)
   inviterBandMember   BandMember           @relation("BandInvitationInviter", fields: [inviterBandMemberId], references: [id], onDelete: Cascade)
 
-  @@unique([bandId, inviteeUserId])
+  // (band_id, invitee_user_id) 유니크는 PENDING 행에만 걸리는 부분 인덱스로 DB에만 있다
+  // (migrations/20260926120000_pending_only_unique_invitations). Prisma는 부분 인덱스를
+  // 표현하지 못해 여기엔 없고, migrate diff가 이를 드리프트로 보고하는 것은 정상이다.
   @@map("band_invitations")
 }
 
