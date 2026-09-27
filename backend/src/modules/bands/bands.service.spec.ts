@@ -114,6 +114,7 @@ function createBandsRepositoryStub(options?: {
   onFindSentBandJoinRequests?: (userId: string, query: GetSentBandJoinRequestsQuery, tx: unknown) => void;
   onFindSentBandInvitations?: (userId: string, query: GetSentBandInvitationsQuery, tx: unknown) => void;
   onLeaveBand?: (bandMemberId: string, tx: unknown) => void;
+  onHandOverLedTeamsToBandMaster?: (bandMemberId: string, tx: unknown) => void;
   onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
   onUpdateBand?: (bandId: string, input: UpdateBandInput, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
@@ -284,6 +285,11 @@ function createBandsRepositoryStub(options?: {
         bandId: 'band-001',
         userId: INVITEE_USER_ID,
       };
+    },
+    async handOverLedTeamsToBandMaster(bandMemberId, tx) {
+      options?.onHandOverLedTeamsToBandMaster?.(bandMemberId, tx);
+
+      return 0;
     },
     async findBandMembers(bandId, query, tx) {
       options?.onFindBandMembers?.(bandId, query, tx);
@@ -1963,6 +1969,27 @@ describe('BandsService', () => {
       await expect(service.leaveBand(BAND_MASTER_USER_ID, 'band-001')).rejects.toThrow(ForbiddenException);
     });
 
+    // 리더가 떠난 팀은 밴드장조차 손댈 수 없는 고아 팀이 됐다(#212 C-1).
+    // 멤버 행을 지우기 전에 같은 tx로 밴드장에게 넘겨야 SetNull이 먼저 일어나지 않는다.
+    it('나가는 멤버가 리더인 팀을 멤버십 삭제 전에 밴드장에게 넘긴다', async () => {
+      const calls: { step: string; bandMemberId: string; tx: unknown }[] = [];
+      const repository = createBandsRepositoryStub({
+        onHandOverLedTeamsToBandMaster(bandMemberId, tx) {
+          calls.push({ step: 'handOver', bandMemberId, tx });
+        },
+        onLeaveBand(bandMemberId, tx) {
+          calls.push({ step: 'leave', bandMemberId, tx });
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.leaveBand(INVITEE_USER_ID, 'band-001');
+
+      expect(calls.map(call => call.step)).toEqual(['handOver', 'leave']);
+      expect(calls[0].bandMemberId).toBe('band-member-001');
+      expect(calls[0].tx).toBe(calls[1].tx);
+    });
+
     it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
       const externalTx = {
         transactionClient: true,
@@ -2927,6 +2954,25 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('강퇴되는 멤버가 리더인 팀을 멤버십 삭제 전에 밴드장에게 넘긴다', async () => {
+      const calls: { step: string; bandMemberId: string; tx: unknown }[] = [];
+      const repository = createBandsRepositoryStub({
+        onHandOverLedTeamsToBandMaster(bandMemberId, tx) {
+          calls.push({ step: 'handOver', bandMemberId, tx });
+        },
+        onLeaveBand(bandMemberId, tx) {
+          calls.push({ step: 'leave', bandMemberId, tx });
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-001');
+
+      expect(calls.map(call => call.step)).toEqual(['handOver', 'leave']);
+      expect(calls[0].bandMemberId).toBe(calls[1].bandMemberId);
+      expect(calls[0].tx).toBe(calls[1].tx);
     });
 
     it('외부 transaction client가 있으면 새 transaction을 열지 않고 그대로 전달한다', async () => {

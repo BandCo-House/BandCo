@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
-import { Prisma } from '../../generated/prisma';
+import { BandMemberRole, Prisma } from '../../generated/prisma';
 
 import type { ChangeTeamLeaderBodyDto } from './dto/change-team-leader.dto';
 import type { CreateTeamInput } from './dto/create-team.dto';
@@ -98,7 +98,7 @@ export class TeamsService {
   }
 
   /**
-   * 팀 리더만 팀 정보를 수정할 수 있다.
+   * 팀 리더 또는 밴드장만 팀 정보를 수정할 수 있다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} teamId - 수정할 팀 ID
@@ -113,7 +113,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       return this.teamsRepository.updateTeam(teamId, input, client);
     };
@@ -138,7 +138,7 @@ export class TeamsService {
   }
 
   /**
-   * 팀 리더만 팀 리더를 변경할 수 있다. 새 리더는 이미 팀 멤버여야 한다.
+   * 팀 리더 또는 밴드장만 팀 리더를 변경할 수 있다. 새 리더는 이미 팀 멤버여야 한다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} teamId - 대상 팀 ID
@@ -158,7 +158,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       const newLeaderMember = await this.teamsRepository.findTeamMemberById(input.teamMemberId, client);
       if (!newLeaderMember || newLeaderMember.teamId !== teamId) {
@@ -176,7 +176,7 @@ export class TeamsService {
   }
 
   /**
-   * 팀 리더만 팀 멤버를 제거할 수 있다. 리더 자신은 제거할 수 없다.
+   * 팀 리더 또는 밴드장만 팀 멤버를 제거할 수 있다. 리더 자신은 제거할 수 없다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} teamId - 대상 팀 ID
@@ -191,7 +191,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       const targetMember = await this.teamsRepository.findTeamMemberById(teamMemberId, client);
       if (!targetMember || targetMember.teamId !== teamId) {
@@ -239,7 +239,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       const targetMember = await this.teamsRepository.findTeamMemberById(teamMemberId, client);
       if (!targetMember || targetMember.teamId !== teamId) {
@@ -309,7 +309,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       const normalized = members.map(member => ({
         teamMemberId: member.teamMemberId,
@@ -417,7 +417,7 @@ export class TeamsService {
   }
 
   /**
-   * 팀 리더만 밴드 멤버를 팀에 추가할 수 있다.
+   * 팀 리더 또는 밴드장만 밴드 멤버를 팀에 추가할 수 있다.
    * 추가 대상은 같은 밴드의 멤버여야 하며 이미 팀에 없어야 한다.
    *
    * @param {string} userId - 인증된 사용자 ID
@@ -439,7 +439,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       const targetBandMember = await this.teamsRepository.findBandMemberById(bandMemberId, client);
       if (!targetBandMember) {
@@ -478,7 +478,7 @@ export class TeamsService {
   }
 
   /**
-   * 팀 리더만 팀을 삭제할 수 있다. 팀 멤버는 cascade로 함께 삭제된다.
+   * 팀 리더 또는 밴드장만 팀을 삭제할 수 있다. 팀 멤버는 cascade로 함께 삭제된다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} teamId - 삭제할 팀 ID
@@ -492,7 +492,7 @@ export class TeamsService {
         throw new NotFoundException('팀을 찾을 수 없습니다.');
       }
 
-      await this.assertTeamLeader(userId, team.bandId, team.teamLeaderBandMemberId, client);
+      await this.assertTeamManager(userId, team.bandId, team.teamLeaderBandMemberId, client);
 
       return this.teamsRepository.deleteTeam(teamId, client);
     };
@@ -501,22 +501,29 @@ export class TeamsService {
   }
 
   /**
-   * 사용자가 해당 팀의 리더인지 검증한다.
-   * teamLeaderBandMemberId가 없거나 사용자의 BandMember.id와 일치하지 않으면 403을 던진다.
+   * 사용자가 해당 팀을 관리할 수 있는지(팀 리더 또는 밴드장) 검증한다.
+   *
+   * 예전엔 팀 리더만 통과시켰고, 리더가 밴드를 떠나 teamLeaderBandMemberId가 비면 누구도
+   * 통과하지 못해 밴드장조차 손댈 수 없는 고아 팀이 생겼다(#212 C-1). 밴드장은 리더가
+   * 누구든, 비어 있든 관계없이 통과한다. 그 외 멤버는 현재 리더일 때만 통과한다.
    */
-  private async assertTeamLeader(
+  private async assertTeamManager(
     userId: string,
     bandId: string,
     teamLeaderBandMemberId: string | null,
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
-    if (!teamLeaderBandMemberId) {
-      throw new ForbiddenException('팀 리더 권한이 필요합니다.');
+    const myBandMember = await this.teamsRepository.findBandMemberByBandIdAndUserId(bandId, userId, tx);
+    if (!myBandMember) {
+      throw new ForbiddenException('팀 리더 또는 밴드장 권한이 필요합니다.');
     }
 
-    const myBandMember = await this.teamsRepository.findBandMemberByBandIdAndUserId(bandId, userId, tx);
-    if (!myBandMember || myBandMember.id !== teamLeaderBandMemberId) {
-      throw new ForbiddenException('팀 리더 권한이 필요합니다.');
+    if (myBandMember.role === BandMemberRole.BM) {
+      return;
+    }
+
+    if (teamLeaderBandMemberId === null || myBandMember.id !== teamLeaderBandMemberId) {
+      throw new ForbiddenException('팀 리더 또는 밴드장 권한이 필요합니다.');
     }
   }
 }
