@@ -33,6 +33,9 @@ import { Route as BandBandIdSpaceSpaceIdRouteImport } from './pages/band.$bandId
 import { Route as BandBandIdNoticesNoticeIdRouteImport } from './pages/band.$bandId.notices.$noticeId'
 import { Route as BandBandIdSpaceSpaceIdIndexRouteImport } from './pages/band.$bandId.space.$spaceId.index'
 import { Route as BandBandIdSpaceSpaceIdSettingsRouteImport } from './pages/band.$bandId.space.$spaceId.settings'
+import { Route as BandBandIdSpaceSpaceIdPollsIndexRouteImport } from './pages/band.$bandId.space.$spaceId.polls.index'
+import { Route as BandBandIdSpaceSpaceIdPollsNewRouteImport } from './pages/band.$bandId.space.$spaceId.polls.new'
+import { Route as BandBandIdSpaceSpaceIdPollsPollIdRouteImport } from './pages/band.$bandId.space.$spaceId.polls.$pollId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -157,6 +160,24 @@ const BandBandIdSpaceSpaceIdSettingsRoute =
     path: '/settings',
     getParentRoute: () => BandBandIdSpaceSpaceIdRoute,
   } as any)
+const BandBandIdSpaceSpaceIdPollsIndexRoute =
+  BandBandIdSpaceSpaceIdPollsIndexRouteImport.update({
+    id: '/polls/',
+    path: '/polls/',
+    getParentRoute: () => BandBandIdSpaceSpaceIdRoute,
+  } as any)
+const BandBandIdSpaceSpaceIdPollsNewRoute =
+  BandBandIdSpaceSpaceIdPollsNewRouteImport.update({
+    id: '/polls/new',
+    path: '/polls/new',
+    getParentRoute: () => BandBandIdSpaceSpaceIdRoute,
+  } as any)
+const BandBandIdSpaceSpaceIdPollsPollIdRoute =
+  BandBandIdSpaceSpaceIdPollsPollIdRouteImport.update({
+    id: '/polls/$pollId',
+    path: '/polls/$pollId',
+    getParentRoute: () => BandBandIdSpaceSpaceIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -183,6 +204,9 @@ export interface FileRoutesByFullPath {
   '/band/$bandId/team/create': typeof BandBandIdTeamCreateRoute
   '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
   '/band/$bandId/space/$spaceId/': typeof BandBandIdSpaceSpaceIdIndexRoute
+  '/band/$bandId/space/$spaceId/polls/$pollId': typeof BandBandIdSpaceSpaceIdPollsPollIdRoute
+  '/band/$bandId/space/$spaceId/polls/new': typeof BandBandIdSpaceSpaceIdPollsNewRoute
+  '/band/$bandId/space/$spaceId/polls/': typeof BandBandIdSpaceSpaceIdPollsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -207,6 +231,9 @@ export interface FileRoutesByTo {
   '/band/$bandId/team/create': typeof BandBandIdTeamCreateRoute
   '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
   '/band/$bandId/space/$spaceId': typeof BandBandIdSpaceSpaceIdIndexRoute
+  '/band/$bandId/space/$spaceId/polls/$pollId': typeof BandBandIdSpaceSpaceIdPollsPollIdRoute
+  '/band/$bandId/space/$spaceId/polls/new': typeof BandBandIdSpaceSpaceIdPollsNewRoute
+  '/band/$bandId/space/$spaceId/polls': typeof BandBandIdSpaceSpaceIdPollsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -234,6 +261,9 @@ export interface FileRoutesById {
   '/band/$bandId/team/create': typeof BandBandIdTeamCreateRoute
   '/band/$bandId/space/$spaceId/settings': typeof BandBandIdSpaceSpaceIdSettingsRoute
   '/band/$bandId/space/$spaceId/': typeof BandBandIdSpaceSpaceIdIndexRoute
+  '/band/$bandId/space/$spaceId/polls/$pollId': typeof BandBandIdSpaceSpaceIdPollsPollIdRoute
+  '/band/$bandId/space/$spaceId/polls/new': typeof BandBandIdSpaceSpaceIdPollsNewRoute
+  '/band/$bandId/space/$spaceId/polls/': typeof BandBandIdSpaceSpaceIdPollsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -262,6 +292,9 @@ export interface FileRouteTypes {
     | '/band/$bandId/team/create'
     | '/band/$bandId/space/$spaceId/settings'
     | '/band/$bandId/space/$spaceId/'
+    | '/band/$bandId/space/$spaceId/polls/$pollId'
+    | '/band/$bandId/space/$spaceId/polls/new'
+    | '/band/$bandId/space/$spaceId/polls/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -286,6 +319,9 @@ export interface FileRouteTypes {
     | '/band/$bandId/team/create'
     | '/band/$bandId/space/$spaceId/settings'
     | '/band/$bandId/space/$spaceId'
+    | '/band/$bandId/space/$spaceId/polls/$pollId'
+    | '/band/$bandId/space/$spaceId/polls/new'
+    | '/band/$bandId/space/$spaceId/polls'
   id:
     | '__root__'
     | '/'
@@ -312,6 +348,9 @@ export interface FileRouteTypes {
     | '/band/$bandId/team/create'
     | '/band/$bandId/space/$spaceId/settings'
     | '/band/$bandId/space/$spaceId/'
+    | '/band/$bandId/space/$spaceId/polls/$pollId'
+    | '/band/$bandId/space/$spaceId/polls/new'
+    | '/band/$bandId/space/$spaceId/polls/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -499,6 +538,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BandBandIdSpaceSpaceIdSettingsRouteImport
       parentRoute: typeof BandBandIdSpaceSpaceIdRoute
     }
+    '/band/$bandId/space/$spaceId/polls/': {
+      id: '/band/$bandId/space/$spaceId/polls/'
+      path: '/polls'
+      fullPath: '/band/$bandId/space/$spaceId/polls/'
+      preLoaderRoute: typeof BandBandIdSpaceSpaceIdPollsIndexRouteImport
+      parentRoute: typeof BandBandIdSpaceSpaceIdRoute
+    }
+    '/band/$bandId/space/$spaceId/polls/new': {
+      id: '/band/$bandId/space/$spaceId/polls/new'
+      path: '/polls/new'
+      fullPath: '/band/$bandId/space/$spaceId/polls/new'
+      preLoaderRoute: typeof BandBandIdSpaceSpaceIdPollsNewRouteImport
+      parentRoute: typeof BandBandIdSpaceSpaceIdRoute
+    }
+    '/band/$bandId/space/$spaceId/polls/$pollId': {
+      id: '/band/$bandId/space/$spaceId/polls/$pollId'
+      path: '/polls/$pollId'
+      fullPath: '/band/$bandId/space/$spaceId/polls/$pollId'
+      preLoaderRoute: typeof BandBandIdSpaceSpaceIdPollsPollIdRouteImport
+      parentRoute: typeof BandBandIdSpaceSpaceIdRoute
+    }
   }
 }
 
@@ -516,12 +576,20 @@ const BandBandIdNoticesRouteWithChildren =
 interface BandBandIdSpaceSpaceIdRouteChildren {
   BandBandIdSpaceSpaceIdSettingsRoute: typeof BandBandIdSpaceSpaceIdSettingsRoute
   BandBandIdSpaceSpaceIdIndexRoute: typeof BandBandIdSpaceSpaceIdIndexRoute
+  BandBandIdSpaceSpaceIdPollsPollIdRoute: typeof BandBandIdSpaceSpaceIdPollsPollIdRoute
+  BandBandIdSpaceSpaceIdPollsNewRoute: typeof BandBandIdSpaceSpaceIdPollsNewRoute
+  BandBandIdSpaceSpaceIdPollsIndexRoute: typeof BandBandIdSpaceSpaceIdPollsIndexRoute
 }
 
 const BandBandIdSpaceSpaceIdRouteChildren: BandBandIdSpaceSpaceIdRouteChildren =
   {
     BandBandIdSpaceSpaceIdSettingsRoute: BandBandIdSpaceSpaceIdSettingsRoute,
     BandBandIdSpaceSpaceIdIndexRoute: BandBandIdSpaceSpaceIdIndexRoute,
+    BandBandIdSpaceSpaceIdPollsPollIdRoute:
+      BandBandIdSpaceSpaceIdPollsPollIdRoute,
+    BandBandIdSpaceSpaceIdPollsNewRoute: BandBandIdSpaceSpaceIdPollsNewRoute,
+    BandBandIdSpaceSpaceIdPollsIndexRoute:
+      BandBandIdSpaceSpaceIdPollsIndexRoute,
   }
 
 const BandBandIdSpaceSpaceIdRouteWithChildren =
