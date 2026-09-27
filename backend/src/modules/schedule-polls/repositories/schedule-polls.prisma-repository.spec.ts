@@ -13,6 +13,8 @@ const POLL_ROW = {
   id: SCHEDULE_POLL_ID,
   bandSpaceId: BAND_SPACE_ID,
   createdByBandMemberId: BAND_MEMBER_ID,
+  name: '좋은 날 오프닝 연습',
+  closesAt: new Date('2026-10-05T10:00:00.000Z'),
   createdAt: new Date('2026-09-07T00:00:00.000Z'),
   updatedAt: new Date('2026-09-07T00:00:00.000Z'),
   options: [
@@ -119,12 +121,14 @@ describe('SchedulePollsPrismaRepository', () => {
         id: SCHEDULE_POLL_ID,
         bandSpaceId: BAND_SPACE_ID,
         createdByBandMemberId: null,
+        name: '좋은 날 오프닝 연습',
+        closesAt: new Date('2026-10-05T10:00:00.000Z'),
         createdAt: new Date('2026-09-07T00:00:00.000Z'),
         updatedAt: new Date('2026-09-07T00:00:00.000Z'),
         options: [
-          { votes: [{ bandMemberId: BAND_MEMBER_ID }, { bandMemberId: OTHER_MEMBER_ID }] },
-          { votes: [{ bandMemberId: BAND_MEMBER_ID }] },
-          { votes: [] },
+          { startAt: new Date('2026-09-13T12:00:00.000Z'), votes: [{ bandMemberId: BAND_MEMBER_ID }, { bandMemberId: OTHER_MEMBER_ID }] },
+          { startAt: new Date('2026-09-14T12:00:00.000Z'), votes: [{ bandMemberId: BAND_MEMBER_ID }] },
+          { startAt: new Date('2026-09-15T12:00:00.000Z'), votes: [] },
         ],
       },
     ]);
@@ -142,6 +146,9 @@ describe('SchedulePollsPrismaRepository', () => {
         schedulePollId: SCHEDULE_POLL_ID,
         bandSpaceId: BAND_SPACE_ID,
         createdByBandMemberId: null,
+        name: '좋은 날 오프닝 연습',
+        closesAt: '2026-10-05T10:00:00.000Z',
+        optionStartAts: ['2026-09-13T12:00:00.000Z', '2026-09-14T12:00:00.000Z', '2026-09-15T12:00:00.000Z'],
         optionCount: 3,
         voterCount: 2,
         hasVoted: true,
@@ -163,6 +170,8 @@ describe('SchedulePollsPrismaRepository', () => {
     prisma.schedulePoll.create.mockResolvedValue(POLL_ROW);
 
     const result = await repository.createSchedulePoll(BAND_SPACE_ID, BAND_MEMBER_ID, {
+      name: '좋은 날 오프닝 연습',
+      closesAt: '2026-10-05T10:00:00.000Z',
       options: [{ startAt: '2026-09-13T12:00:00.000Z', endAt: '2026-09-13T14:00:00.000Z' }],
     });
 
@@ -171,6 +180,8 @@ describe('SchedulePollsPrismaRepository', () => {
         data: {
           bandSpaceId: BAND_SPACE_ID,
           createdByBandMemberId: BAND_MEMBER_ID,
+          name: '좋은 날 오프닝 연습',
+          closesAt: new Date('2026-10-05T10:00:00.000Z'),
           options: {
             create: [{ startAt: new Date('2026-09-13T12:00:00.000Z'), endAt: new Date('2026-09-13T14:00:00.000Z') }],
           },
