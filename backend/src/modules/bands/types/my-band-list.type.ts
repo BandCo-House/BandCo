@@ -4,6 +4,7 @@ export interface MyBandListItem {
   id: string;
   name: string;
   description: string | null;
+  coverImgUrl: string | null;
   visibility: boolean;
   myRole: BandMemberRole;
   joinedAt: string;

@@ -6,7 +6,12 @@ import { PrismaService } from '../../database/prisma';
 import { BandMemberRole, type Prisma } from '../../generated/prisma';
 
 import { BAND_INVITE_LINKS_REPOSITORY, type BandInviteLinksRepository } from './repositories/band-invite-links.repository';
-import type { CreateBandInviteLinkResult, JoinBandByInviteLinkResult, RevokeBandInviteLinkResult } from './types/band-invite-link.type';
+import type {
+  CreateBandInviteLinkResult,
+  GetBandInviteLinkResult,
+  JoinBandByInviteLinkResult,
+  RevokeBandInviteLinkResult,
+} from './types/band-invite-link.type';
 
 const INVITE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const INVITE_CODE_LENGTH = 16;
@@ -51,6 +56,37 @@ export class BandInviteLinksService {
         inviteCode,
         expiredAt: inviteLink.expiredAt.toISOString(),
       };
+    };
+
+    if (tx !== undefined) {
+      return run(tx);
+    }
+
+    return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 밴드 운영자가 현재 초대 링크가 살아 있는지 확인한다. 설정 화면 진입 시 "발급된 링크 없음"으로만
+   * 보이던 문제를 풀기 위한 조회다(#212 B-4). 원본 코드는 돌려줄 수 없으므로 만료 시각만 알려준다.
+   *
+   * @param {string} requesterUserId - 인증된 사용자 ID
+   * @param {string} bandId - 조회할 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<GetBandInviteLinkResult>} 활성 링크 여부와 만료 시각
+   */
+  async getBandInviteLink(requesterUserId: string, bandId: string, tx?: Prisma.TransactionClient): Promise<GetBandInviteLinkResult> {
+    const run = async (client: Prisma.TransactionClient): Promise<GetBandInviteLinkResult> => {
+      await this.findBandInviteLinkManager(bandId, requesterUserId, client);
+
+      const inviteLink = await this.bandInviteLinksRepository.findBandInviteLinkByBandId(bandId, client);
+      const expiredAt = inviteLink?.expiredAt ?? null;
+
+      // 만료된 링크는 가입에 쓸 수 없으므로 "없음"과 같게 본다(joinBandByInviteLink와 같은 기준).
+      if (expiredAt === null || expiredAt.getTime() <= Date.now()) {
+        return { bandId, hasActiveLink: false, expiredAt: null };
+      }
+
+      return { bandId, hasActiveLink: true, expiredAt: expiredAt.toISOString() };
     };
 
     if (tx !== undefined) {

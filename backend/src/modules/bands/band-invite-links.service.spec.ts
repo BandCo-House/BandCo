@@ -17,6 +17,7 @@ const EXPIRED_AT = new Date('2099-07-28T00:00:00.000Z');
 
 interface RepositoryStubOptions {
   accessContext?: BandInviteLinkAccessContext | null;
+  bandInviteLink?: BandInviteLinkJoinContext | null;
   inviteLink?: BandInviteLinkJoinContext | null;
   existingMember?: { id: string } | null;
   blacklist?: { id: string } | null;
@@ -24,6 +25,7 @@ interface RepositoryStubOptions {
   onFindAccessContext?: (tx: unknown) => void;
   onUpsertInviteLink?: (input: UpsertBandInviteLinkInput, tx: unknown) => void;
   onDeleteInviteLink?: (tx: unknown) => void;
+  onFindBandInviteLink?: (tx: unknown) => void;
   onFindInviteLink?: (codeHash: string, tx: unknown) => void;
   onFindMember?: (tx: unknown) => void;
   onFindBlacklist?: (tx: unknown) => void;
@@ -59,6 +61,18 @@ function createRepositoryStub(options: RepositoryStubOptions = {}): BandInviteLi
     async deleteBandInviteLinkByBandId(_bandId, tx) {
       options.onDeleteInviteLink?.(tx);
       return options.revoked ?? true;
+    },
+    async findBandInviteLinkByBandId(_bandId, tx) {
+      options.onFindBandInviteLink?.(tx);
+
+      if (options.bandInviteLink !== undefined) {
+        return options.bandInviteLink;
+      }
+
+      return {
+        bandId: BAND_ID,
+        expiredAt: EXPIRED_AT,
+      };
     },
     async findBandInviteLinkByCodeHash(codeHash, tx) {
       options.onFindInviteLink?.(codeHash, tx);
@@ -203,6 +217,75 @@ describe('BandInviteLinksService', () => {
       await service.createBandInviteLink(USER_ID, BAND_ID, externalTx as never);
 
       expect(capturedTransactions).toEqual([externalTx, externalTx]);
+    });
+  });
+
+  describe('getBandInviteLink', () => {
+    it('활성 링크가 있으면 hasActiveLink true와 만료 시각을 반환한다', async () => {
+      const service = new BandInviteLinksService(createRepositoryStub(), createPrismaServiceStub());
+
+      const result = await service.getBandInviteLink(USER_ID, BAND_ID);
+
+      expect(result).toEqual({
+        bandId: BAND_ID,
+        hasActiveLink: true,
+        expiredAt: EXPIRED_AT.toISOString(),
+      });
+    });
+
+    it('발급된 링크가 없으면 hasActiveLink false를 반환한다', async () => {
+      const service = new BandInviteLinksService(createRepositoryStub({ bandInviteLink: null }), createPrismaServiceStub());
+
+      const result = await service.getBandInviteLink(USER_ID, BAND_ID);
+
+      expect(result).toEqual({ bandId: BAND_ID, hasActiveLink: false, expiredAt: null });
+    });
+
+    it('링크가 만료됐으면 hasActiveLink false를 반환한다', async () => {
+      const service = new BandInviteLinksService(
+        createRepositoryStub({ bandInviteLink: { bandId: BAND_ID, expiredAt: new Date('2020-01-01T00:00:00.000Z') } }),
+        createPrismaServiceStub(),
+      );
+
+      const result = await service.getBandInviteLink(USER_ID, BAND_ID);
+
+      expect(result).toEqual({ bandId: BAND_ID, hasActiveLink: false, expiredAt: null });
+    });
+
+    it('밴드가 없으면 NotFoundException을 던진다', async () => {
+      const service = new BandInviteLinksService(createRepositoryStub({ accessContext: null }), createPrismaServiceStub());
+
+      await expect(service.getBandInviteLink(USER_ID, BAND_ID)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('일반 멤버면 ForbiddenException을 던진다', async () => {
+      const service = new BandInviteLinksService(
+        createRepositoryStub({
+          accessContext: {
+            id: BAND_ID,
+            member: { id: BAND_MEMBER_ID, role: BandMemberRole.MEMBER },
+          },
+        }),
+        createPrismaServiceStub(),
+      );
+
+      await expect(service.getBandInviteLink(USER_ID, BAND_ID)).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('외부 transaction client를 그대로 전달한다', async () => {
+      const externalTx = { externalTx: true };
+      const seenTx: unknown[] = [];
+      const service = new BandInviteLinksService(
+        createRepositoryStub({
+          onFindAccessContext: tx => seenTx.push(tx),
+          onFindBandInviteLink: tx => seenTx.push(tx),
+        }),
+        createFailingPrismaServiceStub(),
+      );
+
+      await service.getBandInviteLink(USER_ID, BAND_ID, externalTx as never);
+
+      expect(seenTx).toEqual([externalTx, externalTx]);
     });
   });
 

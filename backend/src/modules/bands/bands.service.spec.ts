@@ -328,6 +328,7 @@ function createBandsRepositoryStub(options?: {
             id: 'band-001',
             name: '합주하자',
             description: '주 1회 합주',
+            coverImgUrl: null,
             visibility: true,
             myRole: BandMemberRole.BM,
             joinedAt: '2026-03-01T12:10:00.000Z',
@@ -478,6 +479,7 @@ function createBandsRepositoryStub(options?: {
             bandId: 'band-001',
             name: 'Rocking Stars',
             description: '주 1회 합주하는 직장인 밴드',
+            coverImgUrl: null,
             visibility: true,
             memberCount: 5,
             bandMaster: {
