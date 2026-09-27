@@ -22,7 +22,7 @@ export class CommonPrismaRepository implements CommonRepository {
 
     const genres = await client.genre.findMany({
       select: { id: true, name: true },
-      orderBy: { name: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
 
     return { genres: genres.map(g => ({ genreId: g.id, name: g.name })) };
@@ -39,7 +39,7 @@ export class CommonPrismaRepository implements CommonRepository {
 
     const skillTypes = await client.skillType.findMany({
       select: { id: true, name: true },
-      orderBy: { name: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
 
     return { skills: skillTypes.map(s => ({ skillTypeId: s.id, name: s.name })) };

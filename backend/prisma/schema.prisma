@@ -48,7 +48,9 @@ model UserOAuthAccount {
 
 model SkillType {
   id                   String                @id @default(uuid()) @db.Uuid
-  name                 String                @db.VarChar(40)
+  name                 String                @unique @db.VarChar(40)
+  /// 합주 편성 순서(보컬 → 기타 → 베이스 → 드럼 …). 이름순 정렬로는 편성 순서를 만들 수 없어 둔다.
+  sortOrder            Int                   @default(0) @map("sort_order")
   scheduleParticipants ScheduleParticipant[]
   songSkills           SongSkill[]
   teamMembers          TeamMember[]
@@ -59,7 +61,9 @@ model SkillType {
 
 model Genre {
   id             String          @id @default(uuid()) @db.Uuid
-  name           String          @db.VarChar(20)
+  name           String          @unique @db.VarChar(40)
+  /// 장르 묶음(록 → 펑크·메탈 → 팝 …) 표시 순서. 이름순이면 영문 태그가 앞으로 몰려 읽기 어렵다.
+  sortOrder      Int             @default(0) @map("sort_order")
   bandGenres     BandGenre[]
   favoriteGenres FavoriteGenre[]
 
