@@ -35,9 +35,7 @@ const mockProfile: GetUserProfileResult = {
 };
 
 const mockListResult: GetUsersResult = {
-  items: [
-    { id: 'user-001', email: 'test@example.com', nickname: 'testuser', status: 'ACTIVE', avatarUrl: null, createdAt: '2026-01-01T00:00:00.000Z' },
-  ],
+  items: [{ id: 'user-001', nickname: 'testuser', status: 'ACTIVE', avatarUrl: null, createdAt: '2026-01-01T00:00:00.000Z' }],
   meta: { count: 1, take: 20, cursor: { createdAt: '2026-01-01T00:00:00.000Z', id: 'user-001' }, next: null },
 };
 
@@ -324,6 +322,18 @@ describe('UsersService', () => {
       const result = await service.getUserProfile('user-001');
       expect(result.user.id).toBe('user-001');
       expect(result.profile?.nickname).toBe('testuser');
+    });
+
+    it('본인이 조회하면 email을 그대로 반환한다', async () => {
+      const result = await service.getUserProfile('user-001', 'user-001');
+      expect(result.user.email).toBe('test@example.com');
+    });
+
+    it('다른 사용자가 조회하면 email을 null로 가린다', async () => {
+      const result = await service.getUserProfile('user-001', 'user-002');
+      expect(result.user.email).toBeNull();
+      expect(result.user.id).toBe('user-001');
+      expect(mockProfile.user.email).toBe('test@example.com');
     });
 
     it('유저가 존재하지 않으면 NotFoundException을 던진다', async () => {

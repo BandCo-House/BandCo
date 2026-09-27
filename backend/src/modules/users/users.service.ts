@@ -115,10 +115,23 @@ export class UsersService {
     return this.usersRepository.findUsers(query, tx);
   }
 
-  async getUserProfile(userId: string, tx?: Prisma.TransactionClient) {
+  /**
+   * 유저 프로필을 조회한다.
+   *
+   * 이메일은 본인이 조회할 때만 담는다 — 다른 사용자의 프로필에서 이메일이 그대로
+   * 나가던 문제를 막는다(#212 B-4). 프론트 스키마는 `email`을 nullable로 받는다.
+   *
+   * @param {string} userId - 조회할 유저 ID
+   * @param {string | undefined} viewerUserId - 조회를 요청한 인증 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   */
+  async getUserProfile(userId: string, viewerUserId?: string, tx?: Prisma.TransactionClient) {
     const result = await this.usersRepository.findUserProfileById(userId, tx);
     if (!result) {
       throw new NotFoundException('존재하지 않는 유저입니다.');
+    }
+    if (viewerUserId !== userId) {
+      return { ...result, user: { ...result.user, email: null } };
     }
     return result;
   }

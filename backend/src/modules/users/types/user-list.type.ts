@@ -2,7 +2,6 @@ import type { UserStatus } from 'src/generated/prisma';
 
 export interface UserListItem {
   id: string;
-  email: string | null;
   nickname: string;
   status: UserStatus;
   avatarUrl: string | null;

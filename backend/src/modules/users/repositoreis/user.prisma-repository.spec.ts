@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from 'src/database/prisma/prisma.service';
 import { Prisma } from 'src/generated/prisma';
@@ -413,6 +413,25 @@ describe('UsersPrismaRepository', () => {
       await repository.updateUserProfile('user-001', { favoriteGenres: ['genre-002'] });
       expect(mockPrisma.favoriteGenre.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
       expect(mockPrisma.favoriteGenre.createMany).toHaveBeenCalledWith({ data: [{ userId: 'user-001', genreId: 'genre-002' }] });
+    });
+
+    it('favoriteGenre.createMany가 P2003을 던지면 BadRequestException으로 변환한다', async () => {
+      const p2003 = new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', { code: 'P2003', clientVersion: '0' });
+      mockPrisma.favoriteGenre.createMany.mockRejectedValue(p2003);
+      await expect(repository.updateUserProfile('user-001', { favoriteGenres: ['unknown-genre'] })).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('userSkill.createMany가 P2003을 던지면 BadRequestException으로 변환한다', async () => {
+      const p2003 = new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', { code: 'P2003', clientVersion: '0' });
+      mockPrisma.userSkill.createMany.mockRejectedValue(p2003);
+      await expect(
+        repository.updateUserProfile('user-001', { skills: [{ skillTypeId: 'unknown-skill', level: 'BEGINNER', isPrimary: true }] }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('favoriteGenre.createMany의 P2003 이외 오류는 그대로 전파한다', async () => {
+      mockPrisma.favoriteGenre.createMany.mockRejectedValue(new Error('db down'));
+      await expect(repository.updateUserProfile('user-001', { favoriteGenres: ['genre-002'] })).rejects.toThrow('db down');
     });
 
     it('profile.profileMusic이 있으면 create/update trackData 페이로드를 포함해 profileMusic.upsert를 호출한다', async () => {
