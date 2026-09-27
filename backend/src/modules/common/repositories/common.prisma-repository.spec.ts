@@ -27,7 +27,7 @@ describe('CommonPrismaRepository', () => {
 
       expect(prisma.genre.findMany).toHaveBeenCalledWith({
         select: { id: true, name: true },
-        orderBy: { name: 'asc' },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       });
       expect(result).toEqual({
         genres: [
@@ -58,7 +58,7 @@ describe('CommonPrismaRepository', () => {
 
       expect(prisma.skillType.findMany).toHaveBeenCalledWith({
         select: { id: true, name: true },
-        orderBy: { name: 'asc' },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       });
       expect(result).toEqual({
         skills: [
