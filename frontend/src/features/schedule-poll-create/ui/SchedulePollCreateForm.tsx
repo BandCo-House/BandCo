@@ -134,13 +134,13 @@ const DeadlineTriggerButton = ({
   </PopoverTrigger>
 );
 
-/** 일정 투표 생성 폼. 날짜(다중)와 시작~종료 시간을 30분 후보로 펼쳐 생성한다. */
+/** 일정 투표 생성 폼. 이름 → 날짜(다중)·시간 → 마감 순서로 받고, 날짜 × 시간 범위를 30분 후보로 펼친다. */
 export const SchedulePollCreateForm = ({
   spaceId,
   onCreated,
 }: SchedulePollCreateFormProps) => {
-  const [dateKeys, setDateKeys] = useState<string[]>([]);
   const [name, setName] = useState('');
+  const [dateKeys, setDateKeys] = useState<string[]>([]);
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('17:00');
   // 마감 기한은 대부분 기본값으로 충분해 접어 둔다. '변경'을 눌렀을 때만 피커를 편다.
@@ -243,18 +243,29 @@ export const SchedulePollCreateForm = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h2 className="typo-lg-sb text-grey-50">날짜 선택</h2>
+      {/* 투표를 여는 이유가 일정 이름에 있어 맨 위에 둔다(목록 카드·앱바 제목이 되는 값이다).
+          이름 → 날짜·시간 → 마감 네 단계를 같은 라벨 위계로 두어 흐름만 순서로 읽히게 한다. */}
+      <Field label="일정 이름" required htmlFor="poll-name">
+        <Input
+          id="poll-name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="투표할 일정 이름을 입력하세요"
+          maxLength={40}
+          className={cn(fieldSurfaceClass, 'typo-base-sb')}
+        />
+      </Field>
+
+      <Field label="날짜 선택" required>
         <p className="typo-sm-r text-grey-200">
           멤버들이 가능한 시간을 고를 수 있게 후보 날짜를 정해요
         </p>
-      </header>
-
-      <MonthCalendar
-        value={dateKeys}
-        onChange={setDateKeys}
-        minDate={new Date(openedAt)}
-      />
+        <MonthCalendar
+          value={dateKeys}
+          onChange={setDateKeys}
+          minDate={new Date(openedAt)}
+        />
+      </Field>
 
       <Field label="후보 시간 범위" required>
         {/* '시작/종료 시간'은 투표 자체의 기간으로 읽혀 마감 기한과 헷갈린다.
@@ -289,17 +300,6 @@ export const SchedulePollCreateForm = ({
           slotLabels={slotLabels}
           optionCount={optionCount}
           exceeded={optionCountExceeded}
-        />
-      </Field>
-
-      <Field label="일정 이름" required htmlFor="poll-name">
-        <Input
-          id="poll-name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="투표할 일정 이름을 입력하세요"
-          maxLength={40}
-          className={cn(fieldSurfaceClass, 'typo-base-sb')}
         />
       </Field>
 
