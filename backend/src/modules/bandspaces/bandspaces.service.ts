@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
@@ -23,6 +23,7 @@ import type { UpdateBandSpaceMemberRoleResult } from './types/update-bandspace-m
 const BAND_NOT_FOUND_MESSAGE = '요청한 밴드를 찾을 수 없습니다.';
 const SPACE_NOT_FOUND_MESSAGE = '요청한 합주 공간을 찾을 수 없습니다.';
 const NOT_BAND_MEMBER_MESSAGE = '해당 밴드의 멤버가 아닙니다.';
+const SPACE_MEMBER_NOT_IN_BAND_MESSAGE = '합주 공간 멤버는 같은 밴드의 멤버만 지정할 수 있습니다.';
 
 @Injectable()
 export class BandSpacesService {
@@ -34,11 +35,17 @@ export class BandSpacesService {
 
   /**
    * 밴드 멤버가 요청한 합주 공간을 생성한다. 요청자가 생성자이자 LEADER 멤버가 된다.
-   * 밴드가 없으면 404, 요청자가 밴드 멤버가 아니면 403.
+   * bandMemberIds의 나머지 멤버는 MEMBER로 함께 들어간다.
+   * 밴드가 없으면 404, 요청자가 밴드 멤버가 아니면 403, 다른 밴드의 멤버가 섞여 있으면 400.
    */
   async createBandSpace(bandId: string, userId: string, input: CreateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<CreateBandSpaceResult> {
     const result = await this.runInTransaction(tx, async client => {
       const requesterBandMemberId = await this.resolveBandMemberId(bandId, userId, client);
+
+      if (input.bandMemberIds !== undefined) {
+        await this.assertBandMembersInBand(bandId, input.bandMemberIds, client);
+      }
+
       return this.bandSpacesRepository.createBandSpace(bandId, requesterBandMemberId, input, client);
     });
 
@@ -78,9 +85,18 @@ export class BandSpacesService {
     return spaceDetail;
   }
 
+  /**
+   * 합주 공간을 수정한다. bandMemberIds를 보내면 LEADER를 제외한 공간 멤버가 그 목록으로 교체된다.
+   * 공간이 없으면 404, 요청자가 밴드 멤버가 아니면 403, 다른 밴드의 멤버가 섞여 있으면 400.
+   */
   async updateBandSpace(spaceId: string, userId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult> {
     return this.runInTransaction(tx, async client => {
-      await this.assertSpaceBandMember(spaceId, userId, client);
+      const bandId = await this.assertSpaceBandMember(spaceId, userId, client);
+
+      if (input.bandMemberIds !== undefined) {
+        await this.assertBandMembersInBand(bandId, input.bandMemberIds, client);
+      }
+
       return this.bandSpacesRepository.updateBandSpace(spaceId, input, client);
     });
   }
@@ -195,6 +211,29 @@ export class BandSpacesService {
     await this.resolveMembership(bandId, userId, client);
 
     return bandId;
+  }
+
+  /**
+   * 공간 멤버로 지정한 밴드 멤버가 모두 이 밴드 소속인지 확인한다.
+   * 다른 밴드의 멤버 ID가 섞이면 공간 멤버십이 밴드 경계를 넘게 되므로 막는다.
+   *
+   * @param {string} bandId - 합주 공간이 속한 밴드 ID
+   * @param {string[]} bandMemberIds - 공간 멤버로 지정한 밴드 멤버 ID 목록
+   * @throws {BadRequestException} 이 밴드에 없는 밴드 멤버 ID가 있을 때
+   */
+  private async assertBandMembersInBand(bandId: string, bandMemberIds: string[], client: Prisma.TransactionClient): Promise<void> {
+    // 같은 ID가 두 번 오면 조회 결과 개수와 비교가 어긋나므로 중복을 먼저 제거한다.
+    const uniqueBandMemberIds = [...new Set(bandMemberIds)];
+
+    if (uniqueBandMemberIds.length === 0) {
+      return;
+    }
+
+    const foundBandMemberIds = await this.bandSpacesRepository.findBandMemberIdsInBand(bandId, uniqueBandMemberIds, client);
+
+    if (foundBandMemberIds.length !== uniqueBandMemberIds.length) {
+      throw new BadRequestException(SPACE_MEMBER_NOT_IN_BAND_MESSAGE);
+    }
   }
 
   private async resolveMembership(bandId: string, userId: string, client?: Prisma.TransactionClient): Promise<string> {

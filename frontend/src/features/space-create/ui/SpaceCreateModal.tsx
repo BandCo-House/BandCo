@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
+import { ParticipantSection } from '@/features/schedule-create/ui/components/ParticipantSection';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -41,8 +42,9 @@ const compareDate = (a: WheelDate, b: WheelDate) =>
   a.year - b.year || a.month - b.month || a.day - b.day;
 
 /**
- * 합주 공간 만들기 모달. 이름/설명 + 합주 기간(종료 날짜 토글로 상시/기간제).
+ * 합주 공간 만들기 모달. 이름/설명 + 합주 기간(종료 날짜 토글로 상시/기간제) + 참여자.
  * 종료 있음 → PERFORMANCE(D-day), 종료 없음(상시) → PRACTICE. status는 ACTIVE 고정.
+ * 참여자는 일정과 같은 방식(직접 추가·팀 추가)으로 고른다.
  */
 export const SpaceCreateModal = ({
   open,
@@ -60,6 +62,7 @@ export const SpaceCreateModal = ({
   const [endDate, setEndDate] = useState<WheelDate>(() =>
     toWheelDate(new Date()),
   );
+  const [bandMemberIds, setBandMemberIds] = useState<string[]>([]);
 
   // 열릴 때 폼을 초기화한다(effect 대신 렌더 중 파생).
   const [prevOpen, setPrevOpen] = useState(open);
@@ -72,11 +75,16 @@ export const SpaceCreateModal = ({
       setHasEnd(true);
       setStartDate(today);
       setEndDate(today);
+      setBandMemberIds([]);
     }
   }
 
   const endBeforeStart = hasEnd && compareDate(endDate, startDate) < 0;
-  const canSubmit = name.trim().length > 0 && !endBeforeStart && !isPending;
+  const canSubmit =
+    name.trim().length > 0 &&
+    bandMemberIds.length > 0 &&
+    !endBeforeStart &&
+    !isPending;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -89,6 +97,7 @@ export const SpaceCreateModal = ({
         status: 'ACTIVE',
         startDate: toDateString(startDate),
         endDate: hasEnd ? toDateString(endDate) : ONGOING_END_DATE,
+        bandMemberIds,
       },
       {
         onSuccess: () => {
@@ -195,6 +204,12 @@ export const SpaceCreateModal = ({
               </p>
             )}
           </div>
+
+          <ParticipantSection
+            bandId={bandId}
+            value={bandMemberIds}
+            onChange={setBandMemberIds}
+          />
         </AppDialogBody>
 
         {/* 버튼은 스크롤 본문 밖(푸터)에 둔다: 본문 overflow가 shining 글로우를 자르지 않도록. */}

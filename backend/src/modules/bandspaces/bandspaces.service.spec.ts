@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
 
 import { NotificationType } from '../../generated/prisma';
@@ -17,6 +17,7 @@ const REQUESTER_MEMBER_ID = '55555555-4555-4555-8555-555555555555';
 const TARGET_BAND_MEMBER_ID = '66666666-4666-4666-8666-666666666666';
 const SPACE_MEMBER_ID = '77777777-4777-4777-8777-777777777777';
 const ADDED_USER_ID = '88888888-4888-4888-8888-888888888888';
+const OTHER_BAND_MEMBER_ID = '99999999-4999-4999-8999-999999999999';
 
 const bandSpacesResult: GetBandSpacesResult = {
   items: [
@@ -87,6 +88,10 @@ interface RepositoryStubOptions {
   onCreate?: (requesterBandMemberId: string) => void;
   /** findBandSpaces에 전달된 requesterBandMemberId를 관찰한다 */
   onFindSpaces?: (requesterBandMemberId: string) => void;
+  /** findBandMemberIdsInBand 결과에서 뺄(다른 밴드 소속인) 밴드 멤버 ID 목록 */
+  bandMemberIdsNotInBand?: string[];
+  /** findBandMemberIdsInBand에 전달된 bandId와 bandMemberIds를 관찰한다 */
+  onFindBandMemberIdsInBand?: (bandId: string, bandMemberIds: string[]) => void;
 }
 
 function createRepositoryStub(options?: RepositoryStubOptions): BandSpacesRepository {
@@ -104,6 +109,12 @@ function createRepositoryStub(options?: RepositoryStubOptions): BandSpacesReposi
     async findBandIdBySpaceId(_spaceId, tx) {
       record('findBandIdBySpaceId', tx);
       return options?.spaceBandId !== undefined ? options.spaceBandId : BAND_ID;
+    },
+    async findBandMemberIdsInBand(bandId, bandMemberIds, tx) {
+      record('findBandMemberIdsInBand', tx);
+      options?.onFindBandMemberIdsInBand?.(bandId, bandMemberIds);
+      const notInBand = options?.bandMemberIdsNotInBand ?? [];
+      return bandMemberIds.filter(id => !notInBand.includes(id));
     },
     async createBandSpace(bandId, requesterBandMemberId, input, tx) {
       record('createBandSpace', tx);
@@ -339,6 +350,51 @@ describe('BandSpacesService', () => {
       expect(capturedTransactions).toHaveLength(4);
       capturedTransactions.forEach(tx => expect(tx).toBe(externalTx));
     });
+
+    it('참여 멤버가 모두 이 밴드 소속이면 중복을 뺀 ID로 확인한 뒤 공간을 만든다', async () => {
+      let capturedCheck: { bandId: string; bandMemberIds: string[] } | undefined;
+      const repository = createRepositoryStub({
+        onFindBandMemberIdsInBand: (bandId, bandMemberIds) => (capturedCheck = { bandId, bandMemberIds }),
+      });
+      const { service } = createService(repository);
+
+      const result = await service.createBandSpace(BAND_ID, USER_ID, {
+        ...createInput,
+        bandMemberIds: [TARGET_BAND_MEMBER_ID, TARGET_BAND_MEMBER_ID],
+      });
+
+      expect(result.spaceId).toBe(SPACE_ID);
+      expect(capturedCheck).toEqual({ bandId: BAND_ID, bandMemberIds: [TARGET_BAND_MEMBER_ID] });
+    });
+
+    it('다른 밴드의 멤버가 섞여 있으면 BadRequestException을 던지고 공간을 만들지 않는다', async () => {
+      const calledMethods: string[] = [];
+      const repository = createRepositoryStub({
+        bandMemberIdsNotInBand: [OTHER_BAND_MEMBER_ID],
+        onCall: method => calledMethods.push(method),
+      });
+      const { service, capturedBatches } = createService(repository);
+
+      await expect(
+        service.createBandSpace(BAND_ID, USER_ID, { ...createInput, bandMemberIds: [TARGET_BAND_MEMBER_ID, OTHER_BAND_MEMBER_ID] }),
+      ).rejects.toThrow(BadRequestException);
+      expect(calledMethods).not.toContain('createBandSpace');
+      expect(capturedBatches).toHaveLength(0);
+    });
+
+    it('참여 멤버 확인도 공간 생성과 같은 transaction client로 실행한다', async () => {
+      const capturedTransactions: unknown[] = [];
+      const repository = createRepositoryStub({
+        onCall: (method, tx) => {
+          if (method !== 'findBandMemberUserIds') capturedTransactions.push(tx);
+        },
+      });
+      const { service } = createService(repository);
+
+      await service.createBandSpace(BAND_ID, USER_ID, { ...createInput, bandMemberIds: [TARGET_BAND_MEMBER_ID] });
+
+      expectSameTransaction(capturedTransactions, 4);
+    });
   });
 
   describe('getBandSpaceDetail', () => {
@@ -421,6 +477,44 @@ describe('BandSpacesService', () => {
 
       expect(capturedTransactions).toHaveLength(3);
       capturedTransactions.forEach(tx => expect(tx).toBe(externalTx));
+    });
+
+    it('참여 멤버를 보내면 공간이 속한 밴드 기준으로 소속을 확인한 뒤 수정한다', async () => {
+      let capturedBandId = '';
+      const calledMethods: string[] = [];
+      const repository = createRepositoryStub({
+        onFindBandMemberIdsInBand: bandId => (capturedBandId = bandId),
+        onCall: method => calledMethods.push(method),
+      });
+      const { service } = createService(repository);
+
+      await service.updateBandSpace(SPACE_ID, USER_ID, { bandMemberIds: [TARGET_BAND_MEMBER_ID] });
+
+      expect(capturedBandId).toBe(BAND_ID);
+      expect(calledMethods).toContain('updateBandSpace');
+    });
+
+    it('참여 멤버에 다른 밴드의 멤버가 섞여 있으면 BadRequestException을 던지고 수정하지 않는다', async () => {
+      const calledMethods: string[] = [];
+      const repository = createRepositoryStub({
+        bandMemberIdsNotInBand: [OTHER_BAND_MEMBER_ID],
+        onCall: method => calledMethods.push(method),
+      });
+      const { service } = createService(repository);
+
+      await expect(service.updateBandSpace(SPACE_ID, USER_ID, { bandMemberIds: [OTHER_BAND_MEMBER_ID] })).rejects.toThrow(BadRequestException);
+      expect(calledMethods).not.toContain('updateBandSpace');
+    });
+
+    it('참여 멤버를 빈 배열로 보내면 소속 확인 없이 수정한다', async () => {
+      const calledMethods: string[] = [];
+      const repository = createRepositoryStub({ onCall: method => calledMethods.push(method) });
+      const { service } = createService(repository);
+
+      await service.updateBandSpace(SPACE_ID, USER_ID, { bandMemberIds: [] });
+
+      expect(calledMethods).not.toContain('findBandMemberIdsInBand');
+      expect(calledMethods).toContain('updateBandSpace');
     });
   });
 
