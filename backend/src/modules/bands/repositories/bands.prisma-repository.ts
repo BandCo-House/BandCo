@@ -1197,12 +1197,13 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 같은 밴드와 초대 대상 기준으로 기존 초대가 있는지 확인한다.
+   * 같은 밴드와 초대 대상 기준으로 대기 중(PENDING)인 초대가 있는지 확인한다.
+   * 거절·수락된 이력은 중복으로 보지 않는다 — 그래야 탈퇴하거나 거절한 사용자를 다시 초대할 수 있다(#212 B-3).
    *
    * @param {string} bandId - 대상 밴드 ID
    * @param {string} inviteeUserId - 초대 대상 사용자 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; status: BandInvitationStatus } | null>} 기존 초대 정보
+   * @returns {Promise<{ id: string; status: BandInvitationStatus } | null>} 대기 중인 초대 정보
    */
   async findBandInvitationByBandIdAndInviteeUserId(
     bandId: string,
@@ -1218,6 +1219,7 @@ export class BandsPrismaRepository implements BandsRepository {
       where: {
         bandId,
         inviteeUserId,
+        status: 'PENDING',
       },
       select: {
         id: true,
@@ -1227,12 +1229,13 @@ export class BandsPrismaRepository implements BandsRepository {
   }
 
   /**
-   * 같은 밴드와 사용자 기준으로 기존 가입 요청이 있는지 확인한다.
+   * 같은 밴드와 사용자 기준으로 대기 중(PENDING)인 가입 요청이 있는지 확인한다.
+   * 거절·승인된 이력은 중복으로 보지 않는다 — 그래야 같은 사용자가 다시 가입 요청을 보낼 수 있다(#212 B-3).
    *
    * @param {string} bandId - 대상 밴드 ID
    * @param {string} userId - 가입 요청 사용자 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
-   * @returns {Promise<{ id: string; status: JoinRequestStatus } | null>} 기존 가입 요청 정보
+   * @returns {Promise<{ id: string; status: JoinRequestStatus } | null>} 대기 중인 가입 요청 정보
    */
   async findBandJoinRequestByBandIdAndUserId(
     bandId: string,
@@ -1248,6 +1251,7 @@ export class BandsPrismaRepository implements BandsRepository {
       where: {
         bandId,
         userId,
+        status: 'PENDING',
       },
       select: {
         id: true,
@@ -1690,6 +1694,7 @@ export class BandsPrismaRepository implements BandsRepository {
       bandId: band.id,
       name: band.name ?? '',
       description: band.description,
+      coverImgUrl: band.coverImgUrl,
       visibility: band.visibility ?? true,
       memberCount: band._count.members,
       bandMaster: {
@@ -1728,6 +1733,7 @@ export class BandsPrismaRepository implements BandsRepository {
         id: band.id,
         name: band.name ?? '',
         description: band.description,
+        coverImgUrl: band.coverImgUrl,
         visibility: band.visibility ?? true,
         myRole: myMember.role,
         joinedAt: myMember.joinedAt.toISOString(),

@@ -2,6 +2,7 @@ export interface BandSearchListItem {
   bandId: string;
   name: string;
   description: string | null;
+  coverImgUrl: string | null;
   visibility: boolean;
   memberCount: number;
   bandMaster: {

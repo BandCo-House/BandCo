@@ -48,7 +48,9 @@ model UserOAuthAccount {
 
 model SkillType {
   id                   String                @id @default(uuid()) @db.Uuid
-  name                 String                @db.VarChar(40)
+  name                 String                @unique @db.VarChar(40)
+  /// 합주 편성 순서(보컬 → 기타 → 베이스 → 드럼 …). 이름순 정렬로는 편성 순서를 만들 수 없어 둔다.
+  sortOrder            Int                   @default(0) @map("sort_order")
   scheduleParticipants ScheduleParticipant[]
   songSkills           SongSkill[]
   teamMembers          TeamMember[]
@@ -59,7 +61,9 @@ model SkillType {
 
 model Genre {
   id             String          @id @default(uuid()) @db.Uuid
-  name           String          @db.VarChar(20)
+  name           String          @unique @db.VarChar(40)
+  /// 장르 묶음(록 → 펑크·메탈 → 팝 …) 표시 순서. 이름순이면 영문 태그가 앞으로 몰려 읽기 어렵다.
+  sortOrder      Int             @default(0) @map("sort_order")
   bandGenres     BandGenre[]
   favoriteGenres FavoriteGenre[]
 
@@ -178,7 +182,9 @@ model BandJoinRequest {
   band      Band              @relation(fields: [bandId], references: [id], onDelete: Cascade)
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([bandId, userId])
+  // (band_id, user_id) 유니크는 PENDING 행에만 걸리는 부분 인덱스로 DB에만 있다
+  // (migrations/20260926120000_pending_only_unique_invitations). Prisma는 부분 인덱스를
+  // 표현하지 못해 여기엔 없고, migrate diff가 이를 드리프트로 보고하는 것은 정상이다.
   @@map("band_join_requests")
 }
 
@@ -195,7 +201,9 @@ model BandInvitation {
   inviteeUser         User                 @relation("BandInvitationInvitee", fields: [inviteeUserId], references: [id], onDelete: Cascade)
   inviterBandMember   BandMember           @relation("BandInvitationInviter", fields: [inviterBandMemberId], references: [id], onDelete: Cascade)
 
-  @@unique([bandId, inviteeUserId])
+  // (band_id, invitee_user_id) 유니크는 PENDING 행에만 걸리는 부분 인덱스로 DB에만 있다
+  // (migrations/20260926120000_pending_only_unique_invitations). Prisma는 부분 인덱스를
+  // 표현하지 못해 여기엔 없고, migrate diff가 이를 드리프트로 보고하는 것은 정상이다.
   @@map("band_invitations")
 }
 

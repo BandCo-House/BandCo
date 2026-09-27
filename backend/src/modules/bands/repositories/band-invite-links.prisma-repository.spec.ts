@@ -162,6 +162,30 @@ describe('BandInviteLinksPrismaRepository', () => {
     expect(result).toBe(true);
   });
 
+  it('밴드 ID로 초대 링크의 만료 시각을 조회한다', async () => {
+    const expiredAt = new Date('2026-08-04T00:00:00.000Z');
+    prisma.bandInviteLink.findFirst.mockResolvedValue({
+      bandId: 'band-id',
+      expiredAt,
+    });
+
+    const result = await repository.findBandInviteLinkByBandId('band-id');
+
+    expect(prisma.bandInviteLink.findFirst).toHaveBeenCalledWith({
+      where: {
+        bandId: 'band-id',
+      },
+      select: {
+        bandId: true,
+        expiredAt: true,
+      },
+    });
+    expect(result).toEqual({
+      bandId: 'band-id',
+      expiredAt,
+    });
+  });
+
   it('코드 해시와 활성 밴드 조건으로 초대 링크를 조회한다', async () => {
     const expiredAt = new Date('2026-08-04T00:00:00.000Z');
     prisma.bandInviteLink.findFirst.mockResolvedValue({

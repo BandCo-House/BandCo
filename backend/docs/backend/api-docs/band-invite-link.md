@@ -20,9 +20,47 @@
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
+| GET | `/bands/:bandId/invite-link` | 초대 링크 존재 여부·만료 시각 조회 |
 | POST | `/bands/:bandId/invite-link` | 초대 링크 발급·재발급 |
 | DELETE | `/bands/:bandId/invite-link` | 초대 링크 폐기 |
 | POST | `/invite-links/:code/join` | 초대 코드로 밴드 가입 |
+
+---
+
+## 초대 링크 존재 여부 조회
+
+- Method: `GET`
+- Path: `/bands/:bandId/invite-link`
+- 인증: AccessToken
+- 권한: `BM`, `ADMIN`
+- 추가: 2026-09-26 (#212 B-4) — 설정 화면 진입 시 링크가 발급돼 있는지 알 수 없어 항상 "발급된 링크가 없어요"로 보이던 문제 대응
+
+원본 코드는 SHA-256 해시로만 저장하므로 다시 돌려줄 수 없다. 이 API는 **활성 링크가 있는지와 만료 시각**만 알려주고, 코드가 필요하면 재발급(POST)해야 한다. 만료된 링크는 가입에 쓸 수 없으므로 `hasActiveLink: false`로 취급한다.
+
+### Response 200
+
+```json
+{
+  "status": "success",
+  "error": null,
+  "message": "밴드 초대 링크를 조회했습니다.",
+  "data": {
+    "bandId": "uuid",
+    "hasActiveLink": true,
+    "expiredAt": "2026-08-04T00:00:00.000Z"
+  }
+}
+```
+
+링크가 없거나 만료됐으면 `hasActiveLink: false`, `expiredAt: null`이다.
+
+### Error
+
+| 코드 | 조건 |
+|------|------|
+| 401 | 인증 실패 |
+| 403 | 밴드 멤버가 아니거나 `MEMBER` 역할 |
+| 404 | 밴드를 찾을 수 없음 |
 
 ---
 

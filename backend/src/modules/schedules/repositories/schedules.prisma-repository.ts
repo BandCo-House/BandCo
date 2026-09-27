@@ -160,11 +160,11 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
     });
   }
 
-  async findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+  async findBandSpaceById(bandSpaceId: string, tx?: Prisma.TransactionClient): Promise<{ id: string; bandId: string } | null> {
     const client = tx ?? this.prisma;
     return client.bandSpace.findFirst({
       where: { id: bandSpaceId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, bandId: true },
     });
   }
 
