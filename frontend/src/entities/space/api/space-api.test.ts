@@ -131,4 +131,22 @@ describe('band space api 어댑터', () => {
     expect(result.spaceId).toBe('space-created');
     expect(result.name).toBe('새 합주');
   });
+
+  it('스페이스 생성 시 참여 멤버 목록을 요청 본문에 싣는다', async () => {
+    mock.onPost('/bands/band-1/bandspaces').reply(201, {
+      status: 'success',
+      error: null,
+      message: '요청 성공',
+      data: { ...listItem, spaceId: 'space-created' },
+    });
+
+    await createSpace('band-1', {
+      name: '새 합주',
+      bandMemberIds: ['member-1', 'member-2'],
+    });
+
+    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({
+      bandMemberIds: ['member-1', 'member-2'],
+    });
+  });
 });
