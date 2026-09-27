@@ -162,7 +162,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | `cursor__created_at` | N | 커서 기반 페이지네이션 — 마지막 아이템 생성일 |
 | `cursor__id` | N | 커서 기반 페이지네이션 — 마지막 아이템 ID (UUID) |
 | `where__nickname__contain` | N | 닉네임 부분 검색 |
-| `where__email__contain` | N | 이메일 부분 검색 |
+
+> 이메일 부분 검색(`where__email__contain`)은 제거했다. 목록 응답에서 이메일을 빼도 검색어로 이메일 존재 여부를 유추할 수 있어서다(#212 후속). 유저 검색은 닉네임으로만 한다. 요청에 넣으면 `forbidNonWhitelisted`에 걸려 400이 난다.
 
 ### Response 200
 

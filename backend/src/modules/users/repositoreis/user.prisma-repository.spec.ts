@@ -256,13 +256,6 @@ describe('UsersPrismaRepository', () => {
       expect(callArgs.where).toEqual({ deletedAt: null });
     });
 
-    it('where__email__contain이 있으면 email contains 조건이 추가된다', async () => {
-      mockPrisma.user.findMany.mockResolvedValue([]);
-      await repository.findUsers({ ...defaultQuery, where__email__contain: 'test' });
-      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
-      expect(callArgs.where.email).toEqual({ contains: 'test', mode: 'insensitive' });
-    });
-
     it('where__nickname__contain이 있으면 profile.nickname contains 조건이 추가된다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
       await repository.findUsers({ ...defaultQuery, where__nickname__contain: 'nick' });
