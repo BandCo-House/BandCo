@@ -19,13 +19,18 @@ const OTHER_MEMBER_ID = '77777777-7777-4777-8777-777777777777';
 const FUTURE_CLOSES_AT = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 const PAST_CLOSES_AT = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
+// 후보는 마감 이후여야 하므로 마감(=7일 뒤) 다음 날들을 쓴다.
+const optionAfterClosesAt = (dayOffset: number, hours: number) => {
+  const start = new Date(Date.parse(FUTURE_CLOSES_AT) + dayOffset * 24 * 60 * 60 * 1000);
+  const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
+
+  return { startAt: start.toISOString(), endAt: end.toISOString() };
+};
+
 const DEFAULT_INPUT: CreateSchedulePollInput = {
   name: '좋은 날 오프닝 연습',
   closesAt: FUTURE_CLOSES_AT,
-  options: [
-    { startAt: '2026-09-13T12:00:00.000Z', endAt: '2026-09-13T14:00:00.000Z' },
-    { startAt: '2026-09-14T12:00:00.000Z', endAt: '2026-09-14T14:00:00.000Z' },
-  ],
+  options: [optionAfterClosesAt(1, 2), optionAfterClosesAt(2, 2)],
 };
 
 const DEFAULT_POLL: SchedulePollData = {
@@ -189,6 +194,37 @@ describe('SchedulePollsService', () => {
       const input = { ...DEFAULT_INPUT, options: [{ startAt: '2026-09-13T14:00:00.000Z', endAt: '2026-09-13T12:00:00.000Z' }] };
 
       await expect(service.createSchedulePoll(USER_ID, BAND_SPACE_ID, input)).rejects.toThrow(BadRequestException);
+    });
+
+    it('후보 시작 시간이 마감 기한보다 앞서면 BadRequestException을 던진다', async () => {
+      const repository = createSchedulePollsRepositoryStub();
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+      const beforeClosesAt = new Date(Date.parse(FUTURE_CLOSES_AT) - 60 * 60 * 1000);
+
+      await expect(
+        service.createSchedulePoll(USER_ID, BAND_SPACE_ID, {
+          ...DEFAULT_INPUT,
+          options: [
+            {
+              startAt: beforeClosesAt.toISOString(),
+              endAt: new Date(beforeClosesAt.getTime() + 60 * 60 * 1000).toISOString(),
+            },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('이미 지난 시각의 후보는 마감 기한 검사에 함께 걸린다', async () => {
+      const repository = createSchedulePollsRepositoryStub();
+      const service = new SchedulePollsService(repository, createPrismaServiceStub());
+      const past = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      await expect(
+        service.createSchedulePoll(USER_ID, BAND_SPACE_ID, {
+          ...DEFAULT_INPUT,
+          options: [{ startAt: past.toISOString(), endAt: new Date(past.getTime() + 60 * 60 * 1000).toISOString() }],
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('같은 후보 시간이 중복되면 BadRequestException을 던진다', async () => {

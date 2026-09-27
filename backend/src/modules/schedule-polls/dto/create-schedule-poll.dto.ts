@@ -11,8 +11,18 @@ import { stringValidationMessage } from '../../../common/validation-message/stri
 /** 공백만으로 된 이름을 거른다. IsNotEmpty는 ''만 막고 '   '는 통과시킨다. */
 const NON_BLANK_PATTERN = /\S/;
 
-/** 후보가 과도하게 많으면 상세 조회 응답과 투표 화면이 비대해지므로 상한을 둔다. */
-export const SCHEDULE_POLL_OPTION_MAX_COUNT = 20;
+/** 하루(격자 한 열)에 만들 수 있는 30분 후보 수. 투표 화면의 세로 길이를 정하는 축이다. */
+export const SCHEDULE_POLL_MAX_SLOTS_PER_DAY = 16;
+
+/** 후보 날짜 수 상한. 격자는 날짜를 3개씩 페이지로 나누므로 날짜가 늘어도 화면은 길어지지 않는다. */
+export const SCHEDULE_POLL_MAX_DATE_COUNT = 14;
+
+/**
+ * 후보 총량 상한(= 하루 상한 × 날짜 상한). 응답 크기를 막는 값이다.
+ * 화면 부담은 총량이 아니라 하루 칸 수로 결정되는데, 로컬 날짜 경계는 클라이언트만 알 수 있어
+ * 축별 상한은 생성 화면이 막고 서버는 총량만 막는다.
+ */
+export const SCHEDULE_POLL_OPTION_MAX_COUNT = SCHEDULE_POLL_MAX_SLOTS_PER_DAY * SCHEDULE_POLL_MAX_DATE_COUNT;
 
 /** 투표 이름 최대 길이(schedule_polls.name VarChar(50)과 일치). */
 export const SCHEDULE_POLL_NAME_MAX_LENGTH = 50;

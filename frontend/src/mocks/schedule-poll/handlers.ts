@@ -241,6 +241,18 @@ export const schedulePollHandlers = [
           '투표 마감 기한은 현재 시각 이후여야 합니다.',
         );
       }
+      const closesAtMs = new Date(body.closesAt).getTime();
+      if (
+        body.options.some(
+          (option) => new Date(option.startAt).getTime() < closesAtMs,
+        )
+      ) {
+        return fail(
+          400,
+          'BAD_REQUEST',
+          '후보 시간은 투표 마감 기한 이후여야 합니다.',
+        );
+      }
 
       pollSeq += 1;
       const now = new Date().toISOString();

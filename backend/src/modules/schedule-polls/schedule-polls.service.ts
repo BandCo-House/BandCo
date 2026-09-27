@@ -13,6 +13,7 @@ const SCHEDULE_POLL_NOT_FOUND_MESSAGE = '요청한 일정 투표를 찾을 수 �
 const NOT_BAND_SPACE_MEMBER_MESSAGE = '해당 합주 공간의 멤버가 아닙니다.';
 const CLOSES_AT_NOT_FUTURE_MESSAGE = '투표 마감 기한은 현재 시각 이후여야 합니다.';
 const SCHEDULE_POLL_CLOSED_MESSAGE = '마감된 일정 투표에는 투표할 수 없습니다.';
+const OPTION_BEFORE_CLOSES_AT_MESSAGE = '후보 시간은 투표 마감 기한 이후여야 합니다.';
 
 @Injectable()
 export class SchedulePollsService {
@@ -250,6 +251,12 @@ export class SchedulePollsService {
 
       if (startAt >= endAt) {
         throw new BadRequestException('각 후보의 종료 시간은 시작 시간보다 이후여야 합니다.');
+      }
+
+      // 마감 전에 지나가는 후보는 투표가 끝나는 시점에 이미 죽은 선택지다.
+      // 마감은 위에서 현재 시각 이후로 강제되므로, 이 규칙 하나로 과거 후보도 함께 막힌다.
+      if (startAt.getTime() < closesAt) {
+        throw new BadRequestException(OPTION_BEFORE_CLOSES_AT_MESSAGE);
       }
 
       const optionKey = `${startAt.toISOString()}_${endAt.toISOString()}`;

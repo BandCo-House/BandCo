@@ -71,5 +71,12 @@ export interface UpdateMySchedulePollVoteRequest {
   schedulePollOptionIds: string[];
 }
 
-/** 백엔드 후보 시간 상한(backend SCHEDULE_POLL_OPTION_MAX_COUNT과 동일). */
-export const SCHEDULE_POLL_OPTION_MAX_COUNT = 20;
+/** 하루에 만들 수 있는 30분 후보 수(=8시간). 격자의 세로 길이를 정하는 축이다. */
+export const SCHEDULE_POLL_MAX_SLOTS_PER_DAY = 16;
+
+/** 후보 날짜 수 상한. 격자는 날짜를 3개씩 페이지로 나눠 화면 길이와 무관하다. */
+export const SCHEDULE_POLL_MAX_DATE_COUNT = 14;
+
+/** 백엔드 총량 상한(backend SCHEDULE_POLL_OPTION_MAX_COUNT과 동일). */
+export const SCHEDULE_POLL_OPTION_MAX_COUNT =
+  SCHEDULE_POLL_MAX_SLOTS_PER_DAY * SCHEDULE_POLL_MAX_DATE_COUNT;

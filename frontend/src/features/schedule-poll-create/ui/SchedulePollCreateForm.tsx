@@ -15,10 +15,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
 import { WheelTimePicker } from '@/shared/ui/wheel-time-picker';
 import { pad2, toWheelDate, type WheelDate } from '@/shared/ui/wheel-date';
-import { SCHEDULE_POLL_OPTION_MAX_COUNT } from '@/entities/schedule-poll/model/types';
+import {
+  SCHEDULE_POLL_MAX_DATE_COUNT,
+  SCHEDULE_POLL_MAX_SLOTS_PER_DAY,
+} from '@/entities/schedule-poll/model/types';
 import { formatDateRanges } from '@/entities/schedule-poll/lib/poll-grid';
 import { useCreateSchedulePoll } from '../api/use-create-schedule-poll';
 import {
+  POLL_SLOT_MINUTES,
   START_TIME_OPTIONS,
   buildPollOptions,
   buildSlotLabels,
@@ -66,12 +70,13 @@ const SlotPreview = ({
   dateKeys,
   slotLabels,
   optionCount,
-  exceeded,
+  limitMessage,
 }: {
   dateKeys: string[];
   slotLabels: string[];
   optionCount: number;
-  exceeded: boolean;
+  /** 상한을 넘었을 때 어느 축이 넘었는지. 넘지 않았으면 null. */
+  limitMessage: string | null;
 }) => {
   if (dateKeys.length === 0 || slotLabels.length === 0) return null;
 
@@ -91,12 +96,11 @@ const SlotPreview = ({
       <p
         className={cn(
           'typo-sm-sb',
-          exceeded ? 'text-destructive' : 'text-grey-100',
+          limitMessage ? 'text-destructive' : 'text-grey-100',
         )}
       >
         날짜 {dateKeys.length}일 × 하루 {slotLabels.length}칸 = 후보{' '}
-        {optionCount}개
-        {exceeded ? ` (최대 ${SCHEDULE_POLL_OPTION_MAX_COUNT}개)` : ''}
+        {optionCount}개{limitMessage ? ` · ${limitMessage}` : ''}
       </p>
     </div>
   );
@@ -187,10 +191,40 @@ export const SchedulePollCreateForm = ({
   const slotLabels = buildSlotLabels(startTime, endTime);
 
   const timeRangeInvalid = slotsPerDay === 0;
-  const optionCountExceeded = optionCount > SCHEDULE_POLL_OPTION_MAX_COUNT;
+  // 총 개수가 아니라 축별로 막는다. 격자는 날짜를 3개씩 페이지로 나눠서
+  // 화면이 길어지는 건 하루 칸 수뿐이고, 날짜는 페이지 수만 늘린다.
+  const slotsPerDayExceeded = slotsPerDay > SCHEDULE_POLL_MAX_SLOTS_PER_DAY;
+  const dateCountExceeded = dateKeys.length > SCHEDULE_POLL_MAX_DATE_COUNT;
+  const limitMessage = slotsPerDayExceeded
+    ? `하루 최대 ${SCHEDULE_POLL_MAX_SLOTS_PER_DAY}칸`
+    : dateCountExceeded
+      ? `날짜 최대 ${SCHEDULE_POLL_MAX_DATE_COUNT}일`
+      : null;
+
   const closesAt = toClosesAtIso(deadlineDate, deadlineTime);
   // 백엔드도 거부하지만, 제출 전에 미리 알 수 있게 인라인으로 막는다.
   const deadlinePast = new Date(closesAt).getTime() <= openedAt;
+
+  // 첫 후보 시작 시각. 마감이 이보다 뒤면 투표가 끝나기 전에 그 후보가 지나가
+  // 고를 수 없는 선택지가 된다(서버도 400으로 거부한다).
+  const firstOptionStart = useMemo(() => {
+    const firstDate = dateKeys[0];
+    if (!firstDate || slotsPerDay === 0) return null;
+    const [hour = 0, minute = 0] = startTime.split(':').map(Number);
+
+    return new Date(
+      Number(firstDate.slice(0, 4)),
+      Number(firstDate.slice(5, 7)) - 1,
+      Number(firstDate.slice(8, 10)),
+      hour,
+      minute,
+    ).getTime();
+  }, [dateKeys, startTime, slotsPerDay]);
+
+  const deadlineAfterFirstOption =
+    firstOptionStart !== null &&
+    !deadlinePast &&
+    firstOptionStart < new Date(closesAt).getTime();
 
   // 후보 개수 초과는 날짜×시간 조합의 결과라 어느 칸의 잘못인지 특정할 수 없다.
   // 버튼을 잠그면 이유를 알 수 없으니, 누를 수는 있게 두고 제출 시 toast로 알린다.
@@ -199,6 +233,7 @@ export const SchedulePollCreateForm = ({
     name.trim().length > 0 &&
     !timeRangeInvalid &&
     !deadlinePast &&
+    !deadlineAfterFirstOption &&
     !createPoll.isPending;
 
   // 시작을 옮기면 기존 길이를 유지한 채 끝도 따라 옮긴다(끝이 시작보다 빨라지는 상태를 만들지 않는다).
@@ -215,9 +250,15 @@ export const SchedulePollCreateForm = ({
       toast.error('투표 마감 기한이 지났어요. 기한을 다시 정해주세요.');
       return;
     }
-    if (optionCountExceeded) {
+    if (slotsPerDayExceeded) {
       toast.error(
-        `후보는 최대 ${SCHEDULE_POLL_OPTION_MAX_COUNT}개까지 만들 수 있어요. 날짜나 시간 범위를 줄여주세요. (현재 ${optionCount}개)`,
+        `후보 시간 범위는 하루 ${(SCHEDULE_POLL_MAX_SLOTS_PER_DAY * POLL_SLOT_MINUTES) / 60}시간까지예요. 범위를 줄여주세요. (현재 ${slotsPerDay}칸)`,
+      );
+      return;
+    }
+    if (dateCountExceeded) {
+      toast.error(
+        `날짜는 최대 ${SCHEDULE_POLL_MAX_DATE_COUNT}일까지 고를 수 있어요. (현재 ${dateKeys.length}일)`,
       );
       return;
     }
@@ -299,7 +340,7 @@ export const SchedulePollCreateForm = ({
           dateKeys={dateKeys}
           slotLabels={slotLabels}
           optionCount={optionCount}
-          exceeded={optionCountExceeded}
+          limitMessage={limitMessage}
         />
       </Field>
 
@@ -314,7 +355,7 @@ export const SchedulePollCreateForm = ({
               <DeadlineTriggerButton
                 label="마감 날짜 선택"
                 value={formatWheelDateDot(deadlineDate)}
-                invalid={deadlinePast}
+                invalid={deadlinePast || deadlineAfterFirstOption}
                 icon={
                   <CalendarIcon
                     aria-hidden="true"
@@ -338,7 +379,7 @@ export const SchedulePollCreateForm = ({
               <DeadlineTriggerButton
                 label="마감 시간 선택"
                 value={deadlineTime}
-                invalid={deadlinePast}
+                invalid={deadlinePast || deadlineAfterFirstOption}
                 icon={
                   <Clock
                     aria-hidden="true"
@@ -379,6 +420,13 @@ export const SchedulePollCreateForm = ({
         {deadlinePast && (
           <p id={DEADLINE_ERROR_ID} className="typo-sm-r text-destructive">
             마감 기한은 현재 시각 이후여야 해요.
+          </p>
+        )}
+
+        {deadlineAfterFirstOption && (
+          <p id={DEADLINE_ERROR_ID} className="typo-sm-r text-destructive">
+            마감이 첫 후보 시간보다 늦어요. 투표가 끝나기 전에 그 시간이
+            지나가요.
           </p>
         )}
       </Field>
