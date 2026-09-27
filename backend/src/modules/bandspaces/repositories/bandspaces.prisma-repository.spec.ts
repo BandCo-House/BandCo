@@ -9,12 +9,20 @@ const REQUESTER_MEMBER_ID = '33333333-4333-4333-8333-333333333333';
 const TARGET_MEMBER_ID = '44444444-4444-4444-8444-444444444444';
 const OTHER_MEMBER_ID = '55555555-4555-4555-8555-555555555555';
 const CREATED_AT = new Date('2026-09-01T00:00:00.000Z');
+const EMPTY_SPACE_ID = '66666666-4666-4666-8666-666666666666';
+const SONG_A_ID = '77777777-4777-4777-8777-777777777777';
+const SONG_B_ID = '88888888-4888-4888-8888-888888888888';
 
 const createPrismaMock = () => ({
   bandSpace: {
+    count: jest.fn(),
     create: jest.fn(),
     findFirst: jest.fn(),
+    findMany: jest.fn(),
     update: jest.fn(),
+  },
+  scheduleSong: {
+    findMany: jest.fn(),
   },
   spaceMember: {
     create: jest.fn(),
@@ -37,6 +45,8 @@ const bandSpaceRow = {
   updatedAt: null,
   deletedAt: null,
 };
+
+const listQuery = { query: undefined, onlyMine: undefined, inProgressOnly: undefined, page: 1, size: 20, sort: undefined };
 
 const createInput = {
   name: '가을 공연 준비',
@@ -120,6 +130,47 @@ describe('BandSpacesPrismaRepository', () => {
 
       expect(prisma.spaceMember.deleteMany).not.toHaveBeenCalled();
       expect(prisma.spaceMember.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findBandSpaces', () => {
+    it('공간마다 그 공간 일정에 걸린 곡을 중복 없이 세고, 곡이 없는 공간은 0곡으로 반환한다', async () => {
+      prisma.bandSpace.count.mockResolvedValue(2);
+      prisma.bandSpace.findMany.mockResolvedValue([
+        { ...bandSpaceRow, members: [{ role: 'LEADER' }], _count: { members: 3 } },
+        { ...bandSpaceRow, id: EMPTY_SPACE_ID, members: [], _count: { members: 1 } },
+      ]);
+      // 같은 곡(SONG_A)이 두 일정에 걸려 있다.
+      prisma.scheduleSong.findMany.mockResolvedValue([
+        { songId: SONG_A_ID, schedule: { bandSpaceId: SPACE_ID } },
+        { songId: SONG_A_ID, schedule: { bandSpaceId: SPACE_ID } },
+        { songId: SONG_B_ID, schedule: { bandSpaceId: SPACE_ID } },
+      ]);
+
+      const result = await repository.findBandSpaces(BAND_ID, REQUESTER_MEMBER_ID, listQuery, tx);
+
+      expect(prisma.scheduleSong.findMany).toHaveBeenCalledWith({
+        where: { schedule: { bandSpaceId: { in: [SPACE_ID, EMPTY_SPACE_ID] } } },
+        select: { songId: true, schedule: { select: { bandSpaceId: true } } },
+      });
+      expect(result.items.map(item => [item.spaceId, item.songCount])).toEqual([
+        [SPACE_ID, 2],
+        [EMPTY_SPACE_ID, 0],
+      ]);
+    });
+  });
+
+  describe('findDetailByBandSpaceId', () => {
+    it('공간 일정에 걸린 곡을 중복 없이 세어 songCount로 반환한다', async () => {
+      prisma.bandSpace.findFirst.mockResolvedValue({ ...bandSpaceRow, members: [], schedules: [] });
+      prisma.scheduleSong.findMany.mockResolvedValue([
+        { songId: SONG_A_ID, schedule: { bandSpaceId: SPACE_ID } },
+        { songId: SONG_A_ID, schedule: { bandSpaceId: SPACE_ID } },
+      ]);
+
+      const result = await repository.findDetailByBandSpaceId(SPACE_ID, tx);
+
+      expect(result?.songCount).toBe(1);
     });
   });
 });

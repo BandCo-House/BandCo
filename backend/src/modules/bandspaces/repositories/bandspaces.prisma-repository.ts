@@ -23,15 +23,6 @@ import type {
 
 type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
   include: {
-    band: {
-      select: {
-        _count: {
-          select: {
-            songs: true;
-          };
-        };
-      };
-    };
     members: {
       where: {
         bandMemberId: string;
@@ -50,15 +41,6 @@ type BandSpaceListRecord = Prisma.BandSpaceGetPayload<{
 
 type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
   include: {
-    band: {
-      select: {
-        _count: {
-          select: {
-            songs: true;
-          };
-        };
-      };
-    };
     members: {
       include: {
         bandMember: {
@@ -238,15 +220,6 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
         skip,
         take: query.size,
         include: {
-          band: {
-            select: {
-              _count: {
-                select: {
-                  songs: true,
-                },
-              },
-            },
-          },
           members: {
             where: {
               bandMemberId: requesterBandMemberId,
@@ -264,8 +237,13 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       }),
     ]);
 
+    const songCountBySpaceId = await this.countSongsBySpaceIds(
+      spaces.map(space => space.id),
+      client,
+    );
+
     return {
-      items: spaces.map(space => this.mapBandSpaceListItem(space, requesterBandMemberId)),
+      items: spaces.map(space => this.mapBandSpaceListItem(space, requesterBandMemberId, songCountBySpaceId.get(space.id) ?? 0)),
       pagination: createPagination(totalCount, {
         page: query.page,
         size: query.size,
@@ -281,15 +259,6 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
         deletedAt: null,
       },
       include: {
-        band: {
-          select: {
-            _count: {
-              select: {
-                songs: true,
-              },
-            },
-          },
-        },
         members: {
           include: {
             bandMember: {
@@ -315,7 +284,41 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       return undefined;
     }
 
-    return this.mapBandSpaceDetail(space);
+    const songCountBySpaceId = await this.countSongsBySpaceIds([space.id], client);
+
+    return this.mapBandSpaceDetail(space, songCountBySpaceId.get(space.id) ?? 0);
+  }
+
+  /**
+   * 합주 공간별로 공간 안 일정에 연결된 곡 수를 센다. 같은 곡이 여러 일정에 걸려도 한 번만 센다.
+   * 곡은 공간이 아니라 일정에 연결되므로, 공간에서 실제로 합주하기로 잡은 곡을 기준으로 삼는다.
+   *
+   * @param {string[]} spaceIds - 곡 수를 셀 합주 공간 ID 목록
+   * @param {Prisma.TransactionClient | PrismaService} client - 조회에 쓸 client
+   * @returns {Promise<Map<string, number>>} 공간 ID별 곡 수. 곡이 없는 공간은 포함되지 않는다.
+   */
+  private async countSongsBySpaceIds(spaceIds: string[], client: Prisma.TransactionClient | PrismaService): Promise<Map<string, number>> {
+    const scheduleSongs = await client.scheduleSong.findMany({
+      where: { schedule: { bandSpaceId: { in: spaceIds } } },
+      select: { songId: true, schedule: { select: { bandSpaceId: true } } },
+    });
+
+    const songIdsBySpaceId = new Map<string, Set<string>>();
+
+    for (const scheduleSong of scheduleSongs) {
+      const spaceId = scheduleSong.schedule.bandSpaceId;
+      const songIds = songIdsBySpaceId.get(spaceId) ?? new Set<string>();
+      songIds.add(scheduleSong.songId);
+      songIdsBySpaceId.set(spaceId, songIds);
+    }
+
+    const songCountBySpaceId = new Map<string, number>();
+
+    for (const [spaceId, songIds] of songIdsBySpaceId) {
+      songCountBySpaceId.set(spaceId, songIds.size);
+    }
+
+    return songCountBySpaceId;
   }
 
   private createBandSpaceWhereInput(bandId: string, requesterBandMemberId: string, query: GetBandSpacesQuery): Prisma.BandSpaceWhereInput {
@@ -368,7 +371,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     return [{ createdAt: 'desc' }];
   }
 
-  private mapBandSpaceListItem(space: BandSpaceListRecord, requesterBandMemberId: string): BandSpaceListItem {
+  private mapBandSpaceListItem(space: BandSpaceListRecord, requesterBandMemberId: string, songCount: number): BandSpaceListItem {
     const myMembership = space.members[0];
 
     return {
@@ -382,7 +385,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       startDate: this.formatDateOnly(space.startDate),
       endDate: this.formatDateOnly(space.endDate),
       memberCount: space._count.members,
-      songCount: space.band._count.songs,
+      songCount,
       isMine: space.createdByBandMemberId === requesterBandMemberId,
       myMembership: {
         isMember: myMembership !== undefined,
@@ -393,7 +396,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     };
   }
 
-  private mapBandSpaceDetail(space: BandSpaceDetailRecord): GetBandSpaceDetailResult {
+  private mapBandSpaceDetail(space: BandSpaceDetailRecord, songCount: number): GetBandSpaceDetailResult {
     const sortedMembers = [...space.members].sort((leftMember, rightMember) => {
       const leftPriority = leftMember.role === 'LEADER' ? 0 : 1;
       const rightPriority = rightMember.role === 'LEADER' ? 0 : 1;
@@ -419,7 +422,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
         updatedAt: this.formatDateTime(space.updatedAt, space.createdAt),
       },
       members: sortedMembers.map(member => this.mapBandSpaceMemberDetail(member)),
-      songCount: space.band._count.songs,
+      songCount,
       scheduleCount: space.schedules.length,
     };
   }
