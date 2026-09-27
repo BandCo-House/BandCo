@@ -79,17 +79,17 @@ const SlotPreview = ({
 
   return (
     <div className="flex flex-col gap-1.5 rounded-sm bg-surface-3 px-4 py-3">
-      <p className="typo-xs-sb text-grey-100">이렇게 만들어져요</p>
-      <p className="typo-xs-r text-grey-200">
+      <p className="typo-sm-sb text-grey-100">이렇게 만들어져요</p>
+      <p className="typo-sm-r text-grey-200">
         {formatDateRanges(dateKeys).join(', ')}
       </p>
-      <p className="typo-xs-r text-grey-200">
+      <p className="typo-sm-r text-grey-200">
         {shown.join(' · ')}
         {restCount > 0 ? ` 외 ${restCount}개` : ''}
       </p>
       <p
         className={cn(
-          'typo-xs-sb',
+          'typo-sm-sb',
           exceeded ? 'text-destructive' : 'text-grey-100',
         )}
       >

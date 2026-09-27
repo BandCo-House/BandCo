@@ -10,6 +10,7 @@ import { GlassSurface } from '@/shared/ui/glass-surface';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { useSpace } from '@/entities/space/api/useSpace';
 import { useSchedulePoll } from '@/entities/schedule-poll/model/queries';
+import { useIsSchedulePollClosed } from '@/entities/schedule-poll/model/use-is-closed';
 import {
   buildPollGrid,
   chunkDateKeys,
@@ -36,8 +37,7 @@ export const SchedulePollDetail = ({
   const [pageIndex, setPageIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [draftOptionIds, setDraftOptionIds] = useState<string[]>([]);
-  // 렌더 순수성 규칙 때문에 현재 시각은 마운트 시점에 한 번만 잡는다(화면 진입 기준 마감 판정).
-  const [enteredAt] = useState(() => Date.now());
+  const isClosed = useIsSchedulePollClosed(poll?.closesAt);
 
   if (!poll) return null;
 
@@ -46,8 +46,9 @@ export const SchedulePollDetail = ({
   const page = Math.min(pageIndex, Math.max(pages.length - 1, 0));
   const voters = collectPollVoters(poll.options);
   const hasVoted = poll.myOptionIds.length > 0;
-  // 마감된 투표는 백엔드가 투표 등록·수정을 400으로 거부하므로 편집 진입 자체를 막는다.
-  const isClosed = new Date(poll.closesAt).getTime() <= enteredAt;
+  // 편집 중에 마감되면 CTA만 사라지고 격자는 편집 상태로 남아, 칠할 수는 있는데
+  // 제출할 수 없는 화면이 된다. 마감되면 결과 보기로 되돌린다.
+  const isEditingOpen = isEditing && !isClosed;
 
   const startEditing = () => {
     setDraftOptionIds(poll.myOptionIds);
@@ -72,7 +73,7 @@ export const SchedulePollDetail = ({
     });
   };
 
-  const ctaLabel = isEditing
+  const ctaLabel = isEditingOpen
     ? hasVoted
       ? '수정 완료'
       : '투표 완료'
@@ -84,7 +85,7 @@ export const SchedulePollDetail = ({
     <div className="flex w-full flex-col gap-6 pb-36">
       <header className="flex flex-col gap-2 px-5">
         <h2 className="typo-lg-sb text-grey-50">{poll.name}</h2>
-        {isEditing ? (
+        {isEditingOpen ? (
           <p className="typo-sm-r text-grey-200">
             참여할 수 있는 시간을 드래그해보세요
           </p>
@@ -182,7 +183,7 @@ export const SchedulePollDetail = ({
 
         <div className="px-5">
           {pages.length > 0 &&
-            (isEditing ? (
+            (isEditingOpen ? (
               <SchedulePollGrid
                 mode="edit"
                 dateKeys={pages[page]}
@@ -221,7 +222,7 @@ export const SchedulePollDetail = ({
             size="lg"
             className="w-full"
             isLoading={updateVote.isPending}
-            onClick={isEditing ? submitVote : startEditing}
+            onClick={isEditingOpen ? submitVote : startEditing}
           >
             {ctaLabel}
           </Button>
