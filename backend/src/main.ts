@@ -14,7 +14,9 @@ async function bootstrap(): Promise<void> {
   const appConfig = getAppConfig();
   const prismaService = app.get(PrismaService);
 
-  app.enableCors();
+  // Date 헤더는 CORS 기본 노출 목록에 없어 브라우저 JS가 읽을 수 없다.
+  // 프론트가 서버 시각을 알아야 마감 같은 경계를 클라이언트 시계로 오판하지 않는다.
+  app.enableCors({ exposedHeaders: ['Date'] });
 
   // 모든 예외를 ApiFailResponse 형식으로 통일한다 (성공 응답과 같은 envelope)
   app.useGlobalFilters(new ApiExceptionFilter());

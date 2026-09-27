@@ -4,6 +4,7 @@ import { Clock } from 'lucide-react';
 import CalendarIcon from '@/assets/icons/calendar.svg?react';
 import { getApiErrorMessage } from '@/shared/api/error';
 import { addDays } from '@/shared/lib/date';
+import { serverNow } from '@/shared/lib/server-time';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Field, fieldSurfaceClass } from '@/shared/ui/field';
@@ -210,7 +211,7 @@ export const SchedulePollCreateForm = ({
     if (!canSubmit) return;
     // openedAt은 렌더 순수성 때문에 고정된 값이라, 폼을 오래 열어두면 낡는다.
     // 제출 순간의 시각으로 다시 보지 않으면 서버 400만 맞고 이유는 토스트에만 남는다.
-    if (new Date(closesAt).getTime() <= Date.now()) {
+    if (new Date(closesAt).getTime() <= serverNow()) {
       toast.error('투표 마감 기한이 지났어요. 기한을 다시 정해주세요.');
       return;
     }
