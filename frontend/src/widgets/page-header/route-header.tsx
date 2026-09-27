@@ -158,7 +158,8 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
       <h1
         className={cn(
           'min-w-0 truncate text-grey-50',
-          header.titleSize === 'md' ? 'typo-lg-sb' : 'typo-xl-sb',
+          // 기본은 하위 페이지 공통 크기(18). 홈·내 밴드 같은 최상위만 'lg'(24)로 키운다.
+          header.titleSize === 'lg' ? 'typo-xl-sb' : 'typo-lg-sb',
         )}
       >
         {title}
