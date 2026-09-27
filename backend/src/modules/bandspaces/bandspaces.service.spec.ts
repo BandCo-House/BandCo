@@ -480,7 +480,7 @@ describe('BandSpacesService', () => {
       expect(result).not.toHaveProperty('spaceName');
       expect(capturedNotifications).toHaveLength(1);
       expect(capturedNotifications[0]).toEqual(
-        expect.objectContaining({ userId: ADDED_USER_ID, type: NotificationType.NOTICE, targetPath: `/bandspaces/${SPACE_ID}` }),
+        expect.objectContaining({ userId: ADDED_USER_ID, type: NotificationType.NOTICE, targetPath: `/band/${BAND_ID}/space/${SPACE_ID}` }),
       );
     });
 

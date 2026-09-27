@@ -51,7 +51,7 @@ export class BandSpacesService {
           type: NotificationType.NOTICE,
           title: '새 합주 공간이 생성되었습니다',
           description: result.name,
-          targetPath: `/bandspaces/${result.spaceId}`,
+          targetPath: `/band/${bandId}/space/${result.spaceId}`,
         })),
       );
     }
@@ -98,21 +98,20 @@ export class BandSpacesService {
     input: AddBandSpaceMemberInput,
     tx?: Prisma.TransactionClient,
   ): Promise<AddBandSpaceMemberResult> {
-    const {
-      spaceName,
-      userId: addedUserId,
-      ...result
-    } = await this.runInTransaction(tx, async client => {
-      await this.assertSpaceBandMember(spaceId, userId, client);
-      return this.bandSpacesRepository.addBandSpaceMember(spaceId, input, client);
+    const { bandId, added } = await this.runInTransaction(tx, async client => {
+      const bandId = await this.assertSpaceBandMember(spaceId, userId, client);
+      const added = await this.bandSpacesRepository.addBandSpaceMember(spaceId, input, client);
+      return { bandId, added };
     });
+
+    const { spaceName, userId: addedUserId, ...result } = added;
 
     await this.notificationsService.createNotification({
       userId: addedUserId,
       type: NotificationType.NOTICE,
       title: '합주 공간에 추가되었습니다',
       description: spaceName,
-      targetPath: `/bandspaces/${spaceId}`,
+      targetPath: `/band/${bandId}/space/${spaceId}`,
     });
 
     return result;
@@ -125,17 +124,20 @@ export class BandSpacesService {
     input: UpdateBandSpaceMemberRoleInput,
     tx?: Prisma.TransactionClient,
   ): Promise<UpdateBandSpaceMemberRoleResult> {
-    const { spaceName, ...result } = await this.runInTransaction(tx, async client => {
-      await this.assertSpaceBandMember(spaceId, userId, client);
-      return this.bandSpacesRepository.updateBandSpaceMemberRole(spaceId, memberId, input, client);
+    const { bandId, updated } = await this.runInTransaction(tx, async client => {
+      const bandId = await this.assertSpaceBandMember(spaceId, userId, client);
+      const updated = await this.bandSpacesRepository.updateBandSpaceMemberRole(spaceId, memberId, input, client);
+      return { bandId, updated };
     });
+
+    const { spaceName, ...result } = updated;
 
     await this.notificationsService.createNotification({
       userId: result.userId,
       type: NotificationType.NOTICE,
       title: '합주 공간에서 역할이 변경되었습니다',
       description: spaceName,
-      targetPath: `/bandspaces/${spaceId}`,
+      targetPath: `/band/${bandId}/space/${spaceId}`,
     });
 
     return result;
@@ -178,8 +180,12 @@ export class BandSpacesService {
     return this.resolveMembership(bandId, userId, client);
   }
 
-  /** 공간이 있는지(404) 확인한 뒤 요청자가 그 공간이 속한 밴드의 멤버인지(403) 확인한다. */
-  private async assertSpaceBandMember(spaceId: string, userId: string, client?: Prisma.TransactionClient): Promise<void> {
+  /**
+   * 공간이 있는지(404) 확인한 뒤 요청자가 그 공간이 속한 밴드의 멤버인지(403) 확인하고,
+   * 확인에 쓴 bandId를 돌려준다 — 알림 targetPath가 `/band/{bandId}/space/{spaceId}`라
+   * 호출부가 bandId를 다시 조회하지 않게 한다.
+   */
+  private async assertSpaceBandMember(spaceId: string, userId: string, client?: Prisma.TransactionClient): Promise<string> {
     const bandId = await this.bandSpacesRepository.findBandIdBySpaceId(spaceId, client);
 
     if (bandId === null) {
@@ -187,6 +193,8 @@ export class BandSpacesService {
     }
 
     await this.resolveMembership(bandId, userId, client);
+
+    return bandId;
   }
 
   private async resolveMembership(bandId: string, userId: string, client?: Prisma.TransactionClient): Promise<string> {
