@@ -184,6 +184,20 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
         },
       });
 
+      // 생성자는 위에서 LEADER로 들어갔으므로 목록에 있어도 MEMBER 행을 또 만들지 않는다.
+      const otherBandMemberIds = [...new Set(input.bandMemberIds ?? [])].filter(bandMemberId => bandMemberId !== requesterBandMemberId);
+
+      if (otherBandMemberIds.length > 0) {
+        await client.spaceMember.createMany({
+          data: otherBandMemberIds.map(bandMemberId => ({
+            bandSpaceId: bandSpace.id,
+            bandMemberId,
+            role: 'MEMBER',
+            status: 'ACTIVE',
+          })),
+        });
+      }
+
       return bandSpace;
     };
 
@@ -478,6 +492,15 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     return space?.bandId ?? null;
   }
 
+  async findBandMemberIdsInBand(bandId: string, bandMemberIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    const members = await client.bandMember.findMany({
+      where: { bandId, id: { in: bandMemberIds } },
+      select: { id: true },
+    });
+    return members.map(member => member.id);
+  }
+
   async updateBandSpace(spaceId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult> {
     const client = tx ?? this.prisma;
 
@@ -505,6 +528,10 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       },
     });
 
+    if (input.bandMemberIds !== undefined) {
+      await this.replaceSpaceMembers(spaceId, input.bandMemberIds, client);
+    }
+
     return {
       spaceId: updated.id,
       bandId: updated.bandId,
@@ -516,6 +543,41 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
       endDate: this.formatDateOnly(updated.endDate),
       updatedAt: now.toISOString(),
     };
+  }
+
+  /**
+   * LEADER를 제외한 공간 멤버를 bandMemberIds로 교체한다.
+   * LEADER는 공간을 관리하는 멤버라 목록에서 빠져도 남긴다.
+   *
+   * @param {string} spaceId - 멤버를 교체할 합주 공간 ID
+   * @param {string[]} bandMemberIds - 교체 후 공간 멤버가 될 밴드 멤버 ID 목록
+   * @param {Prisma.TransactionClient | PrismaService} client - 삭제와 추가를 함께 실행할 client
+   */
+  private async replaceSpaceMembers(spaceId: string, bandMemberIds: string[], client: Prisma.TransactionClient | PrismaService): Promise<void> {
+    const uniqueBandMemberIds = [...new Set(bandMemberIds)];
+
+    await client.spaceMember.deleteMany({
+      where: {
+        bandSpaceId: spaceId,
+        role: { not: 'LEADER' },
+        bandMemberId: { notIn: uniqueBandMemberIds },
+      },
+    });
+
+    if (uniqueBandMemberIds.length === 0) {
+      return;
+    }
+
+    // 이미 공간 멤버인 사람(LEADER 포함)은 역할을 그대로 두기 위해 건너뛴다.
+    await client.spaceMember.createMany({
+      data: uniqueBandMemberIds.map(bandMemberId => ({
+        bandSpaceId: spaceId,
+        bandMemberId,
+        role: 'MEMBER',
+        status: 'ACTIVE',
+      })),
+      skipDuplicates: true,
+    });
   }
 
   async deleteBandSpace(spaceId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandSpaceResult> {
