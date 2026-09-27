@@ -15,7 +15,6 @@ import {
   buildPollGrid,
   chunkDateKeys,
   collectPollVoters,
-  rankVoteCounts,
 } from '@/entities/schedule-poll/lib/poll-grid';
 import { SchedulePollGrid } from '@/entities/schedule-poll/ui/SchedulePollGrid';
 import { useUpdateMySchedulePollVote } from '@/features/schedule-poll-vote/api/use-update-my-vote';
@@ -198,7 +197,6 @@ export const SchedulePollDetail = ({
                 dateKeys={pages[page]}
                 timeKeys={grid.timeKeys}
                 cells={grid.cells}
-                ranks={rankVoteCounts(poll.options)}
               />
             ))}
         </div>

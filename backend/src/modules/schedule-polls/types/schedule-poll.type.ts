@@ -26,7 +26,8 @@ export interface SchedulePollData {
 
 export interface SchedulePollOption extends SchedulePollOptionData {
   voteCount: number;
-  isRecommended: boolean;
+  /** 득표 순위(1위부터). 같은 득표 수는 같은 순위이고, 0표는 순위가 없어 null이다. */
+  voteRank: number | null;
 }
 
 export interface SchedulePollResult extends Omit<SchedulePollData, 'options'> {

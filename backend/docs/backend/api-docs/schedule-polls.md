@@ -60,7 +60,7 @@
         "endAt": "2026-09-13T14:00:00.000Z",
         "voters": [],
         "voteCount": 0,
-        "isRecommended": false
+        "voteRank": null
       }
     ],
     "myOptionIds": [],
@@ -137,7 +137,7 @@
 
 ## GET /schedule-polls/{schedulePollId}
 
-**설명:** 후보별 득표수, 투표자 목록, 내 선택과 추천 후보를 조회한다.
+**설명:** 후보별 득표수, 투표자 목록, 내 선택과 득표 순위를 조회한다.
 
 **인증:** 필요 (JWT Bearer)
 
@@ -163,7 +163,7 @@
         "startAt": "2026-09-13T12:00:00.000Z",
         "endAt": "2026-09-13T14:00:00.000Z",
         "voteCount": 2,
-        "isRecommended": true,
+        "voteRank": 1,
         "voters": [
           {
             "bandMemberId": "member-uuid",
@@ -183,8 +183,8 @@
 
 - `voterCount`는 두 개 이상의 후보를 골라도 한 명으로 집계한다.
 - `createdByBandMemberId`는 생성자가 밴드를 떠나면 `null`이다. 투표와 다른 멤버의 선택은 유지된다.
-- 가장 많은 표를 받은 후보의 `isRecommended`가 `true`다.
-- 모든 후보가 0표이면 추천 후보가 없으며, 최다 득표가 동률이면 모두 추천한다.
+- `voteRank`는 득표 수 기준 순위(1위부터)다. 같은 득표 수는 같은 순위이며, 동률 다음 순위를 건너뛰지 않는다(2표·2표·1표 → 1위·1위·2위).
+- 0표인 후보는 순위가 없어 `voteRank`가 `null`이다.
 
 ### Error Responses
 

@@ -13,8 +13,6 @@ import {
 
 interface ResultModeProps {
   mode: 'result';
-  /** 득표 수 → 순위. 상위 3개만 단계가 갈리고 나머지는 한 단계로 묶인다. */
-  ranks: Map<number, number>;
 }
 
 interface EditModeProps {
@@ -155,7 +153,7 @@ export const SchedulePollGrid = (props: SchedulePollGridProps) => {
               }
 
               if (props.mode === 'result') {
-                const alpha = voteCellAlpha(option.voteCount, props.ranks);
+                const alpha = voteCellAlpha(option.voteRank);
                 return (
                   <div
                     key={option.schedulePollOptionId}

@@ -6,7 +6,6 @@ import {
   chunkDateKeys,
   collectPollVoters,
   formatDateRanges,
-  rankVoteCounts,
   voteCellAlpha,
   pollCellKey,
 } from './poll-grid';
@@ -33,7 +32,7 @@ const option = (
     endAt: end.toISOString(),
     voters,
     voteCount: voters.length,
-    isRecommended: false,
+    voteRank: null,
   };
 };
 
@@ -123,43 +122,17 @@ describe('formatDateRanges', () => {
   });
 });
 
-describe('rankVoteCounts / voteCellAlpha', () => {
-  it('상위 3개 득표 수만 단계가 갈리고 나머지는 한 단계로 묶인다', () => {
-    const options = [
-      { ...option('a', [2026, 9, 22], [14, 0]), voteCount: 9 },
-      { ...option('b', [2026, 9, 22], [14, 30]), voteCount: 7 },
-      { ...option('c', [2026, 9, 22], [15, 0]), voteCount: 5 },
-      { ...option('d', [2026, 9, 22], [15, 30]), voteCount: 3 },
-      { ...option('e', [2026, 9, 22], [16, 0]), voteCount: 1 },
-      { ...option('f', [2026, 9, 22], [16, 30]), voteCount: 0 },
-    ];
-
-    const ranks = rankVoteCounts(options);
-
-    expect(voteCellAlpha(9, ranks)).toBe(1);
-    expect(voteCellAlpha(7, ranks)).toBe(0.7);
-    expect(voteCellAlpha(5, ranks)).toBe(0.4);
-    // 4위 이하는 득표 수가 달라도 같은 농도다
-    expect(voteCellAlpha(3, ranks)).toBe(voteCellAlpha(1, ranks));
+describe('voteCellAlpha', () => {
+  it('상위 3순위만 농도가 갈리고 4순위 이하는 한 단계로 묶인다', () => {
+    expect(voteCellAlpha(1)).toBe(1);
+    expect(voteCellAlpha(2)).toBe(0.7);
+    expect(voteCellAlpha(3)).toBe(0.4);
+    // 4위 이하는 순위가 달라도 같은 농도다
+    expect(voteCellAlpha(4)).toBe(voteCellAlpha(9));
   });
 
-  it('0표는 칠하지 않는다', () => {
-    const ranks = rankVoteCounts([
-      { ...option('a', [2026, 9, 22], [14, 0]), voteCount: 2 },
-    ]);
-
-    expect(voteCellAlpha(0, ranks)).toBeNull();
-  });
-
-  it('같은 득표 수는 같은 순위·같은 농도를 받는다', () => {
-    const ranks = rankVoteCounts([
-      { ...option('a', [2026, 9, 22], [14, 0]), voteCount: 4 },
-      { ...option('b', [2026, 9, 22], [14, 30]), voteCount: 4 },
-      { ...option('c', [2026, 9, 22], [15, 0]), voteCount: 2 },
-    ]);
-
-    expect(voteCellAlpha(4, ranks)).toBe(1);
-    expect(voteCellAlpha(2, ranks)).toBe(0.7);
+  it('순위가 없는 후보(0표)는 칠하지 않는다', () => {
+    expect(voteCellAlpha(null)).toBeNull();
   });
 });
 

@@ -89,7 +89,7 @@ export class SchedulePollsService {
   }
 
   /**
-   * 합주 공간이 속한 밴드 멤버에게 후보별 투표자와 추천 후보를 제공한다.
+   * 합주 공간이 속한 밴드 멤버에게 후보별 투표자와 득표 순위를 제공한다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} schedulePollId - 조회할 일정 조율 투표 ID
@@ -262,19 +262,33 @@ export class SchedulePollsService {
     }
   }
 
+  /**
+   * 득표 수 → 순위(1위부터). 같은 득표 수는 같은 순위이고, 0표는 순위에서 뺀다.
+   * 투표 화면이 순위별로 후보 색을 달리 칠하므로, 기준이 갈라지지 않게 순위를 서버에서 정한다.
+   */
+  private rankVoteCounts(voteCounts: number[]): Map<number, number> {
+    const descending = [...new Set(voteCounts.filter(count => count > 0))].sort((a, b) => b - a);
+
+    return new Map(descending.map((count, index) => [count, index + 1]));
+  }
+
   private buildSchedulePollResult(poll: SchedulePollData): SchedulePollResult {
-    const voteCounts = poll.options.map(option => option.voters.length);
-    const highestVoteCount = voteCounts.length > 0 ? Math.max(...voteCounts) : 0;
+    const ranks = this.rankVoteCounts(poll.options.map(option => option.voters.length));
     const voterIds = new Set(poll.options.flatMap(option => option.voters.map(voter => voter.bandMemberId)));
 
     return {
       ...poll,
       voterCount: voterIds.size,
-      options: poll.options.map(option => ({
-        ...option,
-        voteCount: option.voters.length,
-        isRecommended: highestVoteCount > 0 && option.voters.length === highestVoteCount,
-      })),
+      options: poll.options.map(option => {
+        const voteCount = option.voters.length;
+        const voteRank = ranks.get(voteCount) ?? null;
+
+        return {
+          ...option,
+          voteCount,
+          voteRank,
+        };
+      }),
     };
   }
 }

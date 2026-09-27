@@ -154,8 +154,8 @@ describe('SchedulePollsService', () => {
       expect(result.name).toBe('좋은 날 오프닝 연습');
       expect(result.closesAt).toBe(FUTURE_CLOSES_AT);
       expect(result.voterCount).toBe(2);
-      expect(result.options[0].isRecommended).toBe(true);
-      expect(result.options[1].isRecommended).toBe(false);
+      expect(result.options[0].voteRank).toBe(1);
+      expect(result.options[1].voteRank).toBe(2);
     });
 
     it('마감 기한이 현재 시각 이후가 아니면 BadRequestException을 던진다', async () => {
@@ -220,18 +220,18 @@ describe('SchedulePollsService', () => {
   });
 
   describe('getSchedulePoll', () => {
-    it('후보별 투표자와 최다 득표 후보를 조회한다', async () => {
+    it('후보별 투표자와 득표 순위를 조회한다', async () => {
       const service = new SchedulePollsService(createSchedulePollsRepositoryStub(), createPrismaServiceStub());
 
       const result = await service.getSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
 
       expect(result.voterCount).toBe(2);
-      expect(result.options[0]).toMatchObject({ voteCount: 2, isRecommended: true });
-      expect(result.options[1]).toMatchObject({ voteCount: 1, isRecommended: false });
+      expect(result.options[0]).toMatchObject({ voteCount: 2, voteRank: 1 });
+      expect(result.options[1]).toMatchObject({ voteCount: 1, voteRank: 2 });
       expect(result.myOptionIds).toEqual([OPTION_ID_1, OPTION_ID_2]);
     });
 
-    it('최다 득표가 동률이면 동률 후보를 모두 추천한다', async () => {
+    it('최다 득표가 동률이면 동률 후보가 모두 1위다', async () => {
       const tiedPoll: SchedulePollData = {
         ...DEFAULT_POLL,
         options: DEFAULT_POLL.options.map(option => ({ ...option, voters: option.voters.slice(0, 1) })),
@@ -240,10 +240,27 @@ describe('SchedulePollsService', () => {
 
       const result = await service.getSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
 
-      expect(result.options.every(option => option.isRecommended)).toBe(true);
+      expect(result.options.every(option => option.voteRank === 1)).toBe(true);
     });
 
-    it('모든 후보가 0표이면 추천하지 않는다', async () => {
+    it('동률 다음 순위는 건너뛰지 않는다(득표 수 기준 순위)', async () => {
+      const tiedTopPoll: SchedulePollData = {
+        ...DEFAULT_POLL,
+        options: [
+          DEFAULT_POLL.options[0],
+          { ...DEFAULT_POLL.options[1], voters: DEFAULT_POLL.options[0].voters },
+          { ...DEFAULT_POLL.options[1], schedulePollOptionId: OPTION_ID_2 },
+        ],
+      };
+      const service = new SchedulePollsService(createSchedulePollsRepositoryStub({ poll: tiedTopPoll }), createPrismaServiceStub());
+
+      const result = await service.getSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
+
+      // 2표·2표·1표 → 1위·1위·2위. 프론트가 순위를 색 단계 인덱스로 쓰므로 3위로 건너뛰지 않는다.
+      expect(result.options.map(option => option.voteRank)).toEqual([1, 1, 2]);
+    });
+
+    it('모든 후보가 0표이면 순위가 없다', async () => {
       const emptyPoll: SchedulePollData = {
         ...DEFAULT_POLL,
         options: DEFAULT_POLL.options.map(option => ({ ...option, voters: [] })),
@@ -253,7 +270,7 @@ describe('SchedulePollsService', () => {
       const result = await service.getSchedulePoll(USER_ID, SCHEDULE_POLL_ID);
 
       expect(result.voterCount).toBe(0);
-      expect(result.options.every(option => !option.isRecommended)).toBe(true);
+      expect(result.options.every(option => option.voteRank === null)).toBe(true);
     });
 
     it('일정 투표가 없으면 NotFoundException을 던진다', async () => {

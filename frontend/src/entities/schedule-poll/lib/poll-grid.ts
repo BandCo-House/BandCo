@@ -132,28 +132,9 @@ const REST_ALPHA = 0.15;
 /** 알파가 이 값 이상이면 배경이 밝아 글자를 어둡게 쓴다. */
 export const DARK_TEXT_ALPHA_THRESHOLD = 0.5;
 
-/** 득표 수 → 순위(0-based, 0표 제외). 같은 득표 수는 같은 순위·같은 색이다. */
-export const rankVoteCounts = (
-  options: SchedulePollOption[],
-): Map<number, number> => {
-  const distinct = [
-    ...new Set(options.map((option) => option.voteCount).filter((c) => c > 0)),
-  ].sort((a, b) => b - a);
-
-  return new Map(distinct.map((count, rank) => [count, rank]));
-};
-
-/** 셀 배경 알파. 0표면 null(칠하지 않는다). */
-export const voteCellAlpha = (
-  voteCount: number,
-  ranks: Map<number, number>,
-): number | null => {
-  if (voteCount <= 0) return null;
-  const rank = ranks.get(voteCount);
-  return rank === undefined
-    ? REST_ALPHA
-    : (TOP_RANK_ALPHAS[rank] ?? REST_ALPHA);
-};
+/** 셀 배경 알파. 순위는 서버가 내려준 값(1위부터)을 쓰고, 0표(null)는 칠하지 않는다. */
+export const voteCellAlpha = (voteRank: number | null): number | null =>
+  voteRank === null ? null : (TOP_RANK_ALPHAS[voteRank - 1] ?? REST_ALPHA);
 
 /** 투표 참여자 목록(중복 제거, 후보 순서대로). 명단 확인 팝오버에 쓴다. */
 export const collectPollVoters = (options: SchedulePollOption[]) => {

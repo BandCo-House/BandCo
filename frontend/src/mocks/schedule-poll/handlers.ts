@@ -137,10 +137,14 @@ const distinctVoterCount = (poll: MockPoll): number =>
 
 /** 저장된 mock 투표를 백엔드 상세 result 형태로 변환한다. */
 const toPollResult = (poll: MockPoll): SchedulePoll => {
-  const maxVotes = Math.max(
-    0,
-    ...poll.options.map((option) => option.voterMemberIds.length),
-  );
+  // 서버와 같은 규칙: 0표를 뺀 득표 수를 내림차순으로 모아 1위부터 매긴다.
+  const rankedCounts = [
+    ...new Set(
+      poll.options
+        .map((option) => option.voterMemberIds.length)
+        .filter((count) => count > 0),
+    ),
+  ].sort((a, b) => b - a);
   return {
     schedulePollId: poll.schedulePollId,
     bandSpaceId: poll.bandSpaceId,
@@ -154,7 +158,10 @@ const toPollResult = (poll: MockPoll): SchedulePoll => {
       endAt: option.endAt,
       voters: option.voterMemberIds.map(toVoter),
       voteCount: option.voterMemberIds.length,
-      isRecommended: maxVotes > 0 && option.voterMemberIds.length === maxVotes,
+      voteRank:
+        rankedCounts.indexOf(option.voterMemberIds.length) === -1
+          ? null
+          : rankedCounts.indexOf(option.voterMemberIds.length) + 1,
     })),
     myOptionIds: poll.options
       .filter((option) => option.voterMemberIds.includes(ME_MEMBER_ID))
