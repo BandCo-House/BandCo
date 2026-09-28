@@ -14,6 +14,9 @@ export interface GenreEditSectionProps {
   favoriteGenres: Profile['favoriteGenres'];
 }
 
+/** 장르 편집 토스트도 하나만 — 이유는 SkillEditSection의 SKILL_TOAST와 같다. */
+const GENRE_TOAST = { id: 'profile-genre', closeButton: true } as const;
+
 export function GenreEditSection({
   isMe,
   userId,
@@ -56,12 +59,12 @@ export function GenreEditSection({
 
     try {
       await updateUserProfile(userId, { favoriteGenres: newGenreIds });
-      toast.success('선호 장르가 저장되었습니다.');
+      toast.success('선호 장르가 저장되었습니다.', GENRE_TOAST);
     } catch {
       if (previousProfile) {
         queryClient.setQueryData(queryKey, previousProfile);
       }
-      toast.error('장르 저장 도중 에러가 발생했습니다.');
+      toast.error('장르 저장 도중 에러가 발생했습니다.', GENRE_TOAST);
     } finally {
       isUpdatingRef.current = false;
       setIsUpdating(false);
@@ -91,12 +94,12 @@ export function GenreEditSection({
 
     try {
       await updateUserProfile(userId, { favoriteGenres: updatedGenres });
-      toast.success('선호 장르가 삭제되었습니다.');
+      toast.success('선호 장르가 삭제되었습니다.', GENRE_TOAST);
     } catch {
       if (previousProfile) {
         queryClient.setQueryData(queryKey, previousProfile);
       }
-      toast.error('장르 삭제 도중 에러가 발생했습니다.');
+      toast.error('장르 삭제 도중 에러가 발생했습니다.', GENRE_TOAST);
     } finally {
       isUpdatingRef.current = false;
       setIsUpdating(false);
@@ -155,6 +158,8 @@ export function GenreEditSection({
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         title="선호 장르"
+        // 장르는 대표 개념이 없다(favoriteGenres에 id 배열만 보낸다) — 번호를 달지 않는다.
+        description="여러 개 고를 수 있어요. 고른 순서대로 프로필에 나열돼요."
         items={availableGenres}
         selectedIds={favoriteGenres.map((g) => g.genreId)}
         // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다

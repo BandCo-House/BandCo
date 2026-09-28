@@ -24,6 +24,14 @@ export interface TagSelectBottomSheetProps {
   onSave?: (selectedIds: string[]) => void | Promise<void>;
   isLoading?: boolean;
   isError?: boolean;
+  /** 선택 순서가 무슨 의미인지 알려주는 안내 문구. 시트 제목 아래에 보인다. */
+  description?: string;
+  /**
+   * 첫 번째 선택에 붙일 라벨(예: '대표'). 주지 않으면 아무 표시도 하지 않는다.
+   * 예전엔 모든 선택에 1·2·3 번호를 달았는데, 실제로는 첫 번째만 isPrimary로
+   * 저장되고 나머지 순서는 아무 데도 쓰이지 않아 없는 순위를 있는 것처럼 보였다.
+   */
+  primaryLabel?: string;
 }
 
 export function TagSelectBottomSheet({
@@ -35,6 +43,8 @@ export function TagSelectBottomSheet({
   onSave,
   isLoading = false,
   isError = false,
+  description,
+  primaryLabel,
 }: TagSelectBottomSheetProps) {
   // 시트 안에서 고른 임시 선택. null이면 아직 손대지 않은 상태라 selectedIds를 그대로 쓴다.
   const [tempSelectedIds, setTempSelectedIds] = useState<string[] | null>(null);
@@ -70,14 +80,20 @@ export function TagSelectBottomSheet({
         showCloseButton={false}
         className="fixed right-[var(--removed-body-scroll-bar-size,0px)] bottom-0 left-0 mx-auto flex h-[60vh] max-h-[60vh] w-full max-w-[648px] flex-col gap-0 rounded-t-3xl border-t border-grey-50/15 bg-[#12131E] p-6 text-grey-50 shadow-2xl backdrop-blur-2xl"
       >
-        <SheetHeader className="flex flex-row items-center justify-between p-0">
-          <SheetTitle className="typo-lg-b text-grey-50">{title}</SheetTitle>
-          <SheetDescription className="sr-only">
-            {title} 선택 바텀시트
-          </SheetDescription>
+        <SheetHeader className="flex flex-row items-start justify-between gap-4 p-0">
+          <div className="flex min-w-0 flex-col gap-1">
+            <SheetTitle className="typo-lg-b text-grey-50">{title}</SheetTitle>
+            <SheetDescription
+              className={cn(
+                description ? 'typo-sm-r text-grey-300' : 'sr-only',
+              )}
+            >
+              {description ?? `${title} 선택 바텀시트`}
+            </SheetDescription>
+          </div>
           <AppSheetClose
             aria-label="닫기"
-            className="text-grey-200 hover:text-white"
+            className="shrink-0 text-grey-200 hover:text-white"
           />
         </SheetHeader>
 
@@ -89,6 +105,7 @@ export function TagSelectBottomSheet({
             isLoading={isLoading}
             isError={isError}
             onSelectionChange={setTempSelectedIds}
+            primaryLabel={primaryLabel}
           />
         )}
       </SheetContent>
@@ -102,6 +119,7 @@ interface TagSelectContentProps {
   isLoading: boolean;
   isError: boolean;
   onSelectionChange: (ids: string[]) => void;
+  primaryLabel?: string;
 }
 
 function TagSelectContent({
@@ -110,6 +128,7 @@ function TagSelectContent({
   isLoading,
   isError,
   onSelectionChange,
+  primaryLabel,
 }: TagSelectContentProps) {
   const [tempSelectedIds, setTempSelectedIds] =
     useState<string[]>(initialSelectedIds);
@@ -164,9 +183,9 @@ function TagSelectContent({
                   : 'border border-grey-50/20 bg-surface-2/40 text-grey-100 hover:border-grey-50/40 hover:bg-white/10',
               )}
             >
-              {isSelected && (
-                <span className="mr-1.5 flex size-5 items-center justify-center rounded-full bg-[#12131E] typo-xs-sb text-white">
-                  {selectedIndex + 1}
+              {isSelected && primaryLabel && selectedIndex === 0 && (
+                <span className="mr-1.5 flex items-center rounded-full bg-[#12131E] px-2 py-0.5 typo-xs-sb text-white">
+                  {primaryLabel}
                 </span>
               )}
               <span>{item.name}</span>

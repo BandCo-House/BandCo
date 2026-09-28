@@ -14,6 +14,13 @@ export interface SkillEditSectionProps {
   skills: Profile['skills'];
 }
 
+/**
+ * 파트 편집 토스트는 하나만 띄운다. 파트를 여러 개 지우면 삭제마다 토스트가 쌓여
+ * 화면을 가렸다 — 같은 id를 주면 새 토스트가 이전 것을 대체한다.
+ * 닫기 버튼은 그래도 켠다(자동으로 사라지기 전에 치울 수 있게).
+ */
+const SKILL_TOAST = { id: 'profile-skill', closeButton: true } as const;
+
 export function SkillEditSection({
   isMe,
   userId,
@@ -67,12 +74,12 @@ export function SkillEditSection({
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      toast.success('플레이 파트가 저장되었습니다.');
+      toast.success('플레이 파트가 저장되었습니다.', SKILL_TOAST);
     } catch {
       if (previousProfile) {
         queryClient.setQueryData(queryKey, previousProfile);
       }
-      toast.error('파트 저장 도중 에러가 발생했습니다.');
+      toast.error('파트 저장 도중 에러가 발생했습니다.', SKILL_TOAST);
     } finally {
       isUpdatingRef.current = false;
       setIsUpdating(false);
@@ -106,12 +113,12 @@ export function SkillEditSection({
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      toast.success('플레이 파트가 삭제되었습니다.');
+      toast.success('플레이 파트가 삭제되었습니다.', SKILL_TOAST);
     } catch {
       if (previousProfile) {
         queryClient.setQueryData(queryKey, previousProfile);
       }
-      toast.error('파트 삭제 도중 에러가 발생했습니다.');
+      toast.error('파트 삭제 도중 에러가 발생했습니다.', SKILL_TOAST);
     } finally {
       isUpdatingRef.current = false;
       setIsUpdating(false);
@@ -170,6 +177,9 @@ export function SkillEditSection({
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         title="플레이 파트"
+        // 실제로 저장되는 건 "첫 번째 = 대표(isPrimary)"뿐이다. 나머지 순서는 쓰이지 않는다.
+        description="가장 먼저 고른 파트가 대표 파트가 돼요. 나머지는 순서와 상관없어요."
+        primaryLabel="대표"
         items={availableSkills}
         selectedIds={skills.map((s) => s.skillTypeId)}
         // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다

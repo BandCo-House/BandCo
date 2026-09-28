@@ -12,53 +12,84 @@ const mockItems: TagItem[] = [
 ];
 
 describe('TagSelectBottomSheet', () => {
-  it('시트가 열렸을 때 타이틀과 칩 목록을 렌더링하고 선택된 항목에 순번 번호를 매긴다', () => {
+  it('시트가 열렸을 때 타이틀·안내 문구·칩 목록을 렌더링하고, 첫 선택에만 대표 라벨을 단다', () => {
     render(
       <TagSelectBottomSheet
         open={true}
         onOpenChange={vi.fn()}
         title="플레이 파트"
+        description="가장 먼저 고른 파트가 대표 파트가 돼요."
+        primaryLabel="대표"
         items={mockItems}
         selectedIds={['1', '3']}
       />,
     );
 
     expect(screen.getByText('플레이 파트')).toBeInTheDocument();
-    expect(screen.getByText('일렉기타')).toBeInTheDocument();
+    expect(
+      screen.getByText('가장 먼저 고른 파트가 대표 파트가 돼요.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('어쿠스틱 기타')).toBeInTheDocument();
-    expect(screen.getByText('보컬')).toBeInTheDocument();
 
-    // 일렉기타(1번), 보컬(2번) 순번 뱃지 확인
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
+    // 첫 선택(일렉기타)에만 '대표'. 2번째 선택(보컬)은 라벨 없이 선택 상태만 갖는다 —
+    // 저장되는 건 isPrimary(첫 번째)뿐이라 없는 순위를 보여주지 않는다.
+    expect(screen.getAllByText('대표')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /일렉기타/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /보컬/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
-  it('미선택 칩을 누르면 선택되어 다음 번호가 매겨지고, 선택된 칩을 누르면 해제된다', async () => {
+  it('primaryLabel을 주지 않으면(장르처럼 대표 개념이 없으면) 아무 라벨도 달지 않는다', () => {
+    render(
+      <TagSelectBottomSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        title="선호 장르"
+        items={mockItems}
+        selectedIds={['1', '3']}
+      />,
+    );
+
+    expect(screen.queryByText('대표')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /일렉기타/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('미선택 칩을 누르면 선택되고, 첫 선택을 해제하면 대표가 다음 항목으로 넘어간다', async () => {
     const user = userEvent.setup();
     render(
       <TagSelectBottomSheet
         open={true}
         onOpenChange={vi.fn()}
         title="플레이 파트"
+        primaryLabel="대표"
         items={mockItems}
         selectedIds={['1']}
       />,
     );
 
-    // 초기: 1번(일렉기타)만 선택됨
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.queryByText('2')).not.toBeInTheDocument();
-
-    // '드럼' 클릭 -> 2번으로 선택됨
-    const drumChip = screen.getByRole('button', { name: /드럼/i });
-    await user.click(drumChip);
-    expect(screen.getByText('2')).toBeInTheDocument();
-
-    // '일렉기타' 클릭 -> 선택 해제됨, 드럼이 1번으로 재정렬
     const guitarChip = screen.getByRole('button', { name: /일렉기타/i });
+    const drumChip = screen.getByRole('button', { name: /드럼/i });
+    expect(guitarChip).toHaveAttribute('aria-pressed', 'true');
+    expect(drumChip).toHaveAttribute('aria-pressed', 'false');
+
+    // 드럼 추가 — 두 번째 선택이라 대표 라벨은 여전히 일렉기타 하나뿐
+    await user.click(drumChip);
+    expect(drumChip).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByText('대표')).toHaveLength(1);
+    expect(guitarChip).toContainElement(screen.getByText('대표'));
+
+    // 일렉기타 해제 — 대표가 드럼으로 넘어간다(저장 시 isPrimary도 같이 이동)
     await user.click(guitarChip);
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.queryByText('2')).not.toBeInTheDocument();
+    expect(guitarChip).toHaveAttribute('aria-pressed', 'false');
+    expect(drumChip).toContainElement(screen.getByText('대표'));
   });
 
   it('시트가 닫힐 때 변경사항이 있으면 onSave가 호출된다', async () => {
