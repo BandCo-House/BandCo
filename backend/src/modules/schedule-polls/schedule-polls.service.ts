@@ -11,6 +11,9 @@ import type { DeleteSchedulePollResult, GetSchedulePollsResult, SchedulePollData
 const BAND_SPACE_NOT_FOUND_MESSAGE = '요청한 합주 공간을 찾을 수 없습니다.';
 const SCHEDULE_POLL_NOT_FOUND_MESSAGE = '요청한 일정 투표를 찾을 수 없습니다.';
 const NOT_BAND_SPACE_MEMBER_MESSAGE = '해당 합주 공간의 멤버가 아닙니다.';
+const CLOSES_AT_NOT_FUTURE_MESSAGE = '투표 마감 기한은 현재 시각 이후여야 합니다.';
+const SCHEDULE_POLL_CLOSED_MESSAGE = '마감된 일정 투표에는 투표할 수 없습니다.';
+const OPTION_BEFORE_CLOSES_AT_MESSAGE = '후보 시간은 투표 마감 기한 이후여야 합니다.';
 
 @Injectable()
 export class SchedulePollsService {
@@ -87,7 +90,7 @@ export class SchedulePollsService {
   }
 
   /**
-   * 합주 공간이 속한 밴드 멤버에게 후보별 투표자와 추천 후보를 제공한다.
+   * 합주 공간이 속한 밴드 멤버에게 후보별 투표자와 득표 순위를 제공한다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} schedulePollId - 조회할 일정 조율 투표 ID
@@ -146,6 +149,11 @@ export class SchedulePollsService {
         throw new ForbiddenException(NOT_BAND_SPACE_MEMBER_MESSAGE);
       }
 
+      // 마감 이후의 선택 변경(철회 포함)을 막아 집계 결과를 확정한다.
+      if (context.closesAt.getTime() <= Date.now()) {
+        throw new BadRequestException(SCHEDULE_POLL_CLOSED_MESSAGE);
+      }
+
       const uniqueOptionIds = new Set(input.schedulePollOptionIds);
 
       if (uniqueOptionIds.size !== input.schedulePollOptionIds.length) {
@@ -160,6 +168,12 @@ export class SchedulePollsService {
       }
 
       await this.schedulePollsRepository.lockBandMemberForVote(member.id, client);
+
+      // 같은 멤버의 선행 요청이 잠금을 쥔 채 마감을 넘길 수 있어, 잠금 획득 직후 한 번 더 확인한다.
+      if (context.closesAt.getTime() <= Date.now()) {
+        throw new BadRequestException(SCHEDULE_POLL_CLOSED_MESSAGE);
+      }
+
       await this.schedulePollsRepository.replaceSchedulePollVotes(schedulePollId, member.id, optionIds, client);
 
       const poll = await this.schedulePollsRepository.findSchedulePollById(schedulePollId, member.id, client);
@@ -221,6 +235,14 @@ export class SchedulePollsService {
   }
 
   private validateSchedulePollOptions(input: CreateSchedulePollInput): void {
+    const closesAt = new Date(input.closesAt).getTime();
+
+    // NaN은 어떤 비교에도 false라 `<= Date.now()`만으로는 통과한다.
+    // DTO에서 걸러지지만 Service 단독 호출(다른 모듈의 tx 참여)에서도 지켜야 한다.
+    if (Number.isNaN(closesAt) || closesAt <= Date.now()) {
+      throw new BadRequestException(CLOSES_AT_NOT_FUTURE_MESSAGE);
+    }
+
     const optionKeys = new Set<string>();
 
     for (const option of input.options) {
@@ -229,6 +251,12 @@ export class SchedulePollsService {
 
       if (startAt >= endAt) {
         throw new BadRequestException('각 후보의 종료 시간은 시작 시간보다 이후여야 합니다.');
+      }
+
+      // 마감 전에 지나가는 후보는 투표가 끝나는 시점에 이미 죽은 선택지다.
+      // 마감은 위에서 현재 시각 이후로 강제되므로, 이 규칙 하나로 과거 후보도 함께 막힌다.
+      if (startAt.getTime() < closesAt) {
+        throw new BadRequestException(OPTION_BEFORE_CLOSES_AT_MESSAGE);
       }
 
       const optionKey = `${startAt.toISOString()}_${endAt.toISOString()}`;
@@ -241,19 +269,33 @@ export class SchedulePollsService {
     }
   }
 
+  /**
+   * 득표 수 → 순위(1위부터). 같은 득표 수는 같은 순위이고, 0표는 순위에서 뺀다.
+   * 투표 화면이 순위별로 후보 색을 달리 칠하므로, 기준이 갈라지지 않게 순위를 서버에서 정한다.
+   */
+  private rankVoteCounts(voteCounts: number[]): Map<number, number> {
+    const descending = [...new Set(voteCounts.filter(count => count > 0))].sort((a, b) => b - a);
+
+    return new Map(descending.map((count, index) => [count, index + 1]));
+  }
+
   private buildSchedulePollResult(poll: SchedulePollData): SchedulePollResult {
-    const voteCounts = poll.options.map(option => option.voters.length);
-    const highestVoteCount = voteCounts.length > 0 ? Math.max(...voteCounts) : 0;
+    const ranks = this.rankVoteCounts(poll.options.map(option => option.voters.length));
     const voterIds = new Set(poll.options.flatMap(option => option.voters.map(voter => voter.bandMemberId)));
 
     return {
       ...poll,
       voterCount: voterIds.size,
-      options: poll.options.map(option => ({
-        ...option,
-        voteCount: option.voters.length,
-        isRecommended: highestVoteCount > 0 && option.voters.length === highestVoteCount,
-      })),
+      options: poll.options.map(option => {
+        const voteCount = option.voters.length;
+        const voteRank = ranks.get(voteCount) ?? null;
+
+        return {
+          ...option,
+          voteCount,
+          voteRank,
+        };
+      }),
     };
   }
 }

@@ -26,11 +26,11 @@ export interface SchedulePollsRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<SchedulePollData>;
 
-  /** 권한 검사에 사용할 투표의 합주 공간 ID와 생성자를 조회한다. */
+  /** 권한·마감 검사에 사용할 투표의 합주 공간 ID·생성자·마감 일시를 조회한다. */
   findSchedulePollContextById(
     schedulePollId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{ bandSpaceId: string; createdByBandMemberId: string | null } | null>;
+  ): Promise<{ bandSpaceId: string; createdByBandMemberId: string | null; closesAt: Date } | null>;
 
   /** 후보별 투표자와 현재 멤버의 선택을 포함한 투표 상세를 조회한다. */
   findSchedulePollById(schedulePollId: string, currentBandMemberId: string, tx?: Prisma.TransactionClient): Promise<SchedulePollData | null>;

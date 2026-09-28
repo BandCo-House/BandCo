@@ -18,7 +18,6 @@ export const Route = createFileRoute('/invite/$code')({
   staticData: {
     header: {
       title: '밴드 초대',
-      titleSize: 'md',
       showBack: false,
       heightVariant: 'lg',
     },
