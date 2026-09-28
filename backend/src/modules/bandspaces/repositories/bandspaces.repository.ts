@@ -34,7 +34,7 @@ export interface RemoveBandSpaceMemberRepositoryResult extends RemoveBandSpaceMe
 
 export interface BandSpacesRepository {
   addBandSpaceMember(spaceId: string, input: AddBandSpaceMemberInput, tx?: Prisma.TransactionClient): Promise<AddBandSpaceMemberRepositoryResult>;
-  /** requesterBandMemberId를 생성자·LEADER 멤버로 기록한다. */
+  /** requesterBandMemberId를 생성자·LEADER 멤버로 기록하고, bandMemberIds의 나머지 멤버는 MEMBER로 기록한다. */
   createBandSpace(
     bandId: string,
     requesterBandMemberId: string,
@@ -57,7 +57,9 @@ export interface BandSpacesRepository {
   findBandMemberByBandIdAndUserId(bandId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
   /** 합주 공간이 속한 밴드 ID를 조회한다. 공간이 없거나 삭제되었으면 null. */
   findBandIdBySpaceId(spaceId: string, tx?: Prisma.TransactionClient): Promise<string | null>;
-  /** 전달된 필드만 업데이트한다 (PATCH 패턴). */
+  /** bandMemberIds 중 해당 밴드에 속한 밴드 멤버 ID만 반환한다. */
+  findBandMemberIdsInBand(bandId: string, bandMemberIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
+  /** 전달된 필드만 업데이트한다 (PATCH 패턴). bandMemberIds가 있으면 LEADER를 제외한 공간 멤버를 전체 교체한다. */
   updateBandSpace(spaceId: string, input: UpdateBandSpaceInput, tx?: Prisma.TransactionClient): Promise<UpdateBandSpaceResult>;
   /** deletedAt을 현재 시각으로 설정한다 (soft delete). */
   deleteBandSpace(spaceId: string, tx?: Prisma.TransactionClient): Promise<DeleteBandSpaceResult>;

@@ -31,6 +31,7 @@ export type HeaderResolveContext = {
  */
 export type HeaderResolveResult = {
   title?: string | (() => ReactNode);
+  /** 기본 18px(typo-lg-sb). 'lg'는 홈·내 밴드 같은 최상위 화면 전용 24px. */
   titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;
@@ -77,4 +78,10 @@ export type RouteStaticData = {
   header?: HeaderStaticConfig;
   /** 본문 wrapper의 기본 패딩(px-5 py-8)을 제거하고 페이지가 직접 패딩을 관리한다. */
   fullBleed?: boolean;
+  /**
+   * 하단 네비게이션을 숨긴다. 화면 하단을 고정 CTA가 차지해 네비와 겹치거나,
+   * 그 화면의 작업을 끝내기 전에는 다른 탭으로 새지 않게 하고 싶을 때 쓴다.
+   * --bottom-nav-clearance도 0이 되므로 고정 CTA가 자동으로 바닥까지 내려간다.
+   */
+  hideBottomNav?: boolean;
 };

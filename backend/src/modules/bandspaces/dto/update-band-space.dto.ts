@@ -1,9 +1,11 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsISO8601, IsOptional, IsString, Matches } from 'class-validator';
+import { IsArray, IsEnum, IsISO8601, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
 import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
 
 import { trimStringValue } from '../../../common/validation/transform.util';
 import { BandSpaceStatus, BandSpaceType } from '../../../generated/prisma';
@@ -48,6 +50,15 @@ export class UpdateBandSpaceBodyDto {
   @Matches(DATE_ONLY_PATTERN, { message: matchValidationMessage })
   @IsISO8601({ strict: true, strictSeparator: true }, { message: iso8601ValidationMessage })
   endDate?: string;
+
+  @ApiPropertyOptional({
+    description: '합주 공간 참여 멤버의 밴드 멤버 ID 목록 (전달 시 전체 교체, LEADER는 유지)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  bandMemberIds?: string[];
 }
 
 export type UpdateBandSpaceInput = UpdateBandSpaceBodyDto;

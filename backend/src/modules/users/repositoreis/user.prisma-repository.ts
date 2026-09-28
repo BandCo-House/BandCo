@@ -216,7 +216,6 @@ export class UsersPrismaRepository implements UsersRepository {
             order__created_at: query.order__created_at,
             order__id: query.order__id,
             where__nickname__contain: query.where__nickname__contain,
-            where__email__contain: query.where__email__contain,
           })
         : null;
 

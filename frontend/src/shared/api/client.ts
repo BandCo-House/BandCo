@@ -4,6 +4,8 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
+import { syncServerTime } from '@/shared/lib/server-time';
+
 import {
   ACCESS_TOKEN_REFRESH_ENDPOINT,
   API_BASE_URL,
@@ -101,8 +103,12 @@ export const refreshRefreshToken = async (
 };
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    syncServerTime(response.headers?.date);
+    return response;
+  },
   async (error: AxiosError) => {
+    syncServerTime(error.response?.headers?.date);
     const originalRequest = error.config;
 
     // 401이 아니거나 config가 없으면 그대로 에러 반환

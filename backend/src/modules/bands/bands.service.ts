@@ -651,6 +651,7 @@ export class BandsService {
 
   /**
    * 밴드장은 위임 없이 나갈 수 없고, 일반 밴드 멤버만 자신의 멤버십을 삭제할 수 있다.
+   * 나가는 멤버가 리더인 팀은 밴드장에게 자동 위임된다.
    *
    * @param {string} userId - 인증된 사용자 ID
    * @param {string} bandId - 나갈 밴드 ID
@@ -672,6 +673,9 @@ export class BandsService {
       if (band.member.role === BandMemberRole.BM) {
         throw new ForbiddenException('밴드장은 이 API로 밴드를 나갈 수 없습니다.');
       }
+
+      // 리더로 있던 팀이 고아가 되지 않도록 멤버 행을 지우기 전에 밴드장에게 넘긴다(#212 C-1).
+      await this.bandsRepository.handOverLedTeamsToBandMaster(band.member.id, client);
 
       return this.bandsRepository.leaveBand(band.member.id, client);
     };
@@ -870,6 +874,9 @@ export class BandsService {
       if (member === null) {
         throw new NotFoundException('요청한 밴드 멤버를 찾을 수 없습니다.');
       }
+
+      // 나가기와 같은 규칙 — 강퇴되는 멤버가 리더인 팀은 밴드장에게 넘긴다(#212 C-1).
+      await this.bandsRepository.handOverLedTeamsToBandMaster(member.id, client);
 
       const removed = await this.bandsRepository.leaveBand(member.id, client);
 

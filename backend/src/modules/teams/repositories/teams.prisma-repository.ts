@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { parseToPrismaQuery } from '../../../common/query';
 import { buildNextPath } from '../../../common/url';
 import { PrismaService } from '../../../database/prisma';
-import type { Prisma, TeamMemberRole } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma, TeamMemberRole } from '../../../generated/prisma';
 import type { GetBandTeamsQuery } from '../dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from '../dto/get-my-teams-query.dto';
 import type { GetTeamMembersQuery } from '../dto/get-team-members-query.dto';
@@ -34,11 +34,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     });
   }
 
-  async findBandMemberByBandIdAndUserId(bandId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+  async findBandMemberByBandIdAndUserId(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string; role: BandMemberRole } | null> {
     const client = tx ?? this.prisma;
     return client.bandMember.findFirst({
       where: { bandId, userId },
-      select: { id: true },
+      select: { id: true, role: true },
     });
   }
 

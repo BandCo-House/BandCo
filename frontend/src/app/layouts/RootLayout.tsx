@@ -28,9 +28,11 @@ export const RootLayout = () => {
   const matches = useMatches();
   const activeMatch = matches.at(-1);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showBottomNav = !HIDDEN_NAV_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
+  const staticData = activeMatch?.staticData as RouteStaticData | undefined;
+  const showBottomNav =
+    !HIDDEN_NAV_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    ) && !staticData?.hideBottomNav;
 
   // 네비 높이를 CSS 변수로 노출한다. 레이아웃 밖(토스트)이나 페이지 안(프로필)에서
   // "네비를 뺀 화면 높이"가 필요할 때 4.5rem 상수를 복제하지 않고 이 변수를 쓴다.
@@ -41,8 +43,6 @@ export const RootLayout = () => {
     );
   }, [showBottomNav]);
   const currentParams = (activeMatch?.params ?? {}) as Record<string, string>;
-
-  const staticData = activeMatch?.staticData as RouteStaticData | undefined;
   const isFullBleed = staticData?.fullBleed ?? false;
 
   // 병합만 여기서(레이아웃 상단 여백 계산에 필요). 렌더·네비게이션은 RouteHeader가 담당한다.
