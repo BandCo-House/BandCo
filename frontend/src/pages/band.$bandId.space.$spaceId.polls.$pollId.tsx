@@ -9,7 +9,7 @@ export const Route = createFileRoute(
 )({
   component: SchedulePollDetailPage,
   staticData: {
-    fullBleed: true,
+    bleed: 'x',
     // 하단이 투표 CTA로 고정돼 네비와 겹친다. 투표를 마치기 전에 다른 탭으로
     // 새지 않게 하는 의도도 같이 있다(일정 상세 수정 화면과 같은 처리).
     hideBottomNav: true,
@@ -31,7 +31,7 @@ function SchedulePollDetailPage() {
   const { spaceId, pollId } = Route.useParams();
 
   return (
-    <div className="py-6">
+    <div>
       <SchedulePollDetail spaceId={spaceId} pollId={pollId} />
     </div>
   );

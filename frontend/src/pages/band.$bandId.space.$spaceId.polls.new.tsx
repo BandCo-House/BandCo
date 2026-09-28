@@ -5,7 +5,7 @@ import { SchedulePollCreateForm } from '@/features/schedule-poll-create/ui/Sched
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/polls/new')({
   component: SchedulePollCreatePage,
   staticData: {
-    fullBleed: true,
+    bleed: 'x',
     header: {
       title: '일정 투표',
       backTo: '/band/$bandId/space/$spaceId',
@@ -24,7 +24,7 @@ function SchedulePollCreatePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="px-5 py-6 pb-12">
+    <div className="px-5 pb-12">
       <SchedulePollCreateForm
         spaceId={spaceId}
         onCreated={() =>

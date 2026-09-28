@@ -7,7 +7,7 @@ import { resolveBandDetailHeader } from './-band-header-utils';
  * 세 라우트가 동일한 헤더·탭·설정 버튼을 갖도록 한 곳에서 관리한다.
  */
 export const bandMainTabStaticData: RouteStaticData = {
-  fullBleed: true,
+  bleed: 'x',
   header: {
     title: '밴드',
     brandLabel: '밴드',
