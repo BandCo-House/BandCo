@@ -10,22 +10,22 @@ export const NotificationHeaderActions = () => {
 
   if (state.isEditMode) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="typo-sm-sb text-foreground">
-          {state.selectedIds.size}개 선택됨
-        </span>
+      <div className="flex items-center gap-1">
+        {/* 선택 개수는 제목 자리(NotificationHeaderTitle)가 말한다 — 여기선 액션만.
+            삭제는 아이콘만 남기되, 눈으로 보는 정보와 같아지도록 개수를 aria-label에 넣는다. */}
         <button
           type="button"
           onClick={() => state.onDeleteSelected?.()}
           disabled={state.selectedIds.size === 0 || state.isDeletePending}
-          className="rounded-full border border-destructive px-3 py-1 typo-sm-sb text-destructive disabled:opacity-40"
+          aria-label={`선택한 알림 ${state.selectedIds.size}개 삭제`}
+          className="inline-flex size-10 items-center justify-center rounded-full text-destructive transition-colors disabled:opacity-40"
         >
-          {state.selectedIds.size}개 삭제
+          <Trash2 aria-hidden="true" className="size-5" />
         </button>
         <button
           type="button"
           onClick={() => state.onCancelEdit?.()}
-          className="typo-sm-sb text-grey-300"
+          className="rounded-full px-2 py-1.5 typo-sm-sb text-grey-300"
         >
           취소
         </button>

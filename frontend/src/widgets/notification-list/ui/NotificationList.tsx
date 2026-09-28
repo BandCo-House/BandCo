@@ -235,12 +235,15 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
 
   return (
     <div data-testid="notifications-page" className="-mt-8 w-full pt-4 pb-16">
-      {!isLoading && !isError && hasNotifications && !isEditMode && (
+      {/* 편집 모드에서도 자리를 지킨다(숨기면 아래 리스트가 41px 튄다) — 대신 비활성화한다. */}
+      {!isLoading && !isError && hasNotifications && (
         <div className="mb-2 flex items-center justify-end">
           <button
             type="button"
             onClick={handleMarkAllAsRead}
-            disabled={markAllAsReadMutation.isPending || !hasUnread}
+            disabled={
+              markAllAsReadMutation.isPending || !hasUnread || isEditMode
+            }
             className="rounded-full border border-grey-300 px-4 py-1.5 typo-sm-sb text-grey-300 transition-all hover:bg-grey-300 hover:text-grey-600 disabled:opacity-40"
           >
             모두 읽음

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { NotificationList } from '@/widgets/notification-list/ui/NotificationList';
 import { NotificationHeaderActions } from '@/widgets/notification-list/ui/NotificationHeaderActions';
+import { NotificationHeaderTitle } from '@/widgets/notification-list/ui/NotificationHeaderTitle';
 import { NotificationTabs } from '@/widgets/notification-list/ui/NotificationTabs';
 
 const notificationsSearchSchema = z.object({
@@ -13,7 +14,8 @@ export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
   staticData: {
     header: {
-      title: '알림',
+      // 편집 모드에서 '2개 선택'으로 바뀐다(선택 개수를 오른쪽에서 중복해 말하지 않기 위해).
+      title: () => <NotificationHeaderTitle />,
       showBack: true,
       heightVariant: 'lg',
       renderRight: () => <NotificationHeaderActions />,
