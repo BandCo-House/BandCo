@@ -19,14 +19,15 @@ interface SongSearchModalProps {
   onOpenChange: (open: boolean) => void;
   /** 결과 행을 고르면 폼에 곡 정보를 채우고 모달을 닫는다. */
   onSelect: (track: SongPreview) => void;
-  /** 검색 결과가 없을 때 제목·아티스트를 손으로 채우는 경로. */
+  /** 원하는 곡이 검색에 없을 때 제목·아티스트를 손으로 채우는 경로. */
   onManualEntry: (query: string) => void;
 }
 
 /**
  * 외부 음원에서 합주곡을 검색하는 모달.
  * 검색으로 고른 곡은 sourceUrl·앨범아트·곡 길이까지 함께 채워지고,
- * 검색에 없는 곡(커버·자작곡)은 직접 입력으로 빠져나간다.
+ * 검색에 없는 곡(커버·자작곡)은 직접 입력으로 빠져나간다. 유명한 곡은 커버만 잔뜩
+ * 나오고 원곡이 없는 경우가 있어, 결과가 있어도 목록 끝에 직접 입력 경로를 둔다.
  */
 export const SongSearchModal = ({
   open,
@@ -57,6 +58,19 @@ export const SongSearchModal = ({
 
   const hasKeyword = keyword.length > 0;
 
+  const manualEntryButton = (
+    <button
+      type="button"
+      onClick={() => {
+        onManualEntry(keyword);
+        onOpenChange(false);
+      }}
+      className="typo-sm-sb text-primary underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+    >
+      찾는 곡이 없나요? 직접 입력하기
+    </button>
+  );
+
   const renderResults = () => {
     if (!hasKeyword) {
       return <EmptyState title="제목이나 가수로 곡을 검색하세요." />;
@@ -80,21 +94,12 @@ export const SongSearchModal = ({
       return (
         <div className="flex flex-col items-center gap-3 py-8">
           <EmptyState className="py-0" title="검색 결과가 없어요." />
-          <button
-            type="button"
-            onClick={() => {
-              onManualEntry(keyword);
-              onOpenChange(false);
-            }}
-            className="typo-sm-sb text-primary underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            찾는 곡이 없나요? 직접 입력하기
-          </button>
+          {manualEntryButton}
         </div>
       );
     }
 
-    return tracks.map((track) => (
+    const trackRows = tracks.map((track) => (
       <button
         key={`${track.sourceType}-${track.externalTrackId}`}
         type="button"
@@ -115,6 +120,13 @@ export const SongSearchModal = ({
         </span>
       </button>
     ));
+
+    return (
+      <>
+        {trackRows}
+        <div className="flex justify-center py-6">{manualEntryButton}</div>
+      </>
+    );
   };
 
   return (
