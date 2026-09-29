@@ -9,7 +9,7 @@ import { uuidValidationMessage } from '../../../common/validation-message/uuid-v
 
 export class CreateBandInvitationBodyDto {
   @ApiProperty({ description: '초대받을 유저 ID (UUID)', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID('4', {
+  @IsUUID(undefined, {
     message: uuidValidationMessage,
   })
   inviteeUserId!: string;

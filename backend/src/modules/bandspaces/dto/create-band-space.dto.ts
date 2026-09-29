@@ -106,7 +106,7 @@ export class CreateBandSpaceBodyDto {
   })
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   bandMemberIds?: string[];
 }
 

@@ -82,12 +82,12 @@ Prisma 스키마 문법으로는 partial index를 표현할 수 없어 마이그
 // dto/schedule-participant.dto.ts (신규)
 export class ScheduleParticipantInputDto {
   @ApiProperty({ description: '참여자 밴드 멤버 ID (UUID)' })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   bandMemberId!: string;
 
   @ApiPropertyOptional({ description: '이 일정에서 맡은 세션 ID (UUID). 합주 전용, 회의는 생략' })
   @IsOptional()
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   skillTypeId?: string;
 }
 ```
