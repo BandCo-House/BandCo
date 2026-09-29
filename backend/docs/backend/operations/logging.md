@@ -32,6 +32,10 @@
 
 ## 실시간 조회
 
+팀원은 AWS 콘솔에서 서울 리전을 선택한 뒤 CloudWatch → 대시보드 → `BandCo-Backend-Logs`를 연다. 이 대시보드에는 최근 6시간의 HTTP 오류 목록과 5분 단위 오류 요청 수가 표시된다. 운영 백엔드가 새 로그 설정으로 배포되기 전에는 두 위젯에 운영 데이터가 없다.
+
+팀원 IAM 사용자 `bandco-junhwan`에는 `BandCoBackendCloudWatchManage` 정책이 연결되어 있다. 이 정책으로 `/bandco/backend` 로그 조회, Live Tail, Logs Insights 검색, 보존 기간과 메트릭 필터 설정, `BandCo-Backend-Logs` 대시보드 편집을 할 수 있다. 다른 로그 그룹의 내용 조회와 로그 그룹 삭제 권한은 없다. 팀원이 추가되면 같은 정책을 해당 IAM 사용자에게 연결한다.
+
 AWS 콘솔에서 CloudWatch → 로그 → 로그 그룹 → `/bandco/backend` → Live Tail을 연다. Live Tail은 필요한 동안만 사용한다. 팀원은 AWS 콘솔 로그인과 로그 조회 권한이 필요하다.
 
 AWS CLI 자격 증명이 있는 경우:
