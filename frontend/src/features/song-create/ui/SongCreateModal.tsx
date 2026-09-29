@@ -44,6 +44,9 @@ interface SongCreateModalProps {
 const COVER_FOLDER = 'song-covers';
 const REFERENCE_FOLDER = 'song-references';
 
+const SEARCH_FIRST_PLACEHOLDER = '먼저 곡을 검색해주세요';
+const MANUAL_ENTRY_HINT_ID = 'song-manual-entry-hint';
+
 /** 디자인의 `곡 검색`·`＋링크` 버튼 크기. */
 const ACCENT_BUTTON_CLASS = 'h-[46px] gap-1 px-4 typo-base-b';
 
@@ -250,7 +253,14 @@ export const SongCreateModal = ({
                 className="min-w-0 flex-1"
                 value={form.title}
                 onChange={(event) => update({ title: event.target.value })}
-                placeholder="먼저 곡을 검색해주세요"
+                placeholder={
+                  form.isManualEntry
+                    ? '곡 제목을 입력하세요'
+                    : SEARCH_FIRST_PLACEHOLDER
+                }
+                aria-describedby={
+                  form.isManualEntry ? MANUAL_ENTRY_HINT_ID : undefined
+                }
                 maxLength={200}
               />
               <Button
@@ -262,6 +272,16 @@ export const SongCreateModal = ({
                 <Search aria-hidden="true" className="size-[18px]" />곡 검색
               </Button>
             </div>
+            {/* 검색에서 넘어온 사용자는 "먼저 검색하라"는 문구를 보면 되돌아가야 하는 줄 안다. */}
+            {form.isManualEntry && (
+              <p
+                id={MANUAL_ENTRY_HINT_ID}
+                className="typo-sm-r break-keep text-grey-300"
+              >
+                검색에 없는 곡은 직접 입력해요. 음원은 외부 링크에 유튜브 주소로
+                남겨주세요.
+              </p>
+            )}
           </Field>
 
           <Field label="아티스트" required labelSize="lg" htmlFor="song-artist">
@@ -270,7 +290,11 @@ export const SongCreateModal = ({
               variant="underline"
               value={form.artistName}
               onChange={(event) => update({ artistName: event.target.value })}
-              placeholder="먼저 곡을 검색해주세요"
+              placeholder={
+                form.isManualEntry
+                  ? '아티스트를 입력하세요'
+                  : SEARCH_FIRST_PLACEHOLDER
+              }
               maxLength={200}
             />
           </Field>

@@ -68,6 +68,14 @@ describe('applyManualEntryToForm', () => {
     expect(form.title).toBe('누구누구 유튜브 커버');
     expect(form.track).toBeNull();
     expect(form.coverSource).toBe('none');
+    expect(form.isManualEntry).toBe(true);
+  });
+
+  it('직접 입력 뒤 다시 검색으로 곡을 고르면 직접 입력 상태가 풀린다', () => {
+    const manual = applyManualEntryToForm(createEmptyForm(), 'Count on me');
+    const form = applyTrackToForm(manual, track);
+
+    expect(form.isManualEntry).toBe(false);
   });
 });
 

@@ -16,6 +16,8 @@ export interface SongFormState {
   artistName: string;
   /** 검색으로 고른 원본 트랙. sourceUrl 전송과 '기본 이미지로'(앨범아트 복원)에 쓴다. */
   track: SongPreview | null;
+  /** 검색에서 "직접 입력하기"로 넘어왔는지. 안내 문구를 검색 전 상태와 구분하는 데 쓴다. */
+  isManualEntry: boolean;
   coverSource: SongCoverSource;
   coverFile: File | null;
   /** 직접 올린 커버의 blob 미리보기 URL. */
@@ -33,6 +35,7 @@ export const createEmptyForm = (): SongFormState => ({
   title: '',
   artistName: '',
   track: null,
+  isManualEntry: false,
   coverSource: 'none',
   coverFile: null,
   coverPreviewUrl: null,
@@ -55,6 +58,7 @@ export const applyTrackToForm = (
   title: track.title,
   artistName: track.artistName,
   track,
+  isManualEntry: false,
   coverSource: track.albumImageUrl ? 'album' : 'none',
   coverFile: null,
   coverPreviewUrl: null,
@@ -76,6 +80,7 @@ export const applyManualEntryToForm = (
     ...form,
     title: query,
     track: null,
+    isManualEntry: true,
     artistName: hadTrack ? '' : form.artistName,
     songLength: hadTrack ? '' : form.songLength,
     coverSource: form.coverSource === 'album' ? 'none' : form.coverSource,
