@@ -9,5 +9,7 @@ import type { linkPreviewSchema } from './schema';
  * - title: og:title → <title> 순. 못 읽으면 null(호출부에서 호스트명으로 대체)
  * - siteName: og:site_name
  * - faviconUrl: 절대 URL 파비콘(og:image가 아니라 사이트 아이콘)
+ * - imageUrl: 유튜브 링크의 영상 썸네일. 일반 페이지는 null
+ * - authorName: 유튜브 링크의 채널 이름. 일반 페이지는 null
  */
 export type LinkPreview = z.infer<typeof linkPreviewSchema>;
