@@ -46,7 +46,7 @@ fields @timestamp, method, path, statusCode, message
 
 - 5xx: `/bandco/backend`의 `BandCoBackend5xxDiscord` 구독 필터가 예외 로그를 Lambda `bandco-prod-discord-error-alert`에 전달한다. 오류마다 알림을 보낸다.
 - 4xx: `BandCoBackend4xxExceptions` 메트릭 필터와 `BandCo-Backend-4xx-Spike` 알람을 사용한다. 5분 동안 5건 이상 발생해 알람 상태로 바뀌면 한 번 알린다. 정상 상태로 돌아갔다가 다시 기준을 넘으면 다시 알린다.
-- Discord 메시지에는 발생 시각, HTTP 상태, 메서드, 라우트 경로, CloudWatch 링크만 보낸다. 오류 메시지, 스택, 사용자 ID, 본문, 쿼리, 인증 정보는 보내지 않는다.
+- Discord 메시지에는 발생 시각, HTTP 상태, 메서드, 라우트 경로를 보낸다. 5xx 링크는 해당 로그 이벤트를, 4xx 급증 링크는 발생 시간대의 백엔드 로그 스트림을 연다. 오류 메시지, 스택, 사용자 ID, 본문, 쿼리, 인증 정보는 보내지 않는다.
 - 웹훅 URL은 Secrets Manager의 `bandco/prod/discord-error-webhook`에 저장한다. 알림 채널을 옮길 때 새 채널의 웹훅을 만들고 이 비밀값을 교체하면 다음 알림부터 적용된다. Lambda 코드는 `infra/discord-alert/handler.py`에 있다.
 - 알림 Lambda 자체의 실행·실패 기록은 `/aws/lambda/bandco-prod-discord-error-alert` 로그 그룹에서 확인한다. 이 로그는 14일간 보관한다.
 

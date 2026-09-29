@@ -2,15 +2,24 @@ import base64
 import gzip
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
-LOG_GROUP_URL = (
+LOG_EVENTS_URL = (
     "https://ap-northeast-2.console.aws.amazon.com/cloudwatch/home"
-    "?region=ap-northeast-2#logsV2:log-groups"
+    "?region=ap-northeast-2#logsV2:log-groups/log-group"
 )
+
+
+def format_log_stream_url(log_group, log_stream, started_at):
+    group_path = log_group.replace("/", "$252F")
+    stream_path = log_stream.replace("/", "$252F")
+    start = started_at.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return f"{LOG_EVENTS_URL}/{group_path}/log-events/{stream_path}?start={start}"
+
+
 def get_webhook_url():
     import boto3
 
@@ -58,10 +67,12 @@ def format_log_alerts(event):
         occurred_at = datetime.fromtimestamp(log_event["timestamp"] / 1000, timezone.utc)
         method = record.get("method", "?")
         path = record.get("path", "?")
+        log_url = format_log_stream_url(batch["logGroup"], batch["logStream"], occurred_at)
+        log_url = f"{log_url}&refEventId={log_event['id']}"
         alerts.append(
             "🚨 BandCo 운영 5xx 오류\n"
             f"{occurred_at:%Y-%m-%d %H:%M:%S} UTC | {method} {path} | HTTP {status_code}\n"
-            f"CloudWatch 로그: {LOG_GROUP_URL}"
+            f"[해당 오류 로그 보기]({log_url})"
         )
     return alerts
 
@@ -70,10 +81,13 @@ def format_alarm_alert(event):
     alarm = event.get("alarmData", {})
     if alarm.get("state", {}).get("value") != "ALARM":
         return None
+    alarm_time = datetime.fromisoformat(event["time"]).astimezone(timezone.utc)
+    started_at = alarm_time - timedelta(minutes=15)
+    log_url = format_log_stream_url("/bandco/backend", "bandco-nest", started_at)
     return (
         "⚠️ BandCo 운영 4xx 오류 급증\n"
-        "5분 동안 4xx 오류 5건 이상 발생\n"
-        f"CloudWatch 로그: {LOG_GROUP_URL}"
+        f"{alarm_time:%Y-%m-%d %H:%M:%S} UTC | 5분 동안 4xx 오류 5건 이상\n"
+        f"[발생 시간대 백엔드 로그 보기]({log_url})"
     )
 
 
