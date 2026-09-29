@@ -95,7 +95,7 @@ export class UpdateSongBodyDto {
   @ApiPropertyOptional({ description: '스킬 타입 ID 목록 (UUID 배열)', type: [String] })
   @IsOptional()
   @IsArray()
-  @IsUUID('4', {
+  @IsUUID(undefined, {
     each: true,
     message: uuidValidationMessage,
   })

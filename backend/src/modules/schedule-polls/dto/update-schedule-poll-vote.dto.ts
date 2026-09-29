@@ -13,7 +13,7 @@ export class UpdateSchedulePollVoteBodyDto {
   })
   @IsArray()
   @ArrayMaxSize(SCHEDULE_POLL_OPTION_MAX_COUNT, { message: `후보 시간은 최대 ${SCHEDULE_POLL_OPTION_MAX_COUNT}개까지 선택할 수 있습니다.` })
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   schedulePollOptionIds!: string[];
 }
 

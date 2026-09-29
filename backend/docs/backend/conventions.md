@@ -132,6 +132,7 @@ constructor(@Inject(FEATURE_REPOSITORY) private readonly repo: FeatureRepository
 - 단순 구조 검증은 DTO에서 수행한다 (`class-validator` 데코레이터).
 - 복잡한 로직 검증은 Service에서 수행한다.
 - 검증 메시지는 `src/common/validation-message/` 헬퍼를 사용한다.
+- ID 필드는 `@IsUUID(undefined, { message: uuidValidationMessage })`로 검증하고 UUID 버전을 고정하지 않는다. 앱이 생성하는 ID는 v4지만 `genres`·`skill_types` 마스터 데이터는 이름 기반 UUID v5 고정 ID를 쓴다.
 - DTO는 요청 파싱 전용. Service 내부 반환 타입은 `types/`에 별도 정의한다.
 
 ---

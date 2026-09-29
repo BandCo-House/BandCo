@@ -9,12 +9,12 @@ import { uuidValidationMessage } from '../../../common/validation-message/uuid-v
  */
 export class ScheduleParticipantInputDto {
   @ApiProperty({ description: '참여자 밴드 멤버 ID (UUID)', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   bandMemberId!: string;
 
   @ApiPropertyOptional({ description: '이 일정에서 맡은 세션 ID (UUID). 합주 전용이며 회의는 생략한다.' })
   @IsOptional()
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   skillTypeId?: string;
 }
 

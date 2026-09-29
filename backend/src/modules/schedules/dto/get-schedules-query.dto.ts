@@ -23,7 +23,7 @@ export class GetSchedulesQueryDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   cursor__id?: string;
 
   @IsOptional()
@@ -45,12 +45,12 @@ export class GetSchedulesQueryDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   where__place_id?: string;
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   where__team_id?: string;
 
   @IsOptional()
