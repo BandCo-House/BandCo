@@ -19,6 +19,7 @@ pnpm run test -- bands     # 특정 파일 필터
 | Service | ✅ 필수 | 비즈니스 로직·검증·분기의 핵심 레이어 |
 | Repository | ✅ 조건부 | 복잡한 Prisma 쿼리(다중 조인, 조건부 include)만 |
 | Guard | ✅ 조건부 | 인증·권한 로직이 있는 Guard |
+| DTO | ✅ 조건부 | 검증 규칙 자체가 버그 원인이 됐던 필드만 (`plainToInstance` + `validate`) |
 | 유틸 함수 | ✅ 한정적 | 중요한 순수 함수만 |
 
 ---
@@ -116,6 +117,42 @@ describe('XxxPrismaRepository', () => {
   });
 });
 ```
+
+---
+
+## 3. DTO 검증 테스트
+
+**패턴: `plainToInstance` + `validate`**
+
+`ValidationPipe`는 Service 앞단에서 동작하므로 Service 테스트로는 DTO 데코레이터 오류를 잡을 수 없다.
+검증 규칙 자체가 버그 원인이 됐던 필드(예: #231 UUID 버전 고정)에 한해 DTO 옆에 `*.dto.spec.ts`를 작성한다.
+
+```typescript
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+
+import { CreateBandBodyDto } from './create-band.dto';
+
+// seed 마이그레이션의 '록 (Rock)' — 이름 기반 UUID v5 고정 ID
+const GENRE_ID_V5 = '370ce3f7-0e72-5ab0-a3c4-72e4887ac75a';
+
+const validateBody = (body: Record<string, unknown>) => validate(plainToInstance(CreateBandBodyDto, { name: '록밴드', visibility: true, ...body }));
+
+describe('CreateBandBodyDto', () => {
+  it('seed의 UUID v5 장르 ID를 통과시킨다', async () => {
+    const errors = await validateBody({ genreIds: [GENRE_ID_V5] });
+    expect(errors).toHaveLength(0);
+  });
+
+  it('UUID 형식이 아닌 장르 ID는 거부한다', async () => {
+    const errors = await validateBody({ genreIds: ['rock'] });
+    expect(errors[0].constraints).toEqual({ isUuid: 'genreIds은(는) 유효한 uuid이어야 합니다.' });
+  });
+});
+```
+
+- 통과 케이스와 거부 케이스를 함께 둔다. 통과 케이스만 있으면 검증 데코레이터가 빠져도 테스트가 성공한다.
+- 필수 필드는 최소값만 채우고, 검증 대상 필드만 케이스마다 바꾼다.
 
 ---
 

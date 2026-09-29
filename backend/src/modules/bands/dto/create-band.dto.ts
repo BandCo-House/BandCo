@@ -51,7 +51,7 @@ export class CreateBandBodyDto {
   @ApiPropertyOptional({ description: '장르 ID 목록 (UUID 배열)', type: [String] })
   @IsOptional()
   @IsArray()
-  @IsUUID('4', {
+  @IsUUID(undefined, {
     each: true,
     message: uuidValidationMessage,
   })
@@ -60,7 +60,7 @@ export class CreateBandBodyDto {
   @ApiPropertyOptional({ description: '초대할 유저 ID 목록 (UUID 배열)', type: [String] })
   @IsOptional()
   @IsArray()
-  @IsUUID('4', {
+  @IsUUID(undefined, {
     each: true,
     message: uuidValidationMessage,
   })

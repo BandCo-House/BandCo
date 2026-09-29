@@ -40,7 +40,7 @@ export class UpdateScheduleBodyDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   placeId?: string;
 
   @IsOptional()
@@ -50,7 +50,7 @@ export class UpdateScheduleBodyDto {
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   songIds?: string[];
 
   @ApiPropertyOptional({
