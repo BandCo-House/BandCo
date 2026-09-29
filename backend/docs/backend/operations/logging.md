@@ -2,11 +2,13 @@
 
 운영 백엔드 로그는 서울 리전의 CloudWatch 로그 그룹 `/bandco/backend`에서 확인한다.
 
-## 실시간 조회
+## 대시보드에서 오류 현황 보기
 
-팀원은 AWS 콘솔에서 서울 리전을 선택한 뒤 CloudWatch → 대시보드 → `BandCo-Backend-Logs`를 연다. 이 대시보드에는 최근 6시간의 HTTP 오류 목록과 5분 단위 오류 요청 수가 표시된다. 운영 백엔드가 새 로그 설정으로 배포되기 전에는 두 위젯에 운영 데이터가 없다.
+AWS 콘솔에서 서울 리전을 선택한 뒤 CloudWatch → 대시보드 → `BandCo-Backend-Logs`를 연다. 최근 6시간의 HTTP 4xx·5xx 오류 목록과 5분 단위 오류 요청 수를 볼 수 있다. 두 위젯은 오류만 표시하므로, 결과가 없을 때는 로그 그룹에서 정상 요청 로그가 수집되는지도 확인한다.
 
-AWS 콘솔에서 CloudWatch → 로그 → 로그 그룹 → `/bandco/backend` → Live Tail을 연다. Live Tail은 필요한 동안만 사용한다.
+## 로그 그룹에서 원문과 실시간 로그 보기
+
+CloudWatch → 로그 → 로그 그룹 → `/bandco/backend`에서 `bandco-nest` 스트림을 열면 각 로그의 원문을 볼 수 있다. 같은 로그 그룹에서 Live Tail을 열면 새 로그가 들어오는 대로 표시된다. Live Tail은 필요한 동안만 사용한다.
 
 AWS CLI에서는:
 
