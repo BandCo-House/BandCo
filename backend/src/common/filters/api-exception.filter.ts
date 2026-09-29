@@ -56,7 +56,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
         ...requestInfo,
       });
     } else if (statusCode >= 400) {
-      this.logger.warn({ message, ...requestInfo });
+      const logMessage = typeof request.route?.path === 'string' ? message : (HttpStatus[statusCode] ?? 'UNKNOWN');
+      this.logger.warn({ message: logMessage, ...requestInfo });
     }
 
     const body: ApiFailResponse = {

@@ -7,9 +7,13 @@ import { ApiExceptionFilter, extractExceptionMessage } from './api-exception.fil
 const createHost = () => {
   const json = jest.fn();
   const status = jest.fn().mockReturnValue({ json });
-  const request = { method: 'POST', baseUrl: '', route: { path: '/bandspaces/:bandspaceId/schedules' } };
+  const request: { method: string; baseUrl: string; route?: { path: string } } = {
+    method: 'POST',
+    baseUrl: '',
+    route: { path: '/bandspaces/:bandspaceId/schedules' },
+  };
   const host = { switchToHttp: () => ({ getRequest: () => request, getResponse: () => ({ status }) }) } as unknown as ArgumentsHost;
-  return { host, status, json };
+  return { host, status, json, request };
 };
 
 describe('extractExceptionMessage', () => {
@@ -48,6 +52,20 @@ describe('ApiExceptionFilter', () => {
       method: 'POST',
       path: '/bandspaces/:bandspaceId/schedules',
       statusCode: 400,
+    });
+  });
+
+  it('일치하지 않는 경로의 404 메시지에서는 원본 URL을 로그에 남기지 않는다', () => {
+    const { host, request } = createHost();
+    delete request.route;
+
+    filter.catch(new NotFoundException('Cannot GET /private-token'), host);
+
+    expect(filter['logger'].warn).toHaveBeenCalledWith({
+      message: 'NOT_FOUND',
+      method: 'POST',
+      path: '<unmatched>',
+      statusCode: 404,
     });
   });
 
