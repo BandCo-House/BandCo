@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Plus, Search, Upload, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { uploadFile } from '@/shared/api';
+import { getLinkPreview } from '@/entities/link/api/link-api';
+import { linkKeys } from '@/entities/link/api/useLinkPreview';
 import { useCreateSong } from '@/entities/song/api/useCreateSong';
 import { SONG_KEY_OPTIONS } from '@/entities/song/model/song-key';
 import type { SongKey, SongPreview } from '@/entities/song/model/types';
@@ -22,7 +25,9 @@ import { cn } from '@/shared/lib/utils';
 import {
   applyManualEntryToForm,
   applyTrackToForm,
+  applyVideoPreviewToForm,
   createEmptyForm,
+  getOriginalCoverUrl,
   isBpmValid,
   isFormValid,
   isExternalLinkValid,
@@ -45,7 +50,8 @@ const COVER_FOLDER = 'song-covers';
 const REFERENCE_FOLDER = 'song-references';
 
 const SEARCH_FIRST_PLACEHOLDER = '먼저 곡을 검색해주세요';
-const MANUAL_ENTRY_HINT_ID = 'song-manual-entry-hint';
+const VIDEO_LINK_HINT_ID = 'song-video-link-hint';
+const VIDEO_LINK_ERROR_ID = 'song-video-link-error';
 
 /** 디자인의 `곡 검색`·`＋링크` 버튼 크기. */
 const ACCENT_BUTTON_CLASS = 'h-[46px] gap-1 px-4 typo-base-b';
@@ -89,6 +95,9 @@ export const SongCreateModal = ({
 
   const [form, setForm] = useState<SongFormState>(createEmptyForm);
   const [linkDraft, setLinkDraft] = useState('');
+  const [videoLinkDraft, setVideoLinkDraft] = useState('');
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
+  const queryClient = useQueryClient();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -102,6 +111,7 @@ export const SongCreateModal = ({
     if (open) {
       setForm(createEmptyForm());
       setLinkDraft('');
+      setVideoLinkDraft('');
       setIsUploading(false);
     }
   }
@@ -133,8 +143,41 @@ export const SongCreateModal = ({
   const handleSelectTrack = (track: SongPreview) =>
     setForm((prev) => applyTrackToForm(prev, track));
 
-  const handleManualEntry = (query: string) =>
-    setForm((prev) => applyManualEntryToForm(prev, query));
+  const handleManualEntry = () =>
+    setForm((prev) => applyManualEntryToForm(prev));
+
+  const trimmedVideoLink = videoLinkDraft.trim();
+  const isVideoLinkMalformed =
+    trimmedVideoLink.length > 0 && !isExternalLinkValid(trimmedVideoLink);
+  const canLoadVideo =
+    trimmedVideoLink.length > 0 && !isVideoLinkMalformed && !isLoadingVideo;
+
+  // 링크 미리보기는 외부 링크 첨부와 같은 캐시를 쓴다. 같은 링크를 외부 링크에도
+  // 달면 첨부 목록이 다시 요청하지 않는다.
+  const handleLoadVideo = async () => {
+    if (!canLoadVideo) return;
+    setIsLoadingVideo(true);
+    try {
+      const preview = await queryClient.fetchQuery({
+        queryKey: linkKeys.preview(trimmedVideoLink),
+        queryFn: () => getLinkPreview(trimmedVideoLink),
+      });
+      // 서버는 못 읽은 링크도 200과 null 제목으로 준다. 채울 게 없으니 실패로 알린다.
+      if (!preview.title) {
+        toast.error(
+          '영상 정보를 불러오지 못했어요. 제목과 아티스트를 직접 입력해주세요.',
+        );
+        return;
+      }
+      setForm((prev) => applyVideoPreviewToForm(prev, preview));
+      setVideoLinkDraft('');
+      toast.success('영상 정보로 채웠어요. 제목과 아티스트를 확인해주세요.');
+    } catch {
+      toast.error('영상 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsLoadingVideo(false);
+    }
+  };
 
   /** 크롭 모달이 돌려준 파일만 폼에 들어간다. 원본은 여기까지 오지 않는다. */
   const applyCroppedCover = (file: File) =>
@@ -170,7 +213,7 @@ export const SongCreateModal = ({
   const uploadAssets = async () => {
     const songCoverUrl =
       form.coverSource === 'album'
-        ? (form.track?.albumImageUrl ?? undefined)
+        ? (getOriginalCoverUrl(form) ?? undefined)
         : form.coverSource === 'custom' && form.coverFile
           ? await uploadOnce(form.coverFile, COVER_FOLDER)
           : undefined;
@@ -241,9 +284,69 @@ export const SongCreateModal = ({
               합주곡 추가
             </SheetTitle>
             <p className="typo-base-r text-grey-300">
-              밴드에서 연습할 합주곡을 검색 ∙ 수정해보세요
+              {form.isManualEntry
+                ? '검색에 없는 곡을 직접 추가해요'
+                : '밴드에서 연습할 합주곡을 검색 ∙ 수정해보세요'}
             </p>
           </div>
+
+          {/* 검색에 없는 곡을 추가하는 사람은 대개 그 곡의 유튜브 영상을 이미 알고 있어,
+              제목·아티스트를 치는 대신 링크 하나로 채우게 한다. */}
+          {form.isManualEntry && (
+            <Field
+              label="유튜브 링크로 채우기"
+              labelSize="lg"
+              htmlFor="song-video-link"
+            >
+              <div className="flex items-center gap-1">
+                <Input
+                  id="song-video-link"
+                  type="url"
+                  variant="underline"
+                  className="min-w-0 flex-1"
+                  value={videoLinkDraft}
+                  onChange={(event) => setVideoLinkDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    void handleLoadVideo();
+                  }}
+                  placeholder="유튜브 링크를 붙여넣으세요"
+                  aria-invalid={isVideoLinkMalformed || undefined}
+                  aria-describedby={
+                    isVideoLinkMalformed
+                      ? VIDEO_LINK_ERROR_ID
+                      : VIDEO_LINK_HINT_ID
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="accent"
+                  className={ACCENT_BUTTON_CLASS}
+                  disabled={!canLoadVideo}
+                  onClick={() => void handleLoadVideo()}
+                >
+                  {isLoadingVideo ? '불러오는 중' : '불러오기'}
+                </Button>
+              </div>
+              {isVideoLinkMalformed ? (
+                <p
+                  id={VIDEO_LINK_ERROR_ID}
+                  className="typo-sm-r text-destructive"
+                >
+                  http:// 또는 https:// 로 시작하는 주소를 입력해주세요.
+                </p>
+              ) : (
+                <p
+                  id={VIDEO_LINK_HINT_ID}
+                  className="typo-sm-r break-keep text-grey-300"
+                >
+                  링크를 붙여넣으면 제목·아티스트·커버를 채워드려요. 링크가
+                  없으면 아래에 직접 입력하세요.
+                </p>
+              )}
+            </Field>
+          )}
 
           <Field label="곡 제목" required labelSize="lg" htmlFor="song-title">
             <div className="flex items-center gap-1">
@@ -258,9 +361,6 @@ export const SongCreateModal = ({
                     ? '곡 제목을 입력하세요'
                     : SEARCH_FIRST_PLACEHOLDER
                 }
-                aria-describedby={
-                  form.isManualEntry ? MANUAL_ENTRY_HINT_ID : undefined
-                }
                 maxLength={200}
               />
               <Button
@@ -272,16 +372,6 @@ export const SongCreateModal = ({
                 <Search aria-hidden="true" className="size-[18px]" />곡 검색
               </Button>
             </div>
-            {/* 검색에서 넘어온 사용자는 "먼저 검색하라"는 문구를 보면 되돌아가야 하는 줄 안다. */}
-            {form.isManualEntry && (
-              <p
-                id={MANUAL_ENTRY_HINT_ID}
-                className="typo-sm-r break-keep text-grey-300"
-              >
-                검색에 없는 곡은 직접 입력해요. 음원은 외부 링크에 유튜브 주소로
-                남겨주세요.
-              </p>
-            )}
           </Field>
 
           <Field label="아티스트" required labelSize="lg" htmlFor="song-artist">
@@ -301,7 +391,7 @@ export const SongCreateModal = ({
 
           <SongCoverField
             source={form.coverSource}
-            albumImageUrl={form.track?.albumImageUrl ?? null}
+            albumImageUrl={getOriginalCoverUrl(form)}
             previewUrl={form.coverPreviewUrl}
             onSelectFile={selectFile}
             onResetToAlbum={() =>

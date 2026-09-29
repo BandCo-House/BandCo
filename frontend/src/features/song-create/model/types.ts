@@ -2,6 +2,7 @@ import {
   parseSongLength,
   formatSongLength,
 } from '@/entities/song/lib/song-length';
+import type { LinkPreview } from '@/entities/link/model/types';
 import type {
   CreateSongRequest,
   SongKey,
@@ -16,8 +17,10 @@ export interface SongFormState {
   artistName: string;
   /** 검색으로 고른 원본 트랙. sourceUrl 전송과 '기본 이미지로'(앨범아트 복원)에 쓴다. */
   track: SongPreview | null;
-  /** 검색에서 "직접 입력하기"로 넘어왔는지. 안내 문구를 검색 전 상태와 구분하는 데 쓴다. */
+  /** 검색에서 "직접 입력하기"로 넘어왔는지. 유튜브 링크 입력과 안내 문구를 보여주는 데 쓴다. */
   isManualEntry: boolean;
+  /** 유튜브 링크에서 가져온 영상 썸네일. 검색 트랙이 없을 때 앨범아트 대신 원본 커버가 된다. */
+  linkCoverUrl: string | null;
   coverSource: SongCoverSource;
   coverFile: File | null;
   /** 직접 올린 커버의 blob 미리보기 URL. */
@@ -36,6 +39,7 @@ export const createEmptyForm = (): SongFormState => ({
   artistName: '',
   track: null,
   isManualEntry: false,
+  linkCoverUrl: null,
   coverSource: 'none',
   coverFile: null,
   coverPreviewUrl: null,
@@ -59,6 +63,7 @@ export const applyTrackToForm = (
   artistName: track.artistName,
   track,
   isManualEntry: false,
+  linkCoverUrl: null,
   coverSource: track.albumImageUrl ? 'album' : 'none',
   coverFile: null,
   coverPreviewUrl: null,
@@ -66,19 +71,17 @@ export const applyTrackToForm = (
 });
 
 /**
- * 검색 결과가 없어 직접 입력으로 빠질 때. 검색어를 곡 제목 초안으로 넘긴다.
- * 앞서 고른 트랙이 있었다면 그 트랙에서 온 값(아티스트·곡 길이·앨범아트)을 비운다.
+ * 원하는 곡이 검색에 없어 직접 입력으로 빠질 때.
+ * 검색어는 "Count on me Bruno Mars"처럼 제목·가수가 섞여 있어 제목으로 넘기지 않고 비운다.
+ * 앞서 고른 트랙이 있었다면 그 트랙에서 온 값(아티스트·곡 길이·앨범아트)도 비운다.
  * 남겨 두면 직접 입력한 곡이 남의 아티스트·재생시간을 달고 저장된다.
  */
-export const applyManualEntryToForm = (
-  form: SongFormState,
-  query: string,
-): SongFormState => {
+export const applyManualEntryToForm = (form: SongFormState): SongFormState => {
   const hadTrack = form.track !== null;
 
   return {
     ...form,
-    title: query,
+    title: hadTrack ? '' : form.title,
     track: null,
     isManualEntry: true,
     artistName: hadTrack ? '' : form.artistName,
@@ -86,6 +89,92 @@ export const applyManualEntryToForm = (
     coverSource: form.coverSource === 'album' ? 'none' : form.coverSource,
   };
 };
+
+// 영상 제목 앞뒤의 "[MV]", "(Official Video)" 같은 꾸밈 괄호.
+const LEADING_BRACKET_PATTERN = /^\s*[[(【][^\])】]*[\])】]\s*/;
+const TRAILING_BRACKET_PATTERN = /\s*[[(【][^\])】]*[\])】]\s*$/;
+// "가수 - 제목" 구분자. 하이픈·엔대시·엠대시를 모두 받는다.
+const ARTIST_TITLE_SEPARATOR = /\s+[-–—]\s+/;
+// 유튜브가 음원마다 자동으로 만드는 "가수 - Topic" 채널.
+const TOPIC_CHANNEL_SUFFIX = /\s+-\s+Topic$/;
+
+const stripDecorativeBrackets = (text: string): string => {
+  let stripped = text.trim();
+  let previous = '';
+  // 괄호가 여러 겹 붙은 제목("... (Official Video) [4K]")이 있어 더 줄지 않을 때까지 벗긴다.
+  while (stripped !== previous) {
+    previous = stripped;
+    stripped = stripped
+      .replace(LEADING_BRACKET_PATTERN, '')
+      .replace(TRAILING_BRACKET_PATTERN, '')
+      .trim();
+  }
+  return stripped;
+};
+
+/**
+ * 영상 제목·채널 이름 → 곡 제목·아티스트 초안.
+ * 공식 영상은 대개 "가수 - 제목 (Official Video)" 형태라 구분자로 나눈다.
+ * 구분자가 없으면 제목 전체를 곡 제목으로, 채널 이름을 아티스트로 둔다.
+ * 커버 영상이면 채널이 커버한 사람이라 틀릴 수 있어, 어디까지나 사용자가 다듬을 초안이다.
+ *
+ * @param videoTitle - 유튜브 영상 제목
+ * @param authorName - 유튜브 채널 이름
+ * @returns 곡 제목과 아티스트 초안
+ */
+export const parseVideoTitle = (
+  videoTitle: string,
+  authorName: string | null,
+): { title: string; artistName: string } => {
+  const cleanedTitle = stripDecorativeBrackets(videoTitle);
+  const [artistPart, ...titleParts] = cleanedTitle.split(
+    ARTIST_TITLE_SEPARATOR,
+  );
+  const hasSeparator = titleParts.length > 0;
+
+  if (hasSeparator) {
+    return {
+      title: stripDecorativeBrackets(titleParts.join(' - ')),
+      artistName: artistPart.trim(),
+    };
+  }
+
+  return {
+    title: cleanedTitle,
+    artistName: (authorName ?? '').replace(TOPIC_CHANNEL_SUFFIX, '').trim(),
+  };
+};
+
+/**
+ * 유튜브 링크 미리보기 → 폼 값. 사용자가 "불러오기"를 누른 명시적 동작이라
+ * 제목·아티스트는 덮어쓴다. 직접 올린 커버는 사용자가 고른 것이라 썸네일로 바꾸지 않는다.
+ */
+export const applyVideoPreviewToForm = (
+  form: SongFormState,
+  preview: LinkPreview,
+): SongFormState => {
+  const draft = preview.title
+    ? parseVideoTitle(preview.title, preview.authorName)
+    : { title: form.title, artistName: form.artistName };
+  const hasThumbnail = preview.imageUrl !== null;
+  const keepsCustomCover = form.coverSource === 'custom';
+  const alreadyLinked = form.externalLinks.includes(preview.url);
+
+  return {
+    ...form,
+    title: draft.title,
+    artistName: draft.artistName,
+    linkCoverUrl: preview.imageUrl,
+    coverSource: hasThumbnail && !keepsCustomCover ? 'album' : form.coverSource,
+    externalLinks: alreadyLinked
+      ? form.externalLinks
+      : [...form.externalLinks, preview.url],
+  };
+};
+
+/** 되돌릴 수 있는 원본 커버. 검색 트랙의 앨범아트가 우선이고, 없으면 유튜브 썸네일이다. */
+export const getOriginalCoverUrl = (form: SongFormState): string | null =>
+  form.track?.albumImageUrl ?? form.linkCoverUrl;
 
 const BPM_PATTERN = /^\d{1,3}$/;
 

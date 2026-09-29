@@ -19,8 +19,8 @@ interface SongSearchModalProps {
   onOpenChange: (open: boolean) => void;
   /** 결과 행을 고르면 폼에 곡 정보를 채우고 모달을 닫는다. */
   onSelect: (track: SongPreview) => void;
-  /** 원하는 곡이 검색에 없을 때 제목·아티스트를 손으로 채우는 경로. */
-  onManualEntry: (query: string) => void;
+  /** 원하는 곡이 검색에 없을 때 직접 입력(유튜브 링크·수기 입력)으로 넘어가는 경로. */
+  onManualEntry: () => void;
 }
 
 /**
@@ -62,7 +62,7 @@ export const SongSearchModal = ({
     <button
       type="button"
       onClick={() => {
-        onManualEntry(keyword);
+        onManualEntry();
         onOpenChange(false);
       }}
       className="typo-sm-sb text-primary underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"

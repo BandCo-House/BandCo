@@ -3,9 +3,12 @@ import type { SongPreview } from '@/entities/song/model/types';
 import {
   applyManualEntryToForm,
   applyTrackToForm,
+  applyVideoPreviewToForm,
   createEmptyForm,
+  getOriginalCoverUrl,
   isExternalLinkValid,
   isFormValid,
+  parseVideoTitle,
   toCreateSongRequest,
 } from './types';
 
@@ -61,21 +64,88 @@ describe('applyTrackToForm', () => {
 });
 
 describe('applyManualEntryToForm', () => {
-  it('검색어를 곡 제목 초안으로 넘기고 외부 음원 연결을 끊는다', () => {
+  it('앞서 고른 트랙에서 온 제목·아티스트를 비우고 외부 음원 연결을 끊는다', () => {
     const searched = applyTrackToForm(createEmptyForm(), track);
-    const form = applyManualEntryToForm(searched, '누구누구 유튜브 커버');
+    const form = applyManualEntryToForm(searched);
 
-    expect(form.title).toBe('누구누구 유튜브 커버');
+    expect(form.title).toBe('');
+    expect(form.artistName).toBe('');
     expect(form.track).toBeNull();
     expect(form.coverSource).toBe('none');
     expect(form.isManualEntry).toBe(true);
   });
 
+  it('트랙 없이 직접 친 제목은 그대로 둔다', () => {
+    const typed = { ...createEmptyForm(), title: '자작곡 1' };
+
+    expect(applyManualEntryToForm(typed).title).toBe('자작곡 1');
+  });
+
   it('직접 입력 뒤 다시 검색으로 곡을 고르면 직접 입력 상태가 풀린다', () => {
-    const manual = applyManualEntryToForm(createEmptyForm(), 'Count on me');
+    const manual = applyManualEntryToForm(createEmptyForm());
     const form = applyTrackToForm(manual, track);
 
     expect(form.isManualEntry).toBe(false);
+  });
+});
+
+describe('parseVideoTitle', () => {
+  it('"가수 - 제목 (Official Video)"를 가수와 제목으로 나누고 꾸밈 괄호를 뗀다', () => {
+    expect(
+      parseVideoTitle(
+        'Bruno Mars - Count On Me (Official Video)',
+        'Bruno Mars',
+      ),
+    ).toEqual({ title: 'Count On Me', artistName: 'Bruno Mars' });
+  });
+
+  it('앞뒤로 여러 겹 붙은 괄호도 모두 뗀다', () => {
+    expect(
+      parseVideoTitle('[MV] DAY6 – 한 페이지가 될 수 있게 (Live) [4K]', null),
+    ).toEqual({ title: '한 페이지가 될 수 있게', artistName: 'DAY6' });
+  });
+
+  it('구분자가 없으면 제목 전체를 곡 제목으로, 채널 이름을 아티스트로 둔다', () => {
+    expect(parseVideoTitle('Count On Me', 'Bruno Mars - Topic')).toEqual({
+      title: 'Count On Me',
+      artistName: 'Bruno Mars',
+    });
+  });
+});
+
+describe('applyVideoPreviewToForm', () => {
+  const preview = {
+    url: 'https://youtu.be/abc',
+    title: 'Bruno Mars - Count On Me (Official Video)',
+    siteName: 'YouTube',
+    faviconUrl: null,
+    imageUrl: 'https://i.ytimg.com/vi/abc/hqdefault.jpg',
+    authorName: 'Bruno Mars',
+  };
+
+  it('제목·아티스트 초안과 썸네일 커버를 채우고 링크를 외부 링크에 단다', () => {
+    const form = applyVideoPreviewToForm(
+      applyManualEntryToForm(createEmptyForm()),
+      preview,
+    );
+
+    expect(form.title).toBe('Count On Me');
+    expect(form.artistName).toBe('Bruno Mars');
+    expect(form.coverSource).toBe('album');
+    expect(getOriginalCoverUrl(form)).toBe(preview.imageUrl);
+    expect(form.externalLinks).toEqual(['https://youtu.be/abc']);
+  });
+
+  it('직접 올린 커버는 썸네일로 바꾸지 않고, 이미 단 링크는 중복으로 달지 않는다', () => {
+    const base = {
+      ...createEmptyForm(),
+      coverSource: 'custom' as const,
+      externalLinks: ['https://youtu.be/abc'],
+    };
+    const form = applyVideoPreviewToForm(base, preview);
+
+    expect(form.coverSource).toBe('custom');
+    expect(form.externalLinks).toEqual(['https://youtu.be/abc']);
   });
 });
 
