@@ -17,6 +17,8 @@ describe('parseLinkPreviewHtml', () => {
       title: 'BandCo & JIRA',
       siteName: 'Jira',
       faviconUrl: 'https://bandco.atlassian.net/assets/favicon.ico',
+      imageUrl: null,
+      authorName: null,
     });
   });
 
@@ -27,6 +29,8 @@ describe('parseLinkPreviewHtml', () => {
       title: 'BandCo Docs',
       siteName: null,
       faviconUrl: null,
+      imageUrl: null,
+      authorName: null,
     });
   });
 });

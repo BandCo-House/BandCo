@@ -6,4 +6,6 @@ export const linkPreviewSchema = z.object({
   title: z.string().nullable().default(null),
   siteName: z.string().nullable().default(null),
   faviconUrl: z.string().nullable().default(null),
+  imageUrl: z.string().nullable().default(null),
+  authorName: z.string().nullable().default(null),
 });

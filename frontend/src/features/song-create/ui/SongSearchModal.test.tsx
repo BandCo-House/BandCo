@@ -21,14 +21,14 @@ const TRACK: SongPreview = {
 const createQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-const renderModal = () =>
+const renderModal = (onManualEntry: () => void = vi.fn()) =>
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SongSearchModal
         open
         onOpenChange={vi.fn()}
         onSelect={vi.fn()}
-        onManualEntry={vi.fn()}
+        onManualEntry={onManualEntry}
       />
     </QueryClientProvider>,
   );
@@ -95,5 +95,20 @@ describe('SongSearchModal', () => {
 
     release([TRACK]);
     expect(await screen.findByText('좋은 날')).toBeInTheDocument();
+  });
+
+  it('검색 결과가 있어도 목록 끝에서 직접 입력으로 넘어갈 수 있다', async () => {
+    // 유명한 곡은 커버만 나오고 원곡이 없을 수 있어, 결과가 있다고 탈출구를 숨기면 안 된다.
+    vi.spyOn(songApi, 'searchTracks').mockResolvedValue([TRACK]);
+    const onManualEntry = vi.fn();
+
+    renderModal(onManualEntry);
+
+    typeQuery('좋은 날');
+    expect(await screen.findByText('아이유')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('찾는 곡이 없나요? 직접 입력하기'));
+
+    expect(onManualEntry).toHaveBeenCalledOnce();
   });
 });
