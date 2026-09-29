@@ -134,12 +134,24 @@ jobs:
             # 실패하면 set -e로 멈춰 기존 컨테이너가 그대로 살아 있는다.
             docker run --rm --env-file "$ENV_FILE" "$IMAGE" /app/node_modules/.bin/prisma migrate deploy
 
+            # 로그 드라이버 초기화 실패 시 기존 컨테이너를 내리기 전에 멈춘다.
+            docker run --rm \
+              --log-driver awslogs \
+              --log-opt awslogs-region=ap-northeast-2 \
+              --log-opt awslogs-group=/bandco/backend \
+              --log-opt awslogs-stream=bandco-deploy-check \
+              "$IMAGE" node -e "process.stdout.write('CloudWatch logging check\\n')"
+
             docker stop "$CONTAINER_NAME" || true
             docker rm "$CONTAINER_NAME" || true
 
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
+              --log-driver awslogs \
+              --log-opt awslogs-region=ap-northeast-2 \
+              --log-opt awslogs-group=/bandco/backend \
+              --log-opt awslogs-stream=bandco-nest \
               --env-file "$ENV_FILE" \
               -p "$HOST_PORT:$CONTAINER_PORT" \
               "$IMAGE"

@@ -1,6 +1,8 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 
 import type { ApiFailResponse } from '../api-response';
+import type { LoggedRequest } from '../logging/request-path';
+import { getRequestPath } from '../logging/request-path';
 
 const DEFAULT_SERVER_ERROR_MESSAGE = '서버 오류가 발생했습니다.';
 
@@ -35,13 +37,26 @@ export class ApiExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(ApiExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
+    const request = host.switchToHttp().getRequest<LoggedRequest>();
     const response = host.switchToHttp().getResponse<JsonResponse>();
     const isHttpException = exception instanceof HttpException;
     const statusCode = isHttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const message = isHttpException ? extractExceptionMessage(exception.getResponse()) : DEFAULT_SERVER_ERROR_MESSAGE;
 
+    const requestInfo = {
+      method: request.method,
+      path: getRequestPath(request),
+      statusCode,
+    };
+
     if (statusCode >= 500) {
-      this.logger.error(exception instanceof Error ? (exception.stack ?? exception.message) : String(exception));
+      this.logger.error({
+        message: exception instanceof Error ? exception.message : String(exception),
+        stack: exception instanceof Error ? exception.stack : undefined,
+        ...requestInfo,
+      });
+    } else if (statusCode >= 400) {
+      this.logger.warn({ message, ...requestInfo });
     }
 
     const body: ApiFailResponse = {
