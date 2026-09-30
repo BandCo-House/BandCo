@@ -41,7 +41,8 @@ class DiscordAlertTests(unittest.TestCase):
         event["alarmData"]["state"]["value"] = "ALARM"
         alert = format_alarm_alert(event)
         self.assertIn("4xx 오류 급증", alert)
-        self.assertIn("2026-09-30 01:10:00 KST | 5분 동안 4xx 오류 10건 이상", alert)
+        self.assertIn("2026-09-30 01:10:00 KST | CloudWatch 알람 기준 도달", alert)
+        self.assertNotIn("10건", alert)
         self.assertIn("start=2026-09-29T15:55:00.000Z", alert)
         self.assertIn("/log-events/bandco-nest", alert)
 

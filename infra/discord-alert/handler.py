@@ -87,7 +87,7 @@ def format_alarm_alert(event):
     log_url = format_log_stream_url("/bandco/backend", "bandco-nest", started_at)
     return (
         "⚠️ BandCo 운영 4xx 오류 급증\n"
-        f"{alarm_time.astimezone(KST):%Y-%m-%d %H:%M:%S} KST | 5분 동안 4xx 오류 10건 이상\n"
+        f"{alarm_time.astimezone(KST):%Y-%m-%d %H:%M:%S} KST | CloudWatch 알람 기준 도달\n"
         f"[발생 시간대 백엔드 로그 보기]({log_url})"
     )
 
