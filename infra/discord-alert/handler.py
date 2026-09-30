@@ -7,6 +7,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
+KST = timezone(timedelta(hours=9))
 LOG_EVENTS_URL = (
     "https://ap-northeast-2.console.aws.amazon.com/cloudwatch/home"
     "?region=ap-northeast-2#logsV2:log-groups/log-group"
@@ -71,7 +72,7 @@ def format_log_alerts(event):
         log_url = f"{log_url}&refEventId={log_event['id']}"
         alerts.append(
             "🚨 BandCo 운영 5xx 오류\n"
-            f"{occurred_at:%Y-%m-%d %H:%M:%S} UTC | {method} {path} | HTTP {status_code}\n"
+            f"{occurred_at.astimezone(KST):%Y-%m-%d %H:%M:%S} KST | {method} {path} | HTTP {status_code}\n"
             f"[해당 오류 로그 보기]({log_url})"
         )
     return alerts
@@ -86,7 +87,7 @@ def format_alarm_alert(event):
     log_url = format_log_stream_url("/bandco/backend", "bandco-nest", started_at)
     return (
         "⚠️ BandCo 운영 4xx 오류 급증\n"
-        f"{alarm_time:%Y-%m-%d %H:%M:%S} UTC | 5분 동안 4xx 오류 5건 이상\n"
+        f"{alarm_time.astimezone(KST):%Y-%m-%d %H:%M:%S} KST | 5분 동안 4xx 오류 10건 이상\n"
         f"[발생 시간대 백엔드 로그 보기]({log_url})"
     )
 

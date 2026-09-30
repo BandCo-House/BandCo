@@ -28,6 +28,7 @@ class DiscordAlertTests(unittest.TestCase):
         alerts = format_log_alerts(event)
 
         self.assertEqual(len(alerts), 1)
+        self.assertIn("1970-01-01 09:00:00 KST", alerts[0])
         self.assertIn("POST /bandspaces/:bandspaceId/schedules | HTTP 500", alerts[0])
         self.assertIn("/log-group/$252Fbandco$252Fbackend/log-events/bandco-nest", alerts[0])
         self.assertIn("start=1970-01-01T00:00:00.000Z&refEventId=event-123", alerts[0])
@@ -40,6 +41,7 @@ class DiscordAlertTests(unittest.TestCase):
         event["alarmData"]["state"]["value"] = "ALARM"
         alert = format_alarm_alert(event)
         self.assertIn("4xx 오류 급증", alert)
+        self.assertIn("2026-09-30 01:10:00 KST | 5분 동안 4xx 오류 10건 이상", alert)
         self.assertIn("start=2026-09-29T15:55:00.000Z", alert)
         self.assertIn("/log-events/bandco-nest", alert)
 
