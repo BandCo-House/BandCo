@@ -168,6 +168,12 @@ export const SpaceCreateModal = ({
               </span>
             </div>
 
+            <p className="typo-sm-r text-grey-200">
+              {hasEnd
+                ? '위가 시작, 아래가 종료 날짜예요'
+                : '시작 날짜를 골라주세요'}
+            </p>
+
             {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
             <WheelFieldCard
               className="h-[232px] justify-center px-2.5 py-0"

@@ -236,6 +236,11 @@ export const ScheduleFormView = ({
 
       {/* 시작 / 종료 시간 */}
       <Field label="시작 / 종료 시간" required>
+        {/* 휠 두 줄이 같은 모양이라 어느 쪽이 시작인지 안 보인다. 휠 안에 라벨을 넣으면
+            마스크에 묻히므로 필드 설명으로 순서를 말해준다(투표 화면과 같은 패턴). */}
+        <p className="typo-sm-r text-grey-200">
+          위가 시작, 아래가 종료 시각이에요
+        </p>
         <ScheduleTimeSheet
           date={form.date}
           startTime={form.startTime}
