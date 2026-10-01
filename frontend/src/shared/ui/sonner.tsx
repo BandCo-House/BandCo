@@ -29,10 +29,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-border':
             'color-mix(in srgb, var(--surface-1) 40%, transparent)',
           '--border-radius': 'var(--radius-xl)',
-          // 닫기 버튼을 왼쪽 위(sonner 기본)에서 오른쪽 위 모서리로 옮긴다.
+          // 닫기 버튼을 왼쪽 위(sonner 기본)에서 오른쪽 세로 중앙으로 옮긴다.
+          // 토스트가 한두 줄로 낮아 모서리에 걸치면 오히려 붕 떠 보인다.
+          // top은 sonner가 0으로 박아둬 변수가 없다 — 아래 classNames에서 !로 덮는다.
           '--toast-close-button-start': 'auto',
-          '--toast-close-button-end': '0',
-          '--toast-close-button-transform': 'translate(35%, -35%)',
+          '--toast-close-button-end': '1rem',
+          '--toast-close-button-transform': 'translateY(-50%)',
         } as React.CSSProperties
       }
       // 기본은 끈다. 필요한 토스트에서만 toast.x('...', { closeButton: true })로 켠다 —
@@ -58,9 +60,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           title: 'whitespace-normal break-words typo-base-sb! text-grey-50',
           description: 'whitespace-normal break-words typo-sm-r! text-grey-100',
           // 이전엔 hidden이라 per-toast로 켜도 안 보였다. 유리 재질에 맞춰 직접 칠한다.
-          // z-10은 토스트의 before 글로우(z-0) 위로 올리기 위한 것.
+          // sonner 규칙의 명시도가 (0,3,0)이라 크기·색·top은 !가 없으면 조용히 덮인다.
           closeButton:
-            'relative z-10 size-6 rounded-full border-0 bg-primary-main/80 text-grey-50 opacity-100 transition-colors hover:bg-primary-main',
+            'z-10 top-1/2! size-6! border-0! bg-transparent! text-grey-100! opacity-100 transition-colors hover:text-grey-50! [&>svg]:size-4 [&>svg]:stroke-[2.5]',
         },
       }}
       {...props}
