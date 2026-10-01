@@ -6,6 +6,7 @@ import { useGenres } from '@/entities/genre';
 import { updateUserProfile } from '../api/profile-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import PinIcon from '@/assets/icons/pin.svg?react';
 import { TagSelectBottomSheet } from './TagSelectBottomSheet';
 
 export interface GenreEditSectionProps {
@@ -117,11 +118,19 @@ export function GenreEditSection({
       </h2>
 
       <div className="flex flex-wrap gap-2.5">
-        {favoriteGenres.map((genre) => (
+        {favoriteGenres.map((genre, index) => (
           <span
             key={genre.genreId}
-            className="flex items-center rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
+            className="flex items-center gap-1.5 rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
           >
+            {/* 첫 칩이 대표다(장르는 서버 플래그가 없어 배열 순서가 곧 대표). 바텀시트와 같은 핀으로 표시한다. */}
+            {index === 0 && (
+              <PinIcon
+                aria-hidden="true"
+                data-slot="svg-icon"
+                className="size-4 shrink-0"
+              />
+            )}
             {genre.name}
             {isMe && (
               <button
@@ -158,8 +167,10 @@ export function GenreEditSection({
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         title="선호 장르"
-        // 장르는 대표 개념이 없다(favoriteGenres에 id 배열만 보낸다) — 번호를 달지 않는다.
-        description="여러 개 고를 수 있어요. 고른 순서대로 프로필에 나열돼요."
+        // 장르는 서버에 대표 플래그가 없다(favoriteGenres에 id 배열만 보낸다).
+        // 디자인은 파트와 같은 칩을 쓰므로 첫 칩에 핀이 붙는다 — "첫 번째 = 대표"라는
+        // 표시 규칙은 프론트가 배열 순서로 지킨다.
+        description="핀 표시가 대표 장르가 되고, 나머지는 번호순으로 프로필에 보여요."
         items={availableGenres}
         selectedIds={favoriteGenres.map((g) => g.genreId)}
         // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다

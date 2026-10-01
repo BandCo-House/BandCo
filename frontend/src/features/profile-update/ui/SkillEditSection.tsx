@@ -6,6 +6,7 @@ import { useSkillTypes } from '@/entities/skill';
 import { updateUserProfile } from '../api/profile-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import PinIcon from '@/assets/icons/pin.svg?react';
 import { TagSelectBottomSheet } from './TagSelectBottomSheet';
 
 export interface SkillEditSectionProps {
@@ -136,11 +137,19 @@ export function SkillEditSection({
       </h2>
 
       <div className="flex flex-wrap gap-2.5">
-        {skills.map((skill) => (
+        {skills.map((skill, index) => (
           <span
             key={skill.skillTypeId}
-            className="flex items-center rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
+            className="flex items-center gap-1.5 rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
           >
+            {/* 첫 칩이 대표(isPrimary로 저장되는 값)다. 바텀시트와 같은 핀으로 표시한다. */}
+            {index === 0 && (
+              <PinIcon
+                aria-hidden="true"
+                data-slot="svg-icon"
+                className="size-4 shrink-0"
+              />
+            )}
             {skill.skillName}
             {isMe && (
               <button
@@ -177,9 +186,8 @@ export function SkillEditSection({
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         title="플레이 파트"
-        // 실제로 저장되는 건 "첫 번째 = 대표(isPrimary)"뿐이다. 나머지 순서는 쓰이지 않는다.
-        description="가장 먼저 고른 파트가 대표 파트가 돼요. 나머지는 순서와 상관없어요."
-        primaryLabel="대표"
+        // 첫 선택이 isPrimary로 저장된다. 그 자리를 번호 대신 핀으로 표시하는 게 디자인 결정.
+        description="핀 표시가 대표 파트가 되고, 나머지는 번호순으로 프로필에 보여요."
         items={availableSkills}
         selectedIds={skills.map((s) => s.skillTypeId)}
         // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다
