@@ -12,6 +12,11 @@ type WheelFieldCardProps = ComponentPropsWithoutRef<'div'>;
  * 만들고 있었다. 그래서 유리 표현을 손볼 때 한쪽만 반영되고 다른 쪽이 빠졌다
  * (일정 시간 휠에는 GlassRim이 들어갔는데 합주 공간 날짜 휠에는 안 들어갔다).
  * 표면을 여기 한 곳으로 모은다.
+ *
+ * 표면색은 흰색 반투명(white/24)이 아니라 중간 톤(surface-3)이다. 흰색 베일은
+ * 배경이 밝으면(모달 위) 한 번 더 겹쳐 카드까지 밝아지고, 그 위의 회색 휠 글씨가
+ * 묻혀 위아래 항목이 안 보였다. 중간 톤은 어두운 화면에선 밝게, 밝은 모달에선
+ * 어둡게 떨어져 배경과 무관하게 같은 대비를 낸다.
  */
 // 카드 테두리 선. AppDialogContent와 같은 이유로 실제 border가 아니라 inset ring이다.
 const RIM_COLOR = 'var(--color-surface-1)';
@@ -25,7 +30,7 @@ export const WheelFieldCard = ({
   <div
     {...props}
     className={cn(
-      'relative flex flex-col gap-6 overflow-hidden rounded-md bg-white/24 px-5 py-8 backdrop-blur-md',
+      'relative flex flex-col gap-6 overflow-hidden rounded-md bg-surface-3 px-5 py-8 backdrop-blur-md',
       className,
     )}
     style={{

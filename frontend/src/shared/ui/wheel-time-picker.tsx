@@ -59,9 +59,9 @@ export const WheelTimePicker = ({
       // 가운데 선택 줄 강조 마스크(위아래 페이드).
       style={{
         maskImage:
-          'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
+          'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
         WebkitMaskImage:
-          'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
+          'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
       }}
     >
       <WheelColumn
