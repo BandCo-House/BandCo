@@ -15,6 +15,7 @@ import { storageHandlers } from './storage/handlers';
 import { teamHandlers } from './team/handlers';
 import { skillHandlers } from './skill/handlers';
 import { genreHandlers } from './genre/handlers';
+import { userHandlers } from './user/handlers';
 
 export const handlers = [
   ...authHandlers,
@@ -34,4 +35,6 @@ export const handlers = [
   ...teamHandlers,
   ...skillHandlers,
   ...genreHandlers,
+  ...userHandlers,
 ];
+
