@@ -170,7 +170,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
 
   return (
     <div className="flex flex-col gap-8">
-      <Field label="밴드 이름" htmlFor="band-name">
+      <Field label="밴드 이름" labelSize="lg" htmlFor="band-name">
         <Input
           id="band-name"
           variant="underline"
@@ -182,7 +182,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
       </Field>
 
       <div className="flex flex-col gap-2">
-        <FieldLabel>밴드 커버</FieldLabel>
+        <FieldLabel size="lg">밴드 커버</FieldLabel>
         {coverUrl ? (
           <div className="flex items-start gap-3">
             <div className="relative w-20">
@@ -200,6 +200,9 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
             <label
               className={cn(
                 buttonVariants({ variant: 'outline', size: 'sm' }),
+                // outline 변주의 테두리는 key-muted인데 다크에서 #1a1971(남색)이라
+                // 이 버튼만 파랗게 보였다. 곡 커버(SongCoverField)와 같은 primary로 맞춘다.
+                'border-primary text-primary',
                 'cursor-pointer focus-within:outline-2 focus-within:outline-primary',
               )}
             >
@@ -226,7 +229,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
         )}
       </div>
 
-      <Field label="밴드 공개 여부">
+      <Field label="밴드 공개 여부" labelSize="lg">
         <SegmentedToggle
           variant="tab"
           label="밴드 공개 여부"
@@ -241,7 +244,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
 
       <section className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-2">
-          <FieldLabel>밴드 초대 링크</FieldLabel>
+          <FieldLabel size="lg">밴드 초대 링크</FieldLabel>
           <button
             type="button"
             // TODO: 초대 내역 화면 미구현 + 프론트(/invites)와 백엔드(/invitations) 경로 불일치.
@@ -259,7 +262,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
           type="button"
           onClick={() => setIsLeaveOpen(true)}
           disabled={isLeaving}
-          className="flex items-center gap-2 rounded-full px-4 py-5 typo-xs-sb text-destructive focus-visible:outline-2 focus-visible:outline-destructive disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-2 rounded-full px-4 py-5 typo-base-sb text-destructive focus-visible:outline-2 focus-visible:outline-destructive disabled:cursor-not-allowed disabled:opacity-60"
         >
           <WithdrawIcon aria-hidden="true" className="size-4" />
           밴드 나가기
