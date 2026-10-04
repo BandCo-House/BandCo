@@ -148,7 +148,7 @@ export const BandInviteLinkCard = ({
             복사
           </button>
         </div>
-        <p className="typo-xs-r text-grey-200">
+        <p className="typo-sm-r text-grey-200">
           이 링크를 받은 사람은 &ldquo;{bandName}&rdquo; 밴드에 참여할 수
           있습니다.
         </p>
@@ -172,17 +172,17 @@ export const BandInviteLinkCard = ({
               <CopyIcon aria-hidden="true" className="size-5" />
             </button>
           </div>
-          <p className="text-center typo-xs-r text-grey-50">
+          <p className="text-center typo-sm-r text-grey-50">
             이 코드를 직접 입력하여 밴드에 참여할 수도 있습니다
           </p>
         </div>
       </div>
 
       <div className="flex flex-col gap-1">
-        <p className="typo-xs-r text-grey-200">
+        <p className="typo-sm-r text-grey-200">
           * {formatDotDate(inviteLink.expiredAt)}까지 사용할 수 있어요.
         </p>
-        <p className="typo-xs-r text-grey-200">
+        <p className="typo-sm-r text-grey-200">
           * 코드는 지금만 볼 수 있어요. 다시 보려면 재발급해야 합니다.
         </p>
       </div>

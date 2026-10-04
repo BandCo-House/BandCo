@@ -216,7 +216,9 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
             </label>
           </div>
         ) : (
-          <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
+          // outline은 알약(rounded-full) 테두리에 딱 붙으면 좌우 곡선이 각지게 잘린다.
+          // ring(box-shadow)은 border-radius를 그대로 따라가 모양이 어긋나지 않는다.
+          <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 outline-none focus-within:ring-2 focus-within:ring-primary">
             <Upload aria-hidden="true" className="size-6" />
             <span className="typo-base-sb">파일을 선택하세요</span>
             <input
