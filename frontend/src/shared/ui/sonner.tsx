@@ -29,8 +29,16 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-border':
             'color-mix(in srgb, var(--surface-1) 40%, transparent)',
           '--border-radius': 'var(--radius-xl)',
+          // 닫기 버튼을 왼쪽 위(sonner 기본)에서 오른쪽 세로 중앙으로 옮긴다.
+          // 토스트가 한두 줄로 낮아 모서리에 걸치면 오히려 붕 떠 보인다.
+          // top은 sonner가 0으로 박아둬 변수가 없다 — 아래 classNames에서 !로 덮는다.
+          '--toast-close-button-start': 'auto',
+          '--toast-close-button-end': '1rem',
+          '--toast-close-button-transform': 'translateY(-50%)',
         } as React.CSSProperties
       }
+      // 기본은 끈다. 필요한 토스트에서만 toast.x('...', { closeButton: true })로 켠다 —
+      // 같은 동작을 연달아 해서 토스트가 쌓이는 화면(프로필 파트·장르 편집)이 대상이다.
       closeButton={false}
       // 하단 네비에 가려지지 않게 그 위로 띄운다. 변수는 RootLayout이 라우트별로
       // 세팅하므로 네비 없는 화면(로그인 등)에서는 바닥 기본 위치로 돌아간다.
@@ -41,10 +49,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         bottom: 'calc(var(--bottom-nav-clearance, 0px) + 0.75rem)',
       }}
       toastOptions={{
-        closeButton: false,
         classNames: {
           toast:
-            'relative isolate w-[min(calc(100vw-2rem),40rem)] overflow-hidden whitespace-normal break-words rounded-md border-0 bg-white/24 px-6 py-5 text-grey-50 shadow-none backdrop-blur-md before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[radial-gradient(circle_at_88%_50%,var(--primary-main)_0%,rgba(236,252,171,0.32)_24%,transparent_58%)] before:blur-2xl before:content-[""] [border-color:color-mix(in_srgb,var(--surface-1)_40%,transparent)] [border-style:solid] [border-width:0.5px_1px_2px_0.5px] [box-shadow:0_3px_6px_2px_rgba(255,255,255,0.16),inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(255,255,255,0.3)]',
+            'relative isolate w-[min(calc(100vw-2rem),40rem)] [&:has([data-close-button])]:pr-14! overflow-hidden whitespace-normal break-words rounded-md border-0 bg-white/24 px-6 py-5 text-grey-50 shadow-none backdrop-blur-md before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[radial-gradient(circle_at_88%_50%,var(--primary-main)_0%,rgba(236,252,171,0.32)_24%,transparent_58%)] before:blur-2xl before:content-[""] [border-color:color-mix(in_srgb,var(--surface-1)_40%,transparent)] [border-style:solid] [border-width:0.5px_1px_2px_0.5px] [box-shadow:0_3px_6px_2px_rgba(255,255,255,0.16),inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(255,255,255,0.3)]',
           icon: 'relative z-10',
           content: 'relative z-10 min-w-0 whitespace-normal break-words',
           // sonner의 [data-sonner-toast][data-styled] [data-title] 규칙이 명시도 (0,3,0)이라
@@ -52,7 +59,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // 500으로, 행간이 1.5로 조용히 덮인다 — 크기만 적용돼 왜 다른지 안 보인다.
           title: 'whitespace-normal break-words typo-base-sb! text-grey-50',
           description: 'whitespace-normal break-words typo-sm-r! text-grey-100',
-          closeButton: 'hidden',
+          // 이전엔 hidden이라 per-toast로 켜도 안 보였다. 유리 재질에 맞춰 직접 칠한다.
+          // sonner 규칙의 명시도가 (0,3,0)이라 크기·색·top은 !가 없으면 조용히 덮인다.
+          closeButton:
+            'z-10 top-1/2! size-6! border-0! bg-transparent! text-grey-100! opacity-100 transition-colors hover:text-grey-50! [&>svg]:size-4 [&>svg]:stroke-[2.5]',
         },
       }}
       {...props}

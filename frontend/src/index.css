@@ -74,19 +74,30 @@
   }
   /* 콘텐츠가 화면에 다 들어와도 모바일에서 바운스(rubber-band)로 스크롤되는 것 방지.
      viewport에는 루트 요소 값만 적용된다 — body에 주면 조용히 무시된다(Chrome 93+, spec) */
+  /* 배경은 body가 아니라 루트 요소(html)가 가진다. body에 두면 canvas로 전파되는데,
+     전파된 배경의 위치 영역은 뷰포트(attachment: fixed)라 viewport-fit=cover에서
+     브라우저 툴바·safe area 뒤편(= 뷰포트 밖 canvas)까지는 덮지 못한다.
+     no-repeat + background-color가 그 바깥을 책임진다 — repeat면 그 자리에서
+     그라데이션이 밝은 쪽(gradient-top)부터 다시 시작해 밝은 띠로 보인다.
+     높이는 dvh가 아니라 100lvh — 툴바가 접혔을 때의 최대 뷰포트까지 그려두면
+     하단 툴바 뒤가 배경색(밝은 쪽)으로 남지 않는다. 상단 잔여분은 색이 그라데이션
+     시작색과 같아 이음매가 보이지 않는다. */
   html {
     overscroll-behavior-y: none;
-  }
-  body {
-    @apply text-foreground;
-
     background-color: var(--gradient-top);
     background-image: linear-gradient(
       135deg,
       var(--gradient-top) 0%,
       var(--gradient-bottom) 100%
     );
+    background-repeat: no-repeat;
     background-attachment: fixed;
+    background-position: top center;
+    background-size: 100% 100lvh;
+  }
+  body {
+    @apply text-foreground;
+
     font-family:
       'SUIT Variable',
       'Inter',
@@ -171,6 +182,16 @@
 /* 푸터 상단 글로우(header-glow의 위쪽 방향 미러). 풀스크린 모달 하단 액션바에 쓴다. */
 @utility footer-glow {
   box-shadow: 0px -8px 40px 0px rgba(221, 254, 85, 0.12);
+}
+
+/* 헤더 없는 한 화면 페이지(로그인·비밀번호 찾기·온보딩)의 "꽉 찬 높이".
+   RootLayout main이 py-8(4rem)과 위아래 safe area를 이미 차지하므로 그만큼 빼야 한다.
+   100dvh 그대로 잡으면 딱 그 합만큼 유령 스크롤이 생기고, 마지막 줄이 홈 인디케이터·
+   브라우저 툴바 뒤로 밀린다. 4rem은 레이아웃의 py-8과 같은 값이라 한쪽만 바꾸면 어긋난다. */
+@utility min-h-page {
+  min-height: calc(
+    100dvh - 4rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
 }
 
 /* ===== Typography =====

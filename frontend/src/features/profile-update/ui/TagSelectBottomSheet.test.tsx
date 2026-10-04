@@ -12,7 +12,7 @@ const mockItems: TagItem[] = [
 ];
 
 describe('TagSelectBottomSheet', () => {
-  it('시트가 열렸을 때 타이틀과 칩 목록을 렌더링하고 선택된 항목에 순번 번호를 매긴다', () => {
+  it('시트가 열렸을 때 칩 목록을 렌더링하고, 첫 선택은 핀·나머지는 2부터 번호를 매긴다', () => {
     render(
       <TagSelectBottomSheet
         open={true}
@@ -24,13 +24,48 @@ describe('TagSelectBottomSheet', () => {
     );
 
     expect(screen.getByText('플레이 파트')).toBeInTheDocument();
-    expect(screen.getByText('일렉기타')).toBeInTheDocument();
     expect(screen.getByText('어쿠스틱 기타')).toBeInTheDocument();
-    expect(screen.getByText('보컬')).toBeInTheDocument();
 
-    // 일렉기타(1번), 보컬(2번) 순번 뱃지 확인
-    expect(screen.getByText('1')).toBeInTheDocument();
+    // 1번 자리는 핀이 대신하므로 번호는 2부터 시작한다.
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /일렉기타/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('description을 주면 제목 아래에 보이고, 주지 않으면 화면에서 감춘다', () => {
+    const { unmount } = render(
+      <TagSelectBottomSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        title="플레이 파트"
+        description="핀 표시가 대표 파트가 되고, 나머지는 번호순으로 프로필에 보여요."
+        items={mockItems}
+        selectedIds={['1']}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        '핀 표시가 대표 파트가 되고, 나머지는 번호순으로 프로필에 보여요.',
+      ),
+    ).toBeVisible();
+    unmount();
+
+    render(
+      <TagSelectBottomSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        title="선호 장르"
+        items={mockItems}
+        selectedIds={['1']}
+      />,
+    );
+
+    // 없으면 Radix가 요구하는 설명은 sr-only로만 남는다(스크린리더용).
+    expect(screen.getByText('선호 장르 선택 바텀시트')).toHaveClass('sr-only');
   });
 
   it('미선택 칩을 누르면 선택되어 다음 번호가 매겨지고, 선택된 칩을 누르면 해제된다', async () => {
@@ -45,19 +80,20 @@ describe('TagSelectBottomSheet', () => {
       />,
     );
 
-    // 초기: 1번(일렉기타)만 선택됨
-    expect(screen.getByText('1')).toBeInTheDocument();
+    // 초기: 일렉기타만 선택 — 대표라 번호 없이 핀만 붙는다
+    const guitarChip = screen.getByRole('button', { name: /일렉기타/i });
+    expect(guitarChip).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByText('2')).not.toBeInTheDocument();
 
-    // '드럼' 클릭 -> 2번으로 선택됨
+    // '드럼' 클릭 -> 두 번째 선택이라 2번
     const drumChip = screen.getByRole('button', { name: /드럼/i });
     await user.click(drumChip);
     expect(screen.getByText('2')).toBeInTheDocument();
 
-    // '일렉기타' 클릭 -> 선택 해제됨, 드럼이 1번으로 재정렬
-    const guitarChip = screen.getByRole('button', { name: /일렉기타/i });
+    // '일렉기타' 해제 -> 드럼이 대표로 올라가 번호가 사라진다
     await user.click(guitarChip);
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(guitarChip).toHaveAttribute('aria-pressed', 'false');
+    expect(drumChip).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByText('2')).not.toBeInTheDocument();
   });
 

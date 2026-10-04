@@ -10,7 +10,8 @@ import { BandSearchResults } from '@/widgets/band-search/ui/BandSearchResults';
 export const Route = createFileRoute('/search')({
   component: SearchPage,
   staticData: {
-    fullBleed: true,
+    // 자체 상단 검색바가 sticky top-0에 붙어야 해서 세로 여백까지 직접 관리한다
+    bleed: 'all',
   },
 });
 

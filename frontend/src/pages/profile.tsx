@@ -71,6 +71,11 @@ export const Route = createFileRoute('/profile')({
     }
   },
   component: ProfileRoutePage,
+  // 프로필 카드가 화면 끝까지 닿고 높이도 직접 잡는 화면이라 레이아웃 기본 패딩을 받지 않는다.
+  // (이전에는 같은 효과를 본문에서 -mx-5 -my-8 음수 마진으로 되돌렸다.)
+  staticData: {
+    bleed: 'all',
+  },
 });
 
 function ProfileRoutePage() {
@@ -258,9 +263,10 @@ function ProfileRoutePage() {
 
   const profileName = profile.profile?.nickname || '익명의 아티스트';
 
-  // 네비를 뺀 화면 높이만 최소로 잡는다 — 100dvh로 잡으면 네비 mb만큼 유령 스크롤이 생긴다
+  // 네비와 상단 safe area를 뺀 화면 높이만 최소로 잡는다 — 100dvh로 잡으면
+  // 레이아웃이 더하는 네비 mb·safe area만큼 유령 스크롤이 생긴다
   return (
-    <div className="relative -mx-5 -my-8 min-h-[calc(100dvh-var(--bottom-nav-clearance,0px))]">
+    <div className="relative min-h-[calc(100dvh-var(--bottom-nav-clearance,0px)-env(safe-area-inset-top))]">
       {/* Background Neon Blob Decoration */}
 
       <div className="relative z-10">

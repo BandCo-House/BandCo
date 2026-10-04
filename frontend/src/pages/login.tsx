@@ -22,7 +22,7 @@ export const Route = createFileRoute('/login')({
   component: LoginPage,
   // 한 화면 고정 레이아웃이라 레이아웃 기본 py-8을 빼고 폼이 여백을 직접 관리한다
   staticData: {
-    fullBleed: true,
+    bleed: 'all',
   },
 });
 
@@ -97,8 +97,11 @@ export function LoginPage() {
     }
   };
 
+  // 레이아웃(main)이 위아래 safe area를 패딩으로 잡아주므로 높이에서도 둘 다 뺀다.
+  // 위만 빼면 합이 100dvh를 넘어 스크롤이 생기고, 마지막 줄(개인정보처리방침)이
+  // 브라우저 툴바 뒤로 밀린다.
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-env(safe-area-inset-top))] w-full flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full flex-col">
       <LoginForm
         onSubmit={handleLogin}
         onGoogleLogin={handleGoogleLogin}

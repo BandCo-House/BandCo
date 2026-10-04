@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Link, useRouter } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { cn } from '@/shared/lib/utils';
@@ -38,6 +38,32 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
 
   const { containerRef: tabContainerRef, indicatorRef: tabIndicatorRef } =
     useSlidingIndicator(header.tabs?.find(resolveTabActive)?.key ?? '');
+
+  // 헤더는 fixed라 본문이 그 높이만큼 아래에서 시작해야 하는데, 높이가 min-h라
+  // 탭 유무·제목 줄바꿈에 따라 달라진다. 상수로 박아두면(이전 120px) 실제 높이가
+  // 그보다 커졌을 때 본문 첫 줄이 헤더 뒤로 조용히 들어간다 — 실측값을 넘겨 맞춘다.
+  // 이 높이에는 헤더의 pt(safe-area-inset-top)가 이미 포함돼 있다.
+  const headerRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const sync = () =>
+      root.style.setProperty(
+        '--route-header-height',
+        `${el.getBoundingClientRect().height}px`,
+      );
+
+    sync();
+    // 폰트 로드·탭 교체처럼 렌더 후에 높이가 바뀌는 경우까지 따라간다.
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--route-header-height');
+    };
+    // 엘리먼트가 라우트 전환에도 유지되므로 1회 설치. 이후 변화는 ResizeObserver가 잡는다.
+  }, []);
 
   const handleBack = () => {
     if (header.backBehavior === 'browser') {
@@ -169,6 +195,7 @@ export const RouteHeader = ({ header, params }: RouteHeaderProps) => {
 
   return (
     <header
+      ref={headerRef}
       className={cn(
         'fixed top-0 z-50 w-full max-w-[648px] shrink-0 bg-gradient-top/65 pt-[env(safe-area-inset-top)] backdrop-blur-sm',
         header.bottomBlur && 'header-glow',
