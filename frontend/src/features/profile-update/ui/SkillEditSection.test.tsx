@@ -106,6 +106,45 @@ describe('SkillEditSection', () => {
     });
   });
 
+  // 프로필 조회가 userSkills를 orderBy 없이 돌려줘서 대표가 배열 첫 항목이라는 보장이 없다.
+  // 아래 둘은 그 상황(대표가 두 번째)에서 표시와 저장이 모두 isPrimary를 따르는지 본다.
+  const unorderedSkills = [
+    {
+      skillTypeId: 'skill-2',
+      skillName: '베이스',
+      level: 'BEGINNER' as const,
+      isPrimary: false,
+    },
+    {
+      skillTypeId: 'skill-1',
+      skillName: '일렉기타',
+      level: 'ADVANCED' as const,
+      isPrimary: true,
+    },
+  ];
+
+  it('대표가 배열 첫 항목이 아니어도 핀은 대표 파트에 붙는다', () => {
+    renderComponent({ skills: unorderedSkills });
+
+    // 삭제(X)도 svg라 'svg'로 세면 둘 다 걸린다. 핀만 data-slot으로 집는다.
+    const pinIn = (label: string) =>
+      screen.getByText(label).closest('span')?.querySelector('[data-slot]');
+
+    expect(pinIn('일렉기타')).toBeInTheDocument();
+    expect(pinIn('베이스')).not.toBeInTheDocument();
+  });
+
+  it('대표가 아닌 파트를 지워도 대표는 그대로 유지된다', async () => {
+    const user = userEvent.setup();
+    renderComponent({ skills: unorderedSkills });
+
+    await user.click(screen.getByRole('button', { name: '베이스 삭제' }));
+
+    expect(profileApi.updateUserProfile).toHaveBeenCalledWith('user-123', {
+      skills: [{ skillTypeId: 'skill-1', level: 'ADVANCED', isPrimary: true }],
+    });
+  });
+
   it('삭제(X) 버튼을 누르면 해당 파트가 즉시 삭제된다', async () => {
     const user = userEvent.setup();
     renderComponent({});

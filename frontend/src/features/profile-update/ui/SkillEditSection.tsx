@@ -22,6 +22,20 @@ export interface SkillEditSectionProps {
  */
 const SKILL_TOAST = { id: 'profile-skill', closeButton: true } as const;
 
+/**
+ * 대표 파트를 맨 앞으로 끌어올린 목록.
+ *
+ * 프로필 조회(user.prisma-repository)가 userSkills를 orderBy 없이 돌려줘서
+ * 배열 순서가 대표와 일치한다는 보장이 없다. 저장 직후에는 요청 순서대로
+ * 들어가 우연히 맞지만, 그 순서에 기대면 대표가 뒤에 있을 때 엉뚱한 칩에 핀이
+ * 붙고 시트도 다른 항목을 1번으로 연다. 기준은 언제나 isPrimary다.
+ * (멤버 검색의 MemberSearchModal도 같은 이유로 isPrimary를 먼저 본다.)
+ */
+const primaryFirst = <T extends { isPrimary: boolean }>(items: T[]): T[] => [
+  ...items.filter((item) => item.isPrimary),
+  ...items.filter((item) => !item.isPrimary),
+];
+
 export function SkillEditSection({
   isMe,
   userId,
@@ -97,18 +111,26 @@ export function SkillEditSection({
     await queryClient.cancelQueries({ queryKey });
     const previousProfile = queryClient.getQueryData<Profile>(queryKey);
 
-    const updatedSkills = skills
-      .filter((s) => s.skillTypeId !== skillTypeId)
-      .map((s, index) => ({
-        skillTypeId: s.skillTypeId,
-        level: s.level,
-        isPrimary: index === 0,
-      }));
+    // 대표가 아닌 파트를 지웠을 뿐인데 대표가 바뀌면 안 된다. 남은 대표를 그대로 두고,
+    // 지운 게 대표였을 때만 남은 첫 항목을 승격한다.
+    const remaining = skills.filter((s) => s.skillTypeId !== skillTypeId);
+    const nextPrimaryId =
+      remaining.find((s) => s.isPrimary)?.skillTypeId ??
+      remaining[0]?.skillTypeId;
+    const nextSkills = remaining.map((s) => ({
+      ...s,
+      isPrimary: s.skillTypeId === nextPrimaryId,
+    }));
+    const updatedSkills = nextSkills.map((s) => ({
+      skillTypeId: s.skillTypeId,
+      level: s.level,
+      isPrimary: s.isPrimary,
+    }));
 
     if (previousProfile) {
       queryClient.setQueryData<Profile>(queryKey, {
         ...previousProfile,
-        skills: skills.filter((s) => s.skillTypeId !== skillTypeId),
+        skills: nextSkills,
       });
     }
 
@@ -137,13 +159,13 @@ export function SkillEditSection({
       </h2>
 
       <div className="flex flex-wrap gap-2.5">
-        {skills.map((skill, index) => (
+        {skills.map((skill) => (
           <span
             key={skill.skillTypeId}
             className="flex items-center gap-1.5 rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
           >
-            {/* 첫 칩이 대표(isPrimary로 저장되는 값)다. 바텀시트와 같은 핀으로 표시한다. */}
-            {index === 0 && (
+            {/* 대표 파트에 바텀시트와 같은 핀을 단다. 배열 순서가 아니라 isPrimary가 기준이다. */}
+            {skill.isPrimary && (
               <PinIcon
                 aria-hidden="true"
                 data-slot="svg-icon"
@@ -189,7 +211,8 @@ export function SkillEditSection({
         // 첫 선택이 isPrimary로 저장된다. 그 자리를 번호 대신 핀으로 표시하는 게 디자인 결정.
         description="핀 표시가 대표 파트가 되고, 나머지는 번호순으로 프로필에 보여요."
         items={availableSkills}
-        selectedIds={skills.map((s) => s.skillTypeId)}
+        // 시트는 첫 선택을 대표로 저장하므로, 열 때도 대표가 1번 자리에 있어야 한다.
+        selectedIds={primaryFirst(skills).map((s) => s.skillTypeId)}
         // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다
         isLoading={skillsQuery.isPending}
         isError={skillsQuery.isError}

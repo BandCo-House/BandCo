@@ -88,7 +88,7 @@ export function TagSelectBottomSheet({
             </SheetTitle>
             <SheetDescription
               className={cn(
-                description ? 'typo-xs-sb text-grey-200' : 'sr-only',
+                description ? 'typo-sm-sb text-grey-200' : 'sr-only',
               )}
             >
               {description ?? `${title} 선택 바텀시트`}
