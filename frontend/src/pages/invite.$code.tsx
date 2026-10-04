@@ -85,6 +85,7 @@ function InviteJoinPage() {
     <InviteSheetLayout
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
+      entry="link"
       // 코드로 밴드를 조회할 엔드포인트가 아직 없다. 서버는 codeHash가 unique라
       // 찾을 수는 있으니 미리보기 API가 생기면 여기에 연결한다(후속).
       // 그 전까지는 모르는 걸 지어내지 않는다 — 시트가 알아서 해당 블록을 감춘다.

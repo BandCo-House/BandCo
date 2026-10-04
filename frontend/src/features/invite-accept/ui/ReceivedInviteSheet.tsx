@@ -45,18 +45,19 @@ export function ReceivedInviteSheet({
 
   // 알림 description에서 초대자 이름과 밴드명 파싱 시도
   // 예: "김민준님이 합주하자 밴드로 초대했습니다."
-  // 실패할 경우 기본 텍스트 포맷 사용
+  //
+  // 못 뽑으면 undefined로 둔다. 예전엔 '누군가'·'새로운 밴드'를 채웠는데, 그건 서버가
+  // 준 값이 아니라 코드가 지어낸 문자열이라 사용자가 실제 밴드명으로 읽는다.
+  // (파싱에 성공한 값은 서버가 보낸 알림 문구에서 나온 실제 이름이라 그대로 쓴다.)
   const parseInviteText = () => {
     const desc = noti.description;
     const inviterMatch = desc.match(/(.+?)님이/);
     const bandMatch = desc.match(/님이\s+(.+?)\s+밴드로/);
 
-    const inviter = inviterMatch
-      ? inviterMatch[1]
-      : (noti.reference?.sender?.nickname ?? '누군가');
-    const band = bandMatch ? bandMatch[1] : '새로운 밴드';
-
-    return { inviter, band };
+    return {
+      inviter: inviterMatch?.[1] ?? noti.reference?.sender?.nickname,
+      band: bandMatch?.[1],
+    };
   };
 
   const fallback = parseInviteText();
@@ -79,6 +80,7 @@ export function ReceivedInviteSheet({
       band={band}
       bandDescription={bandDescription}
       memberCount={memberCount}
+      entry="notification"
       errorMessage={
         isInvitationError
           ? '초대장 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'

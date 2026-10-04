@@ -34,6 +34,11 @@ interface InviteSheetLayoutProps {
   memberCount?: number;
   /** 초대장 조회가 실패했을 때 그 사실을 알린다. 추정값으로 메우지 않기 위한 자리. */
   errorMessage?: string;
+  /**
+   * 어떤 경로로 들어온 초대인지. 밴드명 유무로 판단하면 안 된다 — 알림으로 연 초대장도
+   * 조회 전·조회 실패에는 밴드명이 비어, 링크로 들어온 것처럼 안내하게 된다.
+   */
+  entry: 'notification' | 'link';
   /** 하단 액션 영역. 알림 초대장은 거절/수락, 링크 랜딩은 로그인 유도 등 진입 경로마다 다르다. */
   footer: ReactNode;
 }
@@ -51,6 +56,7 @@ export function InviteSheetLayout({
   bandDescription,
   memberCount,
   errorMessage,
+  entry,
   footer,
 }: InviteSheetLayoutProps) {
   return (
@@ -65,22 +71,26 @@ export function InviteSheetLayout({
           className="text-gradient-top hover:bg-black/5 hover:text-gradient-top active:bg-black/10"
         />
 
-        {/* 헤더 및 타이틀 */}
-        {/* 밴드 정보를 모르는 진입 경로(초대 링크)가 있다. 모를 때 '새로운 밴드'·'-'
-            같은 그럴듯한 값을 채우면 사용자는 그걸 실제 정보로 읽는다 — 아는 것만 보여주고
-            모르는 블록은 그리지 않는다. */}
+        {/* 헤더 및 타이틀 — 아는 것만 말한다. '새로운 밴드'·'-' 같은 그럴듯한 값을 채우면
+            사용자는 그걸 실제 정보로 읽는다. 모르면 그 줄을 쓰지 않는다. */}
         <SheetHeader className="mt-4 flex flex-col items-center gap-2 p-0 text-center">
           <SheetTitle className="typo-lg-sb text-gradient-top">
             밴드 초대장
           </SheetTitle>
           <div className="flex flex-col typo-sm-sb text-gradient-top">
-            {band ? (
+            {band && inviter ? (
               <>
-                <span>{inviter ?? '누군가'}님이 회원님을</span>
+                <span>{inviter}님이 회원님을</span>
                 <span>{band}에 초대했습니다</span>
               </>
-            ) : (
+            ) : band ? (
+              <span>{band}에 초대받았어요</span>
+            ) : inviter ? (
+              <span>{inviter}님이 회원님을 초대했습니다</span>
+            ) : entry === 'link' ? (
               <span>초대 링크로 들어왔어요</span>
+            ) : (
+              <span>초대장을 확인하고 있어요</span>
             )}
           </div>
         </SheetHeader>
@@ -99,11 +109,11 @@ export function InviteSheetLayout({
               {band}
               {getKoreanParticle(band, '은/는')} 이런 밴드에요
             </span>
-          ) : (
+          ) : entry === 'link' ? (
             <span className="text-center typo-sm-r text-grey-300">
               수락하면 어떤 밴드인지 확인할 수 있어요
             </span>
-          )}
+          ) : null}
 
           {(bandDescription || memberCount != null) && (
             <div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6 shadow-sm">
