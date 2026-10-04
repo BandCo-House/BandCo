@@ -5,7 +5,7 @@ import { SchedulePollList } from '@/widgets/schedule-poll-list/ui/SchedulePollLi
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/polls/')({
   component: SchedulePollListPage,
   staticData: {
-    fullBleed: true,
+    bleed: 'x',
     header: {
       title: '투표 목록',
       backTo: '/band/$bandId/space/$spaceId',
@@ -23,7 +23,7 @@ function SchedulePollListPage() {
   const { bandId, spaceId } = Route.useParams();
 
   return (
-    <div className="px-5 py-6">
+    <div className="px-5">
       <SchedulePollList bandId={bandId} spaceId={spaceId} />
     </div>
   );
