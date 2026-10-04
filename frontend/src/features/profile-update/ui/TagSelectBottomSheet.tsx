@@ -83,9 +83,9 @@ export function TagSelectBottomSheet({
       >
         <SheetHeader className="flex flex-row items-start justify-between gap-4 p-0">
           <div className="flex min-w-0 flex-col gap-2">
-            <SheetTitle className="typo-base-b text-grey-50">
-              {title}
-            </SheetTitle>
+            {/* 디자인은 16이었지만 설명이 레포 규칙에 따라 14로 올라가 위계가 2px밖에
+                안 남았다. 섹션 제목 크기(18)로 올려 제목이 설명을 누르게 한다. */}
+            <SheetTitle className="typo-lg-b text-grey-50">{title}</SheetTitle>
             <SheetDescription
               className={cn(
                 description ? 'typo-sm-sb text-grey-200' : 'sr-only',
@@ -186,7 +186,10 @@ function TagSelectContent({
               )}
             >
               {/* 첫 선택은 핀(대표), 그 뒤는 번호. 번호가 2부터 시작하는 건 1번 자리를
-                  핀이 대신하기 때문이다 — 저장되는 isPrimary도 이 첫 칩이다. */}
+                  핀이 대신하기 때문이다 — 저장되는 isPrimary도 이 첫 칩이다.
+                  핀·번호는 장식이라 aria-hidden으로 두고, 같은 정보를 sr-only 텍스트로
+                  따로 준다. 그게 없으면 스크린리더는 '선택됨'까지만 알고 어느 것이
+                  대표인지·몇 번째인지 알 수 없다. */}
               {isPrimary && (
                 <PinIcon
                   aria-hidden="true"
@@ -195,11 +198,19 @@ function TagSelectContent({
                 />
               )}
               {isSelected && !isPrimary && (
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-md bg-gradient-top typo-xs-sb text-primary">
+                <span
+                  aria-hidden="true"
+                  className="flex size-4 shrink-0 items-center justify-center rounded-md bg-gradient-top typo-xs-sb text-primary"
+                >
                   {selectedIndex + 1}
                 </span>
               )}
               <span>{item.name}</span>
+              {isSelected && (
+                <span className="sr-only">
+                  {isPrimary ? '대표' : `${selectedIndex + 1}번째`}
+                </span>
+              )}
             </button>
           );
         })}

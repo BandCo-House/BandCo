@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { WEEKDAY_LABELS, addDays } from '@/shared/lib/date';
@@ -21,8 +21,10 @@ import { DayTimeline } from './DayTimeline';
 const formatCompactDate = (date: Date): string =>
   `${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAY_LABELS[date.getDay()]})`;
 
-// 앱바(60~64) + 공간 탭(캘린더·일정 투표·투표 목록) 높이. RootLayout의 renderBottom 여백(mt-[120px])과 맞춘다.
-const APP_HEADER_PX = 120;
+// 헤더를 아직 못 쟀을 때(첫 페인트) 쓰는 폴백. 앱바(60~64) + 공간 탭 높이의 어림값이다.
+// 실제 헤더는 safe area를 포함하고 제목 줄바꿈에 따라 커지므로 이 값에 기대면 안 된다 —
+// 노치 기기에선 실제 높이가 168px쯤이라 필터 바가 헤더 뒤로 들어갔다.
+const HEADER_FALLBACK_PX = 120;
 
 /** 합주 공간 메인(단일 일 타임라인). */
 export const SpaceCalendar = () => {
@@ -39,6 +41,20 @@ export const SpaceCalendar = () => {
   const [detailScheduleId, setDetailScheduleId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
+  // 고정 헤더(RouteHeader)의 실제 높이. sticky top과 관찰 기준선이 같은 값을 봐야
+  // 필터 바가 헤더 뒤로 들어가거나 전환 시점이 어긋나지 않는다.
+  const [headerPx, setHeaderPx] = useState(HEADER_FALLBACK_PX);
+  useLayoutEffect(() => {
+    const header = document.querySelector('header');
+    if (!header) return;
+    const sync = () => setHeaderPx(header.getBoundingClientRect().height);
+
+    sync();
+    const resizeObserver = new ResizeObserver(sync);
+    resizeObserver.observe(header);
+    return () => resizeObserver.disconnect();
+  }, []);
+
   // 필터가 헤더에 고정되는 순간에만 collapsed로 전환(고정 후 배경이 떠 겹침 방지).
   const stickSentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -46,11 +62,11 @@ export const SpaceCalendar = () => {
     if (!el || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
       ([entry]) => setCollapsed(!entry.isIntersecting),
-      { rootMargin: `-${APP_HEADER_PX}px 0px 0px 0px`, threshold: 0 },
+      { rootMargin: `-${headerPx}px 0px 0px 0px`, threshold: 0 },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [headerPx]);
 
   const { data: spaceDetail } = useSpace(spaceId ?? '');
   const { data: blocks = [] } = useDaySchedules(spaceId ?? '', {
@@ -105,7 +121,7 @@ export const SpaceCalendar = () => {
           'sticky z-20 flex flex-col gap-3 px-5 py-3',
           collapsed && 'bg-gradient-top/65 header-glow backdrop-blur-sm',
         )}
-        style={{ top: APP_HEADER_PX - 1 }}
+        style={{ top: headerPx - 1 }}
       >
         {collapsed && (
           <div className="flex items-center justify-between">
