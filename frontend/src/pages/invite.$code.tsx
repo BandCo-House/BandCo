@@ -30,8 +30,9 @@ export const Route = createFileRoute('/invite/$code')({
  * 하단 버튼만 다르다: 비로그인이면 "로그인하고 가입하기" 하나, 로그인 후 복귀하면
  * 기존과 같은 거절/수락하고 참여하기.
  *
- * 초대자·밴드명은 코드만으로 조회할 API가 없어서(서버가 코드를 해시로만 저장)
- * 알림 초대장이 데이터 없을 때 쓰는 폴백('누군가'/'새로운 밴드')을 그대로 쓴다.
+ * 초대자·밴드명은 코드만으로 조회할 API가 아직 없다. 폴백 문자열('누군가'/'새로운 밴드')을
+ * 채우면 사용자가 그걸 실제 밴드 정보로 읽으므로, 모르는 값은 넘기지 않고 시트가 해당
+ * 블록을 감추게 한다.
  */
 function InviteJoinPage() {
   const { code } = Route.useParams();
@@ -84,10 +85,9 @@ function InviteJoinPage() {
     <InviteSheetLayout
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      inviter="누군가"
-      band="새로운 밴드"
-      bandDescription=""
-      memberCount={undefined}
+      // 코드로 밴드를 조회할 엔드포인트가 아직 없다. 서버는 codeHash가 unique라
+      // 찾을 수는 있으니 미리보기 API가 생기면 여기에 연결한다(후속).
+      // 그 전까지는 모르는 걸 지어내지 않는다 — 시트가 알아서 해당 블록을 감춘다.
       footer={
         user.isLoggedIn ? (
           <>

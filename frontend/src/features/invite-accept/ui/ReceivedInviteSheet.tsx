@@ -25,9 +25,10 @@ export function ReceivedInviteSheet({
 
   const inviteId = resolveInviteId(noti);
 
-  const { data: invitation } = useBandInvitation(inviteId, {
-    enabled: Boolean(inviteId && isOpen),
-  });
+  const { data: invitation, isError: isInvitationError } = useBandInvitation(
+    inviteId,
+    { enabled: Boolean(inviteId && isOpen) },
+  );
 
   const bandId = invitation?.band.bandId ?? '';
   const { data: bandDetail } = useBand(bandId);
@@ -60,8 +61,13 @@ export function ReceivedInviteSheet({
 
   const fallback = parseInviteText();
 
-  const inviter = invitation?.inviter.nickname ?? fallback.inviter;
-  const band = invitation?.band.name ?? fallback.band;
+  // 알림 문구에서 파싱한 값은 어디까지나 추정이다. 초대장 조회가 실패했는데 그 추정값을
+  // 그대로 보여주면 사용자는 틀린 밴드 정보를 진짜로 읽는다 — 실패했으면 비워 둔다.
+  const inviter =
+    invitation?.inviter.nickname ??
+    (isInvitationError ? undefined : fallback.inviter);
+  const band =
+    invitation?.band.name ?? (isInvitationError ? undefined : fallback.band);
   const bandDescription = invitation?.band.description ?? '';
   const memberCount = bandDetail?.memberCount;
 
@@ -73,6 +79,11 @@ export function ReceivedInviteSheet({
       band={band}
       bandDescription={bandDescription}
       memberCount={memberCount}
+      errorMessage={
+        isInvitationError
+          ? '초대장 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'
+          : undefined
+      }
       footer={
         noti.reference?.status === 'DECLINED' ? (
           <div className="flex h-[50px] w-full items-center justify-center rounded-[43px] border border-[#C6C6C8] bg-[rgba(39,43,34,0.05)] text-center typo-sm-sb text-grey-300 select-none">
