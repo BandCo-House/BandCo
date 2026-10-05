@@ -86,13 +86,16 @@ const AdminList = () => {
                   >
                     수정
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setModal({ type: 'password', admin })}
-                  >
-                    비밀번호 재설정
-                  </Button>
+                  {/* 본인 비밀번호는 서버가 막는다. 상단의 "비밀번호 변경"을 쓴다. */}
+                  {admin.adminId !== me?.adminId && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setModal({ type: 'password', admin })}
+                    >
+                      비밀번호 재설정
+                    </Button>
+                  )}
                 </div>
               </Td>
             </Tr>

@@ -72,7 +72,7 @@ function createNotificationsRepositoryStub(options?: {
       options?.onCreateNotification?.(input);
       return NEW_NOTIFICATION_ID;
     },
-    async createNoticeForActiveUsers(content, tx) {
+    async createNoticeForActiveUsers(content, _now, tx) {
       options?.onCall?.('createNoticeForActiveUsers', tx);
       options?.onCreateNoticeForActiveUsers?.(content);
       return options?.broadcastCount ?? 3;
@@ -98,7 +98,9 @@ function createManagedUsersRepositoryStub(options?: {
     findUserDetail: unexpectedCall,
     updateUserStatus: unexpectedCall,
     softDeleteUser: unexpectedCall,
+    findStatusBeforeAdminWithdrawal: unexpectedCall,
     restoreUser: unexpectedCall,
+    lockUserForSanction: unexpectedCall,
   };
 }
 
@@ -402,6 +404,26 @@ describe('AdminNotificationsService', () => {
       });
       expect(capturedTransactions).toEqual([TRANSACTION_CLIENT]);
       expect(capturedAuditLogs[0].tx).toBe(TRANSACTION_CLIENT);
+    });
+
+    it('회원 수만큼 행을 만들므로 기본보다 긴 트랜잭션 제한 시간으로 연다', async () => {
+      const capturedOptions: unknown[] = [];
+      const prisma = {
+        async $transaction(callback: (tx: unknown) => Promise<unknown>, options?: unknown) {
+          capturedOptions.push(options);
+          return callback(TRANSACTION_CLIENT);
+        },
+      } as unknown as PrismaService;
+      const service = new AdminNotificationsService(
+        createNotificationsRepositoryStub(),
+        createManagedUsersRepositoryStub(),
+        createAuditLogsServiceStub(),
+        prisma,
+      );
+
+      await service.broadcastNotice(ACTOR, NOTICE_CONTENT);
+
+      expect(capturedOptions).toEqual([{ timeout: 60 * 1000 }]);
     });
 
     it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {

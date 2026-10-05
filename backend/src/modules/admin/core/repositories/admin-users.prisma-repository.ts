@@ -44,4 +44,10 @@ export class AdminUsersPrismaRepository implements AdminUsersRepository {
     const client = tx ?? this.prisma;
     return client.adminUser.update({ where: { id }, data, select: ADMIN_USER_SELECT });
   }
+
+  async lockActiveSuperAdmins(tx: Prisma.TransactionClient): Promise<string[]> {
+    // Prisma 쿼리 API에는 행 잠금이 없어 raw로 건다. 먼저 잠근 트랜잭션이 커밋되면 바뀐 행은 조건을 다시 평가해 빠진다.
+    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_users WHERE role = 'SUPER_ADMIN' AND is_active = true FOR UPDATE`;
+    return rows.map(row => row.id);
+  }
 }

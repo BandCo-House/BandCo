@@ -11,7 +11,7 @@ export const LOGIN_ENDPOINT = '/admin/auth/login';
 export const ACCESS_TOKEN_REFRESH_ENDPOINT = '/admin/auth/token/access';
 
 /**
- * 앱이 올라간 기준 경로(배포·개발 모두 /admin). 라우터 location은 이 값을 뺀 경로라,
+ * 앱이 올라간 기준 경로(Vite base, 지금은 루트라 빈 문자열). 라우터 location은 이 값을 뺀 경로라,
  * 브라우저 주소를 직접 다루는 곳(history.push, window.location)에서는 다시 붙여야 한다.
  */
 export const APP_BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');

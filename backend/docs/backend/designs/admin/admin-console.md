@@ -97,8 +97,8 @@ await this.auditLogs.record({ adminUserId: admin.id, action: 'USER_STATUS_UPDATE
 |---|---|---|---|
 | GET | /admin/admins | - | `{ admins: AdminProfile[] }` |
 | POST | /admin/admins | `{ email, name(1~50), password(8~72), role }` | `AdminProfile` (중복 이메일 409) |
-| PATCH | /admin/admins/:adminId | `{ name?, role?, isActive? }` | `AdminProfile` (본인 강등·비활성 400) |
-| PATCH | /admin/admins/:adminId/password | `{ newPassword }` | `{ adminId }` |
+| PATCH | /admin/admins/:adminId | `{ name?, role?, isActive? }` | `AdminProfile` (본인 강등·비활성 400, 마지막 활성 SUPER_ADMIN 강등·비활성 400) |
+| PATCH | /admin/admins/:adminId/password | `{ newPassword }` | `{ adminId }` (본인 대상 400, 본인은 `PATCH /admin/auth/me/password`) |
 
 ### 3.3 감사 로그 `/admin/audit-logs`
 
@@ -138,14 +138,14 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 | GET | /admin/users/:userId | - | `AdminUserDetail` |
 | PATCH | /admin/users/:userId/status | `{ status: 'ACTIVE'|'INACTIVE', reason? }` | `{ userId, status }` |
 | POST | /admin/users/:userId/withdraw | `{ reason? }` | `{ userId, deletedAt }` |
-| POST | /admin/users/:userId/restore | - | `{ userId, deletedAt: null }` |
+| POST | /admin/users/:userId/restore | - | `{ userId, deletedAt: null, status }` |
 | GET | /admin/users/:userId/notifications | `?page&size` | `{ items: AdminNotification[], pagination }` |
 | POST | /admin/users/:userId/notifications | `{ title(1~120), description?, targetPath? }` | `{ notificationId }` |
 | GET | /admin/users/:userId/sanctions | - | `{ sanctions: Sanction[] }` |
 | POST | /admin/users/:userId/sanctions | `{ type, reason(1~500), endsAt? }` | `Sanction` |
 | POST | /admin/sanctions/:sanctionId/revoke | - | `Sanction` |
 | POST | /admin/notifications/:notificationId/resend | - | `{ notificationId }` (새 알림) |
-| POST | /admin/notifications/broadcast (SUPER) | `{ title, description?, targetPath? }` | `{ sentCount }` |
+| POST | /admin/notifications/broadcast (SUPER) | `{ title, description?, targetPath? }` | `{ sentCount }` (탈퇴·비활성·이용 정지 회원 제외) |
 
 - keyword: 이메일 부분일치 · 닉네임 부분일치 · UUID면 ID 일치(OR).
 - status 필터: `ACTIVE`(탈퇴X·ACTIVE·정지X) | `INACTIVE`(탈퇴X·INACTIVE) | `SUSPENDED`(탈퇴X·활성 정지 있음) | `DELETED`(탈퇴). 없으면 전체.
@@ -154,9 +154,9 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 - `AdminNotification = { notificationId, type, title, description|null, targetPath|null, isRead, createdAt }`
 - `Sanction = { sanctionId, userId, type: 'WARNING'|'SUSPENSION', reason, endsAt|null, isActive, createdAt, createdBy: { adminId, name }, revokedAt|null, revokedBy: { adminId, name }|null }`
   - isActive: SUSPENSION이고 revokedAt 없음이고 (endsAt 없음 또는 미래). WARNING은 항상 false.
-  - 생성 규칙: WARNING에 endsAt 주면 400, SUSPENSION endsAt은 미래여야 함, 이미 활성 정지가 있으면 409. WARNING은 유저에게 NOTICE 알림("운영 정책 위반 경고")을 함께 보낸다.
+  - 생성 규칙: WARNING에 endsAt 주면 400, SUSPENSION endsAt은 미래여야 함, 이미 활성 정지가 있으면 409(회원 행을 잠근 뒤 확인해 동시 요청도 하나만 성공). WARNING은 유저에게 NOTICE 알림("운영 정책 위반 경고")을 함께 보낸다.
   - 철회: 이미 철회됐거나 WARNING이면 400.
-- 탈퇴 처리: 이미 탈퇴면 400, 복구: 탈퇴 아니면 400. 탈퇴는 유저 탈퇴 API(softDeleteUser)와 같이 `deletedAt=now`, `status=INACTIVE`로 바꾸고, 복구는 `deletedAt=null`, `status=ACTIVE`로 되돌린다.
+- 탈퇴 처리: 이미 탈퇴면 400, 복구: 탈퇴 아니면 400. 탈퇴는 유저 탈퇴 API(softDeleteUser)와 같이 `deletedAt=now`, `status=INACTIVE`로 바꾸고, 탈퇴 직전 상태를 감사 로그 detail(`previousStatus`)에 남긴다. 복구는 `deletedAt=null`로 되돌리고 상태는 그 탈퇴 건(detail의 `deletedAt`이 현재 값과 같은 USER_WITHDRAW)의 `previousStatus`로, 기록이 없으면(유저가 직접 탈퇴) `ACTIVE`로 한다.
 - 관리자 발송 알림은 type `NOTICE`.
 
 ### 3.6 밴드 `/admin/bands`
@@ -223,13 +223,15 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 
 ## 3.11 보안·운영 규칙 (QA 반영)
 
-- **로그인 잠금**: 같은 이메일로 10번 연속 실패하면 15분 동안 429 `로그인 시도가 너무 많습니다. 15분 후 다시 시도해 주세요.` 성공하면 실패 횟수가 초기화된다. 서버 메모리 기준이라 재시작하면 풀린다(현재 단일 인스턴스).
+- **로그인 잠금**: 같은 이메일로 성공 없이 10번 시도하면 15분 동안 429 `로그인 시도가 너무 많습니다. 15분 후 다시 시도해 주세요.` 시도는 비밀번호 비교 전에 세므로 동시에 보낸 요청도 10번까지만 비교한다. 성공하면 횟수가 초기화되고, 15분 지난 기록은 1분마다 정리한다. 서버 메모리 기준이라 재시작하면 풀린다(현재 단일 인스턴스).
 - **응답 시간 균일화**: 계정이 없어도 같은 비용의 bcrypt 비교를 해서 응답 시간으로 이메일 존재 여부가 드러나지 않는다.
 - **비밀번호 변경·초기화 시 토큰 무효화**: `admin_users.password_changed_at`보다 먼저 발급된 토큰은 401 `세션이 만료되었습니다. 다시 로그인해 주세요.` 본인 변경(`PATCH /admin/auth/me/password`)은 새 토큰 쌍을 함께 돌려줘 현재 세션이 이어진다.
 - **알림 재발송 제한**: `NOTICE` 알림만 재발송한다. 초대 알림을 복제하면 이미 처리된 초대를 가리키는 수락 버튼이 생기기 때문이다. 수신자가 탈퇴했으면 400.
 - **밴드장 이전**: 탈퇴한 회원에게는 넘길 수 없다(400).
 - **스토리지 권한 부족**: `s3:ListBucket` 권한이 없으면 503 `스토리지 목록 조회 권한(s3:ListBucket)이 없어 사용량을 집계할 수 없습니다.`
-- **알려진 한계(수용)**: 정지 생성·유저 신고의 중복 검사는 DB 제약 없이 조회 후 저장이라 동시 요청이 겹치면 중복이 생길 수 있다. 전체 알림 발송은 한 트랜잭션의 `createMany`라 회원 수가 매우 커지면 배치 처리가 필요하다.
+- **SUPER_ADMIN 최소 인원**: 활성 SUPER_ADMIN 행을 잠근 뒤 확인해, 서로를 동시에 강등·비활성화해도 한 명은 남는다.
+- **전체 알림 발송**: 1,000건씩 나눠 넣고 트랜잭션 제한 시간을 60초로 둔다.
+- **알려진 한계(수용)**: 유저 신고의 중복 검사는 DB 제약 없이 조회 후 저장이라 동시 요청이 겹치면 중복이 생길 수 있다. 전체 알림 발송은 회원 수가 매우 커지면 비동기 배치로 바꿔야 한다.
 
 ## 4. 테스트 계획
 
@@ -242,7 +244,7 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 - 로그인 403(정지) 시 서버 문구를 그대로 보여준다.
 - 다른 회원 프로필 헤더의 신고 버튼 → `POST /users/:userId/reports`.
 - `ServiceStatusGate`가 `GET /service-status`를 5분(점검 중 30초)마다 확인하고, 503 `SERVICE_UNAVAILABLE` 응답에도 즉시 다시 확인한다. 점검 화면, 최소 버전 미달 시 업데이트 화면을 띄운다. 조회 실패 시 막지 않는다.
-- 앱 버전은 빌드 시 `frontend/package.json`의 `version`(현재 0.0.0)이다. `minAppVersion`을 설정하기 전에 앱 버전을 올려 배포해야 한다.
+- 앱 버전은 빌드 시 `frontend/package.json`의 `version`(현재 0.0.0)이다. 빌드가 `/version.json`으로 배포 버전을 함께 내고, 게이트는 배포 버전이 `minAppVersion` 이상일 때만 업데이트 화면을 띄운다(아직 배포하지 않은 버전을 넣어도 전체가 막히지 않음). `minAppVersion`을 실제로 쓰려면 앱 버전을 올려 배포해야 한다.
 - 홈 상단에 `GET /announcements/active` 공지 배너, 닫으면 브라우저에 기억한다.
 
 ## 6. 환경 변수

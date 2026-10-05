@@ -1,6 +1,6 @@
 # 어드민 콘솔 운영
 
-어드민 콘솔은 서비스 유저와 분리된 운영자 계정(`admin_users`)으로 로그인한다. 프론트는 저장소 루트의 `admin/` 앱이고 서비스 도메인의 `/admin` 경로로 연다(서비스 앱 `vercel.json`이 어드민 배포로 넘김). API는 백엔드의 `/admin/*` 경로다. 배포 구성은 [admin/README.md](../../../../admin/README.md)를 본다. API 명세는 [api-docs/admin.md](../api-docs/admin.md)에 있다.
+어드민 콘솔은 서비스 유저와 분리된 운영자 계정(`admin_users`)으로 로그인한다. 프론트는 저장소 루트의 `admin/` 앱이고 서비스와 다른 서브도메인(`admin.<서비스 도메인>`)으로 연다. 같은 출처에 두면 서비스 앱의 스크립트가 어드민 토큰(`localStorage`)을 읽을 수 있어 출처를 나눴다. API는 백엔드의 `/admin/*` 경로다. 배포 구성은 [admin/README.md](../../../../admin/README.md)를 본다. API 명세는 [api-docs/admin.md](../api-docs/admin.md)에 있다.
 
 ## 배포 전에 준비할 것
 
@@ -52,8 +52,9 @@ DATABASE_URL='postgresql://...' ADMIN_EMAIL=me@bandco.kr ADMIN_NAME=홍길동 AD
 - **마지막 접속 시각**: 이메일·Google 로그인, 회원가입, 액세스 토큰 재발급 때 `users.last_login_at`을 갱신한다(10분 안의 재갱신은 생략). 대시보드 DAU/WAU/MAU의 근거이며 배포 이후부터 쌓인다.
 - **이용 정지**: 활성 정지가 있는 유저는 로그인 시 403과 해제 예정 시각 안내를 받는다. 이미 발급된 토큰은 다음 요청부터 401로 끊긴다.
 - **점검 모드**: 켜면 `/admin*`, `/service-status`, `/announcements/active`, `/api-docs*`를 뺀 모든 요청이 503을 받는다. 설정은 서버 메모리에 10초 캐시되므로 다른 인스턴스에는 최대 10초 늦게 반영된다. 서비스 앱은 점검 화면을 띄우고 30초마다 다시 확인한다.
-- **최소 앱 버전**: 서비스 앱 버전은 `frontend/package.json`의 `version`이고 지금은 `0.0.0`이다. 이 상태에서 최소 버전을 넣으면 모든 사용자가 업데이트 화면에 막힌다. 앱 버전을 먼저 올려 배포한 뒤 설정한다.
-- **어드민 로그인 보호**: 같은 이메일로 10번 연속 실패하면 15분 잠긴다(서버 재시작 시 초기화). 잠긴 계정을 바로 풀어야 하면 서버를 재시작한다.
+- **최소 앱 버전**: 서비스 앱 버전은 `frontend/package.json`의 `version`이고 지금은 `0.0.0`이다. 앱은 배포된 버전(`/version.json`)이 최소 버전 이상일 때만 업데이트 화면을 띄우므로, 아직 배포하지 않은 버전을 넣으면 아무도 막히지 않는다. 앱 버전을 먼저 올려 배포한 뒤 설정한다.
+- **어드민 로그인 보호**: 같은 이메일로 성공 없이 10번 시도하면 15분 잠긴다(동시 요청 포함, 서버 재시작 시 초기화). 잠긴 계정을 바로 풀어야 하면 서버를 재시작한다.
+- **어드민 계정 보호**: 활성 SUPER_ADMIN이 한 명뿐이면 그 계정은 강등·비활성화할 수 없다. 본인 비밀번호는 "비밀번호 재설정"이 아니라 상단 "비밀번호 변경"으로 바꾼다.
 
 ## 로컬에서 확인하기
 
@@ -74,7 +75,7 @@ ADMIN_EMAIL=admin@bandco.local ADMIN_NAME=로컬관리자 ADMIN_PASSWORD='admin1
 ADMIN_JWT_SECRET=local-admin-secret pnpm run start:dev
 ```
 
-어드민 프론트는 `admin/`에서 `pnpm dev`로 띄운다(`http://localhost:5174/admin/`, 기본 API 주소 `http://localhost:3000`). 서비스 앱 서버를 함께 띄우면 `http://localhost:5173/admin`으로도 열린다.
+어드민 프론트는 `admin/`에서 `pnpm dev`로 띄운다(`http://localhost:5174`, 기본 API 주소 `http://localhost:3000`).
 
 서비스 앱(`frontend/`)은 개발 모드에서 항상 MSW 목업을 켜므로 실제 서버로 확인하려면 빌드해서 띄운다.
 

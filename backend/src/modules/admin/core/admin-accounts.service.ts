@@ -65,7 +65,7 @@ export class AdminAccountsService {
 
   /**
    * 어드민 이름·역할·활성 여부를 바꾼다.
-   * 본인을 강등·비활성화하면 SUPER_ADMIN이 한 명도 남지 않는 상황이 생길 수 있어 막는다.
+   * 본인 강등·비활성화는 막고, 다른 SUPER_ADMIN을 강등·비활성화할 때도 활성 SUPER_ADMIN이 한 명은 남게 한다.
    *
    * @param {AdminPrincipal} actor - 요청한 SUPER_ADMIN
    * @param {string} adminId - 대상 어드민 ID
@@ -81,6 +81,16 @@ export class AdminAccountsService {
       }
       if (isSelf && input.isActive === false) {
         throw new BadRequestException('본인 계정은 비활성화할 수 없습니다.');
+      }
+
+      const isDemotingOrDeactivating = (input.role !== undefined && input.role !== 'SUPER_ADMIN') || input.isActive === false;
+      if (isDemotingOrDeactivating) {
+        // 대상 조회 전에 잠가야, 동시에 서로를 강등하는 요청이 같은 남은 인원 수를 보지 않는다
+        const activeSuperAdminIds = await this.adminUsersRepository.lockActiveSuperAdmins(client);
+        const isLastActiveSuperAdmin = activeSuperAdminIds.includes(adminId) && activeSuperAdminIds.length === 1;
+        if (isLastActiveSuperAdmin) {
+          throw new BadRequestException('활성 최고 관리자는 최소 한 명 있어야 합니다.');
+        }
       }
 
       const target = await this.adminUsersRepository.findById(adminId, client);
@@ -109,6 +119,7 @@ export class AdminAccountsService {
 
   /**
    * 다른 어드민의 비밀번호를 초기화한다. 분실 계정 복구용이다.
+   * 본인 비밀번호는 현재 비밀번호 확인과 새 토큰 발급이 있는 본인 비밀번호 변경으로만 바꾸게 막는다.
    *
    * @param {AdminPrincipal} actor - 요청한 SUPER_ADMIN
    * @param {string} adminId - 대상 어드민 ID
@@ -118,6 +129,10 @@ export class AdminAccountsService {
    */
   async resetAdminPassword(actor: AdminPrincipal, adminId: string, newPassword: string, tx?: Prisma.TransactionClient): Promise<{ adminId: string }> {
     const run = async (client: Prisma.TransactionClient): Promise<{ adminId: string }> => {
+      if (actor.id === adminId) {
+        throw new BadRequestException('본인 비밀번호는 비밀번호 변경 메뉴에서 바꿔 주세요.');
+      }
+
       const target = await this.adminUsersRepository.findById(adminId, client);
       if (target === null) {
         throw new NotFoundException('어드민 계정을 찾을 수 없습니다.');

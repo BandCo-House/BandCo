@@ -75,4 +75,14 @@ export interface AdminUsersRepository {
    * @returns {Promise<AdminUserRecord>} 수정된 계정
    */
   update(id: string, data: UpdateAdminUserData, tx?: Prisma.TransactionClient): Promise<AdminUserRecord>;
+
+  /**
+   * 활성 SUPER_ADMIN 행을 모두 잠그고(SELECT … FOR UPDATE) ID를 반환한다.
+   * 동시에 서로를 강등·비활성화해 SUPER_ADMIN이 0명이 되는 것을 막을 때 쓴다.
+   * 트랜잭션 밖에서 잠그면 즉시 풀려 의미가 없어 tx를 필수로 받는다.
+   *
+   * @param {Prisma.TransactionClient} tx - 상위 트랜잭션 client
+   * @returns {Promise<string[]>} 잠근 활성 SUPER_ADMIN ID 목록
+   */
+  lockActiveSuperAdmins(tx: Prisma.TransactionClient): Promise<string[]>;
 }

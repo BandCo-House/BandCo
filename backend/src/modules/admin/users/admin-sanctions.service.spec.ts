@@ -87,7 +87,7 @@ function createSanctionsRepositoryStub(options?: {
   };
 }
 
-/** 제재 서비스는 회원 존재 확인만 쓰므로 나머지 메서드는 호출되면 실패하게 둔다. */
+/** 제재 서비스는 회원 존재 확인과 행 잠금만 쓰므로 나머지 메서드는 호출되면 실패하게 둔다. */
 function createManagedUsersRepositoryStub(options?: {
   userState?: AdminUserState | null;
   onCall?: (method: string, tx: unknown) => void;
@@ -101,10 +101,14 @@ function createManagedUsersRepositoryStub(options?: {
       if (options?.userState !== undefined) return options.userState;
       return ACTIVE_USER_STATE;
     },
+    async lockUserForSanction(_userId, tx) {
+      options?.onCall?.('lockUserForSanction', tx);
+    },
     findUsers: unexpectedCall,
     findUserDetail: unexpectedCall,
     updateUserStatus: unexpectedCall,
     softDeleteUser: unexpectedCall,
+    findStatusBeforeAdminWithdrawal: unexpectedCall,
     restoreUser: unexpectedCall,
   };
 }
@@ -271,8 +275,21 @@ describe('AdminSanctionsService', () => {
         targetId: USER_ID,
         detail: { sanctionId: SANCTION_ID, type: 'SUSPENSION', endsAt: FUTURE.toISOString() },
       });
-      expect(capturedTransactions).toEqual([TRANSACTION_CLIENT, TRANSACTION_CLIENT, TRANSACTION_CLIENT]);
+      expect(capturedTransactions).toEqual([TRANSACTION_CLIENT, TRANSACTION_CLIENT, TRANSACTION_CLIENT, TRANSACTION_CLIENT]);
       expect(capturedAuditLogs[0].tx).toBe(TRANSACTION_CLIENT);
+    });
+
+    it('이용 정지는 활성 정지를 확인하기 전에 회원 행을 잠근다', async () => {
+      const calledMethods: string[] = [];
+      const onCall = (method: string) => calledMethods.push(method);
+      const service = createService({
+        sanctionsRepository: createSanctionsRepositoryStub({ onCall }),
+        managedUsersRepository: createManagedUsersRepositoryStub({ onCall }),
+      });
+
+      await service.createSanction(ACTOR, USER_ID, { type: 'SUSPENSION', reason: '욕설 반복' });
+
+      expect(calledMethods).toEqual(['findUserState', 'lockUserForSanction', 'hasActiveSuspension', 'createSanction']);
     });
 
     it('종료 시각이 없으면 영구 정지로 만든다', async () => {

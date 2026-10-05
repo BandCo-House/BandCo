@@ -157,8 +157,7 @@ const routeTree = rootRoute.addChildren([
   ]),
 ]);
 
-// 서비스 도메인의 /admin 아래에서 동작하므로 라우트 경로는 /admin을 뺀 값으로 쓴다.
-export const router = createRouter({ routeTree, basepath: '/admin' });
+export const router = createRouter({ routeTree });
 
 declare module '@tanstack/react-router' {
   interface Register {

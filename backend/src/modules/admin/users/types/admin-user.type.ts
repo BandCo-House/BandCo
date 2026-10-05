@@ -54,6 +54,8 @@ export type WithdrawAdminUserResult = {
 export type RestoreAdminUserResult = {
   userId: string;
   deletedAt: null;
+  /** 복구 후 상태. 어드민 탈퇴 처리 직전 상태를 되살린다. */
+  status: UserStatus;
 };
 
 /** 회원 상태 변경 입력 */

@@ -5,7 +5,10 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { apiGet } from '@/shared/api';
 import type { ServiceStatus } from '@/entities/service-status/model/schema';
-import { serviceStatusKeys } from '@/entities/service-status/api/useServiceStatus';
+import {
+  deployedAppVersionKeys,
+  serviceStatusKeys,
+} from '@/entities/service-status/api/useServiceStatus';
 import { API_URL } from '@/mocks/config';
 import { server } from '@/mocks/server';
 import { ServiceStatusGate } from './ServiceStatusGate';
@@ -23,6 +26,9 @@ const respondStatus = (status: ServiceStatus) =>
     message: '요청 성공',
     data: status,
   });
+
+const respondDeployedVersion = (version: string) =>
+  http.get('*/version.json', () => HttpResponse.json({ version }));
 
 const renderGate = () => {
   const queryClient = new QueryClient({
@@ -106,11 +112,12 @@ describe('ServiceStatusGate', () => {
     expect(await screen.findByTestId('app-content')).toBeInTheDocument();
   });
 
-  it('현재 버전이 최소 버전보다 낮으면 업데이트 안내를 보여준다', async () => {
+  it('현재 버전이 최소 버전보다 낮고 그 버전이 배포돼 있으면 업데이트 안내를 보여준다', async () => {
     server.use(
       http.get(`${API_URL}/service-status`, () =>
         respondStatus({ ...NORMAL_STATUS, minAppVersion: '999.0.0' }),
       ),
+      respondDeployedVersion('999.1.0'),
     );
 
     renderGate();
@@ -122,6 +129,45 @@ describe('ServiceStatusGate', () => {
       screen.getByRole('button', { name: '새로고침' }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('app-content')).not.toBeInTheDocument();
+  });
+
+  it('배포된 버전도 최소 버전보다 낮으면 새로고침으로 풀 수 없어 막지 않는다', async () => {
+    server.use(
+      http.get(`${API_URL}/service-status`, () =>
+        respondStatus({ ...NORMAL_STATUS, minAppVersion: '999.0.0' }),
+      ),
+      respondDeployedVersion('1.0.0'),
+    );
+
+    const queryClient = renderGate();
+
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryState(deployedAppVersionKeys.all)?.status,
+      ).toBe('success'),
+    );
+    expect(screen.getByTestId('app-content')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '업데이트가 필요해요' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('배포된 버전을 확인할 수 없으면 막지 않는다', async () => {
+    server.use(
+      http.get(`${API_URL}/service-status`, () =>
+        respondStatus({ ...NORMAL_STATUS, minAppVersion: '999.0.0' }),
+      ),
+      http.get('*/version.json', () => new HttpResponse(null, { status: 404 })),
+    );
+
+    const queryClient = renderGate();
+
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryState(deployedAppVersionKeys.all)?.status,
+      ).toBe('error'),
+    );
+    expect(screen.getByTestId('app-content')).toBeInTheDocument();
   });
 
   it('최소 버전 값을 해석할 수 없으면 막지 않는다', async () => {

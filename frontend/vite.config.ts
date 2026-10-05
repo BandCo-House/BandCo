@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
@@ -10,6 +10,30 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 const { version: appVersion } = JSON.parse(
   readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
 ) as { version: string };
+
+const appVersionFileContent = JSON.stringify({ version: appVersion });
+
+/**
+ * 배포된 최신 앱 버전을 /version.json으로 낸다. 서비스 상태 게이트가 업데이트 화면을 띄우기 전에
+ * 새로고침하면 실제로 더 높은 버전을 받을 수 있는지 확인하는 데 쓴다.
+ */
+const appVersionFilePlugin = (): Plugin => ({
+  name: 'app-version-file',
+  configureServer(server) {
+    server.middlewares.use('/version.json', (_req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(appVersionFileContent);
+    });
+  },
+  generateBundle() {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: appVersionFileContent,
+    });
+  },
+});
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -37,6 +61,7 @@ export default defineConfig(({ mode }) => {
 
       tailwindcss(),
       svgr(),
+      appVersionFilePlugin(),
     ],
 
     resolve: {
@@ -57,15 +82,6 @@ export default defineConfig(({ mode }) => {
           target: apiProxyTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
-        },
-        // 배포에서는 vercel.json이 /admin을 어드민 앱으로 넘긴다. 로컬에서도 같은 주소로
-        // 열리도록 어드민 개발 서버(admin/, 5174)로 프록시한다. HMR 웹소켓도 함께 넘긴다.
-        '/admin': {
-          target: env.ADMIN_DEV_TARGET ?? 'http://localhost:5174',
-          changeOrigin: true,
-          ws: true,
-          // 어드민 개발 서버는 기준 경로가 /admin/이라 끝 슬래시가 없으면 404를 낸다.
-          rewrite: (path) => path.replace(/^\/admin(?=$|\?)/, '/admin/'),
         },
       },
     },

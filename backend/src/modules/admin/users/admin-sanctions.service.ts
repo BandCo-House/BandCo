@@ -121,6 +121,8 @@ export class AdminSanctionsService {
       }
 
       if (!isWarning) {
+        // 확인과 저장 사이에 다른 정지가 끼어들지 않도록 회원 행을 잠근 뒤 확인한다
+        await this.managedUsersRepository.lockUserForSanction(userId, client);
         const hasActiveSuspension = await this.sanctionsRepository.hasActiveSuspension(userId, now, client);
         if (hasActiveSuspension) {
           throw new ConflictException('이미 이용 정지 중인 회원입니다.');

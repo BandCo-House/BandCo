@@ -55,8 +55,12 @@ export const UserActionsCard = ({ user }: { user: AdminUserDetail }) => {
 
   const handleRestore = () => {
     restore.mutate(undefined, {
-      onSuccess: () => {
-        toast.success('회원을 복구했습니다.');
+      onSuccess: (result) => {
+        toast.success(
+          result.status === 'INACTIVE'
+            ? '회원을 복구했습니다. 탈퇴 전 상태인 비활성으로 돌아왔습니다.'
+            : '회원을 복구했습니다.',
+        );
         setRestoreOpen(false);
       },
     });
@@ -129,7 +133,7 @@ export const UserActionsCard = ({ user }: { user: AdminUserDetail }) => {
       <ConfirmModal
         open={restoreOpen}
         title="탈퇴 복구"
-        description="이 회원의 탈퇴를 취소하고 계정을 복구합니다."
+        description="이 회원의 탈퇴를 취소하고 계정을 복구합니다. 어드민이 탈퇴 처리한 회원은 탈퇴 직전 상태(활성·비활성)로 돌아옵니다."
         confirmLabel="복구"
         loading={restore.isPending}
         onConfirm={handleRestore}

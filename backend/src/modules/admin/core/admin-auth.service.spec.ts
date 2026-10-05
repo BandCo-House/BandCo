@@ -59,6 +59,9 @@ function createAdminUsersRepositoryStub(admin: AdminUserRecord | null, observed:
       observed.updates.push({ id, data, tx });
       return { ...(admin as AdminUserRecord), ...data } as AdminUserRecord;
     },
+    async lockActiveSuperAdmins() {
+      throw new Error('사용하지 않는다');
+    },
   };
 }
 
@@ -220,6 +223,39 @@ describe('AdminAuthService', () => {
         Date.now = () => startedAt + ADMIN_LOGIN_LOCK_WINDOW_MS;
 
         await expect(service.login('admin@bandco.kr', PASSWORD)).resolves.toEqual(expect.objectContaining({ accessToken: expect.any(String) }));
+      } finally {
+        Date.now = realNow;
+      }
+    });
+
+    it('동시에 보낸 시도도 한도까지만 비밀번호를 비교하고 나머지는 429로 막는다', async () => {
+      const { service, observed } = setup();
+      const concurrentCount = ADMIN_LOGIN_MAX_FAILURES + 5;
+
+      const results = await Promise.allSettled(Array.from({ length: concurrentCount }, () => service.login('admin@bandco.kr', 'wrong-password')));
+
+      const rejectedStatuses = results.map(result => (result.status === 'rejected' ? (result.reason as HttpException).getStatus() : null));
+      expect(rejectedStatuses.filter(status => status === HttpStatus.UNAUTHORIZED)).toHaveLength(ADMIN_LOGIN_MAX_FAILURES);
+      expect(rejectedStatuses.filter(status => status === HttpStatus.TOO_MANY_REQUESTS)).toHaveLength(5);
+      expect(observed.findByEmailArgs).toHaveLength(ADMIN_LOGIN_MAX_FAILURES);
+    });
+
+    it('잠금 구간이 지난 다른 이메일의 기록은 정리돼 쌓이지 않는다', async () => {
+      const { service } = setup();
+      const loginAttempts = (service as unknown as { loginAttempts: Map<string, unknown> }).loginAttempts;
+      const realNow = Date.now;
+      const startedAt = realNow();
+      try {
+        Date.now = () => startedAt;
+        for (let index = 0; index < 3; index += 1) {
+          await expect(service.login(`random-${index}@bandco.kr`, 'wrong-password')).rejects.toThrow(UnauthorizedException);
+        }
+        expect(loginAttempts.size).toBe(3);
+
+        Date.now = () => startedAt + ADMIN_LOGIN_LOCK_WINDOW_MS;
+        await expect(service.login('another@bandco.kr', 'wrong-password')).rejects.toThrow(UnauthorizedException);
+
+        expect([...loginAttempts.keys()]).toEqual(['another@bandco.kr']);
       } finally {
         Date.now = realNow;
       }

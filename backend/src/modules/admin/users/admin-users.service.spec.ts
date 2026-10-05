@@ -55,7 +55,9 @@ function createManagedUsersRepositoryStub(options?: {
   onFindUsers?: (filter: AdminUserListFilter, pagination: { page: number; size: number }) => void;
   onUpdateUserStatus?: (userId: string, status: UserStatus) => void;
   onSoftDeleteUser?: (userId: string, deletedAt: Date) => void;
-  onRestoreUser?: (userId: string) => void;
+  onRestoreUser?: (userId: string, status: UserStatus) => void;
+  statusBeforeWithdrawal?: UserStatus | null;
+  onFindStatusBeforeWithdrawal?: (userId: string, deletedAt: Date) => void;
 }): AdminManagedUsersRepository {
   return {
     async findUsers(filter, pagination, _now, tx) {
@@ -81,9 +83,17 @@ function createManagedUsersRepositoryStub(options?: {
       options?.onCall?.('softDeleteUser', tx);
       options?.onSoftDeleteUser?.(userId, deletedAt);
     },
-    async restoreUser(userId, tx) {
+    async findStatusBeforeAdminWithdrawal(userId, deletedAt, tx) {
+      options?.onCall?.('findStatusBeforeAdminWithdrawal', tx);
+      options?.onFindStatusBeforeWithdrawal?.(userId, deletedAt);
+      return options?.statusBeforeWithdrawal ?? null;
+    },
+    async restoreUser(userId, status, tx) {
       options?.onCall?.('restoreUser', tx);
-      options?.onRestoreUser?.(userId);
+      options?.onRestoreUser?.(userId, status);
+    },
+    async lockUserForSanction() {
+      throw new Error('사용하지 않는다');
     },
   };
 }
@@ -247,7 +257,7 @@ describe('AdminUsersService', () => {
   });
 
   describe('withdrawUser', () => {
-    it('탈퇴 시각을 기록하고 같은 transaction으로 USER_WITHDRAW 감사 로그를 남긴다', async () => {
+    it('탈퇴 시각을 기록하고 이전 상태와 함께 같은 transaction으로 USER_WITHDRAW 감사 로그를 남긴다', async () => {
       const capturedDeletedAts: Date[] = [];
       const capturedAuditLogs: CapturedAuditLog[] = [];
       const repository = createManagedUsersRepositoryStub({ onSoftDeleteUser: (_userId, deletedAt) => capturedDeletedAts.push(deletedAt) });
@@ -262,7 +272,7 @@ describe('AdminUsersService', () => {
         action: 'USER_WITHDRAW',
         targetType: 'USER',
         targetId: USER_ID,
-        detail: { reason: '스팸 계정' },
+        detail: { reason: '스팸 계정', previousStatus: 'ACTIVE', deletedAt: capturedDeletedAts[0].toISOString() },
       });
       expect(capturedAuditLogs[0].tx).toBe(TRANSACTION_CLIENT);
     });
@@ -296,21 +306,45 @@ describe('AdminUsersService', () => {
   });
 
   describe('restoreUser', () => {
-    it('탈퇴 회원을 복구하고 같은 transaction으로 USER_RESTORE 감사 로그를 남긴다', async () => {
-      const capturedRestoredUserIds: string[] = [];
+    it('직접 탈퇴한 회원은 ACTIVE로 복구하고 같은 transaction으로 USER_RESTORE 감사 로그를 남긴다', async () => {
+      const capturedRestores: { userId: string; status: UserStatus }[] = [];
+      const capturedLookups: { userId: string; deletedAt: Date }[] = [];
       const capturedAuditLogs: CapturedAuditLog[] = [];
       const repository = createManagedUsersRepositoryStub({
         userState: DELETED_USER_STATE,
-        onRestoreUser: userId => capturedRestoredUserIds.push(userId),
+        onRestoreUser: (userId, status) => capturedRestores.push({ userId, status }),
+        onFindStatusBeforeWithdrawal: (userId, deletedAt) => capturedLookups.push({ userId, deletedAt }),
       });
       const service = new AdminUsersService(repository, createAuditLogsServiceStub(capturedAuditLogs), createPrismaServiceStub());
 
       const result = await service.restoreUser(ACTOR, USER_ID);
 
-      expect(result).toEqual({ userId: USER_ID, deletedAt: null });
-      expect(capturedRestoredUserIds).toEqual([USER_ID]);
-      expect(capturedAuditLogs[0].input).toEqual({ adminUserId: ADMIN_ID, action: 'USER_RESTORE', targetType: 'USER', targetId: USER_ID });
+      expect(result).toEqual({ userId: USER_ID, deletedAt: null, status: 'ACTIVE' });
+      expect(capturedLookups).toEqual([{ userId: USER_ID, deletedAt: DELETED_USER_STATE.deletedAt }]);
+      expect(capturedRestores).toEqual([{ userId: USER_ID, status: 'ACTIVE' }]);
+      expect(capturedAuditLogs[0].input).toEqual({
+        adminUserId: ADMIN_ID,
+        action: 'USER_RESTORE',
+        targetType: 'USER',
+        targetId: USER_ID,
+        detail: { status: 'ACTIVE' },
+      });
       expect(capturedAuditLogs[0].tx).toBe(TRANSACTION_CLIENT);
+    });
+
+    it('어드민이 비활성 상태에서 탈퇴 처리한 회원은 INACTIVE로 복구한다', async () => {
+      const capturedRestores: { userId: string; status: UserStatus }[] = [];
+      const repository = createManagedUsersRepositoryStub({
+        userState: DELETED_USER_STATE,
+        statusBeforeWithdrawal: 'INACTIVE',
+        onRestoreUser: (userId, status) => capturedRestores.push({ userId, status }),
+      });
+      const service = new AdminUsersService(repository, createAuditLogsServiceStub(), createPrismaServiceStub());
+
+      const result = await service.restoreUser(ACTOR, USER_ID);
+
+      expect(result.status).toBe('INACTIVE');
+      expect(capturedRestores).toEqual([{ userId: USER_ID, status: 'INACTIVE' }]);
     });
 
     it('회원이 없으면 NotFoundException을 던진다', async () => {
@@ -338,7 +372,7 @@ describe('AdminUsersService', () => {
 
       await service.restoreUser(ACTOR, USER_ID, externalTx as never);
 
-      expect(capturedTransactions).toEqual([externalTx, externalTx]);
+      expect(capturedTransactions).toEqual([externalTx, externalTx, externalTx]);
       expect(capturedAuditLogs[0].tx).toBe(externalTx);
     });
   });

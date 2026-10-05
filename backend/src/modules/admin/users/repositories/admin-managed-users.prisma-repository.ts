@@ -208,8 +208,31 @@ export class AdminManagedUsersPrismaRepository implements AdminManagedUsersRepos
     await client.user.update({ where: { id: userId }, data: { deletedAt, status: 'INACTIVE' } });
   }
 
-  async restoreUser(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+  async findStatusBeforeAdminWithdrawal(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<UserStatus | null> {
     const client = tx ?? this.prisma;
-    await client.user.update({ where: { id: userId }, data: { deletedAt: null, status: 'ACTIVE' } });
+    // 탈퇴하면 상태가 INACTIVE로 덮어써져 이전 상태는 탈퇴 처리 감사 로그에만 남는다
+    const withdrawalLog = await client.adminAuditLog.findFirst({
+      where: {
+        action: 'USER_WITHDRAW',
+        targetType: 'USER',
+        targetId: userId,
+        detail: { path: ['deletedAt'], equals: deletedAt.toISOString() },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { detail: true },
+    });
+
+    const previousStatus = (withdrawalLog?.detail as { previousStatus?: unknown } | null | undefined)?.previousStatus;
+    return previousStatus === 'ACTIVE' || previousStatus === 'INACTIVE' ? previousStatus : null;
+  }
+
+  async restoreUser(userId: string, status: UserStatus, tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.user.update({ where: { id: userId }, data: { deletedAt: null, status } });
+  }
+
+  async lockUserForSanction(userId: string, tx: Prisma.TransactionClient): Promise<void> {
+    // Prisma 쿼리 API에는 행 잠금이 없어 raw로 건다. 태그드 템플릿이라 userId는 파라미터로 바인딩된다.
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
   }
 }

@@ -63,11 +63,34 @@ export interface AdminManagedUsersRepository {
   softDeleteUser(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<void>;
 
   /**
-   * 탈퇴한 회원을 복구한다. deletedAt을 비우고 상태를 ACTIVE로 되돌린다.
+   * 어드민이 탈퇴 처리하기 직전의 회원 상태를 조회한다.
+   * 탈퇴 처리 감사 로그(USER_WITHDRAW)에 남긴 이전 상태 중 지금의 deletedAt과 같은 탈퇴 건만 본다.
+   * 유저가 직접 탈퇴했거나 기록이 없으면 null이다.
    *
    * @param {string} userId - 회원 ID
+   * @param {Date} deletedAt - 현재 탈퇴 시각
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<UserStatus | null>} 탈퇴 직전 상태
+   */
+  findStatusBeforeAdminWithdrawal(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<UserStatus | null>;
+
+  /**
+   * 탈퇴한 회원을 복구한다. deletedAt을 비우고 상태를 지정한 값으로 되돌린다.
+   *
+   * @param {string} userId - 회원 ID
+   * @param {UserStatus} status - 복구 후 상태
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<void>} 변경 완료
    */
-  restoreUser(userId: string, tx?: Prisma.TransactionClient): Promise<void>;
+  restoreUser(userId: string, status: UserStatus, tx?: Prisma.TransactionClient): Promise<void>;
+
+  /**
+   * users 행을 잠근다(SELECT … FOR UPDATE). 같은 회원에게 동시에 이용 정지를 겹쳐 내리지 않게 할 때 쓴다.
+   * 트랜잭션 밖에서 잠그면 즉시 풀려 의미가 없어 tx를 필수로 받는다.
+   *
+   * @param {string} userId - 회원 ID
+   * @param {Prisma.TransactionClient} tx - 상위 트랜잭션 client
+   * @returns {Promise<void>} 잠금 완료
+   */
+  lockUserForSanction(userId: string, tx: Prisma.TransactionClient): Promise<void>;
 }

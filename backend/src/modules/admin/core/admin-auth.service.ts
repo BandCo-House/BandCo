@@ -21,9 +21,12 @@ export const ADMIN_LOGIN_LOCK_WINDOW_MS = 15 * 60 * 1000;
 /** 계정이 없을 때도 같은 시간만큼 bcrypt 비교를 하기 위한 평문. 실제 비밀번호로 쓰이지 않는다. */
 const TIMING_DUMMY_PASSWORD = 'admin-login-timing-dummy';
 
-type LoginFailureRecord = {
+/** 만료된 시도 기록을 한꺼번에 지우는 최소 간격 */
+const LOGIN_ATTEMPT_SWEEP_INTERVAL_MS = 60 * 1000;
+
+type LoginAttemptRecord = {
   count: number;
-  firstFailedAt: number;
+  firstAttemptedAt: number;
 };
 
 /**
@@ -39,10 +42,11 @@ export class AdminAuthService {
   private readonly bcryptSaltRounds: number;
   private readonly timingDummyHash: string;
   /**
-   * 이메일별 연속 로그인 실패 기록. 서버 인스턴스 메모리라 재시작하면 초기화되고 인스턴스끼리 공유하지 않는다.
+   * 이메일별로 성공 없이 이어진 로그인 시도 기록. 서버 인스턴스 메모리라 재시작하면 초기화되고 인스턴스끼리 공유하지 않는다.
    * 현재 백엔드는 단일 인스턴스라 무차별 대입을 늦추는 용도로 충분하다.
    */
-  private readonly loginFailures = new Map<string, LoginFailureRecord>();
+  private readonly loginAttempts = new Map<string, LoginAttemptRecord>();
+  private lastLoginAttemptSweptAt = 0;
 
   constructor(
     @Inject(ADMIN_USERS_REPOSITORY)
@@ -79,17 +83,17 @@ export class AdminAuthService {
    */
   async login(email: string, password: string, tx?: Prisma.TransactionClient): Promise<AdminLoginResult> {
     const normalizedEmail = normalizeAdminEmail(email);
-    this.assertLoginNotLocked(normalizedEmail);
+    // 비밀번호 비교(await) 전에 시도를 먼저 세야 동시에 보낸 요청도 한도에 걸린다
+    this.reserveLoginAttempt(normalizedEmail);
 
     const run = async (client: Prisma.TransactionClient): Promise<AdminLoginResult> => {
       const admin = await this.adminUsersRepository.findByEmail(normalizedEmail, client);
       const isPasswordValid = await bcrypt.compare(password, admin?.passwordHash ?? this.timingDummyHash);
       if (admin === null || !admin.isActive || !isPasswordValid) {
-        this.recordLoginFailure(normalizedEmail);
         throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
       }
 
-      this.loginFailures.delete(normalizedEmail);
+      this.loginAttempts.delete(normalizedEmail);
 
       const loggedInAdmin = await this.adminUsersRepository.update(admin.id, { lastLoginAt: new Date() }, client);
       await this.auditLogsService.record({ adminUserId: admin.id, action: 'ADMIN_LOGIN', targetType: 'ADMIN', targetId: admin.id }, client);
@@ -238,37 +242,42 @@ export class AdminAuthService {
   }
 
   /**
-   * 잠금 구간 안에서 실패가 한도에 닿은 이메일이면 로그인 시도 자체를 막는다.
+   * 로그인 시도를 이메일별로 하나 센다. 성공하면 기록을 지우므로 남은 횟수는 곧 연속 실패(또는 진행 중인 시도) 수다.
+   * 잠금 구간 안에서 한도에 닿은 이메일이면 시도 자체를 막는다. 첫 시도부터 잠금 구간이 시작된다.
    *
    * @param {string} email - 정규화된 이메일
    */
-  private assertLoginNotLocked(email: string): void {
-    const failure = this.loginFailures.get(email);
-    if (failure === undefined) {
-      return;
-    }
+  private reserveLoginAttempt(email: string): void {
+    const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
 
-    const isWindowExpired = Date.now() - failure.firstFailedAt >= ADMIN_LOGIN_LOCK_WINDOW_MS;
-    if (isWindowExpired) {
-      this.loginFailures.delete(email);
+    const attempt = this.loginAttempts.get(email);
+    if (attempt === undefined || now - attempt.firstAttemptedAt >= ADMIN_LOGIN_LOCK_WINDOW_MS) {
+      this.loginAttempts.set(email, { count: 1, firstAttemptedAt: now });
       return;
     }
-    if (failure.count >= ADMIN_LOGIN_MAX_FAILURES) {
+    if (attempt.count >= ADMIN_LOGIN_MAX_FAILURES) {
       throw new HttpException('로그인 시도가 너무 많습니다. 15분 후 다시 시도해 주세요.', HttpStatus.TOO_MANY_REQUESTS);
     }
+    attempt.count += 1;
   }
 
   /**
-   * 로그인 실패를 이메일별로 센다. 첫 실패부터 잠금 구간이 시작된다.
+   * 잠금 구간이 지난 기록을 지운다. 매번 다른 이메일로 시도해도 기록이 끝없이 쌓이지 않게 하려는 것이고,
+   * 전체 순회 비용을 줄이려고 일정 간격마다만 돈다.
    *
-   * @param {string} email - 정규화된 이메일
+   * @param {number} now - 현재 시각(ms)
    */
-  private recordLoginFailure(email: string): void {
-    const failure = this.loginFailures.get(email);
-    if (failure === undefined) {
-      this.loginFailures.set(email, { count: 1, firstFailedAt: Date.now() });
+  private sweepExpiredLoginAttempts(now: number): void {
+    if (now - this.lastLoginAttemptSweptAt < LOGIN_ATTEMPT_SWEEP_INTERVAL_MS) {
       return;
     }
-    failure.count += 1;
+    this.lastLoginAttemptSweptAt = now;
+
+    for (const [email, attempt] of this.loginAttempts) {
+      if (now - attempt.firstAttemptedAt >= ADMIN_LOGIN_LOCK_WINDOW_MS) {
+        this.loginAttempts.delete(email);
+      }
+    }
   }
 }

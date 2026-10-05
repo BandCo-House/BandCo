@@ -116,7 +116,7 @@ const SettingsForm = ({ settings, readOnly }: SettingsFormProps) => {
             versionInvalid ? (
               <span className="text-red-600">x.y.z 형식으로 입력하세요.</span>
             ) : (
-              '서비스 앱(frontend/package.json의 version)이 이보다 낮으면 업데이트 화면으로 막습니다. 앱 버전을 먼저 올려 배포한 뒤 설정하세요. 비우면 제한 없음.'
+              '서비스 앱(frontend/package.json의 version)이 이보다 낮으면 업데이트 화면으로 막습니다. 이 버전 이상이 배포돼 있을 때만 적용되므로, 앱 버전을 먼저 올려 배포한 뒤 설정하세요. 비우면 제한 없음.'
             )
           }
         >

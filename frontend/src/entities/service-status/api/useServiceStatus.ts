@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
+import { getDeployedAppVersion } from './deployed-version-api';
 import { getServiceStatus } from './service-status-api';
 
 export const serviceStatusKeys = {
   all: ['service-status'] as const,
+};
+
+export const deployedAppVersionKeys = {
+  all: ['deployed-app-version'] as const,
 };
 
 const NORMAL_REFETCH_INTERVAL_MS = 5 * 60 * 1000;
@@ -23,4 +28,15 @@ export const useServiceStatus = () =>
       query.state.data?.maintenanceEnabled
         ? MAINTENANCE_REFETCH_INTERVAL_MS
         : NORMAL_REFETCH_INTERVAL_MS,
+  });
+
+/**
+ * 배포된 최신 앱 버전을 조회한다. 현재 버전이 최소 버전보다 낮을 때만 켠다.
+ */
+export const useDeployedAppVersion = (enabled: boolean) =>
+  useQuery({
+    queryKey: deployedAppVersionKeys.all,
+    queryFn: getDeployedAppVersion,
+    enabled,
+    staleTime: 0,
   });

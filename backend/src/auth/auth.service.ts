@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -29,6 +29,7 @@ const isGoogleAuthoritativeEmail = ({ email, hostedDomain }: GoogleUserPayload):
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly jwtSecret: string;
   private readonly bcryptSaltRounds: number;
 
@@ -105,7 +106,7 @@ export class AuthService {
 
     const user = tx ? await run(tx) : await this.prisma.$transaction(run);
     await this.assertNotSuspended(user.id, tx);
-    await this.usersService.recordLastLogin(user.id, tx);
+    await this.recordLastLogin(user.id, tx);
     return this.loginUser(user.email, user.id);
   }
 
@@ -165,19 +166,26 @@ export class AuthService {
   async registerWithEmail(email: string, password: string, nickname: string, tx?: Prisma.TransactionClient) {
     const hash = await bcrypt.hash(password, this.bcryptSaltRounds);
     const newUser = await this.usersService.createUserWithEmail(email, hash, nickname, tx);
-    await this.usersService.recordLastLogin(newUser.id, tx);
+    await this.recordLastLogin(newUser.id, tx);
     return this.loginUser(newUser.email!, newUser.id);
   }
 
   /**
    * 로그인·토큰 재발급 시점을 마지막 접속 시각으로 남긴다.
+   * 활성 유저 집계용 기록이라, 저장에 실패해도 로그인·토큰 발급은 막지 않고 로그만 남긴다.
    *
    * @param {string} userId - 인증된 유저 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<void>} 기록 완료
    */
   async recordLastLogin(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
-    await this.usersService.recordLastLogin(userId, tx);
+    try {
+      await this.usersService.recordLastLogin(userId, tx);
+    } catch (error) {
+      // 상위 트랜잭션 안에서 실패하면 그 트랜잭션은 이미 쓸 수 없어 삼키지 않는다
+      if (tx) throw error;
+      this.logger.warn({ message: '마지막 접속 시각 기록 실패', userId, error: error instanceof Error ? error.message : String(error) });
+    }
   }
 
   /**

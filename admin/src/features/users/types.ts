@@ -79,6 +79,8 @@ export interface WithdrawUserResult {
 export interface RestoreUserResult {
   userId: string;
   deletedAt: null;
+  /** 복구 후 상태. 어드민이 탈퇴 처리한 회원은 탈퇴 직전 상태로 돌아온다. */
+  status: UserStatus;
 }
 
 export interface AdminNotification {

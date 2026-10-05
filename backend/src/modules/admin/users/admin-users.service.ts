@@ -126,8 +126,15 @@ export class AdminUsersService {
 
       const deletedAt = new Date();
       await this.managedUsersRepository.softDeleteUser(userId, deletedAt, client);
+      // 탈퇴하면 상태가 INACTIVE로 덮어써지므로, 복구할 때 되돌릴 이전 상태와 이 탈퇴 건의 시각을 함께 남긴다
       await this.auditLogsService.record(
-        { adminUserId: actor.id, action: 'USER_WITHDRAW', targetType: 'USER', targetId: userId, detail: { reason: reason ?? null } },
+        {
+          adminUserId: actor.id,
+          action: 'USER_WITHDRAW',
+          targetType: 'USER',
+          targetId: userId,
+          detail: { reason: reason ?? null, previousStatus: user.status, deletedAt: deletedAt.toISOString() },
+        },
         client,
       );
 
@@ -139,6 +146,8 @@ export class AdminUsersService {
 
   /**
    * 탈퇴한 회원을 복구한다. 이메일은 탈퇴 후에도 그대로 남아 있어 복구 시 중복 충돌이 없다.
+   * 어드민이 탈퇴 처리한 회원은 탈퇴 직전 상태로, 유저가 직접 탈퇴한 회원은 ACTIVE로 되돌린다.
+   * 비활성 회원을 탈퇴 후 복구해 비활성 처리가 풀리는 일을 막기 위해서다.
    *
    * @param {AdminPrincipal} actor - 요청한 어드민
    * @param {string} userId - 회원 ID
@@ -152,10 +161,15 @@ export class AdminUsersService {
         throw new BadRequestException('탈퇴하지 않은 회원입니다.');
       }
 
-      await this.managedUsersRepository.restoreUser(userId, client);
-      await this.auditLogsService.record({ adminUserId: actor.id, action: 'USER_RESTORE', targetType: 'USER', targetId: userId }, client);
+      // 유저가 직접 탈퇴하려면 로그인할 수 있어야 하므로, 기록이 없으면 탈퇴 전 상태를 ACTIVE로 본다
+      const status = (await this.managedUsersRepository.findStatusBeforeAdminWithdrawal(userId, user.deletedAt, client)) ?? 'ACTIVE';
+      await this.managedUsersRepository.restoreUser(userId, status, client);
+      await this.auditLogsService.record(
+        { adminUserId: actor.id, action: 'USER_RESTORE', targetType: 'USER', targetId: userId, detail: { status } },
+        client,
+      );
 
-      return { userId, deletedAt: null };
+      return { userId, deletedAt: null, status };
     };
 
     return tx ? run(tx) : this.prisma.$transaction(run);

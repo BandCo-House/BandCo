@@ -16,6 +16,9 @@ import type {
   BroadcastAdminNotificationResult,
 } from './types/admin-notification.type';
 
+/** 전체 발송은 회원 수만큼 행을 만들어 기본 트랜잭션 제한 시간(5초)을 넘길 수 있어 따로 늘린다 */
+const BROADCAST_TRANSACTION_TIMEOUT_MS = 60 * 1000;
+
 @Injectable()
 export class AdminNotificationsService {
   constructor(
@@ -135,7 +138,7 @@ export class AdminNotificationsService {
   }
 
   /**
-   * 탈퇴하지 않은 ACTIVE 회원 전체에게 관리자 공지 알림을 보낸다.
+   * 탈퇴하지 않은 ACTIVE 회원 중 이용 정지 중이 아닌 회원 전체에게 관리자 공지 알림을 보낸다.
    *
    * @param {AdminPrincipal} actor - 요청한 SUPER_ADMIN
    * @param {AdminNoticeContent} content - 알림 본문
@@ -148,7 +151,7 @@ export class AdminNotificationsService {
     tx?: Prisma.TransactionClient,
   ): Promise<BroadcastAdminNotificationResult> {
     const run = async (client: Prisma.TransactionClient): Promise<BroadcastAdminNotificationResult> => {
-      const sentCount = await this.notificationsRepository.createNoticeForActiveUsers(content, client);
+      const sentCount = await this.notificationsRepository.createNoticeForActiveUsers(content, new Date(), client);
       await this.auditLogsService.record(
         {
           adminUserId: actor.id,
@@ -163,6 +166,6 @@ export class AdminNotificationsService {
       return { sentCount };
     };
 
-    return tx ? run(tx) : this.prisma.$transaction(run);
+    return tx ? run(tx) : this.prisma.$transaction(run, { timeout: BROADCAST_TRANSACTION_TIMEOUT_MS });
   }
 }

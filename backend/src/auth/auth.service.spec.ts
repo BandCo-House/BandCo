@@ -241,6 +241,19 @@ describe('AuthService', () => {
 
       expect(mockUsersService.recordLastLogin).toHaveBeenCalledWith('uid', undefined);
     });
+
+    it('기록에 실패해도 예외를 던지지 않아 토큰 발급을 막지 않는다', async () => {
+      mockUsersService.recordLastLogin.mockRejectedValueOnce(new Error('lock timeout'));
+
+      await expect(service.recordLastLogin('uid')).resolves.toBeUndefined();
+    });
+
+    it('상위 tx 안에서 실패하면 예외를 그대로 던진다', async () => {
+      mockUsersService.recordLastLogin.mockRejectedValueOnce(new Error('lock timeout'));
+      const tx = {} as Prisma.TransactionClient;
+
+      await expect(service.recordLastLogin('uid', tx)).rejects.toThrow('lock timeout');
+    });
   });
 
   describe('loginWithEmail', () => {

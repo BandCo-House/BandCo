@@ -39,11 +39,12 @@ export interface AdminUserNotificationsRepository {
   createNotification(input: CreateAdminNotificationInput, tx?: Prisma.TransactionClient): Promise<string>;
 
   /**
-   * 탈퇴하지 않은 ACTIVE 회원 전체에게 NOTICE 알림을 만든다.
+   * 탈퇴하지 않은 ACTIVE 회원 중 이용 정지 중이 아닌 회원 전체에게 NOTICE 알림을 만든다.
    *
    * @param {AdminNoticeContent} content - 알림 본문
+   * @param {Date} now - 활성 정지 판정 기준 시각
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<number>} 생성된 알림 수
    */
-  createNoticeForActiveUsers(content: AdminNoticeContent, tx?: Prisma.TransactionClient): Promise<number>;
+  createNoticeForActiveUsers(content: AdminNoticeContent, now: Date, tx?: Prisma.TransactionClient): Promise<number>;
 }

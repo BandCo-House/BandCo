@@ -33,10 +33,17 @@ type Observed = {
   creates: { data: CreateAdminUserData; tx: unknown }[];
   updates: { id: string; data: UpdateAdminUserData; tx: unknown }[];
   audits: { input: RecordAdminAuditLogInput; tx: unknown }[];
+  lockTxs: unknown[];
 };
 
-function setup(options?: { existingByEmail?: AdminUserRecord | null; target?: AdminUserRecord | null; prisma?: PrismaService; createError?: Error }) {
-  const observed: Observed = { creates: [], updates: [], audits: [] };
+function setup(options?: {
+  existingByEmail?: AdminUserRecord | null;
+  target?: AdminUserRecord | null;
+  prisma?: PrismaService;
+  createError?: Error;
+  activeSuperAdminIds?: string[];
+}) {
+  const observed: Observed = { creates: [], updates: [], audits: [], lockTxs: [] };
   const target = options?.target === undefined ? createAdminRecord() : options.target;
 
   const repository: AdminUsersRepository = {
@@ -57,6 +64,10 @@ function setup(options?: { existingByEmail?: AdminUserRecord | null; target?: Ad
     async update(id, data, tx) {
       observed.updates.push({ id, data, tx });
       return { ...createAdminRecord(), ...Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) } as AdminUserRecord;
+    },
+    async lockActiveSuperAdmins(tx) {
+      observed.lockTxs.push(tx);
+      return options?.activeSuperAdminIds ?? [ACTOR_ID];
     },
   };
 
@@ -215,6 +226,39 @@ describe('AdminAccountsService', () => {
       await expect(service.updateAdmin(ACTOR, TARGET_ID, { name: '이름' })).rejects.toThrow(NotFoundException);
     });
 
+    it('마지막 활성 SUPER_ADMIN을 강등하려 하면 BadRequestException을 던진다', async () => {
+      const { service, observed } = setup({ target: createAdminRecord({ role: 'SUPER_ADMIN' }), activeSuperAdminIds: [TARGET_ID] });
+
+      await expect(service.updateAdmin(ACTOR, TARGET_ID, { role: 'OPERATOR' })).rejects.toThrow(
+        new BadRequestException('활성 최고 관리자는 최소 한 명 있어야 합니다.'),
+      );
+      expect(observed.updates).toHaveLength(0);
+    });
+
+    it('마지막 활성 SUPER_ADMIN을 비활성화하려 하면 BadRequestException을 던진다', async () => {
+      const { service, observed } = setup({ target: createAdminRecord({ role: 'SUPER_ADMIN' }), activeSuperAdminIds: [TARGET_ID] });
+
+      await expect(service.updateAdmin(ACTOR, TARGET_ID, { isActive: false })).rejects.toThrow('활성 최고 관리자는 최소 한 명 있어야 합니다.');
+      expect(observed.updates).toHaveLength(0);
+    });
+
+    it('다른 활성 SUPER_ADMIN이 남으면 SUPER_ADMIN을 강등할 수 있고 같은 tx로 잠근다', async () => {
+      const { service, observed } = setup({ target: createAdminRecord({ role: 'SUPER_ADMIN' }), activeSuperAdminIds: [ACTOR_ID, TARGET_ID] });
+
+      await service.updateAdmin(ACTOR, TARGET_ID, { role: 'OPERATOR' });
+
+      expect(observed.lockTxs).toEqual([TX_CLIENT]);
+      expect(observed.updates).toHaveLength(1);
+    });
+
+    it('강등·비활성화가 아닌 변경은 SUPER_ADMIN 행을 잠그지 않는다', async () => {
+      const { service, observed } = setup();
+
+      await service.updateAdmin(ACTOR, TARGET_ID, { name: '이름', role: 'SUPER_ADMIN', isActive: true });
+
+      expect(observed.lockTxs).toHaveLength(0);
+    });
+
     it('외부 tx가 전달되면 새 transaction을 열지 않고 그대로 전달한다', async () => {
       const { service, observed } = setup({ prisma: createPrismaServiceFailingTransactionStub() });
       const externalTx = { external: true } as unknown as Prisma.TransactionClient;
@@ -242,6 +286,15 @@ describe('AdminAccountsService', () => {
       const { service } = setup({ target: null });
 
       await expect(service.resetAdminPassword(ACTOR, TARGET_ID, 'new-password')).rejects.toThrow(NotFoundException);
+    });
+
+    it('본인 비밀번호를 초기화하려 하면 BadRequestException을 던지고 바꾸지 않는다', async () => {
+      const { service, observed } = setup();
+
+      await expect(service.resetAdminPassword(ACTOR, ACTOR_ID, 'new-password')).rejects.toThrow(
+        new BadRequestException('본인 비밀번호는 비밀번호 변경 메뉴에서 바꿔 주세요.'),
+      );
+      expect(observed.updates).toHaveLength(0);
     });
 
     it('외부 tx가 전달되면 새 transaction을 열지 않고 그대로 전달한다', async () => {
