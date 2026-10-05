@@ -6,7 +6,6 @@ import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
 import { SongCreateModal } from '@/features/song-create';
 import { AttachmentItem } from '@/shared/ui/attachment-item';
 import { Input } from '@/shared/ui/input';
-import { Textarea } from '@/shared/ui/textarea';
 import { SegmentedToggle } from '@/shared/ui/segmented-toggle';
 import { Field, fieldSurfaceClass } from '@/shared/ui/field';
 import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
@@ -324,12 +323,16 @@ export const ScheduleFormView = ({
 
       {/* 메모 (선택) */}
       <Field label="메모" htmlFor="schedule-memo">
-        <Textarea
+        <textarea
           id="schedule-memo"
           value={form.memo}
           onChange={(event) => onChange({ memo: event.target.value })}
           placeholder="추가 메모사항을 입력하세요"
           maxLength={500}
+          className={cn(
+            'min-h-[100px] w-full resize-none rounded-md field-border border-white/24 bg-grey-500/24 px-5 py-4 typo-base-sb text-grey-50',
+            'outline-none placeholder:text-grey-300 focus-visible:border-primary',
+          )}
         />
       </Field>
 

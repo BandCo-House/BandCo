@@ -17,6 +17,7 @@ import { Route as NotificationsRouteImport } from './pages/notifications'
 import { Route as MyBandsRouteImport } from './pages/my-bands'
 import { Route as LoginRouteImport } from './pages/login'
 import { Route as ForgotPasswordRouteImport } from './pages/forgot-password'
+import { Route as AdminRouteImport } from './pages/admin'
 import { Route as IndexRouteImport } from './pages/index'
 import { Route as InviteCodeRouteImport } from './pages/invite.$code'
 import { Route as BandBandIdRouteImport } from './pages/band.$bandId'
@@ -74,6 +75,11 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -175,6 +181,7 @@ const BandBandIdSpaceSpaceIdPollsPollIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-bands': typeof MyBandsRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-bands': typeof MyBandsRoute
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/my-bands': typeof MyBandsRoute
@@ -260,6 +269,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/login'
     | '/my-bands'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/login'
     | '/my-bands'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/login'
     | '/my-bands'
@@ -343,6 +355,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   MyBandsRoute: typeof MyBandsRoute
@@ -411,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -607,6 +627,7 @@ const BandBandIdRouteWithChildren = BandBandIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MyBandsRoute: MyBandsRoute,

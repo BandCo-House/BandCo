@@ -68,12 +68,12 @@
 
 ## 라우팅
 
-| 항목          | 규칙                                                                                          |
-| ------------- | --------------------------------------------------------------------------------------------- |
-| 파일 라우트   | `pages/`의 TanStack Router 파일 규칙을 따른다.                                                |
-| 보호 라우트   | `app/router-guards.ts`의 `requireLogin`, `requireGuest`, `allowBandAccess` 패턴을 재사용한다. |
-| search params | zod로 검증하거나 기존 route search 처리 방식을 따른다.                                        |
-| 이동          | TanStack Router의 `Link`, `useNavigate`, `router.navigate`를 우선 사용한다.                   |
+| 항목          | 규칙                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| 파일 라우트   | `pages/`의 TanStack Router 파일 규칙을 따른다.                                                                |
+| 보호 라우트   | `app/router-guards.ts`의 `requireLogin`, `requireGuest`, `requireAdmin`, `allowBandAccess` 패턴을 재사용한다. |
+| search params | zod로 검증하거나 기존 route search 처리 방식을 따른다.                                                        |
+| 이동          | TanStack Router의 `Link`, `useNavigate`, `router.navigate`를 우선 사용한다.                                   |
 
 ## UI와 스타일
 

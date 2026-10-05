@@ -1,17 +1,15 @@
 import { Link } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { ComingSoon } from '@/shared/ui/coming-soon';
-import { AnnouncementBanner } from './AnnouncementBanner';
 
 const SHORTCUTS = [
   { to: '/my-bands', label: '내 밴드 목록보기' },
   { to: '/profile', label: '마이페이지 확인하기' },
 ] as const;
 
-/** 홈(MVP). 서비스 공지 + 주요 화면 바로가기 카드 + 준비 중 안내. */
+/** 홈(MVP). 주요 화면 바로가기 카드 + 준비 중 안내. */
 export const HomeMain = () => (
   <div data-testid="home-page" className="flex flex-col gap-4">
-    <AnnouncementBanner />
     {SHORTCUTS.map((shortcut) => (
       <Link
         key={shortcut.to}

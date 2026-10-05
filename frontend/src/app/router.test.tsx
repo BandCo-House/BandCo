@@ -151,6 +151,28 @@ describe('앱 라우터', () => {
     expect(await screen.findByText('마이페이지')).toBeInTheDocument();
   });
 
+  it('일반 사용자가 관리자 경로로 접근하면 루트로 리다이렉트된다', async () => {
+    const router = createRouterForTest('/admin', {
+      isLoggedIn: true,
+      isAdmin: false,
+    });
+
+    renderWithRouter(router);
+
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
+  });
+
+  it('관리자 사용자가 관리자 경로로 접근하면 관리자 페이지를 렌더링한다', async () => {
+    const router = createRouterForTest('/admin', {
+      isLoggedIn: true,
+      isAdmin: true,
+    });
+
+    renderWithRouter(router);
+
+    expect(await screen.findByTestId('admin-page')).toBeInTheDocument();
+  });
+
   it('밴드 곡 라이브러리 경로에서는 곡 라이브러리 탭이 active 상태다', async () => {
     const router = createRouterForTest('/band/1/songs', {
       isLoggedIn: true,

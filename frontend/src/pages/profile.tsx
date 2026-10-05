@@ -15,7 +15,6 @@ import { ProfileCard } from '@/entities/profile/ui/ProfileCard';
 import { SkillEditSection } from '@/features/profile-update/ui/SkillEditSection';
 import { GenreEditSection } from '@/features/profile-update/ui/GenreEditSection';
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
-import { UserReportDialog } from '@/features/user-report/ui/UserReportDialog';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
 import { uploadFile } from '@/shared/api/upload';
@@ -119,7 +118,6 @@ function ProfileRoutePage() {
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
-  const [isReporting, setIsReporting] = useState<boolean>(false);
 
   // 2. BeforeUnload Listener for unsaved edits
   useEffect(() => {
@@ -284,7 +282,6 @@ function ProfileRoutePage() {
           isLoggedIn={auth.user.isLoggedIn}
           onShare={handleShare}
           onInvite={() => setIsInviting(true)}
-          onReport={() => setIsReporting(true)}
           onToggleEdit={requestExitEditMode}
           onSave={handleSave}
           onAvatarFileSelect={selectFile}
@@ -313,21 +310,13 @@ function ProfileRoutePage() {
         {/* 4. Band Invitation Dialog (features/band-invite) */}
 
         {!isMe && auth.user.isLoggedIn && (
-          <>
-            <BandInviteModal
-              open={isInviting}
-              onOpenChange={setIsInviting}
-              inviteeName={profileName}
-              inviteeUserId={profile.user.id}
-              isLoggedIn={auth.user.isLoggedIn}
-            />
-            <UserReportDialog
-              open={isReporting}
-              onOpenChange={setIsReporting}
-              reportedUserId={profile.user.id}
-              reportedUserName={profileName}
-            />
-          </>
+          <BandInviteModal
+            open={isInviting}
+            onOpenChange={setIsInviting}
+            inviteeName={profileName}
+            inviteeUserId={profile.user.id}
+            isLoggedIn={auth.user.isLoggedIn}
+          />
         )}
         <ProfileMusicSearchDialog
           open={isMusicSearchOpen}

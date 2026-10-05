@@ -7,7 +7,6 @@ import {
   ACCESS_TOKEN_REFRESH_ENDPOINT,
   REFRESH_TOKEN_REFRESH_ENDPOINT,
 } from './config';
-import { subscribeServiceUnavailable } from './service-unavailable';
 
 // apiClient 인스턴스를 직접 패치 — fetch/xhr 어댑터 이슈 없음
 const mock = new MockAdapter(apiClient);
@@ -267,40 +266,5 @@ describe('⑤ 로그인 요청의 401', () => {
     await expect(apiClient.post('/auth/login/email', {})).rejects.toThrow();
     expect(refreshCount).toBe(0);
     expect(window.location.href).not.toBe('/login');
-  });
-});
-
-// ────────────────────────────────────────────────────────────
-describe('⑥ 점검 모드 503', () => {
-  it('error.code가 SERVICE_UNAVAILABLE인 503은 구독자에게 알리고 호출자에게는 reject된다', async () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribeServiceUnavailable(listener);
-
-    mock.onGet('/bands').reply(503, {
-      status: 'fail',
-      error: { code: 'SERVICE_UNAVAILABLE', details: { statusCode: 503 } },
-      message: '서비스 점검 중입니다.',
-      data: {},
-    });
-
-    await expect(apiClient.get('/bands')).rejects.toThrow();
-    expect(listener).toHaveBeenCalledTimes(1);
-    unsubscribe();
-  });
-
-  it('점검 코드가 없는 503은 구독자에게 알리지 않는다', async () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribeServiceUnavailable(listener);
-
-    mock.onGet('/bands').reply(503, {
-      status: 'fail',
-      error: { code: 'INTERNAL_SERVER_ERROR', details: { statusCode: 503 } },
-      message: '일시적인 오류입니다.',
-      data: {},
-    });
-
-    await expect(apiClient.get('/bands')).rejects.toThrow();
-    expect(listener).not.toHaveBeenCalled();
-    unsubscribe();
   });
 });
