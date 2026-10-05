@@ -11,6 +11,8 @@ export { uploadFile } from './upload';
 
 export { getApiErrorMessage } from './error';
 
+export { subscribeServiceUnavailable } from './service-unavailable';
+
 export type {
   ApiError,
   ApiErrorDetails,

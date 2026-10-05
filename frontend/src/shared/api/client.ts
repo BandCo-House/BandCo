@@ -13,6 +13,10 @@ import {
   LOGIN_ENDPOINT_PREFIX,
   REFRESH_TOKEN_REFRESH_ENDPOINT,
 } from './config';
+import {
+  isServiceUnavailableError,
+  notifyServiceUnavailable,
+} from './service-unavailable';
 import { type ApiSuccessResponse } from './types';
 import {
   getAccessToken,
@@ -109,6 +113,13 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     syncServerTime(error.response?.headers?.date);
+
+    // 점검 중 503은 화면 전체를 점검 안내로 바꿔야 하므로 신호를 보낸다. 호출자에게는 그대로 reject한다.
+    if (isServiceUnavailableError(error)) {
+      notifyServiceUnavailable();
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
 
     // 401이 아니거나 config가 없으면 그대로 에러 반환
