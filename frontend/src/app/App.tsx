@@ -3,6 +3,7 @@ import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { useAuth } from '@/app/providers/auth-context';
 import { Providers } from '@/app/providers';
 import { createAppRouter } from '@/app/router';
+import { ServiceStatusGate } from '@/app/ServiceStatusGate';
 import { Toaster } from '@/shared/ui/sonner';
 
 const router = createAppRouter();
@@ -13,10 +14,12 @@ function AppContent() {
 
   return (
     <>
-      <RouterProvider
-        router={router}
-        context={{ user: auth.user, logout: auth.logout }}
-      />
+      <ServiceStatusGate>
+        <RouterProvider
+          router={router}
+          context={{ user: auth.user, logout: auth.logout }}
+        />
+      </ServiceStatusGate>
       <Toaster position="bottom-center" />
       {shouldShowRouterDevtools ? (
         <TanStackRouterDevtools router={router} />

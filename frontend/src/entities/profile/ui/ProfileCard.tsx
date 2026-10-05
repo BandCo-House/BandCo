@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
-import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
+import { Play, Pause, Edit, CheckIcon, ChevronLeft, Flag } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { GlassRim } from '@/shared/ui/glass-rim';
 import GalleryIcon from '@/assets/icons/gallery.svg?react';
@@ -21,6 +21,8 @@ export interface ProfileCardProps {
   isLoggedIn?: boolean;
   onShare: () => void;
   onInvite: () => void;
+  /** 다른 유저 프로필에서 로그인 상태일 때만 신고 버튼을 보여준다. */
+  onReport: () => void;
   onToggleEdit: () => void;
   onSave: () => void;
   onAvatarFileSelect: (file: File) => void;
@@ -36,6 +38,7 @@ export function ProfileCard({
   isLoggedIn = false,
   onShare,
   onInvite,
+  onReport,
   onToggleEdit,
   onSave,
   onAvatarFileSelect,
@@ -118,6 +121,16 @@ export function ProfileCard({
                 <Edit className="size-4 text-grey-300" />
               </>
             )}
+          </button>
+        )}
+        {!isMe && isLoggedIn && (
+          <button
+            type="button"
+            aria-label="신고하기"
+            onClick={onReport}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-full text-grey-300 transition-colors hover:text-grey-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            <Flag aria-hidden="true" className="size-5" />
           </button>
         )}
       </div>
