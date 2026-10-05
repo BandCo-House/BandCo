@@ -1,6 +1,6 @@
 # 어드민 콘솔 운영
 
-어드민 콘솔은 서비스 유저와 분리된 운영자 계정(`admin_users`)으로 로그인한다. 프론트는 저장소 루트의 `admin/` 앱이고 서비스와 다른 서브도메인(`admin.<서비스 도메인>`)으로 연다. 같은 출처에 두면 서비스 앱의 스크립트가 어드민 토큰(`localStorage`)을 읽을 수 있어 출처를 나눴다. API는 백엔드의 `/admin/*` 경로다. 배포 구성은 [admin/README.md](../../../../admin/README.md)를 본다. API 명세는 [api-docs/admin.md](../api-docs/admin.md)에 있다.
+어드민 콘솔은 서비스 유저와 분리된 운영자 계정(`admin_users`)으로 로그인한다. 프론트는 별도 저장소 [BandCo-House/bandco-admin](https://github.com/BandCo-House/bandco-admin)의 앱이고 서비스와 다른 서브도메인(`admin.<서비스 도메인>`)으로 연다. 같은 출처에 두면 서비스 앱의 스크립트가 어드민 토큰(`localStorage`)을 읽을 수 있어 출처를 나눴다. API는 백엔드의 `/admin/*` 경로다. 배포 구성은 [bandco-admin README](https://github.com/BandCo-House/bandco-admin#readme)를 본다. API 명세는 [api-docs/admin.md](../api-docs/admin.md)에 있다.
 
 ## 배포 전에 준비할 것
 
@@ -75,7 +75,7 @@ ADMIN_EMAIL=admin@bandco.local ADMIN_NAME=로컬관리자 ADMIN_PASSWORD='admin1
 ADMIN_JWT_SECRET=local-admin-secret pnpm run start:dev
 ```
 
-어드민 프론트는 `admin/`에서 `pnpm dev`로 띄운다(`http://localhost:5174`, 기본 API 주소 `http://localhost:3000`).
+어드민 프론트는 [bandco-admin](https://github.com/BandCo-House/bandco-admin) 저장소에서 `pnpm dev`로 띄운다(`http://localhost:5174`, 기본 API 주소 `http://localhost:3000`).
 
 서비스 앱(`frontend/`)은 개발 모드에서 항상 MSW 목업을 켜므로 실제 서버로 확인하려면 빌드해서 띄운다.
 

@@ -1,5 +1,0 @@
-dist
-coverage
-node_modules
-# 생성물은 포맷 대상에서 제외한다
-pnpm-lock.yaml

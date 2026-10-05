@@ -9,7 +9,7 @@
 - 역할: `SUPER_ADMIN`(전부), `OPERATOR`(아래 SUPER 전용 제외 전부).
   - SUPER 전용: 어드민 계정 관리(`/admin/admins/*`), 서비스 설정 변경(`PATCH /admin/service-settings`), 전체 알림 발송(`POST /admin/notifications/broadcast`).
 - 모든 어드민 **쓰기** 작업은 같은 트랜잭션 안에서 `admin_audit_logs`에 기록한다(로그인 포함).
-- 어드민 프론트는 모바일 앱(`frontend/`)과 분리된 데스크톱용 Vite 앱 `admin/`(저장소 루트)으로 만든다.
+- 어드민 프론트는 모바일 앱(`frontend/`)과 분리된 데스크톱용 Vite 앱으로 만든다. 처음엔 이 저장소 루트의 `admin/`에 두었다가 별도 저장소 [BandCo-House/bandco-admin](https://github.com/BandCo-House/bandco-admin)로 옮겼다.
 - `users.last_login_at`은 지금까지 갱신되지 않았다. 이메일·Google 로그인과 액세스 토큰 재발급 시 갱신한다(10분 이내 재갱신은 생략). DAU/WAU/MAU는 이 값 기준 근사치이며 배포 이후부터 쌓인다.
 - 이용 정지(활성 SUSPENSION 제재)된 유저는 로그인 시 403 "이용이 정지된 계정입니다.", 기존 토큰은 Bearer 가드에서 401로 끊긴다.
 - 점검 모드가 켜지면 `/admin*`, `/service-status`, `/announcements/active`, `/api-docs*` 외 모든 요청이 503.
