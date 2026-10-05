@@ -36,3 +36,4 @@ API 엔드포인트, 요청 DTO, 응답 DTO, 응답 예시를 작성하거나 �
 - [알림 API 명세](./notification.md)
 - [팀 API 명세](./teams.md)
 - [공통(Common) API 명세](./common.md)
+- [어드민 API 명세](./admin.md) — 어드민 콘솔, 유저 신고(`POST /users/:userId/reports`), 공개 서비스 상태·공지 포함

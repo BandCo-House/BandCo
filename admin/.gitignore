@@ -1,0 +1,16 @@
+# 의존성
+node_modules/
+
+# 빌드 산출물
+dist/
+.vite/
+*.tsbuildinfo
+
+# 테스트 산출물
+coverage/
+
+# 환경 변수
+.env*.local
+
+# Vercel
+.vercel/

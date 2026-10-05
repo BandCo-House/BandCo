@@ -1,4 +1,4 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -26,6 +26,9 @@ const mockUsersService = {
   getUserForOAuthLink: jest.fn(),
   linkOAuthAccount: jest.fn(),
   createUserWithGoogle: jest.fn(),
+  // 기본값은 정지 없음. clearAllMocks가 구현은 지우지 않아 테스트마다 유지된다
+  getActiveSuspension: jest.fn(async () => null as { endsAt: Date | null } | null),
+  recordLastLogin: jest.fn(async () => undefined),
 };
 
 const mockConfigService = {
@@ -200,6 +203,43 @@ describe('AuthService', () => {
         id: 'uid',
         email: 'u@u.com',
       });
+    });
+  });
+
+  describe('authenticateWithEmailAndPassword - 이용 정지', () => {
+    it('기간 정지된 유저면 해제 시각(KST)을 담은 ForbiddenException을 던진다', async () => {
+      mockUsersService.getUserForPasswordAuth.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+      mockUsersService.getActiveSuspension.mockResolvedValueOnce({ endsAt: new Date('2026-10-10T03:00:00.000Z') });
+
+      const result = service.authenticateWithEmailAndPassword('u@u.com', 'correct');
+
+      await expect(result).rejects.toThrow(ForbiddenException);
+      await expect(result).rejects.toThrow('이용이 정지된 계정입니다. (해제 예정: 2026-10-10 12:00 KST)');
+    });
+
+    it('영구 정지된 유저면 ForbiddenException(영구 정지)을 던진다', async () => {
+      mockUsersService.getUserForPasswordAuth.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+      mockUsersService.getActiveSuspension.mockResolvedValueOnce({ endsAt: null });
+
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'correct')).rejects.toThrow('이용이 영구 정지된 계정입니다.');
+    });
+
+    it('비밀번호가 틀리면 정지 여부를 조회하지 않는다', async () => {
+      mockUsersService.getUserForPasswordAuth.mockResolvedValue({ id: 'uid', email: 'u@u.com', passwordHash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+
+      await expect(service.authenticateWithEmailAndPassword('u@u.com', 'wrong')).rejects.toThrow(UnauthorizedException);
+      expect(mockUsersService.getActiveSuspension).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('recordLastLogin', () => {
+    it('usersService에 마지막 접속 기록을 위임한다', async () => {
+      await service.recordLastLogin('uid');
+
+      expect(mockUsersService.recordLastLogin).toHaveBeenCalledWith('uid', undefined);
     });
   });
 
@@ -378,7 +418,48 @@ describe('AuthService', () => {
     });
   });
 
+  describe('loginWithGoogle - 이용 정지·접속 기록', () => {
+    beforeEach(() => {
+      mockGoogleAuthClient.verifyIdToken.mockResolvedValue({
+        sub: 'google-sub-001',
+        email: 'g@u.com',
+        emailVerified: true,
+        name: '구글유저',
+        hostedDomain: null,
+      });
+    });
+
+    it('정지된 유저면 토큰을 발급하지 않고 ForbiddenException을 던진다', async () => {
+      mockUsersService.getUserByOAuth.mockResolvedValue({ id: 'uid', email: 'g@u.com' });
+      mockUsersService.getActiveSuspension.mockResolvedValueOnce({ endsAt: null });
+
+      await expect(service.loginWithGoogle('id-token')).rejects.toThrow(ForbiddenException);
+      expect(mockJwtService.sign).not.toHaveBeenCalled();
+      expect(mockUsersService.recordLastLogin).not.toHaveBeenCalled();
+    });
+
+    it('로그인에 성공하면 마지막 접속 시각을 기록한다', async () => {
+      mockUsersService.getUserByOAuth.mockResolvedValue({ id: 'uid', email: 'g@u.com' });
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+
+      await service.loginWithGoogle('id-token');
+
+      expect(mockUsersService.recordLastLogin).toHaveBeenCalledWith('uid', undefined);
+    });
+  });
+
   describe('registerWithEmail', () => {
+    it('가입 직후 같은 tx로 마지막 접속 시각을 기록한다', async () => {
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
+      mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });
+      mockJwtService.sign.mockReturnValueOnce('access').mockReturnValueOnce('refresh');
+      const tx = {} as Prisma.TransactionClient;
+
+      await service.registerWithEmail('new@u.com', 'pw', '홍길동', tx);
+
+      expect(mockUsersService.recordLastLogin).toHaveBeenCalledWith('new-uid', tx);
+    });
+
     it('비밀번호를 해싱하고 토큰 쌍을 반환한다', async () => {
       jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
       mockUsersService.createUserWithEmail.mockResolvedValue({ id: 'new-uid', email: 'new@u.com' });

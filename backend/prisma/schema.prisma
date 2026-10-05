@@ -28,8 +28,120 @@ model User {
   profile             UserProfile?
   profileMusic        ProfileMusic?
   userSkills          UserSkill[]
+  reportsMade         UserReport[]       @relation("UserReportReporter")
+  reportsReceived     UserReport[]       @relation("UserReportReported")
+  sanctions           UserSanction[]
 
   @@map("users")
+}
+
+/// 운영자 계정. 서비스 유저(users)와 완전히 분리해 유저 토큰으로는 어드민 API에 접근할 수 없게 한다.
+model AdminUser {
+  id                String           @id @default(uuid()) @db.Uuid
+  email             String           @unique @db.VarChar(255)
+  passwordHash      String           @map("password_hash") @db.VarChar(255)
+  name              String           @db.VarChar(50)
+  role              AdminRole        @default(OPERATOR)
+  isActive          Boolean          @default(true) @map("is_active")
+  lastLoginAt       DateTime?        @map("last_login_at") @db.Timestamptz(6)
+  /// 비밀번호를 바꾼 시각. 이보다 먼저 발급된 토큰은 가드에서 거부해 유출 토큰을 끊는다.
+  passwordChangedAt DateTime?        @map("password_changed_at") @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  auditLogs         AdminAuditLog[]
+  resolvedReports   UserReport[]
+  createdSanctions  UserSanction[]   @relation("UserSanctionCreator")
+  revokedSanctions  UserSanction[]   @relation("UserSanctionRevoker")
+  announcements     Announcement[]
+  updatedSettings   ServiceSetting[]
+
+  @@map("admin_users")
+}
+
+/// 어드민이 실행한 쓰기 작업 기록. 운영 DB 하나뿐이라 누가 무엇을 바꿨는지 추적하려고 둔다.
+model AdminAuditLog {
+  id          String    @id @default(uuid()) @db.Uuid
+  adminUserId String    @map("admin_user_id") @db.Uuid
+  action      String    @db.VarChar(60)
+  targetType  String    @map("target_type") @db.VarChar(40)
+  targetId    String?   @map("target_id") @db.VarChar(64)
+  detail      Json?     @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+  @@index([adminUserId, createdAt])
+  @@map("admin_audit_logs")
+}
+
+model UserReport {
+  id                String           @id @default(uuid()) @db.Uuid
+  reporterUserId    String           @map("reporter_user_id") @db.Uuid
+  reportedUserId    String           @map("reported_user_id") @db.Uuid
+  reason            UserReportReason
+  description       String?
+  status            UserReportStatus @default(PENDING)
+  resolvedByAdminId String?          @map("resolved_by_admin_id") @db.Uuid
+  resolutionNote    String?          @map("resolution_note")
+  resolvedAt        DateTime?        @map("resolved_at") @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  reporter          User             @relation("UserReportReporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reported          User             @relation("UserReportReported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  resolvedByAdmin   AdminUser?       @relation(fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reportedUserId])
+  @@map("user_reports")
+}
+
+/// 경고·이용 정지 이력. 정지는 endsAt이 지나거나 revokedAt이 채워지면 자동으로 효력을 잃는다.
+model UserSanction {
+  id               String           @id @default(uuid()) @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  type             UserSanctionType
+  reason           String
+  /// 정지 종료 시각. null이면 영구 정지다. 경고에는 쓰지 않는다.
+  endsAt           DateTime?        @map("ends_at") @db.Timestamptz(6)
+  createdByAdminId String           @map("created_by_admin_id") @db.Uuid
+  revokedAt        DateTime?        @map("revoked_at") @db.Timestamptz(6)
+  revokedByAdminId String?          @map("revoked_by_admin_id") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdByAdmin   AdminUser        @relation("UserSanctionCreator", fields: [createdByAdminId], references: [id])
+  revokedByAdmin   AdminUser?       @relation("UserSanctionRevoker", fields: [revokedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, type])
+  @@map("user_sanctions")
+}
+
+model Announcement {
+  id               String    @id @default(uuid()) @db.Uuid
+  title            String    @db.VarChar(120)
+  content          String
+  isPublished      Boolean   @default(false) @map("is_published")
+  startsAt         DateTime? @map("starts_at") @db.Timestamptz(6)
+  endsAt           DateTime? @map("ends_at") @db.Timestamptz(6)
+  createdByAdminId String    @map("created_by_admin_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdByAdmin   AdminUser @relation(fields: [createdByAdminId], references: [id])
+
+  @@index([isPublished, startsAt])
+  @@map("announcements")
+}
+
+/// 서비스 전역 설정. id=1 한 행만 쓴다.
+model ServiceSetting {
+  id                 Int        @id @default(1)
+  maintenanceEnabled Boolean    @default(false) @map("maintenance_enabled")
+  maintenanceMessage String?    @map("maintenance_message")
+  minAppVersion      String?    @map("min_app_version") @db.VarChar(20)
+  updatedByAdminId   String?    @map("updated_by_admin_id") @db.Uuid
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedByAdmin     AdminUser? @relation(fields: [updatedByAdminId], references: [id], onDelete: SetNull)
+
+  @@map("service_settings")
 }
 
 model UserOAuthAccount {
@@ -657,4 +769,28 @@ enum TeamMemberRole {
 
 enum OAuthProvider {
   GOOGLE
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  OPERATOR
+}
+
+enum UserReportReason {
+  SPAM
+  ABUSE
+  INAPPROPRIATE_CONTENT
+  FRAUD
+  OTHER
+}
+
+enum UserReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum UserSanctionType {
+  WARNING
+  SUSPENSION
 }
