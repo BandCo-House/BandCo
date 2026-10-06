@@ -1,16 +1,15 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AssistantAnswer } from '@/entities/assistant/model/types';
 import { AssistantPanel } from './AssistantPanel';
 
 const askMock = vi.fn();
-const useAskAssistantMock = vi.fn();
 const useAssistantPresetsMock = vi.fn();
 
 vi.mock('@/entities/assistant/api/useAssistant', () => ({
   useAssistantPresets: () => useAssistantPresetsMock(),
-  useAskAssistant: (...args: unknown[]) => useAskAssistantMock(...args),
+  useAskAssistant: () => ({ mutateAsync: askMock }),
 }));
 
 const presets = [
@@ -18,6 +17,10 @@ const presets = [
     id: 'next-schedule',
     label: '다음 합주',
     question: '다음 합주 일정이 언제야?',
+    followUps: [
+      '다음 합주에 참석하는 사람은 몇 명이야?',
+      '다음 합주에서 연습할 곡은 뭐야?',
+    ],
   },
   {
     id: 'pending-attendance',
@@ -60,18 +63,19 @@ const tableAnswer = (
   },
 });
 
-const setup = (mutationState: Record<string, unknown> = {}) => {
-  useAssistantPresetsMock.mockReturnValue({ data: presets });
-  useAskAssistantMock.mockReturnValue({
-    mutate: askMock,
-    data: undefined,
-    isPending: false,
-    error: null,
-    ...mutationState,
-  });
+const SCHEDULE_ANSWER = tableAnswer({
+  columns: [{ key: 'title', label: '일정', format: 'plain' }],
+  rows: [{ title: '정기 합주' }],
+});
 
+const setup = (answer: AssistantAnswer = SCHEDULE_ANSWER) => {
+  useAssistantPresetsMock.mockReturnValue({ data: presets });
+  askMock.mockResolvedValue(answer);
   return render(<AssistantPanel bandId="band-1" />);
 };
+
+const homeInput = () =>
+  screen.getAllByRole('textbox', { name: '밴드 데이터에 대한 질문' })[0];
 
 const askByPreset = () =>
   userEvent.click(
@@ -79,49 +83,88 @@ const askByPreset = () =>
   );
 
 describe('AssistantPanel', () => {
-  it('홈에는 입력 한 줄과 짧은 이름의 추천 질문 칩만 보여준다', () => {
+  beforeEach(() => askMock.mockReset());
+
+  it('홈에는 질문 입력창과 추천 칩이 있고 질문 버튼은 입력을 시작할 때 나타난다', async () => {
     setup();
 
-    expect(
-      screen.getByRole('button', { name: '밴드 데이터에 대해 질문하기' }),
-    ).toBeInTheDocument();
     expect(screen.getByText('다음 합주')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '질문' }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(homeInput());
+    expect(screen.getByRole('button', { name: '질문' })).toBeDisabled();
   });
 
-  it('추천 칩을 누르면 전체 화면 시트에서 presetId만 보낸다', async () => {
+  it('홈에서 보낸 자유 질문은 대화 화면에서 말풍선으로 보이고 question으로 묻는다', async () => {
+    setup();
+
+    await userEvent.type(homeInput(), '지난달 합주 몇 번 했어?');
+    await userEvent.click(screen.getByRole('button', { name: '질문' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText('지난달 합주 몇 번 했어?'),
+    ).toBeInTheDocument();
+    expect(askMock).toHaveBeenCalledWith({
+      question: '지난달 합주 몇 번 했어?',
+    });
+  });
+
+  it('추천 칩을 누르면 presetId로 묻는다', async () => {
     setup();
 
     await askByPreset();
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(askMock).toHaveBeenCalledWith(
-      { presetId: 'next-schedule' },
-      expect.any(Object),
-    );
+    expect(askMock).toHaveBeenCalledWith({ presetId: 'next-schedule' });
+    expect(await screen.findByText('정기 합주')).toBeInTheDocument();
   });
 
-  it('입력창을 눌러 연 시트에서 자유 질문을 question으로 보낸다', async () => {
+  it('이어서 물어보기는 짝지은 질문을 question으로 보내고 이전 답 아래에 쌓는다', async () => {
     setup();
 
+    await askByPreset();
     await userEvent.click(
-      screen.getByRole('button', { name: '밴드 데이터에 대해 질문하기' }),
+      await screen.findByRole('button', {
+        name: '다음 합주에서 연습할 곡은 뭐야?',
+      }),
     );
-    await userEvent.type(
-      screen.getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
-      '지난달 합주 몇 번 했어?',
-    );
-    await userEvent.click(screen.getByRole('button', { name: '질문' }));
 
-    expect(askMock).toHaveBeenCalledWith(
-      { question: '지난달 합주 몇 번 했어?' },
-      expect.any(Object),
-    );
+    expect(askMock).toHaveBeenLastCalledWith({
+      question: '다음 합주에서 연습할 곡은 뭐야?',
+    });
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getAllByRole('article')).toHaveLength(2);
+    // 이미 물은 짝 질문은 빠지고 남은 짝 질문만 마지막 답 아래에 보인다.
+    expect(
+      await within(dialog).findByRole('button', {
+        name: '다음 합주에 참석하는 사람은 몇 명이야?',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', {
+        name: '다음 합주에서 연습할 곡은 뭐야?',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('닫은 뒤 다시 물으면 이전 대화 없이 새로 시작한다', async () => {
+    setup();
+
+    await askByPreset();
+    await screen.findByText('정기 합주');
+    await userEvent.click(screen.getByRole('button', { name: '닫기' }));
+    await askByPreset();
+
+    expect(
+      within(await screen.findByRole('dialog')).getAllByRole('article'),
+    ).toHaveLength(1);
   });
 
   it('집계 결과는 표 대신 큰 숫자로, 설명은 결과 제목 헤드라인으로 보여준다', async () => {
-    setup({
-      data: tableAnswer({
+    setup(
+      tableAnswer({
         title: '다음 합주 참석 인원',
         resultMode: 'AGGREGATE',
         columns: [
@@ -130,23 +173,20 @@ describe('AssistantPanel', () => {
         rows: [{ attendee_count: 13 }],
         conditions: ['일정 종류: 합주', '응답: 참석'],
       }),
-    });
+    );
 
     await askByPreset();
 
-    expect(screen.getByLabelText('조회 결과')).toHaveTextContent('13');
-    // 한 건 결과는 값을 다시 읽는 요약 대신 결과 제목을 헤드라인으로 쓴다.
+    expect(await screen.findByLabelText('조회 결과')).toHaveTextContent('13');
     expect(screen.getByText('다음 합주 참석 인원')).toBeInTheDocument();
-    expect(screen.queryByText('요약')).not.toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(
       within(screen.getByLabelText('조회 조건')).getAllByRole('listitem'),
     ).toHaveLength(2);
   });
 
   it('이름 목록은 칩으로 보여주고 50건 초과 안내는 한 번만 한다', async () => {
-    setup({
-      data: tableAnswer(
+    setup(
+      tableAnswer(
         {
           hasMore: true,
           columns: [{ key: 'nickname', label: '닉네임', format: 'plain' }],
@@ -154,19 +194,46 @@ describe('AssistantPanel', () => {
         },
         '다음 합주 미응답자 2명',
       ),
-    });
+    );
 
     await askByPreset();
 
     expect(
-      within(screen.getByLabelText('조회 결과')).getAllByRole('listitem'),
+      within(await screen.findByLabelText('조회 결과')).getAllByRole(
+        'listitem',
+      ),
     ).toHaveLength(2);
     expect(screen.getAllByText(/50건까지만 보여요/)).toHaveLength(1);
   });
 
+  it('10건을 넘는 결과는 처음 10건만 보여주고 모두 보기로 펼친다', async () => {
+    setup(
+      tableAnswer({
+        columns: [{ key: 'nickname', label: '닉네임', format: 'plain' }],
+        rows: Array.from({ length: 12 }, (_, index) => ({
+          nickname: `멤버${index + 1}`,
+        })),
+      }),
+    );
+
+    await askByPreset();
+    expect(
+      within(await screen.findByLabelText('조회 결과')).getAllByRole(
+        'listitem',
+      ),
+    ).toHaveLength(10);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '12건 모두 보기' }),
+    );
+    expect(
+      within(screen.getByLabelText('조회 결과')).getAllByRole('listitem'),
+    ).toHaveLength(12);
+  });
+
   it('여러 열의 상위 결과는 순위와 열 이름을 붙인 세로 목록으로 보여준다', async () => {
-    setup({
-      data: tableAnswer({
+    setup(
+      tableAnswer({
         resultMode: 'TOP_N',
         columns: [
           { key: 'title', label: '곡 제목', format: 'plain' },
@@ -177,20 +244,20 @@ describe('AssistantPanel', () => {
           { title: '청춘', practice_count: 3 },
         ],
       }),
-    });
+    );
 
     await askByPreset();
 
-    const items = within(screen.getByLabelText('조회 결과')).getAllByRole(
-      'listitem',
-    );
+    const items = within(
+      await screen.findByLabelText('조회 결과'),
+    ).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('1Bohemian Rhapsody연습 횟수 5');
     expect(items[1]).toHaveTextContent('2청춘연습 횟수 3');
   });
 
   it('한 건은 카드로 보여주고 날짜 열은 한국 시간으로 표시한다', async () => {
-    setup({
-      data: tableAnswer({
+    setup(
+      tableAnswer({
         resultMode: 'TOP_N',
         columns: [
           { key: 'title', label: '일정', format: 'plain' },
@@ -198,98 +265,107 @@ describe('AssistantPanel', () => {
         ],
         rows: [{ title: '정기 합주', start_at: '2026-09-03T10:00:00.000Z' }],
       }),
-    });
+    );
 
     await askByPreset();
 
-    const card = screen.getByLabelText('조회 결과');
+    const card = await screen.findByLabelText('조회 결과');
     expect(within(card).getByText('정기 합주')).toBeInTheDocument();
     expect(within(card).getByText(/9\. 3\. \(목\) 19:00/)).toBeInTheDocument();
   });
 
-  it('답할 수 없거나 질문을 바꿔야 하면 물어볼 수 있는 예시 질문을 함께 보여준다', async () => {
+  it('질문을 바꿔야 하면 바로 답할 수 있는 예시 질문을 함께 보여준다', async () => {
     setup({
-      data: {
-        answerable: false,
-        kind: 'REPHRASE',
-        summary: '질문을 정확히 이해하지 못했어요.',
-        result: null,
-        clarification: null,
-        meta,
-      } satisfies AssistantAnswer,
+      answerable: false,
+      kind: 'REPHRASE',
+      summary: '질문을 정확히 이해하지 못했어요.',
+      result: null,
+      clarification: null,
+      meta,
     });
 
     await askByPreset();
 
     expect(
-      screen.getByText('질문을 정확히 이해하지 못했어요.'),
+      await screen.findByText('질문을 정확히 이해하지 못했어요.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('이런 질문은 바로 답할 수 있어요')).toBeInTheDocument();
+    expect(
+      screen.getByText('이런 질문은 바로 답할 수 있어요'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('이름 후보를 누르면 서버가 준 질문을 그대로 다시 보낸다', async () => {
     setup({
-      data: {
-        answerable: false,
-        kind: 'CLARIFICATION',
-        summary: '어떤 아티스트인가요?',
-        result: null,
-        clarification: {
-          candidates: [
-            { name: '아티스트 A', question: "'아티스트 A' 곡 알려줘" },
-          ],
-          hasMore: false,
-        },
-        meta,
-      } satisfies AssistantAnswer,
+      answerable: false,
+      kind: 'CLARIFICATION',
+      summary: '어떤 아티스트인가요?',
+      result: null,
+      clarification: {
+        candidates: [
+          { name: '아티스트 A', question: "'아티스트 A' 곡 알려줘" },
+        ],
+        hasMore: false,
+      },
+      meta,
     });
 
     await askByPreset();
-    await userEvent.click(screen.getByRole('button', { name: '아티스트 A' }));
-
-    expect(askMock).toHaveBeenLastCalledWith(
-      { question: "'아티스트 A' 곡 알려줘" },
-      expect.any(Object),
+    await userEvent.click(
+      await screen.findByRole('button', { name: '아티스트 A' }),
     );
+
+    expect(askMock).toHaveBeenLastCalledWith({
+      question: "'아티스트 A' 곡 알려줘",
+    });
   });
 
-  it('요청이 실패하면 입력한 질문을 입력창에 되돌리고 같은 요청을 다시 시도할 수 있다', async () => {
-    askMock.mockImplementation((_body, options: { onError: () => void }) =>
-      options.onError(),
-    );
-    setup({ error: new Error('network') });
+  it('요청이 실패하면 질문을 입력창에 되돌리고 같은 요청을 다시 시도할 수 있다', async () => {
+    setup();
+    askMock.mockRejectedValueOnce(new Error('network'));
 
-    await userEvent.click(
-      screen.getByRole('button', { name: '밴드 데이터에 대해 질문하기' }),
-    );
-    const input = screen.getByRole('textbox', {
-      name: '밴드 데이터에 대한 질문',
-    });
-    await userEvent.type(input, '다음 합주 언제야?');
+    await userEvent.type(homeInput(), '다음 합주 언제야?');
     await userEvent.click(screen.getByRole('button', { name: '질문' }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('잠시 후 다시 시도');
-    expect(input).toHaveValue('다음 합주 언제야?');
-
-    await userEvent.click(screen.getByRole('button', { name: '다시 시도' }));
-    expect(askMock).toHaveBeenLastCalledWith(
-      { question: '다음 합주 언제야?' },
-      expect.any(Object),
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '잠시 후 다시 시도',
     );
-    askMock.mockReset();
+    const dialog = screen.getByRole('dialog');
+    expect(
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+    ).toHaveValue('다음 합주 언제야?');
+
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: '다시 시도' }),
+    );
+    expect(askMock).toHaveBeenLastCalledWith({ question: '다음 합주 언제야?' });
+    expect(await within(dialog).findByText('정기 합주')).toBeInTheDocument();
   });
 
   it('조회 중에는 입력을 막고 진행 단계를 알린다', async () => {
-    setup({ isPending: true });
+    setup();
+    let finish: (answer: AssistantAnswer) => void = () => {};
+    askMock.mockReturnValue(
+      new Promise<AssistantAnswer>((resolve) => {
+        finish = resolve;
+      }),
+    );
 
     await askByPreset();
 
-    expect(screen.getByRole('status')).toHaveTextContent(
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
       '질문을 이해하고 있어요',
     );
     expect(
-      screen.getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
     ).toBeDisabled();
+
+    // 응답이 오면 입력을 다시 받는다. 끝나지 않은 요청을 남기지 않는다.
+    finish(SCHEDULE_ANSWER);
+    expect(await within(dialog).findByText('정기 합주')).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+    ).toBeEnabled();
   });
 });

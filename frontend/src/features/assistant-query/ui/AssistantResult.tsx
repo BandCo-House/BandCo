@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react';
 import { EmptyState } from '@/shared/ui/empty-state';
 import type {
   AssistantQueryResult,
@@ -17,6 +18,8 @@ const ATTENDANCE_LABEL: Record<string, string> = {
 
 /** 이름 칩으로 보여줄 수 있는 짧은 값의 최대 길이 */
 const MAX_CHIP_TEXT_LENGTH = 14;
+/** 홈 카드가 너무 길어지지 않게 처음에 보여줄 행 수. 나머지는 펼쳐서 본다. */
+const PREVIEW_ROWS = 10;
 
 interface AssistantResultProps {
   result: AssistantQueryResult;
@@ -32,7 +35,24 @@ export const AssistantResult = ({ result }: AssistantResultProps) => {
 };
 
 const TableResult = ({ result }: { result: AssistantTableResult }) => {
+  const [expanded, setExpanded] = useState(false);
   const { columns, rows } = result;
+  const visibleRows = expanded ? rows : rows.slice(0, PREVIEW_ROWS);
+  // 카드 안에 따로 스크롤 영역을 두면 모바일에서 스크롤이 갇혀, 처음 몇 건만 보이고 펼치게 한다.
+  const withToggle = (list: ReactNode) => (
+    <div className="flex flex-col gap-2">
+      {list}
+      {rows.length > PREVIEW_ROWS && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="self-start typo-sm-r text-grey-300 underline underline-offset-4"
+        >
+          {expanded ? '접기' : `${rows.length}건 모두 보기`}
+        </button>
+      )}
+    </div>
+  );
 
   if (rows.length === 0) {
     return (
@@ -65,11 +85,11 @@ const TableResult = ({ result }: { result: AssistantTableResult }) => {
   if (rows.length === 1) return <SingleRowCard result={result} />;
 
   if (columns.length === 1 && columns[0].format === 'plain') {
-    const values = rows.map((row) =>
+    const values = visibleRows.map((row) =>
       formatResultCell(row[columns[0].key], 'plain'),
     );
     if (values.every((value) => value.length <= MAX_CHIP_TEXT_LENGTH)) {
-      return (
+      return withToggle(
         <ul
           aria-label="조회 결과"
           className="grid grid-cols-3 gap-2 typo-sm-r text-grey-100"
@@ -82,12 +102,12 @@ const TableResult = ({ result }: { result: AssistantTableResult }) => {
               {value}
             </li>
           ))}
-        </ul>
+        </ul>,
       );
     }
   }
 
-  return <StackedList result={result} />;
+  return withToggle(<StackedList result={result} rows={visibleRows} />);
 };
 
 /** 한 건은 첫 열을 제목으로, 나머지 열을 이름·값 줄로 보여준다. */
@@ -119,12 +139,18 @@ const SingleRowCard = ({ result }: { result: AssistantTableResult }) => {
 };
 
 /** 여러 열은 휴대폰에서 가로 스크롤 표 대신 행마다 라벨을 붙인 세로 목록으로 보여준다. */
-const StackedList = ({ result }: { result: AssistantTableResult }) => {
+const StackedList = ({
+  result,
+  rows,
+}: {
+  result: AssistantTableResult;
+  rows: AssistantTableResult['rows'];
+}) => {
   const [primary, ...rest] = result.columns;
   const ranked = result.resultMode === 'TOP_N';
   return (
     <ol aria-label="조회 결과" className="flex flex-col">
-      {result.rows.map((row, index) => (
+      {rows.map((row, index) => (
         <li
           key={index}
           className="flex items-start gap-3 border-b border-grey-500 py-2.5 last:border-b-0"
