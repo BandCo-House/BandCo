@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Upload } from 'lucide-react';
+import { Search, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import WithdrawIcon from '@/assets/icons/withdraw.svg?react';
 import { uploadFile } from '@/shared/api';
 import { useLeaveBand } from '@/entities/band/api/useLeaveBand';
 import { useUpdateBand } from '@/entities/band/api/useUpdateBand';
 import type { BandDetail } from '@/entities/band/model/types';
-import { buttonVariants } from '@/shared/ui/button';
+import { Button, buttonVariants } from '@/shared/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { Field, FieldLabel } from '@/shared/ui/field';
@@ -21,6 +21,7 @@ import {
 import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
 import { setBandSettingsSaveAction } from '../model/save-action-store';
 import { BandInviteLinkCard } from './BandInviteLinkCard';
+import { BandUserInviteModal } from '@/features/band-invite';
 
 interface BandBasicSettingsProps {
   band: BandDetail;
@@ -59,6 +60,8 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
   const [isCoverCleared, setIsCoverCleared] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
+  const [directInviteQuery, setDirectInviteQuery] = useState('');
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const { selectFile, cropDialogProps } = useImageCrop();
 
   // 미리보기 blob URL은 값이 바뀌거나 언마운트될 때 revoke한다.
@@ -258,6 +261,40 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
         </div>
         <BandInviteLinkCard bandId={band.id} bandName={band.name} />
       </section>
+
+      <section className="flex flex-col gap-1">
+        <FieldLabel>직접 추가</FieldLabel>
+        <div className="flex items-center gap-2">
+          <Input
+            variant="underline"
+            value={directInviteQuery}
+            onChange={(e) => setDirectInviteQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                setIsInviteModalOpen(true);
+              }
+            }}
+            placeholder="사용자 이름 또는 이메일"
+            className="flex-1 border-white/24 py-4 typo-base-sb placeholder:text-grey-300"
+          />
+          <Button
+            type="button"
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex shrink-0 items-center justify-center gap-1 rounded-full bg-primary px-4 py-3 typo-base-b transition-colors focus-visible:outline-2 focus-visible:outline-secondary"
+          >
+            <Search aria-hidden="true" className="size-4.5" />
+            <span>검색</span>
+          </Button>
+        </div>
+      </section>
+
+      <BandUserInviteModal
+        open={isInviteModalOpen}
+        onOpenChange={setIsInviteModalOpen}
+        bandId={band.id}
+        initialQuery={directInviteQuery}
+      />
 
       <div className="flex justify-end">
         <button

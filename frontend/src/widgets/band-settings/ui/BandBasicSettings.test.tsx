@@ -90,4 +90,19 @@ describe('BandBasicSettings', () => {
 
     expect(await screen.findByText('밴드를 나갈까요?')).toBeInTheDocument();
   });
+
+  it('직접 추가 섹션에서 검색어를 입력하고 검색 버튼을 누르면 사용자 검색 모달이 열린다', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    expect(screen.getByText('직접 추가')).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText('사용자 이름 또는 이메일');
+    expect(searchInput).toBeInTheDocument();
+
+    await user.type(searchInput, '김');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+
+    expect(await screen.findByRole('heading', { name: '사용자 검색' })).toBeInTheDocument();
+  });
 });
+
