@@ -180,8 +180,7 @@ const UNSUPPORTED: AssistantAnswer = {
 const CLARIFICATION: AssistantAnswer = {
   answerable: false,
   kind: 'CLARIFICATION',
-  summary:
-    '어떤 아티스트인가요? 밴드에 등록된 비슷한 이름은 "아이유", "아이유 (IU)"이에요.',
+  summary: '어떤 아티스트인가요? 밴드에 비슷한 이름이 2개 있어요.',
   result: null,
   clarification: {
     candidates: [

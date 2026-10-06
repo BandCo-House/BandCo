@@ -119,7 +119,7 @@ describe('AssistantPanel', () => {
     );
   });
 
-  it('집계 결과는 표 대신 큰 숫자와 결과 제목으로 보여준다', async () => {
+  it('집계 결과는 표 대신 큰 숫자로, 설명은 결과 제목 헤드라인으로 보여준다', async () => {
     setup({
       data: tableAnswer({
         title: '다음 합주 참석 인원',
@@ -134,9 +134,10 @@ describe('AssistantPanel', () => {
 
     await askByPreset();
 
-    const result = screen.getByLabelText('조회 결과');
-    expect(within(result).getByText('13')).toBeInTheDocument();
-    expect(within(result).getByText('다음 합주 참석 인원')).toBeInTheDocument();
+    expect(screen.getByLabelText('조회 결과')).toHaveTextContent('13');
+    // 한 건 결과는 값을 다시 읽는 요약 대신 결과 제목을 헤드라인으로 쓴다.
+    expect(screen.getByText('다음 합주 참석 인원')).toBeInTheDocument();
+    expect(screen.queryByText('요약')).not.toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(
       within(screen.getByLabelText('조회 조건')).getAllByRole('listitem'),

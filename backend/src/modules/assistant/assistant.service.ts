@@ -272,7 +272,8 @@ export class AssistantService {
         const resolved = resolveArtistName(binding.value, question, candidates);
         if ('candidates' in resolved) {
           return {
-            reason: `어떤 아티스트인가요? 밴드에 등록된 비슷한 이름은 ${resolved.candidates.map(name => JSON.stringify(name)).join(', ')}${resolved.hasMore ? ' 등' : ''}이에요.`,
+            // 후보 이름은 clarification으로 따로 보내 화면이 선택지로 보여준다. 문장에서 다시 나열하지 않는다.
+            reason: `어떤 아티스트인가요? 밴드에 비슷한 이름이 ${resolved.hasMore ? `${resolved.candidates.length}개 넘게` : `${resolved.candidates.length}개`} 있어요.`,
             clarification: {
               candidates: resolved.candidates.map(name => ({ name, question: createCandidateQuestion(question, binding.value, name) })),
               hasMore: resolved.hasMore,
