@@ -12,6 +12,7 @@ import {
 } from './generated-sql.type';
 import { SQL_ALLOWED_FUNCTIONS, SQL_CATALOG, SQL_CATALOG_JOINS, SQL_ENUM_COLUMNS, SQL_REQUIRED_RELATIONS } from './sql-catalog';
 import type { SqlCountUnit } from './sql-query-context';
+import { normalizeRelationGrain } from './sql-relation-grain';
 
 const MAX_SQL_LENGTH = 8_000;
 const MAX_INTENT_LENGTH = 120;
@@ -163,6 +164,9 @@ export class SqlQueryValidator {
         delete statement.limitOption;
       }
     }
+
+    // 검증은 모델이 쓴 원래 테이블로 하고, 실행은 서버가 정한 사람 단위로 한다.
+    await normalizeRelationGrain(ast);
 
     return {
       intent: generated.intent.trim(),

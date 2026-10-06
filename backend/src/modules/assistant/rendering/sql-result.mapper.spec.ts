@@ -43,6 +43,19 @@ describe('자유 SQL 결과 매핑', () => {
     expect(result.columns).toHaveLength(1);
   });
 
+  it('사람 단위로 바뀐 참여 서브쿼리의 조건도 원래 테이블 의미로 표시한다', async () => {
+    const result = await mapSqlResult(
+      {
+        intent: '미응답',
+        sql: 'SELECT sp.band_member_id FROM (SELECT schedule_id, band_member_id, attendance_status FROM schedule_participants GROUP BY schedule_id, band_member_id, attendance_status) AS sp WHERE sp.attendance_status::text = $2',
+        parameters: ['PENDING'],
+      },
+      { rows: [], hasMore: false },
+    );
+    expect(result.conditions).toHaveLength(1);
+    expect(result.conditions[0]).toContain('미응답');
+  });
+
   it('알 수 없는 OR 분기의 나머지를 필수 조건인 것처럼 표시하지 않는다', async () => {
     const result = await mapSqlResult(
       { intent: '조건', sql: 'SELECT b.name FROM bands b WHERE b.name = $2 OR b.id = $1', parameters: ['밴드'] },

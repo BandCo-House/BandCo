@@ -40,6 +40,22 @@ describe('SqlQueryValidator', () => {
     });
   });
 
+  it('참여·팀 편성은 검증 후 (일정, 멤버)·(팀, 멤버)당 한 행인 사람 단위로 실행한다', async () => {
+    const participants = await validator.validate(createResponse(`SELECT COUNT(sp.band_member_id) ${participantFrom}`));
+    const participantSql = participants.sql.replace(/\s+/g, ' ');
+    expect(participantSql).toContain(
+      'FROM schedule_participants GROUP BY schedule_id, band_member_id, attendance_status ) AS sp ON sp.schedule_id = sc.id',
+    );
+    expect(participantSql).toContain('bm.id = sp.band_member_id');
+
+    const team = await validator.validate(
+      createResponse(`SELECT t.name, COUNT(tm.band_member_id) FROM bands b JOIN teams t ON t.band_id = b.id
+        JOIN team_members tm ON tm.team_id = t.id JOIN band_members bm ON bm.id = tm.band_member_id
+        WHERE b.id = $1::uuid AND b.deleted_at IS NULL GROUP BY t.id, t.name`),
+    );
+    expect(team.sql.replace(/\s+/g, ' ')).toContain('FROM team_members GROUP BY team_id, band_member_id, team_role ) AS tm');
+  });
+
   it('명시적 행 수와 다중 세션 관계가 없는 인원은 기존 자유 집계를 허용한다', async () => {
     await expect(validator.validate(createResponse(`SELECT COUNT(*) ${participantFrom}`))).resolves.toBeDefined();
     await expect(

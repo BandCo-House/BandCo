@@ -2,7 +2,7 @@ import { parse } from 'pgsql-parser';
 
 import { Prisma } from '../../src/generated/prisma';
 
-export const EVALUATOR_VERSION = '3.0.0';
+export const EVALUATOR_VERSION = '3.1.0';
 
 export interface EvaluationColumn {
   key: string;
@@ -127,6 +127,14 @@ function collectTableAliases(value: unknown, aliases: Map<string, string>): void
   if (isRecord(value.JoinExpr)) {
     collectTableAliases(value.JoinExpr.larg, aliases);
     collectTableAliases(value.JoinExpr.rarg, aliases);
+  }
+  // 서버가 사람 단위로 바꾼 서브쿼리 별칭은 안쪽 원래 테이블로 해석한다.
+  if (isRecord(value.RangeSubselect) && isRecord(value.RangeSubselect.alias) && isRecord(value.RangeSubselect.subquery)) {
+    const inner = new Map<string, string>();
+    collectTableAliases((value.RangeSubselect.subquery.SelectStmt as RecordValue | undefined)?.fromClause, inner);
+    const alias = value.RangeSubselect.alias.aliasname;
+    const [table] = inner.values();
+    if (typeof alias === 'string' && table) aliases.set(alias, table);
   }
 }
 

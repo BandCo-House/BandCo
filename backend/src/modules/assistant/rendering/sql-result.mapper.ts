@@ -42,6 +42,11 @@ export async function mapSqlResult(query: ValidatedSqlQuery, page: SqlQueryPage)
       const alias = isRecord(table.alias) ? table.alias.aliasname : table.relname;
       if (typeof alias === 'string' && typeof table.relname === 'string') aliases.set(alias, table.relname);
     }
+    // 서버가 사람 단위로 바꾼 참여·팀 편성 서브쿼리는 원래 테이블로 표시한다.
+    if (isRecord(node.RangeSubselect) && isRecord(node.RangeSubselect.alias)) {
+      const table = innerTableName(node.RangeSubselect.subquery);
+      if (typeof node.RangeSubselect.alias.aliasname === 'string' && table) aliases.set(node.RangeSubselect.alias.aliasname, table);
+    }
     if (isRecord(node.SelectStmt)) selects.push(node.SelectStmt);
   });
   const columns = (selects[0]?.targetList as Array<{ ResTarget: { name?: string; val: AstRecord } }>).map(({ ResTarget: target }) => {
@@ -162,6 +167,14 @@ function outputName(value: AstRecord): string {
 function names(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => (isRecord(item) && isRecord(item.String) && typeof item.String.sval === 'string' ? [item.String.sval] : []));
+}
+
+function innerTableName(subquery: unknown): string | undefined {
+  let name: string | undefined;
+  walk(subquery, node => {
+    if (!name && isRecord(node.RangeVar) && typeof node.RangeVar.relname === 'string') name = node.RangeVar.relname;
+  });
+  return name;
 }
 
 function walk(value: unknown, visit: (node: AstRecord) => void): void {
