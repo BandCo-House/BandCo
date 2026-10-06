@@ -138,3 +138,18 @@ test('추가 출력 컬럼과 모호한 여러 집계 컬럼을 거부한다', a
   const result = await evaluateRows(contract, [{ first_count: 1, second_count: 2 }], [{ first_count: 1, second_count: 2 }], contract.goldSql);
   assert.equal(result.reason, 'COLUMN_MAPPING_FAILED');
 });
+
+test('대표 행 파생 관계의 물리 컬럼은 원래 테이블로 대응하되 계산 컬럼은 추측하지 않는다', async () => {
+  const contract: EvaluationContract = {
+    goldSql: 'SELECT sp.band_member_id FROM schedule_participants sp',
+    columns: [{ key: 'band_member_id', type: 'text' }],
+  };
+  const rows = [{ band_member_id: '멤버' }];
+  const correct =
+    'SELECT p.band_member_id FROM (SELECT * FROM schedule_participants source WHERE NOT EXISTS (SELECT 1 FROM schedule_participants duplicate WHERE duplicate.id < source.id)) p';
+  assert.equal((await evaluateRows(contract, rows, rows, correct)).matches, true);
+  const wrongTable = 'SELECT p.band_member_id FROM (SELECT * FROM team_members source) p';
+  assert.equal((await evaluateRows(contract, rows, rows, wrongTable)).reason, 'COLUMN_MAPPING_FAILED');
+  const computed = "SELECT p.band_member_id FROM (SELECT '멤버' AS band_member_id FROM schedule_participants source) p";
+  assert.equal((await evaluateRows(contract, rows, rows, computed)).reason, 'COLUMN_MAPPING_FAILED');
+});
