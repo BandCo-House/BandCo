@@ -12,6 +12,14 @@ describe('SqlQueryValidator', () => {
     unsupportedReason: null,
   });
 
+  const leaderSql = `SELECT up.nickname FROM bands b
+    JOIN teams t ON t.band_id = b.id
+    JOIN band_members bm ON bm.id = t.team_leader_band_member_id
+    JOIN users u ON u.id = bm.user_id
+    JOIN user_profiles up ON up.user_id = u.id
+    WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL AND t.name = $2`;
+  const leaderParams = [{ position: 2, type: 'TEXT', value: '보컬팀' }];
+
   it('실제 선호 장르 테이블을 사용하는 밴드 범위 조회를 통과시킨다', async () => {
     const sql = `SELECT COUNT(fg.id)::int AS member_count FROM bands b
       JOIN band_members bm ON bm.band_id = b.id JOIN users u ON u.id = bm.user_id
@@ -23,6 +31,35 @@ describe('SqlQueryValidator', () => {
     await expect(
       validator.validate(createResponse(sql.replaceAll('favor_genres', 'favorite_genres'), [{ position: 2, type: 'TEXT', value: '록' }])),
     ).rejects.toMatchObject({ code: 'TABLE_NOT_ALLOWED' });
+  });
+
+  it('밴드 소속 팀에서 팀장 멤버의 프로필로 연결되는 조회를 통과시킨다', async () => {
+    await expect(validator.validate(createResponse(leaderSql, leaderParams))).resolves.toMatchObject({ parameters: ['보컬팀'] });
+  });
+
+  it('팀장 관계가 있어도 현재 밴드 조건을 제거하거나 OR로 우회하지 못한다', async () => {
+    await expect(validator.validate(createResponse(leaderSql.replace('b.id = $1::uuid AND ', ''), leaderParams))).rejects.toBeInstanceOf(
+      InvalidSqlQueryError,
+    );
+    await expect(
+      validator.validate(
+        createResponse(leaderSql.replace('b.id = $1::uuid AND b.deleted_at IS NULL', '(b.id = $1::uuid OR b.deleted_at IS NULL)'), leaderParams),
+      ),
+    ).rejects.toMatchObject({ code: 'BAND_SCOPE_MISSING' });
+  });
+
+  it('서버 밴드 ID 대신 모델 파라미터의 다른 밴드 ID를 사용할 수 없다', async () => {
+    const sql = leaderSql.replace('b.id = $1::uuid', 'b.id = $3::uuid');
+    const params = [...leaderParams, { position: 3, type: 'TEXT', value: '22222222-2222-4222-8222-222222222222' }];
+    await expect(validator.validate(createResponse(sql, params))).rejects.toBeInstanceOf(InvalidSqlQueryError);
+  });
+
+  it('팀장 조회 안에서도 밴드 범위가 없는 프로필 중첩 조회를 차단한다', async () => {
+    const sql = leaderSql.replace(
+      'SELECT up.nickname',
+      'SELECT (SELECT up2.nickname FROM users u2 JOIN user_profiles up2 ON up2.user_id = u2.id WHERE u2.deleted_at IS NULL LIMIT 1) AS nickname',
+    );
+    await expect(validator.validate(createResponse(sql, leaderParams))).rejects.toBeInstanceOf(InvalidSqlQueryError);
   });
 
   it('밴드 범위와 허용 JOIN을 사용한 COUNT SELECT를 통과시킨다', async () => {

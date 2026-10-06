@@ -246,6 +246,7 @@ export const SQL_CATALOG_JOINS: SqlCatalogJoin[] = [
   { left: 'songs.id', right: 'schedule_song.song_id' },
   { left: 'songs.id', right: 'song_skills.song_id' },
   { left: 'song_skills.skill_type_id', right: 'skill_types.id' },
+  { left: 'teams.team_leader_band_member_id', right: 'band_members.id' },
   { left: 'teams.id', right: 'team_members.team_id' },
   { left: 'band_members.id', right: 'team_members.band_member_id' },
   { left: 'teams.id', right: 'team_songs.team_id' },
