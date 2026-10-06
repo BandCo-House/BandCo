@@ -44,13 +44,19 @@ export const InviteeSearchModal = ({
 }: InviteeSearchModalProps) => {
   const [query, setQuery] = useState('');
   const keyword = useDebouncedValue(query.trim());
-  // 공용 훅이 placeholderData로 이전 결과를 들고 있어, 검색어가 바뀐 뒤 debounce가 끝나기 전까지
-  // 옛 검색어의 결과가 남는다. 그 사이 행을 누르면 엉뚱한 사람이 초대된다.
-  const isKeywordSettled = query.trim() === keyword;
 
-  const { data: found = [], isError } = useUserSearch(keyword, {
-    enabled: open,
-  });
+  const {
+    data: found = [],
+    isError,
+    isLoading,
+    isPlaceholderData,
+  } = useUserSearch(keyword, { enabled: open });
+
+  // 지금 보이는 행이 현재 입력에 대한 답이 아닐 수 있는 구간이 셋이다 — debounce가 끝나기 전,
+  // 첫 응답 전, 공용 훅이 placeholderData로 옛 결과를 들고 있는 동안. 이때 행을 누르면
+  // 엉뚱한 사람이 inviteeUserIds에 실린다. 목록 대신 로딩을 보여준다.
+  const isResultStale =
+    query.trim() !== keyword || isLoading || isPlaceholderData;
 
   const selectedIds = new Set(selected.map((user) => user.id));
   // 비활성 유저는 서버가 초대를 거절한다(ACTIVE만 통과). 후보에 두면 생성 직후 실패 안내만 뜬다.
@@ -79,7 +85,7 @@ export const InviteeSearchModal = ({
         </p>
       );
     }
-    if (!isKeywordSettled) {
+    if (isResultStale) {
       return <p className="typo-sm-sb text-grey-200">검색 중입니다.</p>;
     }
     if (candidates.length === 0) {
