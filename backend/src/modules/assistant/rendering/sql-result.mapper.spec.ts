@@ -56,6 +56,21 @@ describe('자유 SQL 결과 매핑', () => {
     expect(result.conditions[0]).toContain('미응답');
   });
 
+  it('대표 행 파생 관계에서도 컬럼 이름과 바깥 조건을 유지한다', async () => {
+    const result = await mapSqlResult(
+      {
+        intent: '참석',
+        sql: 'SELECT sp.attendance_status FROM (SELECT * FROM schedule_participants sp WHERE NOT EXISTS (SELECT 1 FROM schedule_participants grain_dup_0 WHERE grain_dup_0.schedule_id = sp.schedule_id AND grain_dup_0.band_member_id = sp.band_member_id AND grain_dup_0.id < sp.id)) sp WHERE sp.attendance_status::text = $2',
+        parameters: ['ATTENDING'],
+      },
+      { rows: [{ attendance_status: 'ATTENDING' }], hasMore: false },
+    );
+    expect(result.columns[0].label).toBe('PENDING, ATTENDING, ABSENT 또는 NULL');
+    expect(result.rows).toEqual([{ attendance_status: 'ATTENDING' }]);
+    expect(result.conditions).toHaveLength(1);
+    expect(result.conditions[0]).toContain('참석');
+  });
+
   it('알 수 없는 OR 분기의 나머지를 필수 조건인 것처럼 표시하지 않는다', async () => {
     const result = await mapSqlResult(
       { intent: '조건', sql: 'SELECT b.name FROM bands b WHERE b.name = $2 OR b.id = $1', parameters: ['밴드'] },

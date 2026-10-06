@@ -43,7 +43,7 @@ describe('SqlQueryValidator', () => {
   it('참여·팀 편성은 검증 후 (일정, 멤버)·(팀, 멤버)마다 대표 행 하나만 남겨 실행한다', async () => {
     const participants = await validator.validate(createResponse(`SELECT COUNT(sp.band_member_id) ${participantFrom}`));
     expect(participants.sql.replace(/\s+/g, ' ')).toContain(
-      'NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0 WHERE (grain_dup_0.schedule_id = sp.schedule_id AND grain_dup_0.band_member_id = sp.band_member_id AND grain_dup_0.id < sp.id)))',
+      'NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0 WHERE grain_dup_0.schedule_id = sp.schedule_id AND grain_dup_0.band_member_id = sp.band_member_id AND grain_dup_0.id < sp.id))',
     );
 
     const team = await validator.validate(
@@ -52,6 +52,11 @@ describe('SqlQueryValidator', () => {
         WHERE b.id = $1::uuid AND b.deleted_at IS NULL GROUP BY t.id, t.name`),
     );
     expect(team.sql.replace(/\s+/g, ' ')).toContain('grain_dup_0.team_id = tm.team_id');
+  });
+
+  it('서버 변환이 파생 관계를 쓰더라도 모델이 작성한 파생 테이블은 거부한다', async () => {
+    const sql = 'SELECT b.id FROM (SELECT original.id, original.deleted_at FROM bands original) b WHERE b.id = $1::uuid AND b.deleted_at IS NULL';
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'RANGE_SOURCE_BLOCKED' });
   });
 
   it('원래 SQL과 하위 SELECT의 별칭을 피해서 서버 별칭을 만든다', async () => {
@@ -71,7 +76,8 @@ describe('SqlQueryValidator', () => {
         WHERE bs.band_id = b.id AND bs.deleted_at IS NULL)`),
     );
     const sql = nested.sql.replace(/\s+/g, ' ');
-    expect(sql).toContain('bs.deleted_at IS NULL AND NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0');
+    expect(sql).toContain('FROM band_spaces AS bs');
+    expect(sql).toContain('SELECT * FROM schedule_participants AS sp WHERE NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0');
     expect(sql.match(/grain_dup_/g)?.length).toBe(4);
   });
 
