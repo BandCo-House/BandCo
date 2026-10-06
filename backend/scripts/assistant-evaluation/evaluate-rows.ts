@@ -2,7 +2,7 @@ import { parse } from 'pgsql-parser';
 
 import { Prisma } from '../../src/generated/prisma';
 
-export const EVALUATOR_VERSION = '2.0.0';
+export const EVALUATOR_VERSION = '3.0.0';
 
 export interface EvaluationColumn {
   key: string;

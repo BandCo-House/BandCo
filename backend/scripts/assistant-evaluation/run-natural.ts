@@ -18,7 +18,13 @@ import { AssistantPrismaRepository } from '../../src/modules/assistant/repositor
 import { InvalidSqlQueryError, SqlQueryValidator } from '../../src/modules/assistant/sql/sql-query.validator';
 import type { ValidatedSqlQuery } from '../../src/modules/assistant/sql/generated-sql.type';
 
-import { FIXED_NOW, NATURAL_QUERY_CASES, TARGET_BAND_ID } from './corpus';
+import { FIXED_NOW, NATURAL_QUERY_CASES, type NaturalQueryCase, TARGET_BAND_ID } from './corpus';
+import { HOLDOUT_QUERY_CASES } from './holdout-corpus';
+
+// dev는 수정에 사용한 50문항, holdout은 수정에 사용하지 않는 20문항이다.
+const CORPORA = { dev: { cases: NATURAL_QUERY_CASES, size: 50 }, holdout: { cases: HOLDOUT_QUERY_CASES, size: 20 } };
+const CORPUS_NAME = (process.env.EXPERIMENT_CORPUS ?? 'dev') as keyof typeof CORPORA;
+const CASES = CORPORA[CORPUS_NAME]?.cases;
 
 interface GenerationResult {
   status: 'QUERY' | 'UNSUPPORTED';
@@ -69,8 +75,8 @@ async function main(): Promise<void> {
   if (!outputPath) throw new Error('EXPERIMENT_OUTPUT_PATH가 필요합니다.');
   if (existsSync(outputPath)) throw new Error('기존 원시 결과는 덮어쓰지 않습니다.');
 
-  if (NATURAL_QUERY_CASES.length !== 50) {
-    throw new Error(`자연어 corpus는 50건이어야 합니다: ${NATURAL_QUERY_CASES.length}`);
+  if (!CASES || CASES.length !== CORPORA[CORPUS_NAME].size) {
+    throw new Error(`EXPERIMENT_CORPUS는 dev 또는 holdout이며 문항 수가 고정돼야 합니다: ${CORPUS_NAME}`);
   }
 
   const prisma = new PrismaService();
@@ -78,11 +84,11 @@ async function main(): Promise<void> {
 
   try {
     if (process.env.EXPERIMENT_PREFLIGHT_ONLY === 'true') {
-      for (const queryCase of NATURAL_QUERY_CASES) {
+      for (const queryCase of CASES) {
         await prisma.$queryRawUnsafe(queryCase.goldSql, TARGET_BAND_ID, ...queryCase.goldParameters);
       }
 
-      process.stdout.write(`${JSON.stringify({ preflight: 'passed', cases: NATURAL_QUERY_CASES.length })}\n`);
+      process.stdout.write(`${JSON.stringify({ preflight: 'passed', corpus: CORPUS_NAME, cases: CASES.length })}\n`);
       return;
     }
 
@@ -112,10 +118,12 @@ async function main(): Promise<void> {
     ) as unknown as EvaluationService;
     const experiment = {
       evaluatorVersion: EVALUATOR_VERSION,
+      corpus: CORPUS_NAME,
       gitCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       sourceHashes: Object.fromEntries(
         [
           'scripts/assistant-evaluation/corpus.ts',
+          'scripts/assistant-evaluation/holdout-corpus.ts',
           'scripts/assistant-evaluation/evaluate-rows.ts',
           'scripts/assistant-evaluation/run-natural.ts',
           'scripts/assistant-evaluation/seed-accuracy.sql',
@@ -189,7 +197,7 @@ async function runCases(
   let generationTrace: unknown[] = [];
   const expectedRowsById = new Map<string, unknown[]>();
 
-  for (const queryCase of NATURAL_QUERY_CASES) {
+  for (const queryCase of CASES) {
     const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(queryCase.goldSql, TARGET_BAND_ID, ...queryCase.goldParameters);
     const selfGrade = await evaluateRows({ ...queryCase, tiePolicy: undefined }, rows, rows, queryCase.goldSql);
     if (!selfGrade.matches) throw new Error(`기대 쿼리의 출력 계약을 확인하지 못했습니다: ${queryCase.id}`);
@@ -222,7 +230,7 @@ async function runCases(
     return response;
   };
 
-  for (const [index, queryCase] of NATURAL_QUERY_CASES.entries()) {
+  for (const [index, queryCase] of CASES.entries()) {
     validationAttempts = 0;
     validationFailures = [];
     llmCalls = 0;
@@ -254,9 +262,9 @@ async function runCases(
     if (result.outcome === 'generation_failed' && validationFailures.length === 0) {
       throw new Error('모델 호출 실패로 평가를 중단합니다. 부분 결과는 기록했습니다.');
     }
-    process.stderr.write(`[${index + 1}/50] ${queryCase.id} ${result.outcome} ${result.totalLatencyMs}ms\n`);
+    process.stderr.write(`[${index + 1}/${CASES.length}] ${queryCase.id} ${result.outcome} ${result.totalLatencyMs}ms\n`);
 
-    if (index < NATURAL_QUERY_CASES.length - 1 && delayMs > 0) {
+    if (index < CASES.length - 1 && delayMs > 0) {
       await delay(delayMs);
     }
   }
@@ -267,7 +275,7 @@ async function runCases(
   return results;
 
   async function executeAndCompare(
-    queryCase: (typeof NATURAL_QUERY_CASES)[number],
+    queryCase: NaturalQueryCase,
     generated: GenerationResult & { query: ValidatedSqlQuery },
     expectedRows: unknown[],
     startedAt: number,
@@ -304,7 +312,7 @@ async function runCases(
   }
 
   function failedResult(
-    queryCase: (typeof NATURAL_QUERY_CASES)[number],
+    queryCase: NaturalQueryCase,
     outcome: CaseResult['outcome'],
     expectedRows: unknown[],
     startedAt: number,
@@ -314,7 +322,7 @@ async function runCases(
   }
 
   function baseResult(
-    queryCase: (typeof NATURAL_QUERY_CASES)[number],
+    queryCase: NaturalQueryCase,
     outcome: CaseResult['outcome'],
     expectedRows: unknown[],
     startedAt: number,

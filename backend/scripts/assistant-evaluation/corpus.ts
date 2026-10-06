@@ -129,7 +129,7 @@ export const NATURAL_QUERY_CASES: NaturalQueryCase[] = [
     category: '일정·참석',
     question: '다음 합주에 아직 응답하지 않은 사람의 닉네임만 알려줘.',
     goldSql:
-      "SELECT up.nickname FROM bands b JOIN band_spaces bs ON bs.band_id = b.id JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id JOIN band_members bm ON bm.id = sp.band_member_id JOIN users u ON u.id = bm.user_id JOIN user_profiles up ON up.user_id = u.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND bs.deleted_at IS NULL AND u.deleted_at IS NULL AND sc.id = (SELECT sc2.id FROM band_spaces bs2 JOIN schedules sc2 ON sc2.band_space_id = bs2.id WHERE bs2.band_id = b.id AND bs2.deleted_at IS NULL AND sc2.schedule_type = 'PRACTICE' AND sc2.status = 'PLANNED' AND sc2.start_at >= $2::timestamptz ORDER BY sc2.start_at ASC LIMIT 1) AND (sp.attendance_status IS NULL OR sp.attendance_status = 'PENDING') ORDER BY up.nickname ASC",
+      "SELECT DISTINCT up.nickname FROM bands b JOIN band_spaces bs ON bs.band_id = b.id JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id JOIN band_members bm ON bm.id = sp.band_member_id JOIN users u ON u.id = bm.user_id JOIN user_profiles up ON up.user_id = u.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND bs.deleted_at IS NULL AND u.deleted_at IS NULL AND sc.id = (SELECT sc2.id FROM band_spaces bs2 JOIN schedules sc2 ON sc2.band_space_id = bs2.id WHERE bs2.band_id = b.id AND bs2.deleted_at IS NULL AND sc2.schedule_type = 'PRACTICE' AND sc2.status = 'PLANNED' AND sc2.start_at >= $2::timestamptz ORDER BY sc2.start_at ASC LIMIT 1) AND (sp.attendance_status IS NULL OR sp.attendance_status = 'PENDING') ORDER BY up.nickname ASC",
     goldParameters: [FIXED_NOW.toISOString()],
   },
   {
@@ -138,7 +138,7 @@ export const NATURAL_QUERY_CASES: NaturalQueryCase[] = [
     category: '일정·참석',
     question: '다음 합주에 참석한다고 답한 사람의 닉네임만 알려줘.',
     goldSql:
-      "SELECT up.nickname FROM bands b JOIN band_spaces bs ON bs.band_id = b.id JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id JOIN band_members bm ON bm.id = sp.band_member_id JOIN users u ON u.id = bm.user_id JOIN user_profiles up ON up.user_id = u.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND bs.deleted_at IS NULL AND u.deleted_at IS NULL AND sc.id = (SELECT sc2.id FROM band_spaces bs2 JOIN schedules sc2 ON sc2.band_space_id = bs2.id WHERE bs2.band_id = b.id AND bs2.deleted_at IS NULL AND sc2.schedule_type = 'PRACTICE' AND sc2.status = 'PLANNED' AND sc2.start_at >= $2::timestamptz ORDER BY sc2.start_at ASC LIMIT 1) AND sp.attendance_status = 'ATTENDING' ORDER BY up.nickname ASC",
+      "SELECT DISTINCT up.nickname FROM bands b JOIN band_spaces bs ON bs.band_id = b.id JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id JOIN band_members bm ON bm.id = sp.band_member_id JOIN users u ON u.id = bm.user_id JOIN user_profiles up ON up.user_id = u.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND bs.deleted_at IS NULL AND u.deleted_at IS NULL AND sc.id = (SELECT sc2.id FROM band_spaces bs2 JOIN schedules sc2 ON sc2.band_space_id = bs2.id WHERE bs2.band_id = b.id AND bs2.deleted_at IS NULL AND sc2.schedule_type = 'PRACTICE' AND sc2.status = 'PLANNED' AND sc2.start_at >= $2::timestamptz ORDER BY sc2.start_at ASC LIMIT 1) AND sp.attendance_status = 'ATTENDING' ORDER BY up.nickname ASC",
     goldParameters: [FIXED_NOW.toISOString()],
   },
   {
@@ -371,7 +371,7 @@ export const NATURAL_QUERY_CASES: NaturalQueryCase[] = [
     category: '팀',
     question: '리듬팀에 속한 멤버의 닉네임만 알려줘.',
     goldSql:
-      'SELECT up.nickname FROM bands b JOIN teams t ON t.band_id = b.id JOIN team_members tm ON tm.team_id = t.id JOIN band_members bm ON bm.id = tm.band_member_id JOIN users u ON u.id = bm.user_id JOIN user_profiles up ON up.user_id = u.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL AND t.name = $2 ORDER BY up.nickname ASC',
+      'SELECT DISTINCT up.nickname FROM bands b JOIN teams t ON t.band_id = b.id JOIN team_members tm ON tm.team_id = t.id JOIN band_members bm ON bm.id = tm.band_member_id JOIN users u ON u.id = bm.user_id JOIN user_profiles up ON up.user_id = u.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL AND t.name = $2 ORDER BY up.nickname ASC',
     goldParameters: ['리듬팀'],
   },
   {

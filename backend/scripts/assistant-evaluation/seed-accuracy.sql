@@ -190,11 +190,18 @@ SELECT
   timestamptz '2026-06-01 00:00:00+09'
 FROM generate_series(1, 120) AS schedule_no;
 
-INSERT INTO schedule_participants (id, schedule_id, band_member_id, attendance_status, updated_at)
+-- 최신 dev처럼 합주 참여 행은 맡은 세션을 갖고, 겸업 멤버(5의 배수, 기타+보컬)는 같은 일정에 세션 행이 둘이다.
+-- 회의는 세션 없이 멤버당 한 행이다. 참석 응답은 사람 단위라 같은 멤버의 행은 같은 상태를 갖는다.
+INSERT INTO schedule_participants (id, schedule_id, band_member_id, skill_type_id, attendance_status, updated_at)
 SELECT
-  exp_uuid('target-participant-' || schedule_no || '-' || member_no),
+  exp_uuid('target-participant-' || schedule_no || '-' || member_no || CASE WHEN session_no = 2 THEN '-vocal' ELSE '' END),
   exp_uuid('target-schedule-' || schedule_no),
   exp_uuid('target-member-' || member_no),
+  CASE
+    WHEN schedule_no % 5 = 0 THEN NULL
+    WHEN session_no = 2 THEN exp_uuid('skill-vocal')
+    ELSE (ARRAY[exp_uuid('skill-guitar'), exp_uuid('skill-bass'), exp_uuid('skill-vocal'), exp_uuid('skill-drums'), exp_uuid('skill-keyboard')])[member_no % 5 + 1]
+  END,
   CASE
     WHEN (schedule_no + member_no) % 17 = 0 THEN NULL
     WHEN (schedule_no + member_no) % 4 = 0 THEN 'PENDING'
@@ -203,7 +210,9 @@ SELECT
   END::"AttendanceStatus",
   timestamptz '2026-06-01 00:00:00+09' + schedule_no * interval '1 day'
 FROM generate_series(1, 120) AS schedule_no
-CROSS JOIN generate_series(1, 30) AS member_no;
+CROSS JOIN generate_series(1, 30) AS member_no
+CROSS JOIN generate_series(1, 2) AS session_no
+WHERE session_no = 1 OR (member_no % 5 = 0 AND schedule_no % 5 <> 0);
 
 INSERT INTO songs (id, band_id, title, artist_name, key, bpm, difficulty_level, song_length, created_by_band_member_id, created_at, updated_at)
 SELECT
@@ -268,15 +277,23 @@ SELECT
   timestamptz '2026-08-01 00:00:00+09'
 FROM generate_series(1, 5) AS team_no;
 
-INSERT INTO team_members (id, team_id, band_member_id, joined_at, team_role)
+-- 팀 편성도 세션 단위라 겸업 멤버(5의 배수)는 같은 팀에 보컬 행이 하나 더 있다. 팀마다 6명, 7행이다.
+INSERT INTO team_members (id, team_id, band_member_id, skill_type_id, joined_at, team_role)
 SELECT
-  exp_uuid('target-team-member-' || team_no || '-' || member_offset),
+  exp_uuid('target-team-member-' || team_no || '-' || member_offset || CASE WHEN session_no = 2 THEN '-vocal' ELSE '' END),
   exp_uuid('target-team-' || team_no),
-  exp_uuid('target-member-' || (((team_no - 1) * 6 + member_offset - 1) % 30 + 1)),
+  exp_uuid('target-member-' || member_no),
+  CASE
+    WHEN session_no = 2 THEN exp_uuid('skill-vocal')
+    ELSE (ARRAY[exp_uuid('skill-guitar'), exp_uuid('skill-bass'), exp_uuid('skill-vocal'), exp_uuid('skill-drums'), exp_uuid('skill-keyboard')])[member_no % 5 + 1]
+  END,
   timestamptz '2026-03-01 00:00:00+09' + member_offset * interval '1 day',
   CASE WHEN member_offset = 1 THEN 'LEADER' ELSE 'MEMBER' END::"TeamMemberRole"
 FROM generate_series(1, 5) AS team_no
-CROSS JOIN generate_series(1, 6) AS member_offset;
+CROSS JOIN generate_series(1, 6) AS member_offset
+CROSS JOIN LATERAL (SELECT ((team_no - 1) * 6 + member_offset - 1) % 30 + 1 AS member_no) AS member
+CROSS JOIN generate_series(1, 2) AS session_no
+WHERE session_no = 1 OR member_no % 5 = 0;
 
 INSERT INTO team_songs (id, team_id, song_id)
 SELECT
