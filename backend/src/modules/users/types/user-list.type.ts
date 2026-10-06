@@ -1,4 +1,11 @@
-import type { UserStatus } from 'src/generated/prisma';
+import type { SkillLevelType, UserStatus } from 'src/generated/prisma';
+
+export interface UserSkillItem {
+  skillTypeId: string;
+  skillName: string;
+  skillLevel: SkillLevelType;
+  isPrimary: boolean;
+}
 
 export interface UserListItem {
   id: string;
@@ -6,6 +13,7 @@ export interface UserListItem {
   status: UserStatus;
   avatarUrl: string | null;
   createdAt: string;
+  skills: UserSkillItem[];
 }
 
 export interface UserListCursor {
