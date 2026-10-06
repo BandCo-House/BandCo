@@ -43,11 +43,11 @@ describe('자유 SQL 결과 매핑', () => {
     expect(result.columns).toHaveLength(1);
   });
 
-  it('사람 단위로 바뀐 참여 서브쿼리의 조건도 원래 테이블 의미로 표시한다', async () => {
+  it('서버가 붙인 대표 행 조건은 표시하지 않고 기존 조건은 유지한다', async () => {
     const result = await mapSqlResult(
       {
         intent: '미응답',
-        sql: 'SELECT sp.band_member_id FROM (SELECT schedule_id, band_member_id, attendance_status FROM schedule_participants GROUP BY schedule_id, band_member_id, attendance_status) AS sp WHERE sp.attendance_status::text = $2',
+        sql: 'SELECT sp.band_member_id FROM schedule_participants sp WHERE sp.attendance_status::text = $2 AND NOT EXISTS (SELECT 1 FROM schedule_participants grain_dup_0 WHERE grain_dup_0.schedule_id = sp.schedule_id AND grain_dup_0.band_member_id = sp.band_member_id AND grain_dup_0.id < sp.id)',
         parameters: ['PENDING'],
       },
       { rows: [], hasMore: false },
