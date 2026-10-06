@@ -30,6 +30,7 @@ export interface ValidatedSqlQuery {
   intent: string;
   sql: string;
   parameters: Array<string | number | boolean>;
+  parameterTypes?: SqlParameterType[];
   resultMode?: SqlResultMode;
 }
 

@@ -32,6 +32,22 @@ describe('AssistantPrismaRepository', () => {
     expect(executeRawUnsafe).toHaveBeenNthCalledWith(2, "SET LOCAL statement_timeout = '3000ms'");
   });
 
+  it('아티스트 후보는 현재 밴드와 삭제 조건으로 제한하고 따옴표·와일드카드를 값으로 바인딩한다', async () => {
+    const queryRawUnsafe = jest.fn().mockResolvedValue([{ artist_name: '아티스트 B' }]);
+    const repository = new AssistantPrismaRepository(createPrismaMock() as unknown as PrismaService);
+    const value = "B%_'";
+    const result = await repository.findArtistNameCandidates('band-1', value, '아티스트 B 곡', { $queryRawUnsafe: queryRawUnsafe } as never);
+    const [sql, ...values] = queryRawUnsafe.mock.calls[0];
+    expect(sql).toContain('b.id = $1::uuid AND b.deleted_at IS NULL');
+    expect(sql).toContain('JOIN songs so ON so.band_id = b.id');
+    expect(sql).toContain('STRPOS(LOWER(so.artist_name), LOWER($2))');
+    expect(sql).toContain('GROUP BY so.artist_name');
+    expect(sql).toContain('LIMIT 6');
+    expect(sql).not.toContain(value);
+    expect(values).toEqual(['band-1', value, '아티스트 B 곡']);
+    expect(result).toEqual(['아티스트 B']);
+  });
+
   it('서버 bandId를 $1에 바인딩하고 외부 LIMIT을 적용한다', async () => {
     const prisma = createPrismaMock();
     const repository = new AssistantPrismaRepository(prisma as unknown as PrismaService);
