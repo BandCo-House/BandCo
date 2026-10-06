@@ -54,6 +54,15 @@ describe('SqlQueryValidator', () => {
     expect(team.sql.replace(/\s+/g, ' ')).toContain('grain_dup_0.team_id = tm.team_id');
   });
 
+  it('원래 SQL과 하위 SELECT의 별칭을 피해서 서버 별칭을 만든다', async () => {
+    const sql = `SELECT COUNT(grain_dup_0.id) ${participantFrom.replaceAll('sp.', 'grain_dup_0.').replace('schedule_participants sp ', 'schedule_participants grain_dup_0 ')}
+      AND EXISTS (SELECT grain_dup_1.id FROM bands grain_dup_1 WHERE grain_dup_1.id = $1::uuid AND grain_dup_1.deleted_at IS NULL)`;
+    const query = await validator.validate(createResponse(sql));
+    expect(query.sql).toContain('AS grain_dup_2');
+    expect(query.sql).toContain('grain_dup_2.id < grain_dup_0.id');
+    expect(query.sql).not.toContain('grain_dup_0.id < grain_dup_0.id');
+  });
+
   it('하위 SELECT의 참여 테이블에는 그 SELECT 안에서 대표 행 조건을 적용한다', async () => {
     const nested = await validator.validate(
       createResponse(`SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND EXISTS (
