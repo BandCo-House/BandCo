@@ -97,10 +97,9 @@ const buildThemeVariables = ({
     ],
     ['--secondary', requireValue(colorSet, secondaryPath)],
     ['--key', isDarkMode ? 'var(--secondary)' : 'var(--primary-main)'],
-    [
-      '--key-foreground',
-      isDarkMode ? 'var(--primary-dark)' : 'var(--greyScale-50)',
-    ],
+    // key 위에 얹히는 글자색. 다크의 key(#1a1971 남색)에 검정을 올리면 대비가 1.4:1로
+    // 떨어져 선택 영역 글자가 사라진다. 라이트와 같이 흰색으로 둔다.
+    ['--key-foreground', 'var(--greyScale-50)'],
     [
       '--key-surface',
       isDarkMode ? 'var(--secondary-surface)' : 'var(--primary-surface)',

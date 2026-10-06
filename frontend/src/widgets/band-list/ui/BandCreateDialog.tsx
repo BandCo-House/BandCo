@@ -1,4 +1,6 @@
+import { useAuth } from '@/app/providers/auth-context';
 import { useBandCreateForm } from '@/features/band-create/model/useBandCreateForm';
+import { InviteeField } from '@/features/band-create/ui/InviteeField';
 import { Button } from '@/shared/ui/button';
 import {
   AppDialogBody,
@@ -14,7 +16,7 @@ import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
 import { Input } from '@/shared/ui/input';
 import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
 import { cn } from '@/shared/lib/utils';
-import { Search, UploadIcon } from 'lucide-react';
+import { UploadIcon } from 'lucide-react';
 
 type BandCreateDialogProps = {
   open: boolean;
@@ -25,6 +27,7 @@ export const BandCreateDialog = ({
   open,
   onOpenChange,
 }: BandCreateDialogProps) => {
+  const { user } = useAuth();
   const {
     form,
     preview,
@@ -38,6 +41,8 @@ export const BandCreateDialog = ({
     handleSubmit,
     setName,
     setVisibility,
+    addInvitee,
+    removeInvitee,
   } = useBandCreateForm(open, onOpenChange);
 
   return (
@@ -131,18 +136,12 @@ export const BandCreateDialog = ({
             )}
           </div>
 
-          {/* 멤버 초대 (UI only) */}
-          <div className="flex flex-col gap-3">
-            <span className="typo-lg-sb">멤버 초대</span>
-            <div className="flex items-center gap-3 rounded-l-full rounded-r-full border border-border bg-grey-500/30 px-5 text-grey-100">
-              <Search className="text-grey-300" />
-              <Input
-                disabled
-                placeholder="이름 또는 ID를 검색하세요"
-                className="border-none bg-transparent px-0 placeholder:text-grey-100"
-              />
-            </div>
-          </div>
+          <InviteeField
+            selected={form.invitees}
+            onAdd={addInvitee}
+            onRemove={removeInvitee}
+            currentUserId={user.id}
+          />
         </AppDialogBody>
 
         <AppDialogFooter>

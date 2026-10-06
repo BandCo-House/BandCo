@@ -16,10 +16,10 @@ export function BottomNavBar({ items = NAV_ITEMS }: BottomNavBarProps) {
         'fixed bottom-0 z-40 w-full max-w-[648px] bg-gradient-top/60 footer-glow',
         'backdrop-blur-sm',
       )}
-      style={{
-        backgroundAttachment: 'fixed',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
+      // 배경이 색(bg-gradient-top/60)뿐이라 background-attachment는 아무 일도 하지 않는다.
+      // 이미지가 없으면 무시되는 속성이고, 나중에 그라데이션으로 바뀌면 iOS에서 fixed가
+      // scroll로 처리돼 깨진다(index.css에서 같은 이유로 걷어냈다). 지금 지운다.
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="flex h-18 items-center justify-around px-2">
         {items.map((item) => {

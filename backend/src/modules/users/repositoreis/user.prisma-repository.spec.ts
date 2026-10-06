@@ -247,7 +247,35 @@ describe('UsersPrismaRepository', () => {
       status: 'ACTIVE',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       profile: { nickname: 'testuser', avatarUrl: null },
+      userSkills: [],
     };
+
+    it('유저에게 세션이 있을 때, 목록 항목은 세션 이름과 대표 여부를 함께 담아야 한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([
+        {
+          ...listRecord,
+          userSkills: [
+            { skillTypeId: 'skill-1', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: '보컬' } },
+            { skillTypeId: 'skill-2', skillLevel: 'BEGINNER', isPrimary: false, skillType: { name: '드럼' } },
+          ],
+        },
+      ]);
+
+      const result = await repository.findUsers(defaultQuery);
+
+      expect(result.items[0].skills).toEqual([
+        { skillTypeId: 'skill-1', skillName: '보컬', skillLevel: 'ADVANCED', isPrimary: true },
+        { skillTypeId: 'skill-2', skillName: '드럼', skillLevel: 'BEGINNER', isPrimary: false },
+      ]);
+    });
+
+    it('세션이 없는 유저일 때, 목록 항목의 skills는 빈 배열이어야 한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([listRecord]);
+
+      const result = await repository.findUsers(defaultQuery);
+
+      expect(result.items[0].skills).toEqual([]);
+    });
 
     it('기본 where에는 deletedAt: null만 포함된다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
