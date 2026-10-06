@@ -131,7 +131,7 @@ export const BandUserInviteModal = ({
           variant="roundedFull"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="사용자 이름 또는 이메일"
+          placeholder="이름으로 검색하세요"
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
         />
 

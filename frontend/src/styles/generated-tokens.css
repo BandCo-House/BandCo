@@ -73,7 +73,7 @@
   --secondary-surface: var(--primary-surface);
   --secondary: #1a1971;
   --key: var(--secondary);
-  --key-foreground: var(--primary-dark);
+  --key-foreground: var(--greyScale-50);
   --key-surface: var(--secondary-surface);
   --key-muted: var(--secondary);
   --success-surface: #ebfef5;

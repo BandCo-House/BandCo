@@ -37,4 +37,3 @@ export const handlers = [
   ...genreHandlers,
   ...userHandlers,
 ];
-
