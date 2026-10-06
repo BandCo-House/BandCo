@@ -39,8 +39,12 @@ describe('BandUserInviteModal', () => {
       { wrapper: createWrapper() },
     );
 
-    expect(screen.getByRole('heading', { name: '사용자 검색' })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('사용자 이름 또는 이메일')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '사용자 검색' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('이름으로 검색하세요'),
+    ).toBeInTheDocument();
   });
 
   it('초기 검색어가 주어지면 검색 결과가 렌더링된다', async () => {

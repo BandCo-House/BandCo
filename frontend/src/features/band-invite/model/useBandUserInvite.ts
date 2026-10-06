@@ -20,9 +20,9 @@ export function useBandUserInvite({
   onClose,
 }: UseBandUserInviteProps) {
   const [query, setQuery] = useState(initialQuery);
-  const [selectedUsers, setSelectedUsers] = useState<Map<string, UserSearchItem>>(
-    new Map(),
-  );
+  const [selectedUsers, setSelectedUsers] = useState<
+    Map<string, UserSearchItem>
+  >(new Map());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -90,7 +90,9 @@ export function useBandUserInvite({
           `${succeeded.length}명 전송 성공, ${failed.length}명 전송 실패 (이미 멤버이거나 초대 진행 중)`,
         );
       } else {
-        toast.error('초대 전송에 실패했습니다. 이미 멤버이거나 초대가 존재할 수 있습니다.');
+        toast.error(
+          '초대 전송에 실패했습니다. 이미 멤버이거나 초대가 존재할 수 있습니다.',
+        );
       }
 
       onSuccess?.(succeeded.length);

@@ -46,9 +46,12 @@ describe('useUserSearch', () => {
   });
 
   it('enabled가 false이면 검색어가 있어도 실행되지 않는다', () => {
-    const { result } = renderHook(() => useUserSearch('김', { enabled: false }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(
+      () => useUserSearch('김', { enabled: false }),
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(result.current.fetchStatus).toBe('idle');
   });

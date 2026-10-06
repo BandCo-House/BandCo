@@ -96,13 +96,14 @@ describe('BandBasicSettings', () => {
     renderSettings();
 
     expect(screen.getByText('직접 추가')).toBeInTheDocument();
-    const searchInput = screen.getByPlaceholderText('사용자 이름 또는 이메일');
+    const searchInput = screen.getByPlaceholderText('이름으로 검색하세요');
     expect(searchInput).toBeInTheDocument();
 
     await user.type(searchInput, '김');
     await user.click(screen.getByRole('button', { name: '검색' }));
 
-    expect(await screen.findByRole('heading', { name: '사용자 검색' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: '사용자 검색' }),
+    ).toBeInTheDocument();
   });
 });
-

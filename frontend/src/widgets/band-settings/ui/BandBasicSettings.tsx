@@ -275,7 +275,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
                 setIsInviteModalOpen(true);
               }
             }}
-            placeholder="사용자 이름 또는 이메일"
+            placeholder="이름으로 검색하세요"
             className="flex-1 border-white/24 py-4 typo-base-sb placeholder:text-grey-300"
           />
           <Button

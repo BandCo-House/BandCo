@@ -14,7 +14,8 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-kim-001',
     nickname: '김나영',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
     status: 'ACTIVE',
     skills: [{ skillName: '보컬', isPrimary: true }],
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -22,7 +23,8 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-kim-002',
     nickname: '김지훈',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
     status: 'ACTIVE',
     skills: [{ skillName: '일렉기타', isPrimary: true }],
     createdAt: '2026-01-02T00:00:00.000Z',
@@ -42,6 +44,24 @@ export const mockUsers: MockUserListItem[] = [
     status: 'ACTIVE',
     skills: [{ skillName: '드럼', isPrimary: true }],
     createdAt: '2026-01-04T00:00:00.000Z',
+  },
+  // auth mock의 로그인 사용자. 초대 후보에서 본인이 빠지는지 dev에서 확인하려면 목록에 있어야 한다.
+  {
+    id: 'user-001',
+    nickname: '김민수',
+    avatarUrl: null,
+    status: 'ACTIVE',
+    skills: [{ skillName: '보컬', isPrimary: true }],
+    createdAt: '2026-01-05T00:00:00.000Z',
+  },
+  // 백엔드 /users는 비활성 유저도 돌려주지만 초대는 ACTIVE만 통과한다. 거르는지 확인용.
+  {
+    id: 'user-kim-005',
+    nickname: '김도윤',
+    avatarUrl: null,
+    status: 'INACTIVE',
+    skills: [{ skillName: '베이스', isPrimary: true }],
+    createdAt: '2026-01-06T00:00:00.000Z',
   },
 ];
 
