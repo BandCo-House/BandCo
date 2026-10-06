@@ -14,7 +14,7 @@ import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
-import { createSqlRelationRepairHint, getSqlCountUnit } from './sql/sql-query-context';
+import { createSqlRepairInstruction, getSqlCountUnit } from './sql/sql-query-context';
 import type { AssistantAnswer, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
 
@@ -119,20 +119,19 @@ export class AssistantService {
 
   /**
    * LLM SQL을 AST로 검증하고 형식이 잘못된 경우 실패 이유를 주어 최대 두 번 재생성한다.
-   * 지원 범위 밖 질문은 같은 결과가 반복되므로 재생성하지 않는다.
+   * 재생성에는 모든 시도의 위반과 직전 SQL을 함께 준다. 지원 범위 밖 질문은 같은 결과가 반복되므로 재생성하지 않는다.
    */
   private async generateSqlFromQuestion(question: string, now: Date): Promise<SqlGenerationResult> {
     const baseInstruction = createSqlGenerationSystemInstruction(now, question);
-    let lastFailure = '';
+    const failures: string[] = [];
+    let previousSql = '';
     let inputTokens = 0;
     let outputTokens = 0;
 
     for (let attempt = 0; attempt <= MAX_SQL_REGENERATIONS; attempt += 1) {
       const response = await this.llmService.generateStructured({
         systemInstruction:
-          attempt === 0
-            ? baseInstruction
-            : `${baseInstruction}\n\n# 직전 검증 실패\n${lastFailure}\n${createSqlRelationRepairHint(lastFailure)}\n규칙에 맞게 다시 생성한다.`,
+          attempt === 0 ? baseInstruction : `${baseInstruction}\n\n${createSqlRepairInstruction(failures, previousSql)}\n규칙에 맞게 다시 생성한다.`,
         userMessage: question,
         responseSchema: SQL_GENERATION_RESPONSE_SCHEMA,
         maxOutputTokens: 1_500,
@@ -168,7 +167,8 @@ export class AssistantService {
         }
 
         if (error instanceof InvalidSqlQueryError) {
-          lastFailure = error.message;
+          failures.push(error.message);
+          previousSql = readGeneratedSql(response.parsed);
           this.logger.warn(`SQL 검증에 실패해 재생성합니다: ${error.message}`);
           continue;
         }
@@ -222,4 +222,9 @@ export class AssistantService {
 /** 알 수 없는 실행 오류를 운영 로그에서 확인할 수 있는 문자열로 만든다. */
 function toMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** 검증에 실패한 응답의 SQL을 다음 재생성의 수정 대상으로 사용한다. */
+function readGeneratedSql(parsed: unknown): string {
+  return typeof parsed === 'object' && parsed !== null && 'sql' in parsed && typeof parsed.sql === 'string' ? parsed.sql : '';
 }

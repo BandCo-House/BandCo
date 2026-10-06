@@ -57,16 +57,36 @@ export function createSqlQueryContext(question: string): string {
 
 /** 반복된 관계 오류에는 실제 카탈로그의 필수 연결을 구체적으로 제공한다. */
 export function createSqlRelationRepairHint(failure: string): string {
-  const table = /REQUIRED_RELATION_MISSING: ([a-z_]+) 별칭/.exec(failure)?.[1];
-  if (!table || !SQL_REQUIRED_RELATIONS[table]) return '';
-  const joins = SQL_REQUIRED_RELATIONS[table].flatMap(required =>
-    SQL_CATALOG_JOINS.filter(join => {
-      const left = join.left.split('.')[0];
-      const right = join.right.split('.')[0];
-      return (left === table && right === required) || (left === required && right === table);
-    }).map(join => `${join.left} = ${join.right}`),
-  );
-  return `# 필요한 관계 복구\n${table}를 사용한 각 SELECT와 중첩 SELECT에서 다음 직접 관계를 모두 구성한다:\n${joins.join('\n')}`;
+  const tables = [...new Set([...failure.matchAll(/REQUIRED_RELATION_MISSING: ([a-z_]+) 별칭/g)].map(match => match[1]))];
+  const sections = tables
+    .filter(table => SQL_REQUIRED_RELATIONS[table])
+    .map(table => {
+      const joins = SQL_REQUIRED_RELATIONS[table].flatMap(required =>
+        SQL_CATALOG_JOINS.filter(join => {
+          const left = join.left.split('.')[0];
+          const right = join.right.split('.')[0];
+          return (left === table && right === required) || (left === required && right === table);
+        }).map(join => `${join.left} = ${join.right}`),
+      );
+      return `${table}를 사용한 각 SELECT와 중첩 SELECT에서 다음 직접 관계를 모두 구성한다:\n${joins.join('\n')}`;
+    });
+  return sections.length === 0 ? '' : `# 필요한 관계 복구\n${sections.join('\n')}`;
+}
+
+/**
+ * 재생성 지시를 만든다. 직전 실패만 주면 모델이 그 규칙을 고치며 앞서 고친 규칙을 다시 어긴다.
+ * 모든 시도의 위반과 직전 SQL을 함께 주어 처음부터 다시 쓰지 않고 위반 부분만 고치게 한다.
+ */
+export function createSqlRepairInstruction(failures: string[], previousSql: string): string {
+  return [
+    '# 이전 시도의 검증 실패',
+    '아래 위반을 모두 동시에 만족해야 한다. 앞 시도에서 고친 규칙을 다시 어기지 않는다.',
+    ...failures.map((failure, index) => `${index + 1}차 시도:\n${failure}`),
+    ...(previousSql ? ['# 직전 SQL', previousSql, '직전 SQL에서 위반한 부분만 고치고 이미 맞는 JOIN·조건·집계는 유지한다.'] : []),
+    createSqlRelationRepairHint(failures.join('\n')),
+  ]
+    .filter(line => line !== '')
+    .join('\n');
 }
 
 export type SqlCountUnit = 'PEOPLE' | 'SCHEDULES';

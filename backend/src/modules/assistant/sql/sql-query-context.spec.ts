@@ -1,4 +1,4 @@
-import { createSqlQueryContext, createSqlRelationRepairHint, getSqlCountUnit } from './sql-query-context';
+import { createSqlQueryContext, createSqlRelationRepairHint, createSqlRepairInstruction, getSqlCountUnit } from './sql-query-context';
 
 describe('질문별 SQL 관계 맥락', () => {
   it('다음 합주 인원은 일정 선택과 고유 인원 집계를 제공한다', () => {
@@ -37,5 +37,27 @@ describe('질문별 SQL 관계 맥락', () => {
     expect(hint).toContain('schedules.id = schedule_participants.schedule_id');
     expect(hint).toContain('band_members.id = schedule_participants.band_member_id');
     expect(createSqlRelationRepairHint('SELECT_ONLY: SELECT만 허용합니다.')).toBe('');
+  });
+
+  it('재생성 지시는 모든 시도의 위반과 직전 SQL을 함께 제공한다', () => {
+    const instruction = createSqlRepairInstruction(
+      [
+        'REQUIRED_RELATION_MISSING: team_members 별칭 tm에 필요한 직접 관계가 없습니다: band_members',
+        'COUNT_UNIT_MISMATCH: 인원은 세션 행 수가 아닙니다.',
+      ],
+      'SELECT COUNT(tm.band_member_id) FROM team_members tm',
+    );
+    expect(instruction).toContain('1차 시도:\nREQUIRED_RELATION_MISSING');
+    expect(instruction).toContain('2차 시도:\nCOUNT_UNIT_MISMATCH');
+    expect(instruction).toContain('# 직전 SQL\nSELECT COUNT(tm.band_member_id) FROM team_members tm');
+    expect(instruction).toContain('band_members.id = team_members.band_member_id');
+  });
+
+  it('여러 테이블의 관계 오류를 모두 복구 지시에 포함한다', () => {
+    const hint = createSqlRelationRepairHint(
+      'REQUIRED_RELATION_MISSING: schedule_participants 별칭 sp에 필요한 직접 관계가 없습니다: band_members\nREQUIRED_RELATION_MISSING: team_members 별칭 tm에 필요한 직접 관계가 없습니다: band_members',
+    );
+    expect(hint).toContain('band_members.id = schedule_participants.band_member_id');
+    expect(hint).toContain('band_members.id = team_members.band_member_id');
   });
 });

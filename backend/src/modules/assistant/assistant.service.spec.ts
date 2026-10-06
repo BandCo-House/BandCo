@@ -217,7 +217,9 @@ describe('AssistantService', () => {
     expect(answer.answerable).toBe(true);
     expect(harness.llmRequests).toHaveLength(3);
     expect(harness.llmRequests[1].systemInstruction).toContain('SELECT_ONLY');
-    expect(harness.llmRequests[2].systemInstruction).toContain('BAND_SCOPE_MISSING');
+    // 두 번째 재생성에도 첫 번째 위반을 남겨 이미 고친 규칙을 다시 어기지 않게 한다.
+    expect(harness.llmRequests[2].systemInstruction).toContain('1차 시도:\nSELECT_ONLY');
+    expect(harness.llmRequests[2].systemInstruction).toContain('2차 시도:\nBAND_SCOPE_MISSING');
     expect(answer.meta.inputTokens).toBe(300);
     expect(answer.meta.outputTokens).toBe(60);
   });

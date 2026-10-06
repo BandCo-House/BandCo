@@ -29,6 +29,17 @@ describe('SqlQueryValidator', () => {
     await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT sc.id) ${participantFrom}`), 'SCHEDULES')).resolves.toBeDefined();
   });
 
+  it('관계 누락과 집계 단위처럼 서로 독립인 위반은 한 번에 모두 알린다', async () => {
+    const sql = `SELECT COUNT(sp.band_member_id) FROM bands b JOIN band_spaces bs ON bs.band_id = b.id
+      JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id
+      WHERE b.id = $1::uuid AND bs.deleted_at IS NULL`;
+
+    await expect(validator.validate(createResponse(sql), 'PEOPLE')).rejects.toMatchObject({
+      code: 'SOFT_DELETE_SCOPE_MISSING',
+      codes: ['SOFT_DELETE_SCOPE_MISSING', 'REQUIRED_RELATION_MISSING', 'COUNT_UNIT_MISMATCH'],
+    });
+  });
+
   it('명시적 행 수와 다중 세션 관계가 없는 인원은 기존 자유 집계를 허용한다', async () => {
     await expect(validator.validate(createResponse(`SELECT COUNT(*) ${participantFrom}`))).resolves.toBeDefined();
     await expect(

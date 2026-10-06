@@ -210,7 +210,7 @@ async function runCases(
     try {
       return await originalValidate(raw, countUnit);
     } catch (error) {
-      validationFailures.push(error instanceof InvalidSqlQueryError ? error.code : errorName(error));
+      validationFailures.push(...(error instanceof InvalidSqlQueryError ? error.codes : [errorName(error)]));
       throw error;
     }
   };
