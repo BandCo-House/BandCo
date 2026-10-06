@@ -41,10 +41,20 @@ describe('AssistantPrismaRepository', () => {
     const result = await repository.executeGeneratedQuery('SELECT COUNT(bm.id)::int AS member_count FROM bands b', ['기타'], 'band-1', tx as never);
 
     expect(queryRawUnsafe).toHaveBeenCalledWith(
-      'SELECT * FROM (SELECT COUNT(bm.id)::int AS member_count FROM bands b) AS assistant_result LIMIT 50',
+      'SELECT * FROM (SELECT COUNT(bm.id)::int AS member_count FROM bands b) AS assistant_result LIMIT 51',
       'band-1',
       '기타',
     );
     expect(result).toEqual([{ member_count: 3 }]);
+  });
+
+  it.each([0, 20, 21, 50, 51])('%i행에서 추가 결과 여부와 표시 행 수를 구분한다', async count => {
+    const rows = Array.from({ length: count }, (_, index) => ({ nickname: `멤버${index}` }));
+    const queryRawUnsafe = jest.fn().mockResolvedValue(rows);
+    const repository = new AssistantPrismaRepository(createPrismaMock() as unknown as PrismaService);
+    const page = await repository.executeGeneratedQueryPage('SELECT b.name FROM bands b', [], 'band-1', { $queryRawUnsafe: queryRawUnsafe } as never);
+    expect(page.rows).toHaveLength(Math.min(count, 50));
+    expect(page.hasMore).toBe(count > 50);
+    expect(queryRawUnsafe.mock.calls[0][0]).toContain('LIMIT 51');
   });
 });

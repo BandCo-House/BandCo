@@ -1,5 +1,5 @@
 import type { Prisma } from '../../../generated/prisma';
-import type { SqlQueryRow } from '../sql/generated-sql.type';
+import type { SqlQueryPage, SqlQueryRow } from '../sql/generated-sql.type';
 
 export const ASSISTANT_REPOSITORY = Symbol('ASSISTANT_REPOSITORY');
 
@@ -7,6 +7,12 @@ export const ASSISTANT_REPOSITORY = Symbol('ASSISTANT_REPOSITORY');
 export interface AssistantRepository {
   findBandMemberByBandIdAndUserId(bandId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
   configureReadOnlyTransaction(tx: Prisma.TransactionClient): Promise<void>;
+  executeGeneratedQueryPage(
+    sql: string,
+    parameters: Array<string | number | boolean>,
+    bandId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<SqlQueryPage>;
   executeGeneratedQuery(
     sql: string,
     parameters: Array<string | number | boolean>,

@@ -196,11 +196,11 @@ async function runCases(
     expectedRowsById.set(queryCase.id, rows);
   }
 
-  validator.validate = async (raw: unknown) => {
+  validator.validate = async (raw: unknown, countUnit) => {
     validationAttempts += 1;
 
     try {
-      return await originalValidate(raw);
+      return await originalValidate(raw, countUnit);
     } catch (error) {
       validationFailures.push(error instanceof InvalidSqlQueryError ? error.code : errorName(error));
       throw error;

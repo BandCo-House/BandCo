@@ -2,11 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
-import type { SqlQueryRow } from '../sql/generated-sql.type';
+import { MAX_ASSISTANT_RESULT_ROWS, type SqlQueryPage, type SqlQueryRow } from '../sql/generated-sql.type';
 
 import type { AssistantRepository } from './assistant.repository';
 
-const MAX_RESULT_ROWS = 50;
 const STATEMENT_TIMEOUT_MS = 3_000;
 
 @Injectable()
@@ -42,8 +41,18 @@ export class AssistantPrismaRepository implements AssistantRepository {
     bandId: string,
     tx: Prisma.TransactionClient,
   ): Promise<SqlQueryRow[]> {
-    const boundedSql = `SELECT * FROM (${sql}) AS assistant_result LIMIT ${MAX_RESULT_ROWS}`;
+    return (await this.executeGeneratedQueryPage(sql, parameters, bandId, tx)).rows;
+  }
 
-    return tx.$queryRawUnsafe<SqlQueryRow[]>(boundedSql, bandId, ...parameters);
+  /** 51번째 행의 존재를 확인하고, 사용자에게 전달할 행은 50개로 제한한다. */
+  async executeGeneratedQueryPage(
+    sql: string,
+    parameters: Array<string | number | boolean>,
+    bandId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<SqlQueryPage> {
+    const boundedSql = `SELECT * FROM (${sql}) AS assistant_result LIMIT ${MAX_ASSISTANT_RESULT_ROWS + 1}`;
+    const rows = await tx.$queryRawUnsafe<SqlQueryRow[]>(boundedSql, bandId, ...parameters);
+    return { rows: rows.slice(0, MAX_ASSISTANT_RESULT_ROWS), hasMore: rows.length > MAX_ASSISTANT_RESULT_ROWS };
   }
 }

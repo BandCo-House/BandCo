@@ -1,3 +1,17 @@
+import type { SqlResultMode } from '../sql/generated-sql.type';
+
+export type AssistantResultValue = string | number | boolean | null;
+
+export interface AssistantTableResult {
+  entity: 'table';
+  columns: Array<{ key: string; label: string; format: 'plain' | 'datetime' }>;
+  rows: Array<Record<string, AssistantResultValue>>;
+  hasMore: boolean;
+  maxRows: number;
+  resultMode: SqlResultMode | 'LEGACY';
+  conditions: string[];
+}
+
 export interface AssistantQueryMeta {
   /** SQL을 생성한 provider와 모델이다. */
   providerName: string | null;
@@ -17,7 +31,7 @@ export interface AssistantAnswer {
   answerable: boolean;
   /** 서버가 조회 결과로부터 결정적으로 만든 요약 문장 */
   summary: string;
-  /** MVP는 기존 프론트 계약을 유지하면서 자유 질의 결과를 summary로 표시한다. */
-  result: null;
+  /** 실제 조회된 행과 추가 결과 여부다. 미지원 질문은 null이다. */
+  result: AssistantTableResult | null;
   meta: AssistantQueryMeta;
 }
