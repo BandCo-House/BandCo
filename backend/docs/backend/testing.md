@@ -215,4 +215,4 @@ it('외부 transaction client가 있으면 새 transaction을 열지 않는다',
 
 `pnpm run test:assistant-evaluation`은 `scripts/assistant-evaluation/`의 타입 검사와 Node 테스트를 실행한다. 일반 앱 테스트와 함께 `scripts/verify.sh`에서 실행하며, 이 검증은 모델 키나 DB 연결을 사용하지 않는다.
 
-실제 Gemini·합성 DB 재평가는 [평가 실행 안내](../../scripts/assistant-evaluation/README.md)를 따른다. 모델 평가 점수는 테스트 통과 수와 별도 지표로 기록한다.
+실제 Gemini·합성 DB 재평가는 [평가 실행 안내](../../scripts/assistant-evaluation/README.md)를 따른다. 보고서와 원시 결과는 Git 저장소 밖 절대 경로에서 관리한다. 모델 평가 점수는 테스트 통과 수와 별도 지표로 기록한다.

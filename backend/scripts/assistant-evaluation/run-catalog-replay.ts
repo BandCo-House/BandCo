@@ -6,7 +6,7 @@ import { PrismaService } from '../../src/database/prisma';
 import { AssistantPrismaRepository } from '../../src/modules/assistant/repositories/assistant.prisma-repository';
 import { SqlQueryValidator } from '../../src/modules/assistant/sql/sql-query.validator';
 
-import { readEvaluationDatabaseUrl } from './evaluation-environment';
+import { readEvaluationDatabaseUrl, readEvaluationOutputPath } from './evaluation-environment';
 
 const BAND_ID = '11111111-1111-4111-8111-111111111111';
 const genreSql = `SELECT COUNT(fg.id)::int AS member_count
@@ -22,7 +22,10 @@ const leaderSql = `SELECT up.nickname FROM bands b JOIN teams t ON t.band_id = b
 /** 모델의 변동을 배제하고 고정 SQL의 허용 여부와 실행 결과를 기록한다. */
 async function main(): Promise<void> {
   process.env.DATABASE_URL = readEvaluationDatabaseUrl(process.env.ASSISTANT_EVALUATION_DATABASE_URL);
-  const outputPath = process.env.EXPERIMENT_OUTPUT_PATH;
+  const outputPath = readEvaluationOutputPath(
+    process.env.EXPERIMENT_OUTPUT_PATH,
+    execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim(),
+  );
   if (!outputPath || existsSync(outputPath)) throw new Error('새 EXPERIMENT_OUTPUT_PATH가 필요합니다.');
   const prisma = new PrismaService();
   const repository = new AssistantPrismaRepository(prisma);

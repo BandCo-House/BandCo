@@ -37,7 +37,8 @@ export ASSISTANT_EVALUATION_DATABASE_URL='postgresql://postgres:assistant-evalua
 DATABASE_URL="$ASSISTANT_EVALUATION_DATABASE_URL" pnpm exec prisma db push --skip-generate
 docker exec -i bandco-assistant-evaluation psql -U postgres \
   -d bandco_assistant_evaluation -v ON_ERROR_STOP=1 < scripts/assistant-evaluation/seed-accuracy.sql
-mkdir -p _workspace/assistant-evaluation
+export ASSISTANT_RESEARCH_DIR="$HOME/Documents/bandco-assistant-research/runs/new-run"
+mkdir -p "$ASSISTANT_RESEARCH_DIR"
 ```
 
 seed는 빈 DB에서 한 번만 실행한다. 스크립트는 전용 로컬 `bandco_assistant_evaluation` URL만 받으며 앱의 `DATABASE_URL`로 자동 대체하지 않는다.
@@ -48,26 +49,26 @@ Gemini 키는 `.env.development`에서 읽고 없으면 `.env`를 사용한다. 
 
 ```sh
 NODE_ENV=test EXPERIMENT_PREFLIGHT_ONLY=true \
-  EXPERIMENT_OUTPUT_PATH=_workspace/assistant-evaluation/preflight.json \
+  EXPERIMENT_OUTPUT_PATH="$ASSISTANT_RESEARCH_DIR/preflight.json" \
   pnpm exec tsx scripts/assistant-evaluation/run-natural.ts
 
-NODE_ENV=test EXPERIMENT_OUTPUT_PATH=_workspace/assistant-evaluation/natural-before.json \
+NODE_ENV=test EXPERIMENT_OUTPUT_PATH="$ASSISTANT_RESEARCH_DIR/natural-before.json" \
   pnpm exec tsx scripts/assistant-evaluation/run-natural.ts
 ```
 
 제품을 수정한 뒤 동일 env·DB·평가기·코퍼스에서 `natural-after.json`이라는 새 경로로 실행한다. 고정 시각은 `2026-09-01T00:00:00.000Z`, temperature 0, 요청 동시성 1, 문항 간 기본 간격 4.5초, SQL 재생성 최대 2회다. key/provider rotation은 강제로 OFF이고 provider는 Gemini다. 제공자 timeout·재시도 설정과 실제 모델명은 결과 메타데이터에 기록한다.
 
-기존 결과를 덮어쓰지 않으며 문항마다 중간 결과를 저장한다. 환경·모델 호출이 실패하면 부분 결과를 남기고 평가를 중단한다. 부분 실행의 점수를 50문항 점수로 제시하지 않는다.
+결과는 Git 저장소 밖 절대 경로에만 저장한다. 내부 경로와 내부로 연결되는 심볼릭 링크는 거부한다. 보고서·원시 결과·가설 기록은 프로젝트 밖에서 관리한다. 기존 결과를 덮어쓰지 않으며 문항마다 중간 결과를 저장한다. 환경·모델 호출이 실패하면 부분 결과를 남기고 평가를 중단한다. 부분 실행의 점수를 50문항 점수로 제시하지 않는다.
 
 이 도구는 Service의 기존 생성 메서드와 Repository 실행 경로를 직접 호출한다. 인증 HTTP 경로와 프론트 화면은 통과하지 않으며, DB 결과 일치를 화면 제공·과업 성공으로 계산하지 않는다. LLM 논리 호출 수는 provider의 내부 재시도 횟수와 다르다. 지연은 생성·검증·실행·평가를 포함하고 HTTP·렌더링은 포함하지 않는다.
 
 ## 가설별 고정 SQL 검증
 
 ```sh
-NODE_ENV=test EXPERIMENT_OUTPUT_PATH=_workspace/assistant-evaluation/catalog-before.json \
+NODE_ENV=test EXPERIMENT_OUTPUT_PATH="$ASSISTANT_RESEARCH_DIR/catalog-before.json" \
   pnpm exec tsx scripts/assistant-evaluation/run-catalog-replay.ts
 
-NODE_ENV=test EXPERIMENT_OUTPUT_PATH=_workspace/assistant-evaluation/session-replay.json \
+NODE_ENV=test EXPERIMENT_OUTPUT_PATH="$ASSISTANT_RESEARCH_DIR/session-replay.json" \
   pnpm exec tsx scripts/assistant-evaluation/run-session-replay.ts
 ```
 

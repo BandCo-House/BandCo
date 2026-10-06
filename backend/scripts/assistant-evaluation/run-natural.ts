@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 
 import { EVALUATOR_VERSION, evaluateRows } from './evaluate-rows';
-import { readEvaluationDatabaseUrl } from './evaluation-environment';
+import { readEvaluationDatabaseUrl, readEvaluationOutputPath } from './evaluation-environment';
 
 import { PrismaService } from '../../src/database/prisma';
 import { getAiConfig } from '../../src/modules/ai/ai.config';
@@ -62,7 +62,10 @@ async function main(): Promise<void> {
   const envPath = process.env.ASSISTANT_EVALUATION_ENV_FILE ?? defaultEnvPath;
   if (existsSync(envPath)) loadEnvFile(envPath);
   process.env.DATABASE_URL = databaseUrl;
-  const outputPath = process.env.EXPERIMENT_OUTPUT_PATH;
+  const outputPath = readEvaluationOutputPath(
+    process.env.EXPERIMENT_OUTPUT_PATH,
+    execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim(),
+  );
   if (!outputPath) throw new Error('EXPERIMENT_OUTPUT_PATH가 필요합니다.');
   if (existsSync(outputPath)) throw new Error('기존 원시 결과는 덮어쓰지 않습니다.');
 
@@ -126,7 +129,13 @@ async function main(): Promise<void> {
           'src/modules/ai/ai.config.ts',
           'src/modules/ai/llm.service.ts',
           'scripts/assistant-evaluation/evaluation-environment.ts',
-        ].map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]),
+          'src/modules/assistant/sql/generated-sql.type.ts',
+          'src/modules/assistant/sql/sql-generation.schema.ts',
+          'src/modules/assistant/sql/sql-query-context.ts',
+          'src/modules/assistant/rendering/sql-result.mapper.ts',
+        ]
+          .filter(existsSync)
+          .map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]),
       ),
       fixedNow: FIXED_NOW.toISOString(),
       startedAt,
