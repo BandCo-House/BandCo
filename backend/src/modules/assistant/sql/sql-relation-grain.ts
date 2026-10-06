@@ -23,8 +23,10 @@ const TARGET_ALIAS = 'grain_target';
  */
 export async function normalizeRelationGrain(ast: AstRecord): Promise<void> {
   const selects: AstRecord[] = [];
+  const usedAliases = new Set<string>();
   walk(ast, node => {
     if (isRecord(node.SelectStmt)) selects.push(node.SelectStmt);
+    if (typeof node.aliasname === 'string') usedAliases.add(node.aliasname);
   });
 
   let duplicateAliasNumber = 0;
@@ -32,7 +34,12 @@ export async function normalizeRelationGrain(ast: AstRecord): Promise<void> {
     for (const { table, alias } of collectFromTables(select.fromClause)) {
       const key = PERSON_GRAIN_KEYS[table];
       if (!key) continue;
-      const condition = await createRepresentativeRowCondition(table, key, alias, `grain_dup_${duplicateAliasNumber++}`);
+      let duplicateAlias: string;
+      do {
+        duplicateAlias = `grain_dup_${duplicateAliasNumber++}`;
+      } while (usedAliases.has(duplicateAlias));
+      usedAliases.add(duplicateAlias);
+      const condition = await createRepresentativeRowCondition(table, key, alias, duplicateAlias);
       appendAndCondition(select, condition);
     }
   }
