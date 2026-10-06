@@ -43,8 +43,8 @@ const QUERY_CONTEXTS: QueryContext[] = [
   {
     matches: /일정|합주|회의|합주실/,
     instruction: [
-      '일정 목록은 별도 취소 제외 요청이 없으면 CANCELED도 포함한다. 기간·장소 목록에 통계의 취소 제외 기본값을 적용하지 않는다.',
-      '일정 횟수·참석·편성 통계는 별도 요청이 없으면 CANCELED를 제외한다. 취소 포함을 명시하면 그 요청을 따른다.',
+      '원본 일정의 제목·시각을 나열하는 조회는 별도 취소 제외 요청이 없으면 CANCELED도 포함한다. 기간·장소의 원본 목록에 통계 기본값을 적용하지 않는다.',
+      'COUNT/SUM/AVG 등 집계는 종류별 건수를 포함해 통계다. 여러 집계 행을 나열해도 원본 일정 목록이 아니며 기본적으로 CANCELED를 제외한다. 취소 포함을 명시하면 그 요청을 따른다.',
     ],
   },
 ];
@@ -67,4 +67,17 @@ export function createSqlRelationRepairHint(failure: string): string {
     }).map(join => `${join.left} = ${join.right}`),
   );
   return `# 필요한 관계 복구\n${table}를 사용한 각 SELECT와 중첩 SELECT에서 다음 직접 관계를 모두 구성한다:\n${joins.join('\n')}`;
+}
+
+export type SqlCountUnit = 'PEOPLE' | 'SCHEDULES';
+
+/** 명확한 인원·참석 횟수 질문만 검증한다. 편성 행 수와 복합 질문은 강제하지 않는다. */
+export function getSqlCountUnit(question: string): SqlCountUnit | undefined {
+  if (/세션\s*수|편성\s*(?:행|건)\s*수|행\s*수/.test(question)) return undefined;
+  const people = /몇\s*명|인원|사람\s*수|멤버\s*수/.test(question);
+  const frequency = /횟수|몇\s*번/.test(question);
+  if (people && frequency) return undefined;
+  if (people && /참석|참여|응답|대상자|팀|멤버/.test(question)) return 'PEOPLE';
+  if (frequency && /참석|응답/.test(question)) return 'SCHEDULES';
+  return undefined;
 }

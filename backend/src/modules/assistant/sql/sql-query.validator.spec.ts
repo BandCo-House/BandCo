@@ -12,6 +12,76 @@ describe('SqlQueryValidator', () => {
     unsupportedReason: null,
   });
 
+  const participantFrom = `FROM bands b JOIN band_spaces bs ON bs.band_id = b.id
+    JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id
+    JOIN band_members bm ON bm.id = sp.band_member_id
+    WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND bs.deleted_at IS NULL`;
+
+  it('다중 세션 인원과 참석 횟수는 각각 고유 멤버와 고유 일정만 센다', async () => {
+    await expect(validator.validate(createResponse(`SELECT COUNT(sp.id) ${participantFrom}`), 'PEOPLE')).rejects.toMatchObject({
+      code: 'COUNT_UNIT_MISMATCH',
+    });
+    await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT sp.band_member_id) ${participantFrom}`), 'PEOPLE')).resolves.toBeDefined();
+    await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT bm.id) ${participantFrom}`), 'PEOPLE')).resolves.toBeDefined();
+    await expect(
+      validator.validate(createResponse(`SELECT COUNT(DISTINCT sp.band_member_id) ${participantFrom}`), 'SCHEDULES'),
+    ).rejects.toMatchObject({ code: 'COUNT_UNIT_MISMATCH' });
+    await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT sc.id) ${participantFrom}`), 'SCHEDULES')).resolves.toBeDefined();
+  });
+
+  it('명시적 행 수와 다중 세션 관계가 없는 인원은 기존 자유 집계를 허용한다', async () => {
+    await expect(validator.validate(createResponse(`SELECT COUNT(*) ${participantFrom}`))).resolves.toBeDefined();
+    await expect(
+      validator.validate(
+        createResponse('SELECT COUNT(bm.id) FROM bands b JOIN band_members bm ON bm.band_id = b.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL'),
+        'PEOPLE',
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it('내부 일정 선택의 COUNT를 바깥 인원 집계로 오인하지 않는다', async () => {
+    const nested = 'SELECT COUNT(b2.id) FROM bands b2 WHERE b2.id = $1::uuid AND b2.deleted_at IS NULL';
+    await expect(
+      validator.validate(createResponse(`SELECT COUNT(DISTINCT sp.band_member_id), (${nested}) AS count ${participantFrom}`), 'PEOPLE'),
+    ).resolves.toBeDefined();
+  });
+
+  it('목록의 최상위 LIMIT만 제거하고 내부 일정 선택 LIMIT은 보존한다', async () => {
+    const sql = `SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL
+      AND b.id = (SELECT b2.id FROM bands b2 WHERE b2.id = $1::uuid AND b2.deleted_at IS NULL LIMIT 1) LIMIT 20`;
+    const result = await validator.validate({ ...createResponse(sql), resultMode: 'LIST' });
+    expect(result.sql.match(/LIMIT/gi)).toHaveLength(1);
+    expect(result.sql).toContain('LIMIT 1');
+    expect(result.resultMode).toBe('LIST');
+  });
+
+  it('상위 N개와 집계의 의미상 LIMIT은 보존한다', async () => {
+    const ranking = await validator.validate({ ...createResponse(`${scopedSelect} LIMIT 10`), resultMode: 'TOP_N' });
+    expect(ranking.sql).toContain('LIMIT 10');
+    const count = 'SELECT COUNT(b.id)::int AS count FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL LIMIT 1';
+    const aggregate = await validator.validate({ ...createResponse(count), resultMode: 'AGGREGATE' });
+    expect(aggregate.sql).toContain('LIMIT 1');
+  });
+
+  it('잘못된 결과 유형과 목록 OFFSET은 거부한다', async () => {
+    await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'ALL' })).rejects.toMatchObject({ code: 'INVALID_RESULT_MODE' });
+    await expect(validator.validate({ ...createResponse(`${scopedSelect} OFFSET 5`), resultMode: 'LIST' })).rejects.toMatchObject({
+      code: 'LIST_OFFSET_NOT_ALLOWED',
+    });
+  });
+
+  it('제한 없는 상위 조회와 집계를 가장한 목록은 거부한다', async () => {
+    await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'TOP_N' })).rejects.toMatchObject({
+      code: 'TOP_N_LIMIT_REQUIRED',
+    });
+    await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'AGGREGATE' })).rejects.toMatchObject({
+      code: 'SCALAR_AGGREGATE_REQUIRED',
+    });
+    await expect(validator.validate({ ...createResponse(`${scopedSelect} LIMIT 51`), resultMode: 'TOP_N' })).rejects.toMatchObject({
+      code: 'TOP_N_LIMIT_REQUIRED',
+    });
+  });
+
   const leaderSql = `SELECT up.nickname FROM bands b
     JOIN teams t ON t.band_id = b.id
     JOIN band_members bm ON bm.id = t.team_leader_band_member_id

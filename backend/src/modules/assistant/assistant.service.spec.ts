@@ -88,7 +88,10 @@ function createHarness(options: HarnessOptions = {}) {
     async configureReadOnlyTransaction(tx) {
       configuredTransactions.push(tx);
     },
-    async executeGeneratedQuery(sql, parameters, _bandId, tx) {
+    async executeGeneratedQuery() {
+      throw new Error('Service는 추가 결과 여부를 포함한 경로를 사용해야 합니다.');
+    },
+    async executeGeneratedQueryPage(sql, parameters, _bandId, tx) {
       executedTransactions.push(tx);
       executedQueries.push({ intent: VALIDATED_QUERY.intent, sql, parameters });
 
@@ -96,7 +99,8 @@ function createHarness(options: HarnessOptions = {}) {
         throw options.executionError;
       }
 
-      return options.rows ?? [{ member_count: 3 }];
+      const rows = options.rows ?? [{ member_count: 3 }];
+      return { rows: rows.slice(0, 50), hasMore: rows.length > 50 };
     },
   };
 
@@ -134,7 +138,7 @@ describe('AssistantService', () => {
 
     expect(answer.answerable).toBe(true);
     expect(answer.summary).toBe('밴드 멤버 수: 3');
-    expect(answer.result).toBeNull();
+    expect(answer.result).toMatchObject({ entity: 'table', rows: [{ member_count: 3 }], hasMore: false });
     expect(harness.llmRequests).toHaveLength(1);
     expect(harness.configuredTransactions).toEqual([harness.internalTx]);
     expect(harness.executedTransactions).toEqual([harness.internalTx]);
@@ -146,6 +150,26 @@ describe('AssistantService', () => {
 
     await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수 알려줘' })).rejects.toThrow(ForbiddenException);
     expect(harness.llmRequests).toHaveLength(0);
+  });
+
+  it('51번째 행이 있으면 50행과 추가 결과 안내를 같은 응답에 반환한다', async () => {
+    const rows = Array.from({ length: 51 }, (_, index) => ({ name: `멤버${index}` }));
+    const harness = createHarness({
+      rows,
+      validationResults: [{ intent: '명단', sql: 'SELECT b.name FROM bands b WHERE b.id = $1', parameters: [], resultMode: 'LIST' }],
+    });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '명단 모두 보여줘' });
+    expect(answer.result?.rows).toHaveLength(50);
+    expect(answer.result?.hasMore).toBe(true);
+    expect(answer.summary).toContain('처음 50건');
+  });
+
+  it('0행에도 컬럼과 빈 목록을 반환한다', async () => {
+    const harness = createHarness({ rows: [] });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수' });
+    expect(answer.result?.rows).toEqual([]);
+    expect(answer.result?.columns).toEqual([{ key: 'member_count', label: '멤버 수', format: 'plain' }]);
+    expect(answer.result?.hasMore).toBe(false);
   });
 
   it('추천 질문 ID를 기존 문장으로 바꿔 같은 Text-to-SQL 경로로 실행한다', async () => {

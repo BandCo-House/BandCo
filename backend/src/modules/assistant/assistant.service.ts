@@ -8,12 +8,13 @@ import type { AskAssistantInput } from './dto/ask-assistant.dto';
 import { AssistantScopeResolver } from './execution/assistant-scope.resolver';
 import { ASSISTANT_PRESETS, findPresetById } from './query-plan/query-plan.presets';
 import { AnswerRenderer } from './rendering/answer-renderer';
+import { mapSqlResult } from './rendering/sql-result.mapper';
 import { ASSISTANT_REPOSITORY, type AssistantRepository } from './repositories/assistant.repository';
 import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
-import { createSqlRelationRepairHint } from './sql/sql-query-context';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
+import { createSqlRelationRepairHint, getSqlCountUnit } from './sql/sql-query-context';
 import type { AssistantAnswer, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
 
@@ -75,22 +76,24 @@ export class AssistantService {
       };
     }
 
-    let rows;
+    let page;
+    let result;
 
     try {
-      rows = await this.executeQuery(bandId, generated.query, tx);
+      page = await this.executeQuery(bandId, generated.query, tx);
+      result = await mapSqlResult(generated.query, page);
     } catch (error) {
       this.logger.warn(`검증된 SQL 실행에 실패했습니다: ${toMessage(error)}`);
       this.logQueryAudit(scope, input, generated, 'execution_failed', 0, Date.now() - startedAt);
       throw new ServiceUnavailableException('생성한 조회를 실행하지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
     }
 
-    this.logQueryAudit(scope, input, generated, 'success', rows.length, Date.now() - startedAt);
+    this.logQueryAudit(scope, input, generated, 'success', page.rows.length, Date.now() - startedAt);
 
     return {
       answerable: true,
-      summary: this.answerRenderer.render(generated.query.intent, rows),
-      result: null,
+      summary: this.answerRenderer.render(generated.query.intent, page.rows) + (page.hasMore ? ' 추가 결과가 있어 처음 50건만 표시합니다.' : ''),
+      result,
       meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
     };
   }
@@ -150,7 +153,7 @@ export class AssistantService {
       try {
         return {
           status: 'QUERY',
-          query: await this.validator.validate(response.parsed),
+          query: await this.validator.validate(response.parsed, getSqlCountUnit(question)),
           meta,
           validationFailures: attempt,
         };
@@ -180,12 +183,12 @@ export class AssistantService {
   /** 내부 transaction은 read-only로 설정하고, 외부 transaction은 호출자가 정한 속성을 유지한다. */
   private async executeQuery(bandId: string, query: ValidatedSqlQuery, tx?: Prisma.TransactionClient) {
     if (tx !== undefined) {
-      return this.repository.executeGeneratedQuery(query.sql, query.parameters, bandId, tx);
+      return this.repository.executeGeneratedQueryPage(query.sql, query.parameters, bandId, tx);
     }
 
     return this.prisma.$transaction(async internalTx => {
       await this.repository.configureReadOnlyTransaction(internalTx);
-      return this.repository.executeGeneratedQuery(query.sql, query.parameters, bandId, internalTx);
+      return this.repository.executeGeneratedQueryPage(query.sql, query.parameters, bandId, internalTx);
     });
   }
 

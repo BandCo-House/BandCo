@@ -5,11 +5,13 @@ import {
   type RawGeneratedSql,
   type RawSqlParameter,
   SQL_PARAMETER_TYPES,
+  SQL_RESULT_MODES,
   type SqlParameter,
   type SqlParameterType,
   type ValidatedSqlQuery,
 } from './generated-sql.type';
 import { SQL_ALLOWED_FUNCTIONS, SQL_CATALOG, SQL_CATALOG_JOINS, SQL_ENUM_COLUMNS, SQL_REQUIRED_RELATIONS } from './sql-catalog';
+import type { SqlCountUnit } from './sql-query-context';
 
 const MAX_SQL_LENGTH = 8_000;
 const MAX_INTENT_LENGTH = 120;
@@ -86,7 +88,7 @@ export class SqlQueryValidator {
    * @param {unknown} raw - LLM 구조화 응답
    * @returns {Promise<ValidatedSqlQuery>} 검증되고 canonical SQL로 변환된 쿼리
    */
-  async validate(raw: unknown): Promise<ValidatedSqlQuery> {
+  async validate(raw: unknown, countUnit?: SqlCountUnit): Promise<ValidatedSqlQuery> {
     const generated = parseGeneratedSql(raw);
 
     if (generated.status === 'UNSUPPORTED') {
@@ -103,12 +105,87 @@ export class SqlQueryValidator {
     validateEnumParameterComparisons(analysis.expressionNodes, analysis.aliases);
     validateBandScopeAndRelations(analysis);
 
+    const resultSelect = getNestedRecord((ast.stmts as unknown[])[0], ['stmt', 'SelectStmt']);
+    if (countUnit && resultSelect) validateCountUnit(resultSelect, countUnit);
+    if (generated.resultMode === 'TOP_N') {
+      const limit = getNestedRecord(resultSelect?.limitCount, ['A_Const', 'ival'])?.ival;
+      if (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 1 || limit > 50) {
+        throw new InvalidSqlQueryError('TOP_N_LIMIT_REQUIRED', '상위 N개 조회에는 1~50의 명시적 LIMIT이 필요합니다.');
+      }
+    }
+    if (generated.resultMode === 'AGGREGATE') {
+      const targets = Array.isArray(resultSelect?.targetList) ? resultSelect.targetList : [];
+      const grouped = Array.isArray(resultSelect?.groupClause) && resultSelect.groupClause.length > 0;
+      if (grouped || !targets.every(target => containsScalarAggregate(getNestedRecord(target, ['ResTarget', 'val'])))) {
+        throw new InvalidSqlQueryError('SCALAR_AGGREGATE_REQUIRED', '단일 집계는 GROUP BY 없이 집계 값만 반환해야 합니다.');
+      }
+    }
+    // 목록의 최상위 제한만 서버가 관리한다. 다음 일정 선택 같은 내부 제한은 보존한다.
+    if (generated.resultMode === 'LIST') {
+      const statement = resultSelect;
+      if (statement?.limitOffset) throw new InvalidSqlQueryError('LIST_OFFSET_NOT_ALLOWED', '목록에서 OFFSET으로 결과를 생략할 수 없습니다.');
+      if (statement) {
+        delete statement.limitCount;
+        delete statement.limitOption;
+      }
+    }
+
     return {
       intent: generated.intent.trim(),
       sql: await deparse(ast),
       parameters,
+      ...(generated.resultMode ? { resultMode: generated.resultMode } : {}),
     };
   }
+}
+
+/** 다중 세션에서 행 수와 인원은 다르므로 명시된 집계 단위를 확인한다. */
+function validateCountUnit(select: AstRecord, unit: SqlCountUnit): void {
+  const aliases = new Map<string, string>();
+  const counts: AstRecord[] = [];
+  const visit = (value: unknown, collectTables: boolean): void => {
+    if (Array.isArray(value)) {
+      value.forEach(item => visit(item, collectTables));
+      return;
+    }
+    if (!isRecord(value) || value.SubLink || value.SelectStmt) return;
+    if (collectTables && isRecord(value.RangeVar)) collectTableReference(value.RangeVar, aliases);
+    if (!collectTables && isRecord(value.FuncCall) && readStringNodeArray(value.FuncCall.funcname).at(-1) === 'count') {
+      counts.push(value.FuncCall);
+    }
+    Object.values(value).forEach(item => visit(item, collectTables));
+  };
+  visit(select.fromClause, true);
+  if (![...aliases.values()].some(table => table === 'schedule_participants' || table === 'team_members')) return;
+  visit(select.targetList, false);
+  const allowed =
+    unit === 'PEOPLE'
+      ? ['schedule_participants.band_member_id', 'team_members.band_member_id', 'band_members.id', 'band_members.user_id', 'users.id']
+      : ['schedule_participants.schedule_id', 'schedules.id'];
+  for (const count of counts) {
+    const args = Array.isArray(count.args) ? count.args : [];
+    let arg = args[0];
+    while (getTaggedNode(arg, 'TypeCast')) arg = getTaggedNode(arg, 'TypeCast')?.arg;
+    const column = readColumnReference(arg);
+    const field = column ? `${aliases.get(column.alias)}.${column.column}` : '';
+    if (!count.agg_distinct || args.length !== 1 || !allowed.includes(field)) {
+      throw new InvalidSqlQueryError(
+        'COUNT_UNIT_MISMATCH',
+        `${unit === 'PEOPLE' ? '인원' : '참석 일정 횟수'}은 세션 행 수가 아닙니다. COUNT(DISTINCT ...)에 ${allowed.join(' 또는 ')}를 사용하세요.`,
+      );
+    }
+  }
+}
+
+/** 내부 SELECT의 집계를 바깥 SELECT의 집계로 오인하지 않는다. */
+function containsScalarAggregate(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(containsScalarAggregate);
+  if (!isRecord(value) || value.SubLink || value.SelectStmt) return false;
+  if (isRecord(value.FuncCall) && Array.isArray(value.FuncCall.funcname)) {
+    const names = value.FuncCall.funcname.map(name => getNestedRecord(name, ['String'])?.sval);
+    if (['count', 'sum', 'avg', 'min', 'max'].includes(String(names.at(-1)))) return true;
+  }
+  return Object.values(value).some(containsScalarAggregate);
 }
 
 /** 구조화 응답의 필수 필드와 길이를 검증한다. */
@@ -122,6 +199,10 @@ function parseGeneratedSql(raw: unknown): RawGeneratedSql {
   const sql = raw.sql;
   const params = raw.params;
   const unsupportedReason = raw.unsupportedReason;
+  const resultMode = raw.resultMode;
+  if (resultMode !== undefined && !SQL_RESULT_MODES.includes(resultMode as (typeof SQL_RESULT_MODES)[number])) {
+    throw new InvalidSqlQueryError('INVALID_RESULT_MODE', '결과 유형은 LIST, TOP_N, AGGREGATE여야 합니다.');
+  }
 
   if (status !== 'QUERY' && status !== 'UNSUPPORTED') {
     throw new InvalidSqlQueryError('INVALID_STATUS', 'status는 QUERY 또는 UNSUPPORTED여야 합니다.');
@@ -153,6 +234,7 @@ function parseGeneratedSql(raw: unknown): RawGeneratedSql {
     sql,
     params: params as RawSqlParameter[],
     unsupportedReason,
+    ...(resultMode ? { resultMode: resultMode as NonNullable<RawGeneratedSql['resultMode']> } : {}),
   };
 }
 

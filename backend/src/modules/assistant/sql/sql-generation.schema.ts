@@ -1,11 +1,16 @@
 import type { JsonSchema } from '../../ai/types/json-schema.type';
 
-import { SQL_PARAMETER_TYPES } from './generated-sql.type';
+import { SQL_PARAMETER_TYPES, SQL_RESULT_MODES } from './generated-sql.type';
 
 export const SQL_GENERATION_RESPONSE_SCHEMA: JsonSchema = {
   type: 'object',
   description: '자연어 질문을 PostgreSQL 읽기 쿼리로 변환한 결과',
   properties: {
+    resultMode: {
+      type: 'string',
+      enum: [...SQL_RESULT_MODES],
+      description: '목록은 LIST, 사용자가 지정한 상위 N개·한 개 조회는 TOP_N, 단일 집계 값은 AGGREGATE. 목록은 임의 LIMIT을 넣지 않는다.',
+    },
     status: {
       type: 'string',
       enum: ['QUERY', 'UNSUPPORTED'],
@@ -38,5 +43,5 @@ export const SQL_GENERATION_RESPONSE_SCHEMA: JsonSchema = {
       description: 'UNSUPPORTED일 때 사용자에게 보여줄 짧은 이유. QUERY면 null',
     },
   },
-  required: ['status', 'intent', 'sql', 'params', 'unsupportedReason'],
+  required: ['status', 'intent', 'sql', 'params', 'unsupportedReason', 'resultMode'],
 };
