@@ -5,6 +5,11 @@ export interface AssistantPreset {
   /** 홈의 가로 칩에 보여줄 짧은 이름 */
   label: string;
   question: string;
+  /**
+   * 이 추천 질문의 답 뒤에 보여줄 이어서 물어보기. 자유 질문으로 모델에 보낸다.
+   * 합성 평가 DB에서 실제 모델로 답이 맞는지 확인한 질문만 둔다.
+   */
+  followUps: string[];
   /** 모델 대신 서버가 정한 SELECT. 자유 질문과 같은 검증기를 통과해야 실행된다. */
   createQuery(now: Date): RawGeneratedSql;
 }
@@ -23,6 +28,7 @@ export const ASSISTANT_PRESETS: AssistantPreset[] = [
     id: 'next-schedule',
     label: '다음 합주',
     question: '다음 합주 일정이 언제야?',
+    followUps: ['다음 합주에 참석하는 사람은 몇 명이야?', '다음 합주에서 연습할 곡은 뭐야?', '다음 합주에 아직 응답 안 한 사람은 누구야?'],
     createQuery: now => ({
       status: 'QUERY',
       intent: '다음 합주',
@@ -36,6 +42,7 @@ export const ASSISTANT_PRESETS: AssistantPreset[] = [
     id: 'pending-attendance',
     label: '미응답자',
     question: '아직 참석 여부를 응답하지 않은 사람은?',
+    followUps: ['다음 합주에 참석한다고 답한 사람은 누구야?', '다음 합주에 불참한다고 답한 사람은 몇 명이야?', '다음 합주는 어디서 해?'],
     createQuery: now => ({
       status: 'QUERY',
       intent: '다음 합주 미응답자',
@@ -49,6 +56,7 @@ export const ASSISTANT_PRESETS: AssistantPreset[] = [
     id: 'most-practiced-song-this-month',
     label: '이번 달 연습곡',
     question: '이번 달 가장 많이 연습한 곡은?',
+    followUps: ['이번 달 합주에서 연습한 곡은 모두 몇 곡이야?', '지난달 가장 많이 연습한 곡 3개는 뭐야?', '다음 합주에서 연습할 곡은 뭐야?'],
     createQuery: now => {
       const [monthStart, nextMonthStart] = kstMonthRange(now);
       return {
@@ -65,6 +73,7 @@ export const ASSISTANT_PRESETS: AssistantPreset[] = [
     id: 'most-active-member-3months',
     label: '참여 많은 멤버',
     question: '최근 3개월 동안 합주에 가장 많이 참여한 멤버는?',
+    followUps: ['최근 3개월 동안 합주는 몇 번 했어?', '이번 달 합주에 가장 많이 참석한 멤버 3명은?', '다음 합주에 참석한다고 답한 사람은 누구야?'],
     createQuery: now => {
       const threeMonthsAgo = new Date(now);
       threeMonthsAgo.setUTCMonth(threeMonthsAgo.getUTCMonth() - 3);

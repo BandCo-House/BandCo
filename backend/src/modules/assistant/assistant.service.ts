@@ -69,8 +69,8 @@ export class AssistantService {
   ) {}
 
   /** 화면에 보여줄 추천 질문 목록을 반환한다. */
-  getPresets(): { id: string; label: string; question: string }[] {
-    return ASSISTANT_PRESETS.map(preset => ({ id: preset.id, label: preset.label, question: preset.question }));
+  getPresets(): { id: string; label: string; question: string; followUps: string[] }[] {
+    return ASSISTANT_PRESETS.map(preset => ({ id: preset.id, label: preset.label, question: preset.question, followUps: preset.followUps }));
   }
 
   /**

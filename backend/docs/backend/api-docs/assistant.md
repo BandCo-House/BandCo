@@ -27,7 +27,8 @@
       {
         "id": "next-schedule",
         "label": "다음 합주",
-        "question": "다음 합주 일정이 언제야?"
+        "question": "다음 합주 일정이 언제야?",
+        "followUps": ["다음 합주에 참석하는 사람은 몇 명이야?", "다음 합주에서 연습할 곡은 뭐야?"]
       }
     ]
   }
@@ -40,7 +41,7 @@
 - Path: `/bands/:bandId/assistant/query`
 - 인증: AccessToken
 
-`question`과 `presetId` 중 하나를 전달한다. `presetId`는 모델을 호출하지 않고 서버에 정의된 고정 SELECT를 자유 질문과 같은 검증기로 확인한 뒤 실행한다(`meta.usedLlm: false`). 추천 질문은 가장 많이 눌리는 질문이라 답의 컬럼이 매번 같아야 하기 때문이다. `label`은 홈 화면의 짧은 칩 이름이다.
+`question`과 `presetId` 중 하나를 전달한다. `presetId`는 모델을 호출하지 않고 서버에 정의된 고정 SELECT를 자유 질문과 같은 검증기로 확인한 뒤 실행한다(`meta.usedLlm: false`). 추천 질문은 가장 많이 눌리는 질문이라 답의 컬럼이 매번 같아야 하기 때문이다. `label`은 홈 화면의 짧은 칩 이름이다. `followUps`는 그 추천 질문의 답 뒤에 보여줄 이어서 물어보기로, 화면이 `question`으로 보내 모델이 처리한다. 합성 평가 DB에서 실제 모델로 답을 확인한 질문만 둔다.
 
 ### Request
 
