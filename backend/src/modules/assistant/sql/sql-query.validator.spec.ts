@@ -115,6 +115,37 @@ describe('SqlQueryValidator', () => {
     expect(aggregate.sql).toContain('LIMIT 1');
   });
 
+  it.each([1, 3, 50])('상위 %i개의 직접 INTEGER LIMIT 파라미터를 값 검증 후 보존한다', async value => {
+    const result = await validator.validate({
+      ...createResponse(`${scopedSelect} LIMIT $2`, [{ position: 2, type: 'INTEGER', value: String(value) }]),
+      resultMode: 'TOP_N',
+    });
+    expect(result.sql).toContain('LIMIT $2');
+    expect(result.parameters).toEqual([value]);
+  });
+
+  it.each(['0', '-1', '51'])('범위 밖 LIMIT 파라미터 %s는 거부한다', async value => {
+    await expect(
+      validator.validate({ ...createResponse(`${scopedSelect} LIMIT $2`, [{ position: 2, type: 'INTEGER', value }]), resultMode: 'TOP_N' }),
+    ).rejects.toMatchObject({ code: 'TOP_N_LIMIT_REQUIRED' });
+  });
+
+  it.each(['TEXT', 'BOOLEAN'])('LIMIT의 %s 타입을 정수로 추측하지 않는다', async type => {
+    await expect(
+      validator.validate({
+        ...createResponse(`${scopedSelect} LIMIT $2`, [{ position: 2, type, value: type === 'BOOLEAN' ? 'true' : '3' }]),
+        resultMode: 'TOP_N',
+      }),
+    ).rejects.toMatchObject({ code: 'TOP_N_LIMIT_REQUIRED' });
+  });
+
+  it.each(['$1', '$2 + 1', '$2::int'])('LIMIT 표현식 %s는 직접 정수 파라미터로 허용하지 않는다', async limit => {
+    const params = limit === '$1' ? [] : [{ position: 2, type: 'INTEGER', value: '3' }];
+    await expect(validator.validate({ ...createResponse(`${scopedSelect} LIMIT ${limit}`, params), resultMode: 'TOP_N' })).rejects.toMatchObject({
+      code: 'TOP_N_LIMIT_REQUIRED',
+    });
+  });
+
   it('잘못된 결과 유형과 목록 OFFSET은 거부한다', async () => {
     await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'ALL' })).rejects.toMatchObject({ code: 'INVALID_RESULT_MODE' });
     await expect(validator.validate({ ...createResponse(`${scopedSelect} OFFSET 5`), resultMode: 'LIST' })).rejects.toMatchObject({

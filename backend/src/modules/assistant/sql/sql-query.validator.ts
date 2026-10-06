@@ -135,9 +135,14 @@ export class SqlQueryValidator {
     });
     check(() => {
       if (generated.resultMode !== 'TOP_N') return;
-      const limit = getNestedRecord(resultSelect?.limitCount, ['A_Const', 'ival'])?.ival;
+      const position = getNestedRecord(resultSelect?.limitCount, ['ParamRef'])?.number;
+      const parameter = generated.params.find(parameter => parameter.position === position);
+      const limit =
+        typeof position === 'number' && parameter?.type === 'INTEGER'
+          ? parameters[position - 2]
+          : getNestedRecord(resultSelect?.limitCount, ['A_Const', 'ival'])?.ival;
       if (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 1 || limit > 50) {
-        throw new InvalidSqlQueryError('TOP_N_LIMIT_REQUIRED', '상위 N개 조회에는 1~50의 명시적 LIMIT이 필요합니다.');
+        throw new InvalidSqlQueryError('TOP_N_LIMIT_REQUIRED', '상위 N개 LIMIT은 1~50의 숫자 또는 같은 범위의 INTEGER 파라미터여야 합니다.');
       }
     });
     check(() => {
