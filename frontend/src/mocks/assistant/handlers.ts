@@ -35,21 +35,25 @@ const answers: Record<string, AssistantAnswer> = {
   'next-schedule': {
     answerable: true,
     summary:
-      '9월 3일 (수) 19:00 정기 합주 일정이 있습니다. 장소는 홍대 사운드스튜디오입니다.',
+      '9월 3일 (목) 19:00 정기 합주 일정이 있습니다. 장소는 홍대 사운드스튜디오입니다.',
     result: {
-      entity: 'schedule',
+      entity: 'table',
+      columns: [
+        { key: 'title', label: '이름', format: 'plain' },
+        { key: 'start_at', label: '시작 시각', format: 'datetime' },
+        { key: 'place_name', label: '장소', format: 'plain' },
+      ],
       rows: [
         {
-          id: 'schedule-1',
           title: '정기 합주',
-          scheduleType: 'PRACTICE',
-          status: 'PLANNED',
-          startAt: '2026-09-03T19:00:00+09:00',
-          endAt: '2026-09-03T22:00:00+09:00',
-          placeName: '홍대 사운드스튜디오',
-          spaceName: '가을 정기공연',
+          start_at: '2026-09-03T10:00:00.000Z',
+          place_name: '홍대 사운드스튜디오',
         },
       ],
+      hasMore: false,
+      maxRows: 50,
+      resultMode: 'TOP_N',
+      conditions: ['일정 종류: 합주 같음', '일정 상태: 예정 같음'],
     },
     meta: createMeta(),
   },

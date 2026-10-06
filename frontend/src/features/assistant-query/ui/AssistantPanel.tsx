@@ -159,6 +159,60 @@ interface AssistantResultListProps {
  * 요약과 목록이 같은 응답에서 나오므로 서로 어긋날 수 없다.
  */
 const AssistantResultList = ({ result }: AssistantResultListProps) => {
+  if (result.entity === 'table') {
+    return (
+      <div className="flex flex-col gap-2">
+        {result.conditions.length > 0 && (
+          <details className="typo-xs-r text-grey-300">
+            <summary>조회에 사용한 조건</summary>
+            <ul className="mt-2 flex flex-col gap-1">
+              {result.conditions.map((condition) => (
+                <li key={condition}>{condition}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+        <p className="typo-xs-r text-grey-300">{result.rows.length}건 표시</p>
+        {result.rows.length === 0 ? (
+          <p className="typo-xs-r text-grey-300">조건에 맞는 결과가 없어요.</p>
+        ) : (
+          <div className="max-h-80 overflow-auto">
+            <table
+              aria-label="조회 결과"
+              className="w-full text-left typo-xs-r text-grey-200"
+            >
+              <thead>
+                <tr>
+                  {result.columns.map((column) => (
+                    <th key={column.key} scope="col" className="px-2 py-1">
+                      {column.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {result.rows.map((row, index) => (
+                  <tr key={index}>
+                    {result.columns.map((column) => (
+                      <td key={column.key} className="px-2 py-1">
+                        {formatResultCell(row[column.key], column.format)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {result.hasMore && (
+          <p className="typo-xs-r text-grey-300">
+            추가 결과가 있어 처음 {result.maxRows}건만 표시했어요. 조건을 좁혀
+            다시 질문해 주세요.
+          </p>
+        )}
+      </div>
+    );
+  }
   if (result.rows.length === 0) return null;
 
   if (result.entity === 'schedule') {
@@ -233,4 +287,19 @@ const AssistantResultList = ({ result }: AssistantResultListProps) => {
       ))}
     </ul>
   );
+};
+
+const formatResultCell = (
+  value: string | number | boolean | null | undefined,
+  format: 'plain' | 'datetime',
+): string => {
+  if (value === null || value === undefined) return '없음';
+  if (
+    format === 'datetime' &&
+    typeof value === 'string' &&
+    Number.isFinite(Date.parse(value))
+  )
+    return formatDateTime(value);
+  if (typeof value === 'boolean') return value ? '예' : '아니요';
+  return String(value);
 };
