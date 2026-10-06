@@ -9,3 +9,8 @@ export interface AskAssistantRequest {
   question?: string;
   presetId?: string;
 }
+
+export type AssistantTableResult = Extract<
+  AssistantQueryResult,
+  { entity: 'table' }
+>;

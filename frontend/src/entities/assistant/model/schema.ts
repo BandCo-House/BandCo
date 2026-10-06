@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const assistantPresetSchema = z.object({
   id: z.string(),
+  // 홈 칩에 쓰는 짧은 이름. 이전 서버는 보내지 않으므로 질문 문장으로 대신한다.
+  label: z.string().optional(),
   question: z.string(),
 });
 
@@ -43,6 +45,7 @@ const assistantQueryResultSchema = z.discriminatedUnion('entity', [
   z
     .object({
       entity: z.literal('table'),
+      title: z.string().optional(),
       columns: z.array(
         z.object({
           key: z.string(),
@@ -94,16 +97,37 @@ const assistantQueryResultSchema = z.discriminatedUnion('entity', [
   }),
 ]);
 
-export const assistantAnswerSchema = z.object({
-  answerable: z.boolean(),
-  summary: z.string(),
-  result: assistantQueryResultSchema.nullable(),
-  meta: z.object({
-    providerName: z.string().nullable(),
-    modelName: z.string().nullable(),
-    usedLlm: z.boolean(),
-    inputTokens: z.number(),
-    outputTokens: z.number(),
-    latencyMs: z.number(),
-  }),
+export const assistantAnswerKindSchema = z.enum([
+  'ANSWER',
+  'UNSUPPORTED',
+  'CLARIFICATION',
+  'REPHRASE',
+]);
+
+const assistantClarificationSchema = z.object({
+  candidates: z.array(z.object({ name: z.string(), question: z.string() })),
+  hasMore: z.boolean(),
 });
+
+export const assistantAnswerSchema = z
+  .object({
+    answerable: z.boolean(),
+    kind: assistantAnswerKindSchema.optional(),
+    summary: z.string(),
+    result: assistantQueryResultSchema.nullable(),
+    clarification: assistantClarificationSchema.nullable().optional(),
+    meta: z.object({
+      providerName: z.string().nullable(),
+      modelName: z.string().nullable(),
+      usedLlm: z.boolean(),
+      inputTokens: z.number(),
+      outputTokens: z.number(),
+      latencyMs: z.number(),
+    }),
+  })
+  // 배포 순서가 어긋나 kind가 없는 응답이 와도 화면이 같은 분기를 타게 한다.
+  .transform((answer) => ({
+    ...answer,
+    kind: answer.kind ?? (answer.answerable ? 'ANSWER' : 'UNSUPPORTED'),
+    clarification: answer.clarification ?? null,
+  }));

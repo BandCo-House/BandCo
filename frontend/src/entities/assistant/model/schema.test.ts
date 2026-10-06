@@ -24,6 +24,33 @@ const answer = {
 };
 
 describe('자유 SQL 결과 응답 계약', () => {
+  it('kind가 없는 이전 응답도 answerable로 화면 분기를 정한다', () => {
+    expect(assistantAnswerSchema.parse(answer)).toMatchObject({
+      kind: 'ANSWER',
+      clarification: null,
+    });
+    expect(
+      assistantAnswerSchema.parse({
+        ...answer,
+        answerable: false,
+        result: null,
+      }).kind,
+    ).toBe('UNSUPPORTED');
+  });
+  it('이름 확인 후보를 파싱한다', () => {
+    const parsed = assistantAnswerSchema.parse({
+      ...answer,
+      answerable: false,
+      kind: 'CLARIFICATION',
+      result: null,
+      clarification: {
+        candidates: [{ name: 'A', question: "'A' 곡" }],
+        hasMore: false,
+      },
+    });
+    expect(parsed.clarification?.candidates[0].question).toBe("'A' 곡");
+  });
+
   it('서버의 표 결과와 미지원 null을 파싱한다', () => {
     expect(assistantAnswerSchema.parse(answer).result?.entity).toBe('table');
     expect(
