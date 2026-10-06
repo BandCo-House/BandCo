@@ -65,7 +65,7 @@ describe('자유 SQL 결과 매핑', () => {
       },
       { rows: [{ attendance_status: 'ATTENDING' }], hasMore: false },
     );
-    expect(result.columns[0].label).toBe('PENDING, ATTENDING, ABSENT 또는 NULL');
+    expect(result.columns[0].label).toBe('응답');
     expect(result.rows).toEqual([{ attendance_status: 'ATTENDING' }]);
     expect(result.conditions).toHaveLength(1);
     expect(result.conditions[0]).toContain('참석');
@@ -89,6 +89,42 @@ describe('자유 SQL 결과 매핑', () => {
       { rows: [], hasMore: false },
     );
     expect(result.conditions).toEqual([]);
+  });
+
+  it('최상위 조건을 칩으로 나누고 내부 값·UTC 시각 대신 사람이 읽는 말로 보여준다', async () => {
+    jest.useFakeTimers({ now: new Date('2026-10-06T08:54:30.000Z') });
+    const result = await mapSqlResult(
+      {
+        intent: '다음 합주',
+        sql: 'SELECT sc.title, sc.start_at FROM bands b JOIN band_spaces bs ON bs.band_id = b.id JOIN schedules sc ON sc.band_space_id = bs.id WHERE b.id = $1 AND b.deleted_at IS NULL AND sc.schedule_type::text = $2 AND sc.status::text <> $3 AND sc.start_at >= $4::timestamptz',
+        parameters: ['PRACTICE', 'CANCELED', '2026-10-06T08:54:06.827Z'],
+      },
+      { rows: [], hasMore: false },
+    );
+    jest.useRealTimers();
+    expect(result.title).toBe('다음 합주');
+    expect(result.conditions).toEqual(['일정 종류: 합주', '일정 상태: 취소 제외', '시작: 지금 이후']);
+    expect(result.columns.map(column => column.label)).toEqual(['일정', '시작']);
+  });
+
+  it('같은 항목의 시작·끝 조건은 한국 날짜 기간 하나로 합친다', async () => {
+    const result = await mapSqlResult(
+      {
+        intent: '8월 일정',
+        sql: 'SELECT sc.title FROM schedules sc WHERE sc.start_at >= $2::timestamptz AND sc.start_at < $3::timestamptz',
+        parameters: ['2020-08-01T00:00:00+09:00', '2020-09-01T00:00:00+09:00'],
+      },
+      { rows: [], hasMore: false },
+    );
+    expect(result.conditions).toEqual(['시작: 2020년 8월 1일 ~ 2020년 8월 31일']);
+  });
+
+  it('라벨이 없는 집계 별칭은 영문 대신 일반적인 이름을 쓴다', async () => {
+    const result = await mapSqlResult(
+      { intent: '참석 인원', sql: 'SELECT COUNT(sp.band_member_id)::int AS attendee_total_count FROM schedule_participants sp', parameters: [] },
+      { rows: [{ attendee_total_count: 13 }], hasMore: false },
+    );
+    expect(result.columns[0].label).toBe('인원');
   });
 
   it('중복 컬럼 이름과 유한하지 않은 결과 값은 거부한다', async () => {

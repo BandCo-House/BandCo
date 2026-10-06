@@ -6,17 +6,17 @@ import { LlmService } from '../ai/llm.service';
 
 import type { AskAssistantInput } from './dto/ask-assistant.dto';
 import { AssistantScopeResolver } from './execution/assistant-scope.resolver';
-import { ASSISTANT_PRESETS, findPresetById } from './query-plan/query-plan.presets';
+import { ASSISTANT_PRESETS, type AssistantPreset, findPresetById } from './query-plan/query-plan.presets';
 import { AnswerRenderer } from './rendering/answer-renderer';
 import { mapSqlResult } from './rendering/sql-result.mapper';
 import { ASSISTANT_REPOSITORY, type AssistantRepository } from './repositories/assistant.repository';
 import type { ValidatedSqlQuery } from './sql/generated-sql.type';
-import { readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
+import { createCandidateQuestion, readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
 import { createSqlRepairInstruction, getSqlCountUnit } from './sql/sql-query-context';
-import type { AssistantAnswer, AssistantQueryMeta } from './types/assistant-answer.type';
+import type { AssistantAnswer, AssistantClarification, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
 
 /** 최초 생성 이후 검증 실패 SQL을 다시 만들 수 있는 횟수 */
@@ -38,9 +38,22 @@ interface UnsupportedQuery {
 
 interface ClarificationQuery extends Omit<UnsupportedQuery, 'status'> {
   status: 'CLARIFICATION';
+  clarification: AssistantClarification;
 }
 
 type SqlGenerationResult = GeneratedQuery | UnsupportedQuery | ClarificationQuery;
+
+const REPHRASE_SUMMARY = '질문을 정확히 이해하지 못했어요. 누구·언제·무엇을 넣어 조금 다르게 물어봐 주세요.';
+
+/**
+ * 재생성까지 안전한 SQL을 만들지 못했다. 평가 도구는 이 예외를 생성 실패로 집계하고,
+ * 사용자 응답에서는 장애가 아니라 질문을 바꿔 달라는 안내로 바꾼다.
+ */
+class SqlGenerationExhaustedError extends ServiceUnavailableException {
+  constructor(readonly meta: AssistantQueryMeta) {
+    super('안전한 조회 SQL을 만들지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
+  }
+}
 
 @Injectable()
 export class AssistantService {
@@ -56,8 +69,8 @@ export class AssistantService {
   ) {}
 
   /** 화면에 보여줄 추천 질문 목록을 반환한다. */
-  getPresets(): { id: string; question: string }[] {
-    return ASSISTANT_PRESETS.map(preset => ({ id: preset.id, question: preset.question }));
+  getPresets(): { id: string; label: string; question: string }[] {
+    return ASSISTANT_PRESETS.map(preset => ({ id: preset.id, label: preset.label, question: preset.question }));
   }
 
   /**
@@ -65,10 +78,34 @@ export class AssistantService {
    * 권한 확인은 LLM 호출보다 먼저 수행해 비멤버 요청에는 비용이 발생하지 않게 한다.
    */
   async askAssistant(userId: string, bandId: string, input: AskAssistantInput, tx?: Prisma.TransactionClient): Promise<AssistantAnswer> {
-    const question = this.resolveQuestion(input);
+    const preset = this.resolvePreset(input);
     const startedAt = Date.now();
     const scope = await this.scopeResolver.resolve(userId, bandId, tx);
-    const generated = await this.generateSqlFromQuestion(question, new Date(), bandId, tx);
+    let generated: SqlGenerationResult;
+
+    try {
+      generated = preset ? await this.createPresetQuery(preset) : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, tx);
+    } catch (error) {
+      if (!(error instanceof SqlGenerationExhaustedError)) throw error;
+      this.logger.log(
+        JSON.stringify({
+          event: 'assistant.text_to_sql',
+          userId: scope.userId,
+          bandId: scope.bandId,
+          question: input.question ?? null,
+          outcome: 'rephrase_required',
+        }),
+      );
+
+      return {
+        answerable: false,
+        kind: 'REPHRASE',
+        summary: REPHRASE_SUMMARY,
+        result: null,
+        clarification: null,
+        meta: { ...error.meta, latencyMs: Date.now() - startedAt },
+      };
+    }
 
     if (generated.status !== 'QUERY') {
       this.logQueryAudit(
@@ -82,8 +119,10 @@ export class AssistantService {
 
       return {
         answerable: false,
+        kind: generated.status,
         summary: generated.reason,
         result: null,
+        clarification: generated.status === 'CLARIFICATION' ? generated.clarification : null,
         meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
       };
     }
@@ -102,22 +141,25 @@ export class AssistantService {
 
     this.logQueryAudit(scope, input, generated, 'success', page.rows.length, Date.now() - startedAt);
 
+    // 50건 초과 안내는 화면이 결과 아래에 한 번만 보여준다.
     return {
       answerable: true,
-      summary: this.answerRenderer.render(generated.query.intent, page.rows) + (page.hasMore ? ' 추가 결과가 있어 처음 50건만 표시합니다.' : ''),
+      kind: 'ANSWER',
+      summary: this.answerRenderer.render(generated.query.intent, page.rows, generated.query.resultMode),
       result,
+      clarification: null,
       meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
     };
   }
 
-  /** 자연어 또는 추천 질문 ID를 실제 질문 문장으로 정규화한다. */
-  private resolveQuestion(input: AskAssistantInput): string {
+  /** 자유 질문이면 undefined, 추천 질문이면 그 정의를 반환한다. */
+  private resolvePreset(input: AskAssistantInput): AssistantPreset | undefined {
     if (input.question === undefined && input.presetId === undefined) {
       throw new BadRequestException('질문 또는 추천 질문 ID가 필요합니다.');
     }
 
     if (input.presetId === undefined) {
-      return input.question ?? '';
+      return undefined;
     }
 
     const preset = findPresetById(input.presetId);
@@ -126,7 +168,17 @@ export class AssistantService {
       throw new NotFoundException('요청한 추천 질문을 찾을 수 없습니다.');
     }
 
-    return preset.question;
+    return preset;
+  }
+
+  /** 추천 질문은 모델을 호출하지 않고 고정 SQL을 같은 검증기로 확인해 실행한다. */
+  private async createPresetQuery(preset: AssistantPreset): Promise<GeneratedQuery> {
+    return {
+      status: 'QUERY',
+      query: await this.validator.validate(preset.createQuery(new Date())),
+      meta: { providerName: null, modelName: null, usedLlm: false, inputTokens: 0, outputTokens: 0, latencyMs: 0 },
+      validationFailures: 0,
+    };
   }
 
   /**
@@ -164,7 +216,9 @@ export class AssistantService {
       try {
         const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
         const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
-        if ('reason' in resolved) return { status: 'CLARIFICATION', reason: resolved.reason, meta, validationFailures: attempt };
+        if ('reason' in resolved) {
+          return { status: 'CLARIFICATION', reason: resolved.reason, clarification: resolved.clarification, meta, validationFailures: attempt };
+        }
         return {
           status: 'QUERY',
           query: resolved,
@@ -192,7 +246,14 @@ export class AssistantService {
       }
     }
 
-    throw new ServiceUnavailableException('안전한 조회 SQL을 만들지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
+    throw new SqlGenerationExhaustedError({
+      providerName: null,
+      modelName: null,
+      usedLlm: true,
+      inputTokens,
+      outputTokens,
+      latencyMs: 0,
+    });
   }
 
   /** SQL은 보존하고 아티스트 equality의 바인딩만 실제 밴드 이름으로 확인한다. */
@@ -201,17 +262,21 @@ export class AssistantService {
     question: string,
     bandId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<ValidatedSqlQuery | { reason: string }> {
+  ): Promise<ValidatedSqlQuery | { reason: string; clarification: AssistantClarification }> {
     const bindings = await readArtistNameBindings(query);
     if (bindings.length === 0) return query;
-    const run = async (client: Prisma.TransactionClient): Promise<ValidatedSqlQuery | { reason: string }> => {
+    const run = async (client: Prisma.TransactionClient): Promise<ValidatedSqlQuery | { reason: string; clarification: AssistantClarification }> => {
       const parameters = [...query.parameters];
       for (const binding of bindings) {
         const candidates = await this.repository.findArtistNameCandidates(bandId, binding.value, question, client);
         const resolved = resolveArtistName(binding.value, question, candidates);
         if ('candidates' in resolved) {
           return {
-            reason: `아티스트 이름을 확인해 주세요. 후보: ${resolved.candidates.map(name => JSON.stringify(name)).join(', ')}.${resolved.hasMore ? ' 다른 후보도 있습니다.' : ''} 원하는 이름을 따옴표로 넣어 다시 질문해 주세요.`,
+            reason: `어떤 아티스트인가요? 밴드에 등록된 비슷한 이름은 ${resolved.candidates.map(name => JSON.stringify(name)).join(', ')}${resolved.hasMore ? ' 등' : ''}이에요.`,
+            clarification: {
+              candidates: resolved.candidates.map(name => ({ name, question: createCandidateQuestion(question, binding.value, name) })),
+              hasMore: resolved.hasMore,
+            },
           };
         }
         parameters[binding.position - 2] = resolved.name;

@@ -169,9 +169,17 @@ describe('AssistantService', () => {
     });
     const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '아티스트의 난이도 3 이하 곡' });
     expect(answer.answerable).toBe(false);
+    expect(answer.kind).toBe('CLARIFICATION');
     expect(answer.result).toBeNull();
     expect(answer.summary).toContain('"아티스트 A", "아티스트 B"');
-    expect(answer.summary).toContain('다시 질문');
+    // 후보를 누르면 그 이름을 따옴표로 넣은 질문을 그대로 다시 보낸다.
+    expect(answer.clarification).toEqual({
+      candidates: [
+        { name: '아티스트 A', question: "'아티스트 A'의 난이도 3 이하 곡" },
+        { name: '아티스트 B', question: "'아티스트 B'의 난이도 3 이하 곡" },
+      ],
+      hasMore: false,
+    });
     expect(harness.executedQueries).toHaveLength(0);
     expect(harness.llmRequests).toHaveLength(1);
   });
@@ -239,7 +247,8 @@ describe('AssistantService', () => {
     const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '명단 모두 보여줘' });
     expect(answer.result?.rows).toHaveLength(50);
     expect(answer.result?.hasMore).toBe(true);
-    expect(answer.summary).toContain('처음 50건');
+    // 초과 안내는 화면이 결과 아래에 한 번만 보여준다.
+    expect(answer.summary).not.toContain('50건');
   });
 
   it('0행에도 컬럼과 빈 목록을 반환한다', async () => {
@@ -250,12 +259,16 @@ describe('AssistantService', () => {
     expect(answer.result?.hasMore).toBe(false);
   });
 
-  it('추천 질문 ID를 기존 문장으로 바꿔 같은 Text-to-SQL 경로로 실행한다', async () => {
+  it('추천 질문은 모델을 호출하지 않고 고정 SQL을 같은 검증기로 확인해 실행한다', async () => {
     const harness = createHarness();
 
-    await harness.service.askAssistant(USER_ID, BAND_ID, { presetId: 'next-schedule' });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { presetId: 'next-schedule' });
 
-    expect(harness.llmRequests[0].userMessage).toBe('다음 합주 일정이 언제야?');
+    expect(harness.llmRequests).toHaveLength(0);
+    expect(harness.validationInputs[0]).toMatchObject({ status: 'QUERY', intent: '다음 합주', resultMode: 'TOP_N' });
+    expect(harness.executedQueries).toHaveLength(1);
+    expect(answer.meta.usedLlm).toBe(false);
+    expect(answer.kind).toBe('ANSWER');
   });
 
   it('없는 추천 질문 ID는 404로 실패한다', async () => {
@@ -277,6 +290,7 @@ describe('AssistantService', () => {
     const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '오늘 날씨 어때?' });
 
     expect(answer.answerable).toBe(false);
+    expect(answer.kind).toBe('UNSUPPORTED');
     expect(answer.summary).toBe('밴드 데이터에 날씨 정보가 없습니다.');
     expect(harness.executedTransactions).toHaveLength(0);
   });
@@ -302,12 +316,25 @@ describe('AssistantService', () => {
     expect(answer.meta.outputTokens).toBe(60);
   });
 
-  it('세 번 모두 SQL 검증에 실패하면 503을 반환한다', async () => {
+  it('세 번 모두 SQL 검증에 실패하면 장애가 아니라 질문을 바꿔 달라는 응답을 준다', async () => {
     const failure = new InvalidSqlQueryError('SELECT_ONLY', 'SELECT만 허용합니다.');
     const harness = createHarness({ validationResults: [failure, failure, failure] });
 
-    await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수 알려줘' })).rejects.toThrow(ServiceUnavailableException);
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수 알려줘' });
+
+    expect(answer).toMatchObject({ answerable: false, kind: 'REPHRASE', result: null, clarification: null });
+    expect(answer.meta.inputTokens).toBe(300);
     expect(harness.llmRequests).toHaveLength(3);
+    expect(harness.executedQueries).toHaveLength(0);
+  });
+
+  it('모델 호출 장애는 질문을 바꿔도 해결되지 않으므로 503으로 둔다', async () => {
+    const harness = createHarness();
+    harness.service['llmService'].generateStructured = async () => {
+      throw new ServiceUnavailableException('Gemini 호출에 실패했습니다.');
+    };
+
+    await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수 알려줘' })).rejects.toThrow(ServiceUnavailableException);
   });
 
   it('외부 transaction이 있으면 새 transaction을 열지 않고 그대로 전달한다', async () => {
