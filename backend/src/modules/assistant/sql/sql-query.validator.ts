@@ -177,6 +177,7 @@ export class SqlQueryValidator {
       intent: generated.intent.trim(),
       sql: await deparse(ast),
       parameters,
+      parameterTypes: generated.params.map(parameter => parameter.type as SqlParameterType),
       ...(generated.resultMode ? { resultMode: generated.resultMode } : {}),
     };
   }

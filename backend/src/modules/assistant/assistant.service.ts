@@ -11,6 +11,7 @@ import { AnswerRenderer } from './rendering/answer-renderer';
 import { mapSqlResult } from './rendering/sql-result.mapper';
 import { ASSISTANT_REPOSITORY, type AssistantRepository } from './repositories/assistant.repository';
 import type { ValidatedSqlQuery } from './sql/generated-sql.type';
+import { readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
@@ -35,7 +36,11 @@ interface UnsupportedQuery {
   validationFailures: number;
 }
 
-type SqlGenerationResult = GeneratedQuery | UnsupportedQuery;
+interface ClarificationQuery extends Omit<UnsupportedQuery, 'status'> {
+  status: 'CLARIFICATION';
+}
+
+type SqlGenerationResult = GeneratedQuery | UnsupportedQuery | ClarificationQuery;
 
 @Injectable()
 export class AssistantService {
@@ -63,10 +68,17 @@ export class AssistantService {
     const question = this.resolveQuestion(input);
     const startedAt = Date.now();
     const scope = await this.scopeResolver.resolve(userId, bandId, tx);
-    const generated = await this.generateSqlFromQuestion(question, new Date());
+    const generated = await this.generateSqlFromQuestion(question, new Date(), bandId, tx);
 
-    if (generated.status === 'UNSUPPORTED') {
-      this.logQueryAudit(scope, input, generated, 'unsupported', 0, Date.now() - startedAt);
+    if (generated.status !== 'QUERY') {
+      this.logQueryAudit(
+        scope,
+        input,
+        generated,
+        generated.status === 'CLARIFICATION' ? 'clarification_required' : 'unsupported',
+        0,
+        Date.now() - startedAt,
+      );
 
       return {
         answerable: false,
@@ -121,7 +133,7 @@ export class AssistantService {
    * LLM SQL을 AST로 검증하고 형식이 잘못된 경우 실패 이유를 주어 최대 두 번 재생성한다.
    * 재생성에는 모든 시도의 위반과 직전 SQL을 함께 준다. 지원 범위 밖 질문은 같은 결과가 반복되므로 재생성하지 않는다.
    */
-  private async generateSqlFromQuestion(question: string, now: Date): Promise<SqlGenerationResult> {
+  private async generateSqlFromQuestion(question: string, now: Date, bandId: string, tx?: Prisma.TransactionClient): Promise<SqlGenerationResult> {
     const baseInstruction = createSqlGenerationSystemInstruction(now, question);
     const failures: string[] = [];
     let previousSql = '';
@@ -150,9 +162,12 @@ export class AssistantService {
       };
 
       try {
+        const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
+        const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
+        if ('reason' in resolved) return { status: 'CLARIFICATION', reason: resolved.reason, meta, validationFailures: attempt };
         return {
           status: 'QUERY',
-          query: await this.validator.validate(response.parsed, getSqlCountUnit(question)),
+          query: resolved,
           meta,
           validationFailures: attempt,
         };
@@ -178,6 +193,41 @@ export class AssistantService {
     }
 
     throw new ServiceUnavailableException('안전한 조회 SQL을 만들지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
+  }
+
+  /** SQL은 보존하고 아티스트 equality의 바인딩만 실제 밴드 이름으로 확인한다. */
+  private async resolveQueryArtistNames(
+    query: ValidatedSqlQuery,
+    question: string,
+    bandId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<ValidatedSqlQuery | { reason: string }> {
+    const bindings = await readArtistNameBindings(query);
+    if (bindings.length === 0) return query;
+    const run = async (client: Prisma.TransactionClient): Promise<ValidatedSqlQuery | { reason: string }> => {
+      const parameters = [...query.parameters];
+      for (const binding of bindings) {
+        const candidates = await this.repository.findArtistNameCandidates(bandId, binding.value, question, client);
+        const resolved = resolveArtistName(binding.value, question, candidates);
+        if ('candidates' in resolved) {
+          return {
+            reason: `아티스트 이름을 확인해 주세요. 후보: ${resolved.candidates.map(name => JSON.stringify(name)).join(', ')}.${resolved.hasMore ? ' 다른 후보도 있습니다.' : ''} 원하는 이름을 따옴표로 넣어 다시 질문해 주세요.`,
+          };
+        }
+        parameters[binding.position - 2] = resolved.name;
+      }
+      return { ...query, parameters };
+    };
+    try {
+      if (tx) return await run(tx);
+      return await this.prisma.$transaction(async client => {
+        await this.repository.configureReadOnlyTransaction(client);
+        return run(client);
+      });
+    } catch (error) {
+      this.logger.warn(`아티스트 이름 확인에 실패했습니다: ${toMessage(error)}`);
+      throw new ServiceUnavailableException('아티스트 이름을 확인하지 못했습니다. 잠시 후 다시 질문해 주세요.');
+    }
   }
 
   /** 내부 transaction은 read-only로 설정하고, 외부 transaction은 호출자가 정한 속성을 유지한다. */

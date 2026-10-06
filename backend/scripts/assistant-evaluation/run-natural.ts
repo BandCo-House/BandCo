@@ -27,21 +27,21 @@ const CORPUS_NAME = (process.env.EXPERIMENT_CORPUS ?? 'dev') as keyof typeof COR
 const CASES = CORPORA[CORPUS_NAME]?.cases;
 
 interface GenerationResult {
-  status: 'QUERY' | 'UNSUPPORTED';
+  status: 'QUERY' | 'UNSUPPORTED' | 'CLARIFICATION';
   query?: ValidatedSqlQuery;
   reason?: string;
   meta: { providerName: string | null; modelName: string | null };
 }
 
 interface EvaluationService {
-  generateSqlFromQuestion(question: string, now: Date): Promise<GenerationResult>;
+  generateSqlFromQuestion(question: string, now: Date, bandId: string): Promise<GenerationResult>;
 }
 
 interface CaseResult {
   id: string;
   category: string;
   question: string;
-  outcome: 'correct' | 'wrong_result' | 'unsupported' | 'generation_failed' | 'execution_failed';
+  outcome: 'correct' | 'wrong_result' | 'unsupported' | 'clarification_required' | 'generation_failed' | 'execution_failed';
   resultMatches: boolean;
   validationAttempts: number;
   validationFailures: string[];
@@ -242,10 +242,10 @@ async function runCases(
     let result: CaseResult;
 
     try {
-      const generated = await service.generateSqlFromQuestion(queryCase.question, FIXED_NOW);
+      const generated = await service.generateSqlFromQuestion(queryCase.question, FIXED_NOW, TARGET_BAND_ID);
 
-      if (generated.status === 'UNSUPPORTED' || generated.query === undefined) {
-        result = failedResult(queryCase, 'unsupported', expectedRows, startedAt, {
+      if (generated.status !== 'QUERY' || generated.query === undefined) {
+        result = failedResult(queryCase, generated.status === 'CLARIFICATION' ? 'clarification_required' : 'unsupported', expectedRows, startedAt, {
           providerName: generated.meta.providerName,
           modelName: generated.meta.modelName,
           error: generated.reason ?? '지원하지 않는 질문으로 분류됨',

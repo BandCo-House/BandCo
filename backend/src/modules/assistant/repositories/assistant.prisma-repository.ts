@@ -31,6 +31,23 @@ export class AssistantPrismaRepository implements AssistantRepository {
     await tx.$executeRawUnsafe(`SET LOCAL statement_timeout = '${STATEMENT_TIMEOUT_MS}ms'`);
   }
 
+  /** 질문에 나온 실제 이름과 정확 일치를 먼저 가져온다. 여섯 번째 후보는 잘림 감지용이다. */
+  async findArtistNameCandidates(bandId: string, value: string, question: string, tx: Prisma.TransactionClient): Promise<string[]> {
+    const rows = await tx.$queryRawUnsafe<Array<{ artist_name: string }>>(
+      `SELECT so.artist_name FROM bands b JOIN songs so ON so.band_id = b.id
+       WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND so.artist_name <> ''
+         AND STRPOS(LOWER(so.artist_name), LOWER($2)) > 0
+       GROUP BY so.artist_name
+       ORDER BY CASE WHEN STRPOS(LOWER($3), LOWER(so.artist_name)) > 0 THEN LENGTH(so.artist_name) ELSE 0 END DESC,
+                (LOWER(so.artist_name) = LOWER($2)) DESC, so.artist_name ASC
+       LIMIT 6`,
+      bandId,
+      value,
+      question,
+    );
+    return rows.map(row => row.artist_name);
+  }
+
   /**
    * 서버 소유 밴드 ID를 $1에 두고 모델 파라미터를 $2부터 바인딩한다.
    * 외부 LIMIT으로 모델이 누락하거나 큰 값을 만든 경우에도 반환 행 수를 제한한다.

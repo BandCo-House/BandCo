@@ -28,6 +28,8 @@ interface HarnessOptions {
   validationResults?: Array<ValidatedSqlQuery | Error>;
   rows?: Array<Record<string, unknown>>;
   executionError?: Error;
+  artistCandidates?: string[];
+  artistLookupError?: Error;
 }
 
 function createHarness(options: HarnessOptions = {}) {
@@ -37,6 +39,7 @@ function createHarness(options: HarnessOptions = {}) {
   const configuredTransactions: unknown[] = [];
   const executedTransactions: unknown[] = [];
   const executedQueries: ValidatedSqlQuery[] = [];
+  const artistLookups: Array<{ bandId: string; value: string; question: string; tx: unknown }> = [];
   const internalTx = { kind: 'internal-tx' } as unknown as Prisma.TransactionClient;
   let transactionCount = 0;
 
@@ -82,6 +85,11 @@ function createHarness(options: HarnessOptions = {}) {
   } as SqlQueryValidator;
 
   const repository: AssistantRepository = {
+    async findArtistNameCandidates(bandId, value, question, tx) {
+      artistLookups.push({ bandId, value, question, tx });
+      if (options.artistLookupError) throw options.artistLookupError;
+      return options.artistCandidates ?? [];
+    },
     async findBandMemberByBandIdAndUserId() {
       return { id: MEMBER_ID };
     },
@@ -125,12 +133,82 @@ function createHarness(options: HarnessOptions = {}) {
     configuredTransactions,
     executedTransactions,
     executedQueries,
+    artistLookups,
     getTransactionCount: () => transactionCount,
     internalTx,
   };
 }
 
 describe('AssistantService', () => {
+  const artistQuery: ValidatedSqlQuery = {
+    intent: '곡 조회',
+    sql: 'SELECT so.title FROM bands b JOIN songs so ON so.band_id=b.id WHERE b.id=$1::uuid AND b.deleted_at IS NULL AND so.artist_name=$2 AND so.difficulty_level <= $3',
+    parameters: ['B', 3],
+    parameterTypes: ['TEXT', 'INTEGER'],
+    resultMode: 'LIST',
+  };
+
+  it('현재 밴드의 유일한 아티스트 후보로 바인딩만 보정하고 원래 조건을 유지한다', async () => {
+    const harness = createHarness({ validationResults: [artistQuery], artistCandidates: ['아티스트 B'], rows: [{ title: '베타' }] });
+    const question = '아티스트 B의 난이도 3 이하 곡 제목만';
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question });
+    expect(answer.answerable).toBe(true);
+    expect(harness.artistLookups).toEqual([{ bandId: BAND_ID, value: 'B', question, tx: harness.internalTx }]);
+    expect(harness.executedQueries[0].sql).toBe(artistQuery.sql);
+    expect(harness.executedQueries[0].parameters).toEqual(['아티스트 B', 3]);
+    expect(artistQuery.parameters).toEqual(['B', 3]);
+    expect(harness.configuredTransactions).toEqual([harness.internalTx, harness.internalTx]);
+    expect(harness.getTransactionCount()).toBe(2);
+    expect(harness.llmRequests).toHaveLength(1);
+  });
+
+  it('다중 후보는 정상 응답으로 선택을 안내하고 생성 SQL을 실행하지 않는다', async () => {
+    const harness = createHarness({
+      validationResults: [{ ...artistQuery, parameters: ['아티스트', 3] }],
+      artistCandidates: ['아티스트 A', '아티스트 B'],
+    });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '아티스트의 난이도 3 이하 곡' });
+    expect(answer.answerable).toBe(false);
+    expect(answer.result).toBeNull();
+    expect(answer.summary).toContain('"아티스트 A", "아티스트 B"');
+    expect(answer.summary).toContain('다시 질문');
+    expect(harness.executedQueries).toHaveLength(0);
+    expect(harness.llmRequests).toHaveLength(1);
+  });
+
+  it('없는 이름은 원래 바인딩으로 빈 목록을 조회한다', async () => {
+    const harness = createHarness({ validationResults: [artistQuery], artistCandidates: [], rows: [] });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: 'B 곡 제목' });
+    expect(answer.answerable).toBe(true);
+    expect(answer.result?.rows).toEqual([]);
+    expect(harness.executedQueries[0].parameters).toEqual(['B', 3]);
+  });
+
+  it('이름 lookup과 실제 조회에 외부 tx를 전달하고 내부 transaction을 열지 않는다', async () => {
+    const harness = createHarness({ validationResults: [artistQuery], artistCandidates: ['아티스트 B'], rows: [{ title: '베타' }] });
+    const tx = { kind: 'external' } as unknown as Prisma.TransactionClient;
+    await harness.service.askAssistant(USER_ID, BAND_ID, { question: '아티스트 B 곡' }, tx);
+    expect(harness.artistLookups[0].tx).toBe(tx);
+    expect(harness.executedTransactions).toEqual([tx]);
+    expect(harness.scopeTransactions).toEqual([tx]);
+    expect(harness.configuredTransactions).toEqual([]);
+    expect(harness.getTransactionCount()).toBe(0);
+  });
+
+  it('이름 lookup 장애는 503으로 반환하고 모델 재호출이나 결과 조회를 하지 않는다', async () => {
+    const harness = createHarness({ validationResults: [artistQuery], artistLookupError: new Error('DB unavailable') });
+    await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: 'B 곡' })).rejects.toThrow(ServiceUnavailableException);
+    expect(harness.llmRequests).toHaveLength(1);
+    expect(harness.executedQueries).toHaveLength(0);
+  });
+
+  it('권한 확인에 실패하면 후보 이름 조회도 수행하지 않는다', async () => {
+    const harness = createHarness({ scopeError: new ForbiddenException('비멤버'), validationResults: [artistQuery] });
+    await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: 'B 곡' })).rejects.toThrow(ForbiddenException);
+    expect(harness.artistLookups).toHaveLength(0);
+    expect(harness.llmRequests).toHaveLength(0);
+  });
+
   it('자연어 질문을 생성·검증하고 같은 내부 transaction에서 read-only 설정과 조회를 실행한다', async () => {
     const harness = createHarness();
 
