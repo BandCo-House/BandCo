@@ -93,6 +93,24 @@ export function resolveArtistName(
   return { candidates, hasMore: false };
 }
 
+/**
+ * 후보를 누르면 바로 보낼 질문을 만든다. 따옴표로 감싼 정확한 이름은 resolveArtistName에서 그 이름으로 확정된다.
+ * 질문에 모델이 읽은 이름이 없으면 원래 질문 뒤에 후보를 덧붙인다.
+ */
+export function createCandidateQuestion(question: string, value: string, candidate: string): string {
+  const quoted = `'${candidate}'`;
+  for (const [open, close] of [
+    ["'", "'"],
+    ['"', '"'],
+    ['‘', '’'],
+    ['“', '”'],
+  ]) {
+    if (question.includes(`${open}${value}${close}`)) return question.replace(`${open}${value}${close}`, quoted);
+  }
+  if (value !== '' && question.includes(value)) return question.replace(value, quoted);
+  return `${question} (아티스트 ${quoted})`;
+}
+
 function unwrapCast(value: unknown): AstRecord | null {
   if (!isRecord(value)) return null;
   if (!isRecord(value.TypeCast)) return value;

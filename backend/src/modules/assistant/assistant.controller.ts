@@ -44,7 +44,7 @@ export class AssistantController {
   @ApiResponse({ status: 403, description: '권한 없음' })
   @ApiResponse({ status: 404, description: '추천 질문을 찾을 수 없음' })
   @ApiResponse({ status: 429, description: '질문 요청 횟수 초과' })
-  @ApiResponse({ status: 503, description: 'AI 응답 생성 실패' })
+  @ApiResponse({ status: 503, description: '모델 호출·조회 실행·이름 확인 장애' })
   async askAssistant(
     @Req() req: AuthenticatedRequest,
     @Param('bandId') bandId: string,

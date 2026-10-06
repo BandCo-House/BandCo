@@ -1,23 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type { SqlQueryRow } from '../sql/generated-sql.type';
-
-const MAX_ROWS_IN_SUMMARY = 5;
-
-const COLUMN_LABELS: Record<string, string> = {
-  artist_name: '아티스트',
-  attendance_status: '참석 상태',
-  band_member_id: '멤버 ID',
-  member_count: '멤버 수',
-  nickname: '닉네임',
-  place_name: '장소',
-  practice_count: '합주 횟수',
-  role: '역할',
-  skill_level: '숙련도',
-  start_at: '시작 시각',
-  team_name: '팀',
-  title: '이름',
-};
+import type { SqlQueryRow, SqlResultMode } from '../sql/generated-sql.type';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -32,32 +15,35 @@ const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
 @Injectable()
 export class AnswerRenderer {
   /**
-   * 임의 SELECT 결과를 기존 프론트의 summary 한 칸에 표시할 수 있게 만든다.
+   * 결론 한 줄을 만든다. 행 목록은 화면의 결과 영역이 보여주므로 요약에서 다시 나열하지 않는다.
    * 모델에게 결과 문장을 다시 생성시키지 않아 조회 결과에 없는 사실이 추가되지 않는다.
    */
-  render(intent: string, rows: SqlQueryRow[]): string {
+  render(intent: string, rows: SqlQueryRow[], resultMode?: SqlResultMode): string {
     if (rows.length === 0) {
-      return `${intent} 결과가 없습니다.`;
+      return `${intent}: 조건에 맞는 결과가 없어요.`;
     }
 
-    const firstEntries = Object.entries(rows[0]);
+    const firstValues = Object.values(rows[0]);
 
-    if (rows.length === 1 && firstEntries.length === 1) {
-      return `${intent}: ${formatValue(firstEntries[0][1])}`;
+    if (rows.length === 1 && firstValues.length === 1) {
+      return `${intent}: ${formatValue(firstValues[0])}`;
     }
 
-    const previews = rows.slice(0, MAX_ROWS_IN_SUMMARY).map(formatRow).join(' / ');
-    const remainder = rows.length > MAX_ROWS_IN_SUMMARY ? ` 외 ${rows.length - MAX_ROWS_IN_SUMMARY}건` : '';
+    if (rows.length === 1) {
+      return `${intent}: ${firstValues.map(formatValue).join(' · ')}`;
+    }
 
-    return `${intent} 결과 ${rows.length}건입니다. ${previews}${remainder}`;
+    if (resultMode === 'TOP_N') {
+      return `${intent}: ${formatValue(firstValues[0])} 외 ${rows.length - 1}건`;
+    }
+
+    return `${intent} ${rows.length}${countUnit(rows[0])}`;
   }
 }
 
-/** 결과 한 행의 컬럼과 값을 짧은 문장으로 만든다. */
-function formatRow(row: SqlQueryRow): string {
-  return Object.entries(row)
-    .map(([key, value]) => `${COLUMN_LABELS[key] ?? key} ${formatValue(value)}`)
-    .join(', ');
+/** 사람 이름만 나열한 목록은 '명', 나머지는 '건'으로 센다. */
+function countUnit(row: SqlQueryRow): string {
+  return Object.keys(row)[0] === 'nickname' ? '명' : '건';
 }
 
 /** Prisma raw query가 반환할 수 있는 기본 값을 JSON 안전 문자열로 만든다. */

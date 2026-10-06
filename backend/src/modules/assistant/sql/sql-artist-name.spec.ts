@@ -1,5 +1,5 @@
 import type { ValidatedSqlQuery } from './generated-sql.type';
-import { readArtistNameBindings, resolveArtistName } from './sql-artist-name';
+import { createCandidateQuestion, readArtistNameBindings, resolveArtistName } from './sql-artist-name';
 
 const from = 'FROM bands b JOIN songs so ON so.band_id = b.id WHERE b.id = $1 AND b.deleted_at IS NULL AND ';
 const query = (condition: string, parameters: ValidatedSqlQuery['parameters'] = ['B']): ValidatedSqlQuery => ({
@@ -65,5 +65,11 @@ describe('아티스트 이름 확인', () => {
     expect(resolveArtistName('B', 'B 곡', candidates)).toEqual({ candidates: candidates.slice(0, 5), hasMore: true });
     expect(resolveArtistName('B', '“B”의 곡', candidates)).toEqual({ name: 'B' });
     expect(resolveArtistName('B', '“B1”의 곡', candidates)).toHaveProperty('candidates');
+  });
+
+  it('후보 질문은 질문 속 이름을 따옴표 친 후보로 바꾸고, 이름이 없으면 뒤에 덧붙인다', () => {
+    expect(createCandidateQuestion("'아티스트' 곡 알려줘", '아티스트', '아티스트 A')).toBe("'아티스트 A' 곡 알려줘");
+    expect(createCandidateQuestion('아티스트 노래 뭐 있어?', '아티스트', '아티스트 B')).toBe("'아티스트 B' 노래 뭐 있어?");
+    expect(createCandidateQuestion('그 사람 노래', 'Queen', 'Queen II')).toBe("그 사람 노래 (아티스트 'Queen II')");
   });
 });
