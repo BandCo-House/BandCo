@@ -2,7 +2,7 @@ import { parse } from 'pgsql-parser';
 
 import { Prisma } from '../../src/generated/prisma';
 
-export const EVALUATOR_VERSION = '3.0.0';
+export const EVALUATOR_VERSION = '3.2.0';
 
 export interface EvaluationColumn {
   key: string;
@@ -123,6 +123,21 @@ function collectTableAliases(value: unknown, aliases: Map<string, string>): void
     const table = value.RangeVar;
     const alias = isRecord(table.alias) ? table.alias.aliasname : table.relname;
     if (typeof alias === 'string' && typeof table.relname === 'string') aliases.set(alias, table.relname);
+  }
+  // 서버의 대표 관계는 물리 컬럼을 그대로 투영한다. 계산·변경된 파생 컬럼은 추정하지 않는다.
+  if (isRecord(value.RangeSubselect)) {
+    const derived = value.RangeSubselect;
+    const select = isRecord(derived.subquery) && isRecord(derived.subquery.SelectStmt) ? derived.subquery.SelectStmt : null;
+    const from = Array.isArray(select?.fromClause) ? select.fromClause : [];
+    const targets = Array.isArray(select?.targetList) ? select.targetList : [];
+    const target = isRecord(targets[0]) && isRecord(targets[0].ResTarget) ? targets[0].ResTarget : null;
+    const fields = target && isRecord(target.val) && isRecord(target.val.ColumnRef) ? target.val.ColumnRef.fields : null;
+    const isStar = Array.isArray(fields) && fields.length === 1 && isRecord(fields[0]) && isRecord(fields[0].A_Star);
+    const source = isRecord(from[0]) && isRecord(from[0].RangeVar) ? from[0].RangeVar : null;
+    const alias = isRecord(derived.alias) ? derived.alias.aliasname : null;
+    if (targets.length === 1 && isStar && from.length === 1 && typeof source?.relname === 'string' && typeof alias === 'string') {
+      aliases.set(alias, source.relname);
+    }
   }
   if (isRecord(value.JoinExpr)) {
     collectTableAliases(value.JoinExpr.larg, aliases);
