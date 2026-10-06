@@ -5,6 +5,8 @@ export const assistantPresetSchema = z.object({
   // 홈 칩에 쓰는 짧은 이름. 이전 서버는 보내지 않으므로 질문 문장으로 대신한다.
   label: z.string().optional(),
   question: z.string(),
+  // 이 추천 질문의 답 뒤에 보여줄 이어서 물어보기. 자유 질문으로 보낸다.
+  followUps: z.array(z.string()).optional(),
 });
 
 const scheduleRowSchema = z.object({
