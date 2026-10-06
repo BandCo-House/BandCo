@@ -1,4 +1,5 @@
 import { SQL_CATALOG, SQL_CATALOG_JOINS } from './sql-catalog';
+import { createSqlQueryContext } from './sql-query-context';
 
 /**
  * SQL 생성 규칙과 허용 스키마를 하나의 지시문으로 만든다.
@@ -7,7 +8,7 @@ import { SQL_CATALOG, SQL_CATALOG_JOINS } from './sql-catalog';
  * @param {Date} now - 상대 날짜 해석 기준 시각
  * @returns {string} SQL 생성 시스템 지시문
  */
-export function createSqlGenerationSystemInstruction(now: Date): string {
+export function createSqlGenerationSystemInstruction(now: Date, question = ''): string {
   return [
     '너는 밴드 협업 서비스의 PostgreSQL 읽기 쿼리 생성기다.',
     '사용자의 질문을 아래 허용 스키마 안에서 답할 수 있는 SQL 한 문장으로 변환한다.',
@@ -50,6 +51,8 @@ export function createSqlGenerationSystemInstruction(now: Date): string {
     '',
     '# 허용 JOIN',
     ...SQL_CATALOG_JOINS.map(join => `- ${join.left} = ${join.right}`),
+    '',
+    createSqlQueryContext(question),
     '',
     '# 예시 1',
     '질문: 우리 밴드에 사람 몇 명 있어?',
