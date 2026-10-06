@@ -1,5 +1,8 @@
+import { cn } from '@/shared/lib/utils';
+
 interface SuggestionListProps {
   title: string;
+  className?: string;
   items: Array<{ key: string; label: string; onSelect: () => void }>;
   emphasized?: boolean;
 }
@@ -9,8 +12,14 @@ export const SuggestionList = ({
   title,
   items,
   emphasized,
+  className,
 }: SuggestionListProps) => (
-  <section className="flex flex-col gap-2 border-t border-grey-500 pt-3">
+  <section
+    className={cn(
+      'flex flex-col gap-2 border-t border-grey-500 pt-3',
+      className,
+    )}
+  >
     <h3 className="typo-xs-r text-grey-300">{title}</h3>
     <ul className="flex flex-wrap gap-2">
       {items.map((item) => (

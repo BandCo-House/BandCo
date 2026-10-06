@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import {
@@ -9,90 +9,169 @@ import type {
   AskAssistantRequest,
   AssistantPreset,
 } from '@/entities/assistant/model/types';
-import { AssistantAnswerView } from './AssistantAnswerView';
-import { AssistantSheet } from './AssistantSheet';
-import { SuggestionList } from './SuggestionList';
+import { AssistantScreen } from './AssistantScreen';
+import { AssistantTurn, type AssistantTurnState } from './AssistantTurn';
 
 const MAX_QUESTION_LENGTH = 200;
 const MIN_QUESTION_LENGTH = 2;
-const PLACEHOLDER = '예: 지난달 합주 몇 번 했어?';
+/** 답하는 중 표시를 최소로 보여주는 시간(ms) */
+const MIN_REPLY_MS = 700;
 
 interface AssistantPanelProps {
   bandId: string;
 }
 
-interface AskedQuestion {
-  body: AskAssistantRequest;
-  label: string;
+interface QuestionFormProps {
+  inputId: string;
+  draft: string;
+  onDraftChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  disabled: boolean;
+  /** 홈에서는 입력을 시작할 때만 버튼을 보여주고, 대화 화면에서는 항상 보여준다. */
+  alwaysShowSubmit: boolean;
 }
 
+const QuestionForm = ({
+  inputId,
+  draft,
+  onDraftChange,
+  onSubmit,
+  disabled,
+  alwaysShowSubmit,
+}: QuestionFormProps) => {
+  const [focused, setFocused] = useState(false);
+  const showSubmit = alwaysShowSubmit || focused || draft.length > 0;
+
+  return (
+    <form onSubmit={onSubmit} className="flex items-center gap-2">
+      <Input
+        id={inputId}
+        value={draft}
+        onChange={(event) => onDraftChange(event.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        maxLength={MAX_QUESTION_LENGTH}
+        placeholder="예: 지난달 합주 몇 번 했어?"
+        aria-label="밴드 데이터에 대한 질문"
+        enterKeyHint="send"
+        disabled={disabled}
+        className="h-11 min-w-0 flex-1 py-0 typo-sm-r"
+      />
+      {showSubmit && (
+        <Button
+          type="submit"
+          size="sm"
+          variant="accent"
+          disabled={draft.trim().length < MIN_QUESTION_LENGTH || disabled}
+          className="animate-in duration-200 zoom-in-95 fade-in motion-reduce:animate-none"
+        >
+          질문
+        </Button>
+      )}
+    </form>
+  );
+};
+
 /**
- * 밴드 홈의 물어보기 진입점.
+ * 밴드 홈의 물어보기 카드.
  *
- * 홈에는 입력 한 줄과 추천 칩만 두고, 답은 전체 화면 시트에서 보여준다.
- * 답변을 한 건만 보관하고 대화 이력은 쌓지 않는다.
+ * 홈에서 바로 입력하거나 추천 칩을 누르면 대화 화면이 아래에서 올라온다.
+ * 이어서 묻는 질문은 그 화면에 차례로 쌓이고, 닫은 뒤 다시 물으면 새 대화로 시작한다.
  */
 export const AssistantPanel = ({ bandId }: AssistantPanelProps) => {
   const [open, setOpen] = useState(false);
-  const [focusInput, setFocusInput] = useState(false);
   const [draft, setDraft] = useState('');
-  const [asked, setAsked] = useState<AskedQuestion | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [turns, setTurns] = useState<AssistantTurnState[]>([]);
+  const nextTurnId = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const latestTurnRef = useRef<HTMLDivElement>(null);
   const { data: presets = [] } = useAssistantPresets();
-  const { mutate, data: answer, isPending, error } = useAskAssistant(bandId);
+  const { mutateAsync } = useAskAssistant(bandId);
+  const pending = turns.some((turn) => turn.pending);
 
-  const ask = (body: AskAssistantRequest, label: string) => {
-    setAsked({ body, label });
-    mutate(body, {
-      // 실패하면 고쳐서 다시 물을 수 있게 직접 입력한 질문을 입력창에 되돌린다.
-      onError: () => {
-        if (body.question !== undefined) setDraft(body.question);
-      },
+  // 새 질문이 생기면 그 질문이 화면 위쪽에 오게 부드럽게 옮긴다. 긴 답의 끝으로 튀지 않는다.
+  useEffect(() => {
+    latestTurnRef.current?.scrollIntoView?.({
+      behavior: 'smooth',
+      block: 'start',
     });
+  }, [turns.length]);
+
+  const updateTurn = (id: number, patch: Partial<AssistantTurnState>) =>
+    setTurns((previous) =>
+      previous.map((turn) => (turn.id === id ? { ...turn, ...patch } : turn)),
+    );
+
+  const run = (id: number, body: AskAssistantRequest) => {
+    // 추천 질문은 수십 ms 만에 와서 질문과 답이 한꺼번에 뜬다. 답하는 중임을 잠깐 보여준 뒤 답을 연다.
+    const minimumReply = new Promise((resolve) =>
+      setTimeout(resolve, MIN_REPLY_MS),
+    );
+    void Promise.all([mutateAsync(body), minimumReply])
+      .then(([answer]) => updateTurn(id, { pending: false, answer }))
+      .catch((error: unknown) => {
+        updateTurn(id, { pending: false, error });
+        // 고쳐서 다시 물을 수 있게 직접 입력한 질문을 입력창에 되돌린다.
+        if (body.question !== undefined) setDraft(body.question);
+      });
   };
 
-  const askPreset = (preset: AssistantPreset) => {
-    setFocusInput(false);
+  /** 대화 화면이 닫혀 있으면 새 대화로 시작하고, 열려 있으면 아래에 이어 붙인다. */
+  const ask = (
+    body: AskAssistantRequest,
+    label: string,
+    followUps: string[],
+  ) => {
+    const turn: AssistantTurnState = {
+      id: nextTurnId.current++,
+      body,
+      label,
+      followUps,
+      pending: true,
+    };
+    setTurns((previous) => (open ? [...previous, turn] : [turn]));
     setOpen(true);
-    ask({ presetId: preset.id }, preset.question);
+    run(turn.id, body);
   };
 
-  const openForTyping = () => {
-    setFocusInput(true);
-    setOpen(true);
-  };
+  const askPreset = (preset: AssistantPreset) =>
+    ask({ presetId: preset.id }, preset.question, preset.followUps ?? []);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = draft.trim();
-    if (trimmed.length < MIN_QUESTION_LENGTH || isPending) return;
+    if (trimmed.length < MIN_QUESTION_LENGTH || pending) return;
     setDraft('');
-    ask({ question: trimmed }, trimmed);
+    // 키보드를 내려 올라오는 답이 가려지지 않게 한다.
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+    ask({ question: trimmed }, trimmed, []);
   };
 
-  const handleEdit = (question: string) => {
-    setDraft(question);
-    inputRef.current?.focus();
+  const retry = (turn: AssistantTurnState) => {
+    updateTurn(turn.id, { pending: true, error: undefined });
+    run(turn.id, turn.body);
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-grey-500 p-4">
+    <section
+      aria-label="밴드에 대해 물어보기"
+      className="flex flex-col gap-3 rounded-2xl border border-grey-500 p-4"
+    >
       <h2 className="typo-sm-b text-grey-100">밴드에 대해 물어보기</h2>
-      <button
-        type="button"
-        onClick={openForTyping}
-        aria-label="밴드 데이터에 대해 질문하기"
-        className="flex h-11 items-center rounded-full border border-grey-500 px-4 text-left typo-sm-r text-grey-300"
-      >
-        {PLACEHOLDER}
-      </button>
+      <QuestionForm
+        inputId="assistant-home-question"
+        draft={draft}
+        onDraftChange={setDraft}
+        onSubmit={handleSubmit}
+        disabled={pending}
+        alwaysShowSubmit={false}
+      />
       {presets.length > 0 && (
-        <ul
-          aria-label="추천 질문"
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]"
-        >
+        // 칩이 많지 않아 가로 스크롤 대신 줄바꿈으로 모두 보여준다.
+        <ul aria-label="추천 질문" className="flex flex-wrap gap-2">
           {presets.map((preset) => (
-            <li key={preset.id} className="shrink-0">
+            <li key={preset.id}>
               <button
                 type="button"
                 onClick={() => askPreset(preset)}
@@ -106,61 +185,48 @@ export const AssistantPanel = ({ bandId }: AssistantPanelProps) => {
         </ul>
       )}
 
-      <AssistantSheet
+      <AssistantScreen
         open={open}
         onOpenChange={setOpen}
-        onOpenFocus={focusInput ? () => inputRef.current?.focus() : undefined}
+        scrollRef={scrollRef}
         footer={
-          <form onSubmit={handleSubmit} className="flex items-center gap-2">
-            <Input
-              ref={inputRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              maxLength={MAX_QUESTION_LENGTH}
-              placeholder={PLACEHOLDER}
-              aria-label="밴드 데이터에 대한 질문"
-              disabled={isPending}
-              className="h-11 flex-1 py-0 typo-sm-r"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              variant="accent"
-              disabled={draft.trim().length < MIN_QUESTION_LENGTH || isPending}
-            >
-              질문
-            </Button>
-          </form>
+          <QuestionForm
+            inputId="assistant-screen-question"
+            draft={draft}
+            onDraftChange={setDraft}
+            onSubmit={handleSubmit}
+            disabled={pending}
+            alwaysShowSubmit
+          />
         }
       >
-        {asked === null ? (
-          <div className="flex flex-col gap-4">
-            <p className="typo-base-r text-grey-100">
-              밴드 일정, 참석, 곡, 팀에 대해 물어보세요. 밴드에 저장된 데이터로
-              답해요.
-            </p>
-            <SuggestionList
-              title="이렇게 물어볼 수 있어요"
-              items={presets.map((preset) => ({
-                key: preset.id,
-                label: preset.question,
-                onSelect: () => ask({ presetId: preset.id }, preset.question),
-              }))}
-            />
-          </div>
-        ) : (
-          <AssistantAnswerView
-            question={asked.label}
-            isPending={isPending}
-            error={error}
-            answer={answer}
-            presets={presets}
-            onAsk={ask}
-            onEdit={handleEdit}
-            onRetry={() => ask(asked.body, asked.label)}
-          />
-        )}
-      </AssistantSheet>
+        {turns.map((turn, index) => {
+          const isLatest = index === turns.length - 1;
+          return (
+            <div
+              key={turn.id}
+              ref={isLatest ? latestTurnRef : undefined}
+              className="scroll-mt-4"
+            >
+              <AssistantTurn
+                turn={turn}
+                isLatest={isLatest}
+                presets={presets}
+                onFollowUp={(question) =>
+                  ask(
+                    { question },
+                    question,
+                    turn.followUps.filter((followUp) => followUp !== question),
+                  )
+                }
+                onAskPreset={askPreset}
+                onAskCandidate={(question) => ask({ question }, question, [])}
+                onRetry={() => retry(turn)}
+              />
+            </div>
+          );
+        })}
+      </AssistantScreen>
     </section>
   );
 };
