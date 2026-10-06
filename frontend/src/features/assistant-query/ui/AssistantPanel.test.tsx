@@ -224,7 +224,7 @@ describe('AssistantPanel', () => {
     expect(
       screen.getByText('질문을 정확히 이해하지 못했어요.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('이렇게 물어보면 찾기 쉬워요')).toBeInTheDocument();
+    expect(screen.getByText('이런 질문은 바로 답할 수 있어요')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

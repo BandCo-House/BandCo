@@ -180,7 +180,7 @@ const UNSUPPORTED: AssistantAnswer = {
 const CLARIFICATION: AssistantAnswer = {
   answerable: false,
   kind: 'CLARIFICATION',
-  summary: '어떤 아티스트인가요? 밴드에 비슷한 이름이 2개 있어요.',
+  summary: '어떤 아티스트인가요? 밴드 곡 목록에 비슷한 이름이 2개 있어요.',
   result: null,
   clarification: {
     candidates: [

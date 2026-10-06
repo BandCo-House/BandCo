@@ -20,7 +20,7 @@ const TOO_MANY_REQUESTS = 429;
 
 const FALLBACK_TITLE: Partial<Record<AssistantAnswer['kind'], string>> = {
   UNSUPPORTED: '이런 질문은 답할 수 있어요',
-  REPHRASE: '이렇게 물어보면 찾기 쉬워요',
+  REPHRASE: '이런 질문은 바로 답할 수 있어요',
 };
 
 interface AssistantAnswerViewProps {
@@ -123,8 +123,8 @@ export const AssistantAnswerView = ({
             <SuggestionList
               title={
                 answer.clarification.hasMore
-                  ? '찾는 이름이 없으면 정확한 이름을 따옴표로 넣어 물어보세요'
-                  : '눌러서 바로 찾기'
+                  ? '밴드 곡 목록에 있는 이름 중 일부예요. 원하는 이름이 없으면 곡에 등록한 이름 그대로 따옴표로 넣어 물어보세요'
+                  : '밴드 곡 목록에 있는 이름이에요. 누르면 이 이름으로 다시 물어봐요'
               }
               items={answer.clarification.candidates.map((candidate) => ({
                 key: candidate.name,

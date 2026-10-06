@@ -171,7 +171,7 @@ describe('AssistantService', () => {
     expect(answer.answerable).toBe(false);
     expect(answer.kind).toBe('CLARIFICATION');
     expect(answer.result).toBeNull();
-    expect(answer.summary).toBe('어떤 아티스트인가요? 밴드에 비슷한 이름이 2개 있어요.');
+    expect(answer.summary).toBe('어떤 아티스트인가요? 밴드 곡 목록에 비슷한 이름이 2개 있어요.');
     // 후보를 누르면 그 이름을 따옴표로 넣은 질문을 그대로 다시 보낸다.
     expect(answer.clarification).toEqual({
       candidates: [
