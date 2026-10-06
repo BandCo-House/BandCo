@@ -71,7 +71,13 @@ export const AssistantAnswerView = ({
       {!isPending && error !== null && (
         <div role="alert" className="flex flex-col items-start gap-3">
           <p className="typo-base-r text-grey-100">{errorMessage(error)}</p>
-          <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onRetry}
+            className="border-grey-300 text-grey-50"
+          >
             다시 시도
           </Button>
         </div>
@@ -101,7 +107,7 @@ export const AssistantAnswerView = ({
                 : 'typo-base-r text-grey-100'
             }
           >
-            {answer.summary}
+            {headline(answer)}
           </p>
 
           {answer.result !== null && <AssistantResult result={answer.result} />}
@@ -177,6 +183,19 @@ const LoadingState = () => {
       </div>
     </div>
   );
+};
+
+/**
+ * 0건·한 건·상위 N개는 결과 영역이 답을 말하므로, 같은 내용을 다시 읽는 요약 대신 결과 제목을 헤드라인으로 쓴다.
+ * 여러 건 목록은 개수가 담긴 요약("미응답 10명")을 그대로 쓴다.
+ */
+const headline = (answer: AssistantAnswer): string => {
+  const result = answer.result;
+  if (answer.kind !== 'ANSWER' || result?.entity !== 'table' || !result.title)
+    return answer.summary;
+  return result.rows.length <= 1 || result.resultMode === 'TOP_N'
+    ? result.title
+    : answer.summary;
 };
 
 const errorMessage = (error: unknown): string =>

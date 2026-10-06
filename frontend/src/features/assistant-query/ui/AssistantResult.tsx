@@ -47,20 +47,18 @@ const TableResult = ({ result }: { result: AssistantTableResult }) => {
   const firstValue = rows[0][columns[0].key];
   const isSingleValue = rows.length === 1 && columns.length === 1;
 
-  // 숫자 하나가 곧 답인 집계는 표 대신 큰 숫자로 보여준다.
+  // 숫자 하나가 곧 답인 집계는 표 대신 큰 숫자로 보여준다. 설명은 위 헤드라인(결과 제목)이 맡는다.
   if (
     isSingleValue &&
     (result.resultMode === 'AGGREGATE' || isNumericValue(firstValue))
   ) {
     return (
-      <div className="flex flex-col gap-1" aria-label="조회 결과">
-        <p className="typo-3xl-b text-grey-50 tabular-nums">
-          {formatResultCell(firstValue, columns[0].format)}
-        </p>
-        <p className="typo-xs-r text-grey-300">
-          {result.title ?? columns[0].label}
-        </p>
-      </div>
+      <p
+        aria-label="조회 결과"
+        className="typo-3xl-b text-grey-50 tabular-nums"
+      >
+        {formatResultCell(firstValue, columns[0].format)}
+      </p>
     );
   }
 
