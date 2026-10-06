@@ -4,59 +4,81 @@ type AstRecord = Record<string, unknown>;
 
 /**
  * 참여·팀 편성은 세션 단위로 저장돼 겸업 멤버가 같은 일정·팀에 여러 행을 가진다.
- * 모델에게 허용한 컬럼은 모두 사람 단위라서 서버가 (일정, 멤버)·(팀, 멤버)당 한 행으로 바꿔 실행한다.
- * 세션 컬럼(skill_type_id)을 카탈로그에 추가하면 아래 서브쿼리에 없어 실행 오류로 드러난다.
+ * 모델에게 허용한 컬럼은 모두 사람 단위라서 서버가 (일정, 멤버)·(팀, 멤버)마다 id가 가장 작은 행만 남겨 실행한다.
+ * 일정을 회의로 바꿀 때 멤버당 id 오름차순 첫 행을 남기는 기존 규칙과 같은 대표 행이다.
  */
-const PERSON_GRAIN_SUBQUERIES: Record<string, string> = {
-  schedule_participants:
-    'SELECT MIN(id::text)::uuid AS id, schedule_id, band_member_id, attendance_status, MAX(updated_at) AS updated_at FROM schedule_participants GROUP BY schedule_id, band_member_id, attendance_status',
-  team_members:
-    'SELECT MIN(id::text)::uuid AS id, team_id, band_member_id, MIN(joined_at) AS joined_at, team_role FROM team_members GROUP BY team_id, band_member_id, team_role',
+const PERSON_GRAIN_KEYS: Record<string, string> = {
+  schedule_participants: 'schedule_id',
+  team_members: 'team_id',
 };
 
+const TARGET_ALIAS = 'grain_target';
+
 /**
- * 검증을 통과한 AST의 세션 단위 테이블을 사람 단위 서브쿼리로 바꾼다.
- * 별칭과 컬럼 이름이 같아 바깥 조건·JOIN·밴드 범위는 그대로 적용된다.
+ * 검증을 통과한 AST에서 세션 단위 테이블을 쓰는 SELECT마다 대표 행 조건을 WHERE에 더한다.
+ * (일정, 멤버) 인덱스로 같은 사람의 다른 세션 행만 확인하므로 테이블 전체를 집계하지 않는다.
+ * LEFT JOIN으로 비어 있는 행은 NOT EXISTS가 참이라 그대로 남는다.
  *
  * @param {AstRecord} ast - 검증을 통과한 SELECT AST
  */
 export async function normalizeRelationGrain(ast: AstRecord): Promise<void> {
-  const subqueries = new Map<string, AstRecord>();
+  const selects: AstRecord[] = [];
+  walk(ast, node => {
+    if (isRecord(node.SelectStmt)) selects.push(node.SelectStmt);
+  });
 
-  for (const [table, sql] of Object.entries(PERSON_GRAIN_SUBQUERIES)) {
-    const wrapper = (await parse(`SELECT 1 FROM (${sql}) AS grain`)) as unknown as { stmts: { stmt: { SelectStmt: { fromClause: AstRecord[] } } }[] };
-    subqueries.set(table, wrapper.stmts[0].stmt.SelectStmt.fromClause[0]);
+  let duplicateAliasNumber = 0;
+  for (const select of selects) {
+    for (const { table, alias } of collectFromTables(select.fromClause)) {
+      const key = PERSON_GRAIN_KEYS[table];
+      if (!key) continue;
+      const condition = await createRepresentativeRowCondition(table, key, alias, `grain_dup_${duplicateAliasNumber++}`);
+      appendAndCondition(select, condition);
+    }
   }
-
-  replaceTables(ast, subqueries);
 }
 
-function replaceTables(value: unknown, subqueries: Map<string, AstRecord>): void {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      const replacement = toPersonGrain(item, subqueries);
-      if (replacement) value[index] = replacement;
-      else replaceTables(item, subqueries);
-    });
+async function createRepresentativeRowCondition(table: string, key: string, alias: string, duplicateAlias: string): Promise<AstRecord> {
+  const sql = `SELECT 1 FROM ${table} AS ${TARGET_ALIAS} WHERE NOT EXISTS (SELECT 1 FROM ${table} AS ${duplicateAlias} WHERE ${duplicateAlias}.${key} = ${TARGET_ALIAS}.${key} AND ${duplicateAlias}.band_member_id = ${TARGET_ALIAS}.band_member_id AND ${duplicateAlias}.id < ${TARGET_ALIAS}.id)`;
+  const wrapper = (await parse(sql)) as unknown as { stmts: { stmt: { SelectStmt: { whereClause: AstRecord } } }[] };
+  const condition = wrapper.stmts[0].stmt.SelectStmt.whereClause;
+  // 별칭은 문자열에 넣지 않고 AST에서 바꿔 식별자 인용 문제를 피한다.
+  walk(condition, node => {
+    if (!isRecord(node.ColumnRef) || !Array.isArray(node.ColumnRef.fields)) return;
+    const [first] = node.ColumnRef.fields as unknown[];
+    if (isRecord(first) && isRecord(first.String) && first.String.sval === TARGET_ALIAS) first.String.sval = alias;
+  });
+  return condition;
+}
+
+/** 바깥 조건을 읽는 코드가 직접 AND 조건으로 계속 다룰 수 있게 기존 AND에 이어 붙인다. */
+function appendAndCondition(select: AstRecord, condition: AstRecord): void {
+  const where = select.whereClause;
+  if (isRecord(where) && isRecord(where.BoolExpr) && where.BoolExpr.boolop === 'AND_EXPR' && Array.isArray(where.BoolExpr.args)) {
+    where.BoolExpr.args.push(condition);
     return;
   }
-  if (!isRecord(value)) return;
-
-  for (const [key, child] of Object.entries(value)) {
-    const replacement = toPersonGrain(child, subqueries);
-    if (replacement) value[key] = replacement;
-    else replaceTables(child, subqueries);
-  }
+  select.whereClause = where ? { BoolExpr: { boolop: 'AND_EXPR', args: [where, condition] } } : condition;
 }
 
-function toPersonGrain(node: unknown, subqueries: Map<string, AstRecord>): AstRecord | null {
-  if (!isRecord(node) || !isRecord(node.RangeVar) || typeof node.RangeVar.relname !== 'string') return null;
-  const subquery = subqueries.get(node.RangeVar.relname);
-  if (!subquery) return null;
+/** SELECT 자신의 FROM·JOIN에 있는 테이블만 찾는다. JOIN 조건 안의 하위 SELECT는 따로 처리된다. */
+function collectFromTables(value: unknown): Array<{ table: string; alias: string }> {
+  if (Array.isArray(value)) return value.flatMap(collectFromTables);
+  if (!isRecord(value)) return [];
+  if (isRecord(value.JoinExpr)) return [...collectFromTables(value.JoinExpr.larg), ...collectFromTables(value.JoinExpr.rarg)];
+  if (isRecord(value.RangeVar) && typeof value.RangeVar.relname === 'string') {
+    const alias = isRecord(value.RangeVar.alias) ? value.RangeVar.alias.aliasname : value.RangeVar.relname;
+    return typeof alias === 'string' ? [{ table: value.RangeVar.relname, alias }] : [];
+  }
+  return [];
+}
 
-  const replacement = structuredClone(subquery);
-  (replacement.RangeSubselect as AstRecord).alias = structuredClone(node.RangeVar.alias);
-  return replacement;
+function walk(value: unknown, visit: (node: AstRecord) => void): void {
+  if (Array.isArray(value)) value.forEach(item => walk(item, visit));
+  else if (isRecord(value)) {
+    visit(value);
+    Object.values(value).forEach(item => walk(item, visit));
+  }
 }
 
 function isRecord(value: unknown): value is AstRecord {

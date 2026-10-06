@@ -40,20 +40,30 @@ describe('SqlQueryValidator', () => {
     });
   });
 
-  it('참여·팀 편성은 검증 후 (일정, 멤버)·(팀, 멤버)당 한 행인 사람 단위로 실행한다', async () => {
+  it('참여·팀 편성은 검증 후 (일정, 멤버)·(팀, 멤버)마다 대표 행 하나만 남겨 실행한다', async () => {
     const participants = await validator.validate(createResponse(`SELECT COUNT(sp.band_member_id) ${participantFrom}`));
-    const participantSql = participants.sql.replace(/\s+/g, ' ');
-    expect(participantSql).toContain(
-      'FROM schedule_participants GROUP BY schedule_id, band_member_id, attendance_status ) AS sp ON sp.schedule_id = sc.id',
+    expect(participants.sql.replace(/\s+/g, ' ')).toContain(
+      'NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0 WHERE (grain_dup_0.schedule_id = sp.schedule_id AND grain_dup_0.band_member_id = sp.band_member_id AND grain_dup_0.id < sp.id)))',
     );
-    expect(participantSql).toContain('bm.id = sp.band_member_id');
 
     const team = await validator.validate(
       createResponse(`SELECT t.name, COUNT(tm.band_member_id) FROM bands b JOIN teams t ON t.band_id = b.id
         JOIN team_members tm ON tm.team_id = t.id JOIN band_members bm ON bm.id = tm.band_member_id
         WHERE b.id = $1::uuid AND b.deleted_at IS NULL GROUP BY t.id, t.name`),
     );
-    expect(team.sql.replace(/\s+/g, ' ')).toContain('FROM team_members GROUP BY team_id, band_member_id, team_role ) AS tm');
+    expect(team.sql.replace(/\s+/g, ' ')).toContain('grain_dup_0.team_id = tm.team_id');
+  });
+
+  it('하위 SELECT의 참여 테이블에는 그 SELECT 안에서 대표 행 조건을 적용한다', async () => {
+    const nested = await validator.validate(
+      createResponse(`SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND EXISTS (
+        SELECT sp.id FROM band_spaces bs JOIN schedules sc ON sc.band_space_id = bs.id
+        JOIN schedule_participants sp ON sp.schedule_id = sc.id JOIN band_members bm ON bm.id = sp.band_member_id
+        WHERE bs.band_id = b.id AND bs.deleted_at IS NULL)`),
+    );
+    const sql = nested.sql.replace(/\s+/g, ' ');
+    expect(sql).toContain('bs.deleted_at IS NULL AND NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0');
+    expect(sql.match(/grain_dup_/g)?.length).toBe(4);
   });
 
   it('명시적 행 수와 다중 세션 관계가 없는 인원은 기존 자유 집계를 허용한다', async () => {
