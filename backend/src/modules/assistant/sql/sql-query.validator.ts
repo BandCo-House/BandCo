@@ -68,15 +68,26 @@ export class UnsupportedQuestionError extends Error {
   }
 }
 
-/** SQL이 실행 허용 조건을 통과하지 못했을 때 재생성에 사용할 오류다. */
+/** SQL이 실행 허용 조건을 통과하지 못했을 때 재생성에 사용할 오류다. 여러 위반을 합친 경우 codes에 모두 담는다. */
 export class InvalidSqlQueryError extends Error {
   constructor(
     readonly code: string,
     detail: string,
+    readonly codes: string[] = [code],
   ) {
-    super(`${code}: ${detail}`);
+    super(codes.length > 1 ? detail : `${code}: ${detail}`);
     this.name = 'InvalidSqlQueryError';
   }
+}
+
+/** 서로 독립인 위반을 한 번에 알려 재생성에서 하나를 고치다 다른 규칙을 다시 어기지 않게 한다. */
+function combineViolations(violations: InvalidSqlQueryError[]): InvalidSqlQueryError {
+  if (violations.length === 1) return violations[0];
+  return new InvalidSqlQueryError(
+    violations[0].code,
+    violations.map(violation => violation.message).join('\n'),
+    violations.flatMap(violation => violation.codes),
+  );
 }
 
 @Injectable()
@@ -100,30 +111,53 @@ export class SqlQueryValidator {
     const ast = await parseSql(generated.sql);
     const analysis = analyzeAst(ast);
 
-    validateParameterReferences(analysis.parameterNumbers, generated.params);
-    validateColumnReferences(analysis.columnNodes, analysis.aliases, analysis.outputAliases);
-    validateEnumParameterComparisons(analysis.expressionNodes, analysis.aliases);
-    validateBandScopeAndRelations(analysis);
-
+    // 문법·쓰기·허용 목록 위반은 위에서 즉시 거부한다. 아래 의미 규칙은 서로 독립이라 모두 모아서 알린다.
     const resultSelect = getNestedRecord((ast.stmts as unknown[])[0], ['stmt', 'SelectStmt']);
-    if (countUnit && resultSelect) validateCountUnit(resultSelect, countUnit);
-    if (generated.resultMode === 'TOP_N') {
+    const violations: InvalidSqlQueryError[] = [];
+    const check = (validateRule: () => void): void => {
+      try {
+        validateRule();
+      } catch (error) {
+        if (!(error instanceof InvalidSqlQueryError)) throw error;
+        violations.push(error);
+      }
+    };
+
+    check(() => validateParameterReferences(analysis.parameterNumbers, generated.params));
+    check(() => validateColumnReferences(analysis.columnNodes, analysis.aliases, analysis.outputAliases));
+    check(() => validateEnumParameterComparisons(analysis.expressionNodes, analysis.aliases));
+    check(() => validateBandScope(analysis));
+    check(() => validateSoftDeleteScope(analysis));
+    check(() => validateRequiredRelations(analysis));
+    check(() => {
+      if (countUnit && resultSelect) validateCountUnit(resultSelect, countUnit);
+    });
+    check(() => {
+      if (generated.resultMode !== 'TOP_N') return;
       const limit = getNestedRecord(resultSelect?.limitCount, ['A_Const', 'ival'])?.ival;
       if (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 1 || limit > 50) {
         throw new InvalidSqlQueryError('TOP_N_LIMIT_REQUIRED', '상위 N개 조회에는 1~50의 명시적 LIMIT이 필요합니다.');
       }
-    }
-    if (generated.resultMode === 'AGGREGATE') {
+    });
+    check(() => {
+      if (generated.resultMode !== 'AGGREGATE') return;
       const targets = Array.isArray(resultSelect?.targetList) ? resultSelect.targetList : [];
       const grouped = Array.isArray(resultSelect?.groupClause) && resultSelect.groupClause.length > 0;
       if (grouped || !targets.every(target => containsScalarAggregate(getNestedRecord(target, ['ResTarget', 'val'])))) {
         throw new InvalidSqlQueryError('SCALAR_AGGREGATE_REQUIRED', '단일 집계는 GROUP BY 없이 집계 값만 반환해야 합니다.');
       }
-    }
+    });
+    check(() => {
+      if (generated.resultMode === 'LIST' && resultSelect?.limitOffset) {
+        throw new InvalidSqlQueryError('LIST_OFFSET_NOT_ALLOWED', '목록에서 OFFSET으로 결과를 생략할 수 없습니다.');
+      }
+    });
+
+    if (violations.length > 0) throw combineViolations(violations);
+
     // 목록의 최상위 제한만 서버가 관리한다. 다음 일정 선택 같은 내부 제한은 보존한다.
     if (generated.resultMode === 'LIST') {
       const statement = resultSelect;
-      if (statement?.limitOffset) throw new InvalidSqlQueryError('LIST_OFFSET_NOT_ALLOWED', '목록에서 OFFSET으로 결과를 생략할 수 없습니다.');
       if (statement) {
         delete statement.limitCount;
         delete statement.limitOption;
@@ -624,16 +658,18 @@ function collectBandScope(column: ColumnReference | null, parameterNumber: numbe
   }
 }
 
+/** 삭제된 밴드·사용자·공간을 제외하는 조건이 별칭마다 있는지 확인한다. */
+function validateSoftDeleteScope(analysis: AstAnalysis): void {
+  const missing = [...analysis.aliases]
+    .filter(([alias, tableName]) => ['bands', 'users', 'band_spaces'].includes(tableName) && !analysis.softDeleteAliases.has(alias))
+    .map(([alias]) => new InvalidSqlQueryError('SOFT_DELETE_SCOPE_MISSING', `${alias}.deleted_at IS NULL 조건이 필요합니다.`));
+  if (missing.length > 0) throw combineViolations(missing);
+}
+
 /** 모든 조회 테이블이 범위가 고정된 bands 별칭에서 허용 JOIN으로 이어지는지 확인한다. */
-function validateBandScopeAndRelations(analysis: AstAnalysis): void {
+function validateBandScope(analysis: AstAnalysis): void {
   if (analysis.bandScopeRoots.size === 0) {
     throw new InvalidSqlQueryError('BAND_SCOPE_MISSING', 'WHERE 최상위 AND 조건에 bands.id = $1::uuid가 필요합니다.');
-  }
-
-  for (const [alias, tableName] of analysis.aliases) {
-    if ((tableName === 'bands' || tableName === 'users' || tableName === 'band_spaces') && !analysis.softDeleteAliases.has(alias)) {
-      throw new InvalidSqlQueryError('SOFT_DELETE_SCOPE_MISSING', `${alias}.deleted_at IS NULL 조건이 필요합니다.`);
-    }
   }
 
   const reachable = new Set(analysis.bandScopeRoots);
@@ -660,12 +696,12 @@ function validateBandScopeAndRelations(analysis: AstAnalysis): void {
   if (disconnected.length > 0) {
     throw new InvalidSqlQueryError('TABLE_OUTSIDE_BAND_SCOPE', `밴드에서 허용 JOIN으로 연결되지 않은 별칭입니다: ${disconnected.join(', ')}`);
   }
-
-  validateRequiredRelations(analysis);
 }
 
 /** 중간 테이블이 우회 경로가 아니라 의미상 필요한 양쪽 관계에 직접 연결됐는지 확인한다. */
 function validateRequiredRelations(analysis: AstAnalysis): void {
+  const violations: InvalidSqlQueryError[] = [];
+
   for (const [alias, tableName] of analysis.aliases) {
     const requiredTables = SQL_REQUIRED_RELATIONS[tableName] ?? [];
     const neighbors = analysis.relationEdges.flatMap(([leftAlias, rightAlias]) => {
@@ -679,12 +715,16 @@ function validateRequiredRelations(analysis: AstAnalysis): void {
     const missingTables = requiredTables.filter(requiredTable => !neighborTables.has(requiredTable));
 
     if (missingTables.length > 0) {
-      throw new InvalidSqlQueryError(
-        'REQUIRED_RELATION_MISSING',
-        `${tableName} 별칭 ${alias}에 필요한 직접 관계가 없습니다: ${missingTables.join(', ')}`,
+      violations.push(
+        new InvalidSqlQueryError(
+          'REQUIRED_RELATION_MISSING',
+          `${tableName} 별칭 ${alias}에 필요한 직접 관계가 없습니다: ${missingTables.join(', ')}`,
+        ),
       );
     }
   }
+
+  if (violations.length > 0) throw combineViolations(violations);
 }
 
 /** 두 컬럼이 catalog에 정의된 관계인지 확인한다. */
