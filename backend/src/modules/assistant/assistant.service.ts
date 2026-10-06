@@ -12,6 +12,7 @@ import { ASSISTANT_REPOSITORY, type AssistantRepository } from './repositories/a
 import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
+import { createSqlRelationRepairHint } from './sql/sql-query-context';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
 import type { AssistantAnswer, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
@@ -118,14 +119,17 @@ export class AssistantService {
    * 지원 범위 밖 질문은 같은 결과가 반복되므로 재생성하지 않는다.
    */
   private async generateSqlFromQuestion(question: string, now: Date): Promise<SqlGenerationResult> {
-    const baseInstruction = createSqlGenerationSystemInstruction(now);
+    const baseInstruction = createSqlGenerationSystemInstruction(now, question);
     let lastFailure = '';
     let inputTokens = 0;
     let outputTokens = 0;
 
     for (let attempt = 0; attempt <= MAX_SQL_REGENERATIONS; attempt += 1) {
       const response = await this.llmService.generateStructured({
-        systemInstruction: attempt === 0 ? baseInstruction : `${baseInstruction}\n\n# 직전 검증 실패\n${lastFailure}\n규칙에 맞게 다시 생성한다.`,
+        systemInstruction:
+          attempt === 0
+            ? baseInstruction
+            : `${baseInstruction}\n\n# 직전 검증 실패\n${lastFailure}\n${createSqlRelationRepairHint(lastFailure)}\n규칙에 맞게 다시 생성한다.`,
         userMessage: question,
         responseSchema: SQL_GENERATION_RESPONSE_SCHEMA,
         maxOutputTokens: 1_500,
