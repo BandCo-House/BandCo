@@ -1,10 +1,11 @@
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 
 import { PrismaService } from '../../src/database/prisma';
 import type { Prisma } from '../../src/generated/prisma';
 
-import { readEvaluationDatabaseUrl } from './evaluation-environment';
+import { readEvaluationDatabaseUrl, readEvaluationOutputPath } from './evaluation-environment';
 
 const participantCountsSql = `SELECT COUNT(sp.id)::int AS row_count,
   COUNT(DISTINCT sp.band_member_id)::int AS person_count
@@ -20,7 +21,10 @@ class RollbackFixture extends Error {}
  */
 async function main(): Promise<void> {
   process.env.DATABASE_URL = readEvaluationDatabaseUrl(process.env.ASSISTANT_EVALUATION_DATABASE_URL);
-  const outputPath = process.env.EXPERIMENT_OUTPUT_PATH;
+  const outputPath = readEvaluationOutputPath(
+    process.env.EXPERIMENT_OUTPUT_PATH,
+    execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim(),
+  );
   if (!outputPath || existsSync(outputPath)) throw new Error('새 EXPERIMENT_OUTPUT_PATH가 필요합니다.');
   const prisma = new PrismaService();
   const readCounts = async (client: Prisma.TransactionClient) => ({
