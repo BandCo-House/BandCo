@@ -1,6 +1,8 @@
-# 자연어 조회 평가 v2
+# 자연어 조회 평가 v3
 
-기존 50문항은 개발·회귀용 합성 질문이다. 평가 규칙을 먼저 고정하고 제품 수정 전후에 같은 조건으로 실행한다. 새 질문 일반화·실제 사용성·권한 전체의 안전성을 이 점수로 주장하지 않는다.
+`corpus.ts`의 50문항(dev)은 개발·회귀용 합성 질문이다. `holdout-corpus.ts`의 20문항(holdout)은 구조 수정 전에 고정했고 제품 수정에 사용하지 않는다. 실패 문항을 보고 프롬프트·규칙을 고치면 holdout은 오염된 것으로 보고 새 문항으로 교체한다. 평가 규칙을 먼저 고정하고 제품 수정 전후에 같은 조건으로 실행한다. 실제 사용성·권한 전체의 안전성을 이 점수로 주장하지 않는다.
+
+v3 fixture는 최신 dev 데이터처럼 합주 참여·팀 편성을 세션 단위로 저장한다. 겸업 멤버(5의 배수, 기타+보컬)는 같은 합주·팀에 행이 둘이라 행 수와 사람 수가 다르다. v2까지는 1인 1행이라 중복 집계·중복 명단이 정답으로 채점됐다.
 
 ## 비교 계약
 
@@ -9,7 +11,7 @@
 - G06은 공동 1위 중 한 곡 또는 전체, S13은 공동 1위 중 한 명을 허용한다. 순위가 낮은 항목·중복·빈 결과는 거부한다.
 - S12와 S13 통계는 기존 프롬프트의 취소 일정 기본 제외 규칙을 기대 SQL에도 적용한다. S09~S11 목록에는 이 기본값을 확대 적용하지 않는다.
 - Decimal·bigint는 문자열 정밀도를 유지한다. 숫자처럼 생긴 문자열 ID는 변환하지 않는다. 이미 안전 범위를 벗어난 Number는 거부한다.
-- 사람 수와 참석 일정 수는 고유 멤버·고유 일정으로 센다. 9/1 데이터에서는 멤버당 편성 행이 하나라 기존 COUNT와 같지만, 최신 dev의 다중 세션 데이터에서는 다르다.
+- 사람 수와 참석 일정 수는 고유 멤버·고유 일정으로 센다. 사람 명단도 중복 없이 한 번씩 나와야 한다.
 - 단일 생성 SQL이 같은 유형의 집계 컬럼을 여러 개 반환하면 의미 대응을 보수적으로 거부한다. 평가기 지원 범위와 제품 실패를 보고서에서 구분한다.
 
 원래 엄격 `37/50`·사후 재판정 `40/50`은 역사적 기록이다. `74% → 80%`를 제품 개선 성과로 계산하지 않는다.
@@ -54,7 +56,12 @@ NODE_ENV=test EXPERIMENT_PREFLIGHT_ONLY=true \
 
 NODE_ENV=test EXPERIMENT_OUTPUT_PATH="$ASSISTANT_RESEARCH_DIR/natural-before.json" \
   pnpm exec tsx scripts/assistant-evaluation/run-natural.ts
+
+NODE_ENV=test EXPERIMENT_CORPUS=holdout EXPERIMENT_OUTPUT_PATH="$ASSISTANT_RESEARCH_DIR/holdout-before.json" \
+  pnpm exec tsx scripts/assistant-evaluation/run-natural.ts
 ```
+
+같은 설정에서도 temperature 0 모델의 문항 결과가 실행마다 달라진다. 설정 비교는 dev·holdout을 각각 3회 이상 반복하고 문항별 통과 횟수로 판단한다.
 
 제품을 수정한 뒤 동일 env·DB·평가기·코퍼스에서 `natural-after.json`이라는 새 경로로 실행한다. 고정 시각은 `2026-09-01T00:00:00.000Z`, temperature 0, 요청 동시성 1, 문항 간 기본 간격 4.5초, SQL 재생성 최대 2회다. key/provider rotation은 강제로 OFF이고 provider는 Gemini다. 제공자 timeout·재시도 설정과 실제 모델명은 결과 메타데이터에 기록한다.
 
