@@ -163,6 +163,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | `cursor__id` | N | 커서 기반 페이지네이션 — 마지막 아이템 ID (UUID) |
 | `where__nickname__contain` | N | 닉네임 부분 검색 |
 
+> `skills`는 2026-10-06 추가했다. 닉네임이 중복을 허용해 초대 검색에서 동명이인이 갈리지 않아, 대표 세션을 구분 단서로 내려준다(밴드 멤버 목록의 `skills`와 같은 형태). 세션이 없는 유저는 빈 배열이다.
+
 > 이메일 부분 검색(`where__email__contain`)은 제거했다. 목록 응답에서 이메일을 빼도 검색어로 이메일 존재 여부를 유추할 수 있어서다(#212 후속). 유저 검색은 닉네임으로만 한다. 요청에 넣으면 `forbidNonWhitelisted`에 걸려 400이 난다.
 
 ### Response 200
@@ -178,7 +180,10 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
         "nickname": "홍길동",
         "status": "ACTIVE",
         "avatarUrl": null,
-        "createdAt": "2026-01-01T00:00:00.000Z"
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "skills": [
+          { "skillTypeId": "uuid", "skillName": "보컬", "skillLevel": "ADVANCED", "isPrimary": true }
+        ]
       }
     ],
     "meta": {
