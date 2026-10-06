@@ -26,7 +26,7 @@ const badgeFor = (role: string): string | undefined =>
   role === 'BM' ? '리더' : role === 'ADMIN' ? '부리더' : undefined;
 
 /**
- * 합주·회의 공통 참여자 선택.
+ * 회의 참여자 선택(합주는 SessionSection이 대신한다).
  * - 전원 선택 링크 / 참여자 인풋(→ 멤버·팀 검색 모달)
  * - 리더·부리더는 체크박스로 추가/해제(카드 최상단·뱃지·X 없음)
  * - 그 외 멤버는 모달로 추가(추가 순서대로 카드·X로 제거)
@@ -69,9 +69,10 @@ export const ParticipantSection = ({
         queryKey: teamKeys.members(teamId),
         queryFn: () => getTeamMembers(teamId),
       });
-      const added = teamMembers
-        .map((member) => member.bandMemberId)
-        .filter((id) => !selected.has(id));
+      // 세션 편성이 붙으면 한 사람이 팀에서 여러 행으로 나온다. 사람 기준으로 접는다.
+      const added = [
+        ...new Set(teamMembers.map((member) => member.bandMemberId)),
+      ].filter((id) => !selected.has(id));
       if (added.length > 0) onChange([...value, ...added]);
       setIsModalOpen(false);
     } catch {

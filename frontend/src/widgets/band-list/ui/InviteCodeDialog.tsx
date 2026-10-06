@@ -6,6 +6,7 @@ import {
   AppDialogFooter,
   AppDialogHeader,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
@@ -35,10 +36,13 @@ export const InviteCodeDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <AppDialogContent>
-        <AppDialogClose />
         <AppDialogHeader>
           <DialogTitle>초대코드 입력</DialogTitle>
+          <AppDialogClose />
         </AppDialogHeader>
+        <DialogDescription className="sr-only">
+          전달받은 초대코드를 입력해 밴드에 참여합니다.
+        </DialogDescription>
         <AppDialogBody>
           <label htmlFor="invite-code" className="flex flex-col gap-3">
             <div className="flex items-center gap-1">

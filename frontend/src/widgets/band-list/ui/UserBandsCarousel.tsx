@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { Band } from '@/entities/band/model/types';
 import { Link } from '@tanstack/react-router';
+import { cn } from '@/shared/lib/utils';
 import { horizontalFadeMask } from '@/shared/lib/scroll-fade';
 
 export interface UserBandsCarouselProps {
@@ -9,14 +10,18 @@ export interface UserBandsCarouselProps {
 }
 
 export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+  // 카드가 컨테이너에 다 들어오면 드래그를 끈다 — dragFree는 넘칠 게 없어도 고무줄처럼 끌린다.
+  const isScrollable = canScrollPrev || canScrollNext;
+
   // Embla ref 및 쫀득한 앱 느낌의 dragFree 터치 설정 주입
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
     dragFree: true,
+    watchDrag: isScrollable,
   });
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
 
   const updateScrollState = useCallback(() => {
     if (!emblaApi) return;
@@ -52,11 +57,15 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
           ref={emblaRef}
           // 양 끝을 색으로 덮지 않고 mask로 콘텐츠를 투명화해 카드 배경에 자연스럽게 녹인다.
           style={horizontalFadeMask(canScrollPrev, canScrollNext)}
-          className="w-full cursor-grab overflow-hidden active:cursor-grabbing"
+          className={cn(
+            'w-full overflow-hidden',
+            isScrollable && 'cursor-grab active:cursor-grabbing',
+          )}
         >
           <div className="flex gap-2 pb-1">
             {bands.map((band) => {
-              const bandCoverUrl = 'default-band.png'; // 현재 백엔드 스키마에 밴드 리스트에 이미지가 없음... band.coverImgUrl가 안되니 일단은 기본 이미지로 제공..
+              // ||: 빈 문자열로 저장된 커버도 기본 이미지로 폴백한다.
+              const bandCoverUrl = band.coverImgUrl || 'default-band.png';
 
               return (
                 <Link

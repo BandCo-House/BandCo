@@ -10,6 +10,7 @@ import { uuidValidationMessage } from 'src/common/validation-message/uuid-valida
 import { trimStringValue } from '../../../common/validation/transform.util';
 import { ScheduleStatus, ScheduleType } from '../../../generated/prisma';
 
+import { ScheduleParticipantInputDto } from './schedule-participant.dto';
 import { ScheduleReferenceFileDto } from './schedule-reference-file.dto';
 
 /**
@@ -39,22 +40,27 @@ export class CreateScheduleBodyDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   placeId?: string;
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   songIds?: string[];
 
+  @ApiPropertyOptional({
+    description: '참여자 목록(세션 포함).',
+    type: [ScheduleParticipantInputDto],
+  })
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
-  participantBandMemberIds?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleParticipantInputDto)
+  participants?: ScheduleParticipantInputDto[];
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   teamId?: string;
 
   @IsOptional()

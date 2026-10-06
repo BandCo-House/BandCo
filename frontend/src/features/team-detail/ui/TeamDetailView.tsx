@@ -14,6 +14,10 @@ interface TeamDetailViewProps {
   onToggleEdit?: () => void;
   onOpenSearchForSession: (index: number) => void;
   onOpenSearchForNewMember: () => void;
+  onChangeSession?: (
+    index: number,
+    skillType: { skillTypeId: string; name: string } | null,
+  ) => void;
   searchModalOpen: boolean;
   setSearchModalOpen: (open: boolean) => void;
   handleToggleMember: (member: BandMemberListItem) => void;
@@ -27,6 +31,7 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
   onToggleEdit,
   onOpenSearchForSession,
   onOpenSearchForNewMember,
+  onChangeSession,
   searchModalOpen,
   setSearchModalOpen,
   handleToggleMember,
@@ -47,6 +52,7 @@ export const TeamDetailView: React.FC<TeamDetailViewProps> = ({
         onToggleEdit={onToggleEdit}
         onOpenSearchForSession={onOpenSearchForSession}
         onOpenSearchForNewMember={onOpenSearchForNewMember}
+        onChangeSession={onChangeSession}
       />
 
       {/* 3. 합주 공간, 합주곡, 팀 파일 섹션 (수정 모드 시 숨김) */}

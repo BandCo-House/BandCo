@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, Validate } from 'class-validator';
+import { IsArray, IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Validate } from 'class-validator';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { iso8601ValidationMessage } from 'src/common/validation-message/iso8601-validation.message';
 import { matchValidationMessage } from 'src/common/validation-message/match-validation.message';
 import { notemptyValidationMessage } from 'src/common/validation-message/notempty-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
 
 import { EndDateNotBeforeStartDateConstraint } from '../../../common/validation/date-order.validator';
 import { trimStringValue } from '../../../common/validation/transform.util';
@@ -98,6 +99,15 @@ export class CreateBandSpaceBodyDto {
   )
   @Validate(EndDateNotBeforeStartDateConstraint)
   endDate!: string;
+
+  @ApiPropertyOptional({
+    description: '합주 공간 참여 멤버의 밴드 멤버 ID 목록. 생성자는 전달하지 않아도 LEADER로 들어간다.',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
+  bandMemberIds?: string[];
 }
 
 export type CreateBandSpaceInput = CreateBandSpaceBodyDto;

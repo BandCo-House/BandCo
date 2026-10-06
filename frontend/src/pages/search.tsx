@@ -10,7 +10,8 @@ import { BandSearchResults } from '@/widgets/band-search/ui/BandSearchResults';
 export const Route = createFileRoute('/search')({
   component: SearchPage,
   staticData: {
-    fullBleed: true,
+    // 자체 상단 검색바가 sticky top-0에 붙어야 해서 세로 여백까지 직접 관리한다
+    bleed: 'all',
   },
 });
 
@@ -54,14 +55,20 @@ function SearchPage() {
     setSubmittedQuery('');
   };
 
+  // 하단 네비 여백은 RootLayout의 mb가 이미 확보한다 — 여기서 또 주면 빈 스크롤이 생긴다.
   return (
-    <div className="w-full pb-20" data-testid="search-page">
+    <div className="w-full" data-testid="search-page">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSearchSubmit(inputValue);
         }}
-        className="sticky top-0 z-30 flex min-h-16 items-center gap-3 px-5 py-2.5 backdrop-blur-md"
+        // 공통 RouteHeader와 같은 프로스트+글로우로 맞춘다(검색은 입력창 때문에 커스텀 헤더).
+        // RouteHeader는 fixed top-0이라 safe area를 자기 패딩으로 먹지만, 이 바는 main
+        // 안에 있어 main의 pt(safe area) 아래에서 시작했다. 그 위 빈 띠에 글로우(위로 32px
+        // 번진다)가 그대로 보여 다른 헤더엔 없는 그림자가 생겼다. 음수 마진으로 그 띠까지
+        // 덮어 화면 끝에 붙인다 — 글로우가 번질 자리가 없어진다.
+        className="sticky top-0 z-30 -mt-[env(safe-area-inset-top)] flex min-h-19 items-center gap-3 bg-gradient-top/65 px-5 pt-[calc(1rem_+_env(safe-area-inset-top))] pb-4 header-glow backdrop-blur-sm"
       >
         <button
           type="button"
@@ -75,7 +82,7 @@ function SearchPage() {
             className="size-6 rotate-180"
           />
         </button>
-        <div className="relative flex h-[42px] flex-1 items-center rounded-full bg-[rgba(220,226,249,0.4)] focus-within:ring-2 focus-within:ring-primary">
+        <div className="relative flex h-11 flex-1 items-center rounded-full bg-surface-1 focus-within:ring-2 focus-within:ring-primary">
           <SearchIcon
             size={16}
             className="pointer-events-none absolute left-[14px] text-grey-200"
@@ -86,7 +93,11 @@ function SearchPage() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="밴드/사용자를 찾아보세요"
-            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] typo-sm-r text-grey-50 placeholder-grey-200 outline-none [&::-webkit-search-cancel-button]:hidden"
+            // iOS는 글자가 16px 미만인 입력에 포커스하면 화면을 자동으로 확대한다.
+            // 확대가 한 번 걸리면 레이아웃 뷰포트가 어긋나 fixed 바텀 네비 아래 빈 공간이
+            // 남고, 라우트를 옮겨도 그대로다. maximum-scale로 막으면 사용자 핀치 줌까지
+            // 막혀 접근성(WCAG 1.4.4) 위반이라 글자 크기로 푼다.
+            className="h-full w-full rounded-full bg-transparent pr-[36px] pl-[38px] typo-base-r text-grey-50 placeholder-grey-200 outline-none [&::-webkit-search-cancel-button]:hidden"
           />
 
           {inputValue && (

@@ -128,12 +128,30 @@ jobs:
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker pull "$IMAGE"
 
+            # 새 코드를 띄우기 전에 마이그레이션을 적용한다 — 컬럼·테이블이 없는 상태로
+            # 새 이미지가 뜨면 Prisma P2022가 500으로 나간다(#212 A-1).
+            # 러너가 아니라 이 호스트에서 돌리는 이유는 DB에 닿는 네트워크가 여기라서다.
+            # 실패하면 set -e로 멈춰 기존 컨테이너가 그대로 살아 있는다.
+            docker run --rm --env-file "$ENV_FILE" "$IMAGE" /app/node_modules/.bin/prisma migrate deploy
+
+            # 로그 드라이버 초기화 실패 시 기존 컨테이너를 내리기 전에 멈춘다.
+            docker run --rm \
+              --log-driver awslogs \
+              --log-opt awslogs-region=ap-northeast-2 \
+              --log-opt awslogs-group=/bandco/backend \
+              --log-opt awslogs-stream=bandco-deploy-check \
+              "$IMAGE" node -e "process.stdout.write('CloudWatch logging check\\n')"
+
             docker stop "$CONTAINER_NAME" || true
             docker rm "$CONTAINER_NAME" || true
 
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
+              --log-driver awslogs \
+              --log-opt awslogs-region=ap-northeast-2 \
+              --log-opt awslogs-group=/bandco/backend \
+              --log-opt awslogs-stream=bandco-nest \
               --env-file "$ENV_FILE" \
               -p "$HOST_PORT:$CONTAINER_PORT" \
               "$IMAGE"

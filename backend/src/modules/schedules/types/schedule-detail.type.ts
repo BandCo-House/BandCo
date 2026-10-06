@@ -1,6 +1,12 @@
 import type { ScheduleSongItem } from './create-schedule-result.type';
 import type { ScheduleReferenceFileItem } from './schedule-reference-file.type';
 
+/** 이 일정에서 맡은 세션. 회의 참여자는 null이다. */
+export interface ScheduleParticipantSkillType {
+  skillTypeId: string;
+  name: string;
+}
+
 export interface ScheduleParticipantDetail {
   participantId: string;
   bandMemberId: string;
@@ -9,6 +15,7 @@ export interface ScheduleParticipantDetail {
   avatarUrl: string | null;
   attendanceStatus: string | null;
   note: string | null;
+  skillType: ScheduleParticipantSkillType | null;
 }
 
 export interface SchedulePlaceDetail {

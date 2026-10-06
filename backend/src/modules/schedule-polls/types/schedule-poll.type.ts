@@ -1,0 +1,59 @@
+export interface SchedulePollVoter {
+  bandMemberId: string;
+  userId: string;
+  nickname: string;
+  avatarUrl: string | null;
+}
+
+export interface SchedulePollOptionData {
+  schedulePollOptionId: string;
+  startAt: string;
+  endAt: string;
+  voters: SchedulePollVoter[];
+}
+
+export interface SchedulePollData {
+  schedulePollId: string;
+  bandSpaceId: string;
+  createdByBandMemberId: string | null;
+  name: string;
+  closesAt: string;
+  options: SchedulePollOptionData[];
+  myOptionIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SchedulePollOption extends SchedulePollOptionData {
+  voteCount: number;
+  /** 득표 순위(1위부터). 같은 득표 수는 같은 순위이고, 0표는 순위가 없어 null이다. */
+  voteRank: number | null;
+}
+
+export interface SchedulePollResult extends Omit<SchedulePollData, 'options'> {
+  voterCount: number;
+  options: SchedulePollOption[];
+}
+
+export interface SchedulePollListItem {
+  schedulePollId: string;
+  bandSpaceId: string;
+  createdByBandMemberId: string | null;
+  name: string;
+  closesAt: string;
+  /** 후보 시작 시각(ISO, 시작 오름차순). 목록 카드가 상세 조회 없이 날짜 구간을 그리기 위한 값. */
+  optionStartAts: string[];
+  optionCount: number;
+  voterCount: number;
+  hasVoted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetSchedulePollsResult {
+  items: SchedulePollListItem[];
+}
+
+export interface DeleteSchedulePollResult {
+  schedulePollId: string;
+}

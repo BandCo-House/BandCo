@@ -72,16 +72,36 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply text-foreground;
+  /* 콘텐츠가 화면에 다 들어와도 모바일에서 바운스(rubber-band)로 스크롤되는 것 방지.
+     viewport에는 루트 요소 값만 적용된다 — body에 주면 조용히 무시된다(Chrome 93+, spec) */
+  /* 배경은 body가 아니라 루트 요소(html)가 가진다. body에 두면 canvas로 전파되는데,
+     전파된 배경의 위치 영역이 뷰포트라 viewport-fit=cover에서 브라우저 툴바·safe area
+     뒤편(= 뷰포트 밖 canvas)까지는 덮지 못했다.
 
-    background-color: var(--gradient-top);
+     attachment는 쓰지 않는다. fixed로 두면 iOS 사파리가 이를 사실상 scroll로 처리해
+     그라데이션이 문서 맨 위에 한 번만 그려지고, 첫 화면 높이 아래로는 배경색만 남아
+     딱 그 자리에 경계선이 생긴다(100lvh로 크기를 고정했던 게 원인).
+
+     대신 크기를 100% 100%로 둬 루트 박스(= 문서 전체 높이)에 걸쳐 늘린다. 스크롤해도
+     이음매가 없고 fixed 지원 여부와 무관하다. 대신 긴 페이지에선 그라데이션이 화면마다
+     반복되지 않고 문서 전체에 한 번 걸린다 — 이 앱은 대부분 1~2화면이라 그 편이 낫다.
+
+     background-color는 그라데이션의 끝색(gradient-bottom)으로 둔다. 문서가 짧아 canvas가
+     루트 박스보다 큰 경우(하단 툴바 뒤)에 남는 자리가 그라데이션 끝과 이어져 보인다. */
+  html {
+    overscroll-behavior-y: none;
+    background-color: var(--gradient-bottom);
     background-image: linear-gradient(
       135deg,
       var(--gradient-top) 0%,
       var(--gradient-bottom) 100%
     );
-    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+  body {
+    @apply text-foreground;
+
     font-family:
       'SUIT Variable',
       'Inter',
@@ -128,6 +148,29 @@
   }
 }
 
+/* 유리 카드 안에서 쓰는 스크롤바. 기본 스크롤바는 불투명 회색 막대라 반투명
+   배경 위에 얹히면 혼자 튄다. 트랙을 지우고 얇은 반투명 손잡이만 남긴다.
+   iOS Safari는 ::-webkit-scrollbar를 지원하지 않아 네이티브 오버레이가 그대로
+   나온다 — 이 유틸이 바꾸는 건 데스크톱 Chrome/Safari 쪽이다. */
+@utility scrollbar-glass {
+  scrollbar-width: thin;
+  scrollbar-color: --alpha(var(--color-grey-50) / 28%) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: --alpha(var(--color-grey-50) / 28%);
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: --alpha(var(--color-grey-50) / 44%);
+  }
+}
+
 /* 입력/선택/버튼 공통 테두리: 하단만 조금 두껍게(top/left/right 0.5px, bottom 1px).
    색은 border-* 유틸로 따로 지정한다. underline 계열에는 쓰지 않는다. */
 @utility field-border {
@@ -143,6 +186,16 @@
 /* 푸터 상단 글로우(header-glow의 위쪽 방향 미러). 풀스크린 모달 하단 액션바에 쓴다. */
 @utility footer-glow {
   box-shadow: 0px -8px 40px 0px rgba(221, 254, 85, 0.12);
+}
+
+/* 헤더 없는 한 화면 페이지(로그인·비밀번호 찾기·온보딩)의 "꽉 찬 높이".
+   RootLayout main이 py-8(4rem)과 위아래 safe area를 이미 차지하므로 그만큼 빼야 한다.
+   100dvh 그대로 잡으면 딱 그 합만큼 유령 스크롤이 생기고, 마지막 줄이 홈 인디케이터·
+   브라우저 툴바 뒤로 밀린다. 4rem은 레이아웃의 py-8과 같은 값이라 한쪽만 바꾸면 어긋난다. */
+@utility min-h-page {
+  min-height: calc(
+    100dvh - 4rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
 }
 
 /* ===== Typography =====

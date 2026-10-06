@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { parseToPrismaQuery } from '../../../common/query';
 import { buildNextPath } from '../../../common/url';
 import { PrismaService } from '../../../database/prisma';
-import type { Prisma } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma, TeamMemberRole } from '../../../generated/prisma';
 import type { GetBandTeamsQuery } from '../dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from '../dto/get-my-teams-query.dto';
 import type { GetTeamMembersQuery } from '../dto/get-team-members-query.dto';
@@ -17,6 +17,7 @@ import type { GetMyTeamsResult, MyTeamListItem } from '../types/get-my-teams-res
 import type { GetTeamMembersResult, TeamMemberListItem } from '../types/get-team-members-result.type';
 import type { GetTeamResult } from '../types/get-team-result.type';
 import type { RemoveTeamMemberResult } from '../types/remove-team-member-result.type';
+import type { UpdateTeamMemberSessionResult } from '../types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from '../types/update-team-result.type';
 
 import type { CreateTeamRepositoryInput, TeamsRepository } from './teams.repository';
@@ -33,11 +34,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     });
   }
 
-  async findBandMemberByBandIdAndUserId(bandId: string, userId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+  async findBandMemberByBandIdAndUserId(
+    bandId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string; role: BandMemberRole } | null> {
     const client = tx ?? this.prisma;
     return client.bandMember.findFirst({
       where: { bandId, userId },
-      select: { id: true },
+      select: { id: true, role: true },
     });
   }
 
@@ -138,9 +143,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
             },
           },
         },
-        _count: {
-          select: { members: true },
-        },
+        // _count는 TeamMember 행 수라 세션 편성이 붙으면 겸업자가 여러 번 세어진다.
+        // 사람 수가 필요하므로 bandMemberId만 받아 중복을 제거한다.
+        members: { select: { bandMemberId: true } },
       },
       orderBy,
       take: query.take + 1,
@@ -154,7 +159,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
       description: team.description,
       status: team.status,
       teamCoverUrl: team.teamCoverUrl,
-      memberCount: team._count.members,
+      memberCount: this.countDistinctMembers(team.members),
       teamLeader: team.teamLeaderBandMember
         ? {
             userId: team.teamLeaderBandMember.userId,
@@ -223,9 +228,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
             },
           },
         },
-        _count: {
-          select: { members: true },
-        },
+        // _count는 TeamMember 행 수라 세션 편성이 붙으면 겸업자가 여러 번 세어진다.
+        // 사람 수가 필요하므로 bandMemberId만 받아 중복을 제거한다.
+        members: { select: { bandMemberId: true } },
       },
     });
 
@@ -244,7 +249,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
           }
         : null,
-      memberCount: team._count.members,
+      memberCount: this.countDistinctMembers(team.members),
       createdAt: team.createdAt.toISOString(),
       updatedAt: team.updatedAt.toISOString(),
     };
@@ -264,11 +269,14 @@ export class TeamsPrismaRepository implements TeamsRepository {
   async findTeamMemberByTeamAndBandMember(
     teamId: string,
     bandMemberId: string,
+    skillTypeId?: string | null,
     tx?: Prisma.TransactionClient,
   ): Promise<{ id: string; teamRole: string } | null> {
     const client = tx ?? this.prisma;
-    return client.teamMember.findUnique({
-      where: { teamId_bandMemberId: { teamId, bandMemberId } },
+    // 한 사람이 팀 안에서 여러 세션을 맡을 수 있어 (팀, 멤버)는 더 이상 유일하지 않다.
+    // 세션까지 같아야 같은 배정으로 본다.
+    return client.teamMember.findFirst({
+      where: { teamId, bandMemberId, skillTypeId: skillTypeId ?? null },
       select: { id: true, teamRole: true },
     });
   }
@@ -313,7 +321,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             },
           },
         },
-        _count: { select: { members: true } },
+        members: { select: { bandMemberId: true } },
       },
     });
 
@@ -330,7 +338,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
           }
         : null,
-      memberCount: team._count.members,
+      memberCount: this.countDistinctMembers(team.members),
       updatedAt: team.updatedAt.toISOString(),
     };
   }
@@ -343,6 +351,107 @@ export class TeamsPrismaRepository implements TeamsRepository {
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<GetTeamMembersResult>} 팀 멤버 목록
    */
+  async lockTeamForReplace(teamId: string, tx: Prisma.TransactionClient): Promise<void> {
+    // Prisma 쿼리 API에는 행 잠금이 없어 raw로 건다. 태그드 템플릿이라 teamId는 파라미터로 바인딩된다.
+    await tx.$queryRaw`SELECT id FROM teams WHERE id = ${teamId}::uuid FOR UPDATE`;
+  }
+
+  async findTeamMemberRows(
+    teamId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string; bandMemberId: string; skillTypeId: string | null; teamRole: string; joinedAt: Date }[]> {
+    const client = tx ?? this.prisma;
+    return client.teamMember.findMany({
+      where: { teamId },
+      select: { id: true, bandMemberId: true, skillTypeId: true, teamRole: true, joinedAt: true },
+      orderBy: { joinedAt: 'asc' },
+    });
+  }
+
+  async findBandMemberIdsInBand(bandId: string, bandMemberIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    if (bandMemberIds.length === 0) return [];
+    const rows = await client.bandMember.findMany({
+      where: { bandId, id: { in: bandMemberIds } },
+      select: { id: true },
+    });
+    return rows.map(row => row.id);
+  }
+
+  async deleteTeamMemberRows(teamId: string, teamMemberIds: string[], tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+    if (teamMemberIds.length === 0) return;
+    // teamId를 함께 걸어 다른 팀의 행을 지우는 요청을 막는다.
+    await client.teamMember.deleteMany({ where: { teamId, id: { in: teamMemberIds } } });
+  }
+
+  async createTeamMemberRows(
+    teamId: string,
+    rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole: string }[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx ?? this.prisma;
+    if (rows.length === 0) return;
+    await client.teamMember.createMany({
+      data: rows.map(row => ({
+        teamId,
+        bandMemberId: row.bandMemberId,
+        skillTypeId: row.skillTypeId,
+        // joinedAt은 같은 사람의 행을 옮겨 담을 때만 온다. 없으면 스키마 기본값(now)을 쓴다.
+        ...(row.joinedAt !== undefined && { joinedAt: row.joinedAt }),
+        teamRole: row.teamRole as TeamMemberRole,
+      })),
+    });
+  }
+
+  async findAllTeamMembers(teamId: string, tx?: Prisma.TransactionClient): Promise<TeamMemberListItem[]> {
+    const client = tx ?? this.prisma;
+    const rows = await client.teamMember.findMany({
+      where: { teamId },
+      select: {
+        id: true,
+        bandMemberId: true,
+        teamRole: true,
+        joinedAt: true,
+        skillType: { select: { id: true, name: true } },
+        bandMember: {
+          select: {
+            userId: true,
+            user: {
+              select: {
+                profile: { select: { nickname: true, avatarUrl: true } },
+                userSkills: {
+                  select: { skillTypeId: true, skillLevel: true, isPrimary: true, skillType: { select: { name: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
+    });
+
+    return rows.map(member => ({
+      teamMemberId: member.id,
+      bandMemberId: member.bandMemberId,
+      skillType: member.skillType ? { skillTypeId: member.skillType.id, name: member.skillType.name } : null,
+      user: {
+        userId: member.bandMember.userId,
+        nickname: member.bandMember.user?.profile?.nickname ?? '',
+        profileImageUrl: member.bandMember.user?.profile?.avatarUrl ?? null,
+      },
+      teamRole: member.teamRole,
+      joinedAt: member.joinedAt.toISOString(),
+      skills:
+        member.bandMember.user?.userSkills?.map(skill => ({
+          skillTypeId: skill.skillTypeId,
+          skillName: skill.skillType.name,
+          skillLevel: skill.skillLevel,
+          isPrimary: skill.isPrimary,
+        })) ?? [],
+    }));
+  }
+
   async findTeamMembers(teamId: string, query: GetTeamMembersQuery, tx?: Prisma.TransactionClient): Promise<GetTeamMembersResult> {
     const client = tx ?? this.prisma;
     const { orderBy } = parseToPrismaQuery(query);
@@ -357,6 +466,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         bandMemberId: true,
         teamRole: true,
         joinedAt: true,
+        skillType: { select: { id: true, name: true } },
         bandMember: {
           select: {
             userId: true,
@@ -389,6 +499,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
     const items: TeamMemberListItem[] = rows.map(member => ({
       teamMemberId: member.id,
       bandMemberId: member.bandMemberId,
+      skillType: member.skillType ? { skillTypeId: member.skillType.id, name: member.skillType.name } : null,
       user: {
         userId: member.bandMember.userId,
         nickname: member.bandMember.user?.profile?.nickname ?? '',
@@ -447,10 +558,20 @@ export class TeamsPrismaRepository implements TeamsRepository {
         data: { teamRole: 'MEMBER' },
       });
 
-      await client.teamMember.update({
+      // teamRole은 사람 단위 속성인데 행은 세션마다 나뉜다. 지정된 한 행만 올리면
+      // 겸업하는 리더가 LEADER 행과 MEMBER 행을 동시에 갖게 되고, 어느 행을 먼저
+      // 읽느냐에 따라 역할이 뒤집힌다. 그 사람의 행을 전부 올린다.
+      const target = await client.teamMember.findUnique({
         where: { id: newLeaderTeamMemberId },
-        data: { teamRole: 'LEADER' },
+        select: { bandMemberId: true },
       });
+
+      if (target !== null) {
+        await client.teamMember.updateMany({
+          where: { teamId, bandMemberId: target.bandMemberId },
+          data: { teamRole: 'LEADER' },
+        });
+      }
 
       const newLeaderMember = await client.teamMember.findUnique({
         where: { id: newLeaderTeamMemberId },
@@ -486,6 +607,56 @@ export class TeamsPrismaRepository implements TeamsRepository {
     return tx ? run(tx) : this.prisma.$transaction(run);
   }
 
+  async updateTeamMemberSession(
+    teamMemberId: string,
+    skillTypeId: string | null,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UpdateTeamMemberSessionResult> {
+    const client = tx ?? this.prisma;
+
+    const teamMember = await client.teamMember.update({
+      where: { id: teamMemberId },
+      data: { skillTypeId },
+      select: {
+        id: true,
+        teamId: true,
+        bandMemberId: true,
+        teamRole: true,
+        joinedAt: true,
+        skillType: { select: { id: true, name: true } },
+        bandMember: {
+          select: {
+            userId: true,
+            user: {
+              select: {
+                profile: { select: { nickname: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      teamMemberId: teamMember.id,
+      teamId: teamMember.teamId,
+      bandMemberId: teamMember.bandMemberId,
+      user: {
+        userId: teamMember.bandMember.userId,
+        nickname: teamMember.bandMember.user?.profile?.nickname ?? '',
+        profileImageUrl: teamMember.bandMember.user?.profile?.avatarUrl ?? null,
+      },
+      teamRole: teamMember.teamRole,
+      joinedAt: teamMember.joinedAt.toISOString(),
+      skillType: teamMember.skillType ? { skillTypeId: teamMember.skillType.id, name: teamMember.skillType.name } : null,
+    };
+  }
+
+  async countTeamMemberAssignments(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number> {
+    const client = tx ?? this.prisma;
+    return client.teamMember.count({ where: { teamId, bandMemberId } });
+  }
+
   async removeTeamMember(teamMemberId: string, teamId: string, tx?: Prisma.TransactionClient): Promise<RemoveTeamMemberResult> {
     const client = tx ?? this.prisma;
 
@@ -508,11 +679,15 @@ export class TeamsPrismaRepository implements TeamsRepository {
     const client = tx ?? this.prisma;
     const { orderBy } = parseToPrismaQuery(query);
 
+    // 세션 편성이 붙으면 한 팀에 대한 TeamMember 행이 여러 개다. 그냥 두면 같은 팀이
+    // 목록에 두 번 나온다. 메모리에서 접으면 take+1로 다음 페이지를 판별하는 규칙이
+    // 깨지므로(접힌 만큼 줄어 hasNext가 false가 된다) DB에서 팀 단위로 자른다.
     const myTeamMembers = await client.teamMember.findMany({
       where: {
         bandMember: { userId },
         ...this.createMyTeamsCursorWhere(query),
       },
+      distinct: ['teamId'],
       select: {
         id: true,
         teamRole: true,
@@ -537,7 +712,9 @@ export class TeamsPrismaRepository implements TeamsRepository {
                 },
               },
             },
-            _count: { select: { members: true } },
+            members: {
+              select: { bandMemberId: true, teamRole: true, bandMember: { select: { userId: true } } },
+            },
           },
         },
       },
@@ -555,8 +732,10 @@ export class TeamsPrismaRepository implements TeamsRepository {
       description: member.team.description,
       status: member.team.status,
       teamCoverUrl: member.team.teamCoverUrl,
-      myTeamRole: member.teamRole,
-      memberCount: member.team._count.members,
+      // distinct가 남긴 행이 꼭 리더 행은 아니다. 겸업하는 리더가 MEMBER로 뜨지 않게
+      // 그 팀에 있는 내 행 전체를 보고 판단한다.
+      myTeamRole: this.resolveMyTeamRole(member.team.members, userId, member.teamRole),
+      memberCount: this.countDistinctMembers(member.team.members),
       teamLeader: member.team.teamLeaderBandMember
         ? {
             userId: member.team.teamLeaderBandMember.userId,
@@ -592,7 +771,12 @@ export class TeamsPrismaRepository implements TeamsRepository {
     };
   }
 
-  async addTeamMember(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult> {
+  async addTeamMember(
+    teamId: string,
+    bandMemberId: string,
+    skillTypeId?: string | null,
+    tx?: Prisma.TransactionClient,
+  ): Promise<AddTeamMemberResult> {
     const client = tx ?? this.prisma;
 
     const teamMember = await client.teamMember.create({
@@ -600,6 +784,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         teamId,
         bandMemberId,
         teamRole: 'MEMBER',
+        skillTypeId: skillTypeId ?? null,
       },
       select: {
         id: true,
@@ -607,6 +792,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         bandMemberId: true,
         teamRole: true,
         joinedAt: true,
+        skillType: { select: { id: true, name: true } },
         bandMember: {
           select: {
             userId: true,
@@ -631,7 +817,44 @@ export class TeamsPrismaRepository implements TeamsRepository {
       },
       teamRole: teamMember.teamRole,
       joinedAt: teamMember.joinedAt.toISOString(),
+      skillType: teamMember.skillType ? { skillTypeId: teamMember.skillType.id, name: teamMember.skillType.name } : null,
     };
+  }
+
+  /**
+   * 팀 멤버 행에서 사람 수를 센다.
+   * 세션 편성 때문에 한 사람이 여러 행으로 나뉘므로 행 수를 그대로 쓰면 안 된다.
+   *
+   * @param {{ bandMemberId: string }[]} members - 팀 멤버 행 목록
+   * @returns {number} 중복을 제거한 사람 수
+   */
+  private countDistinctMembers(members: { bandMemberId: string }[]): number {
+    return new Set(members.map(member => member.bandMemberId)).size;
+  }
+
+  /**
+   * 팀 안에서 내 역할을 고른다. 세션마다 행이 나뉘어 같은 사람이 LEADER 행과
+   * MEMBER 행을 함께 가질 수 있으므로 LEADER가 하나라도 있으면 그것을 택한다.
+   *
+   * @param {{ teamRole: string; bandMember: { userId: string } }[]} members - 팀 멤버 행 목록
+   * @param {string} userId - 인증된 사용자 ID
+   * @param {string} fallback - 내 행을 못 찾았을 때 쓸 값
+   * @returns {string} 팀에서의 내 역할
+   */
+  private resolveMyTeamRole(members: { teamRole: string; bandMember: { userId: string } }[], userId: string, fallback: string): string {
+    const mine = members.filter(member => member.bandMember.userId === userId);
+    if (mine.length === 0) return fallback;
+    return mine.some(member => member.teamRole === 'LEADER') ? 'LEADER' : mine[0].teamRole;
+  }
+
+  async findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]> {
+    const client = tx ?? this.prisma;
+    if (skillTypeIds.length === 0) return [];
+    const rows = await client.skillType.findMany({
+      where: { id: { in: skillTypeIds } },
+      select: { id: true },
+    });
+    return rows.map(row => row.id);
   }
 
   async deleteTeam(teamId: string, tx?: Prisma.TransactionClient): Promise<DeleteTeamResult> {

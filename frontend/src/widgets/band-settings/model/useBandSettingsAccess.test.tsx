@@ -2,20 +2,29 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { AuthContext } from '@/app/providers/auth-context';
 import * as bandApi from '@/entities/band/api/band-api';
 import type { Band } from '@/entities/band/model/types';
 import * as teamApi from '@/entities/team/api/team-api';
 import type { BandTeamListItem } from '@/entities/team/model/types';
 import { useBandSettingsAccess } from './useBandSettingsAccess';
 
-const createWrapper = () => {
+// 팀 리더 판정이 로그인 사용자 id와 teamLeader.userId를 비교하므로 인증 컨텍스트가 필요하다.
+const createWrapper = (userId = 'u-1') => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
     },
   });
+  const authValue = {
+    user: { isLoggedIn: true, isAdmin: false, id: userId },
+    login: vi.fn(),
+    logout: vi.fn(),
+  };
   return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <AuthContext.Provider value={authValue}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </AuthContext.Provider>
   );
 };
 
@@ -86,7 +95,7 @@ describe('useBandSettingsAccess', () => {
       expect(result.current.allowedTabs).toEqual(['basic', 'members', 'teams']);
     });
 
-    it('밴드 부리더(ADMIN)는 모든 설정 탭(basic, members, teams)에 접근할 수 있다', async () => {
+    it('밴드 부리더(ADMIN)는 기본 설정과 팀 관리 탭(basic, teams)에만 접근할 수 있다', async () => {
       const mockBands: Partial<Band>[] = [
         {
           id: 'band-1',
@@ -112,7 +121,8 @@ describe('useBandSettingsAccess', () => {
       expect(result.current.isBandLeader).toBe(false);
       expect(result.current.isBandSubLeader).toBe(true);
       expect(result.current.canAccessSettings).toBe(true);
-      expect(result.current.allowedTabs).toEqual(['basic', 'members', 'teams']);
+      // 멤버 권한 변경·강퇴는 백엔드가 BM 전용이라 members 탭은 열지 않는다.
+      expect(result.current.allowedTabs).toEqual(['basic', 'teams']);
     });
 
     it('팀 리더는 팀 관리(teams) 탭에만 접근할 수 있다', async () => {
@@ -143,6 +153,34 @@ describe('useBandSettingsAccess', () => {
       expect(result.current.isTeamLeader).toBe(true);
       expect(result.current.canAccessSettings).toBe(true);
       expect(result.current.allowedTabs).toEqual(['teams']);
+    });
+
+    it('밴드에 팀이 있어도 내가 리더인 팀이 없으면 팀 리더로 보지 않는다', async () => {
+      const mockBands: Partial<Band>[] = [
+        {
+          id: 'band-1',
+          name: '신촌 락밴드',
+          myRole: 'MEMBER',
+          visibility: true,
+          createdAt: '2026-01-01T00:00:00Z',
+          joinedAt: '2026-01-01T00:00:00Z',
+        },
+      ];
+
+      vi.spyOn(bandApi, 'getMyBands').mockResolvedValue(mockBands as Band[]);
+      vi.spyOn(teamApi, 'getBandTeams').mockResolvedValue(MOCK_TEAMS); // 리더는 u-1
+
+      const { result } = renderHook(() => useBandSettingsAccess('band-1'), {
+        wrapper: createWrapper('u-2'), // 다른 사용자로 로그인
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.isTeamLeader).toBe(false);
+      expect(result.current.canAccessSettings).toBe(false);
+      expect(result.current.allowedTabs).toEqual([]);
     });
 
     it('일반 멤버(MEMBER, 팀 리더 아님)는 설정에 접근할 수 없다 (allowedTabs 비어있음)', async () => {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { parseToPrismaQuery } from 'src/common/query';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
@@ -24,7 +24,6 @@ type UserListRecord = Prisma.UserGetPayload<{
 function mapUserListItem(user: UserListRecord): UserListItem {
   return {
     id: user.id,
-    email: user.email,
     nickname: user.profile?.nickname ?? '',
     status: user.status,
     avatarUrl: user.profile?.avatarUrl ?? null,
@@ -217,7 +216,6 @@ export class UsersPrismaRepository implements UsersRepository {
             order__created_at: query.order__created_at,
             order__id: query.order__id,
             where__nickname__contain: query.where__nickname__contain,
-            where__email__contain: query.where__email__contain,
           })
         : null;
 
@@ -299,21 +297,37 @@ export class UsersPrismaRepository implements UsersRepository {
         await client.user.update({ where: { id: userId }, data: { email: data.personalInfo.email } });
       }
 
+      // skillTypeId·genreId는 DTO에서 UUID 형식만 검사한다. 존재하지 않는 ID는 FK 위반(P2003)으로
+      // 터지는데, 이는 요청값 문제이므로 500이 아니라 400으로 돌려준다(#212 B-4).
       if (data.skills !== undefined) {
         await client.userSkill.deleteMany({ where: { userId } });
         if (data.skills.length > 0) {
-          await client.userSkill.createMany({
-            data: data.skills.map(s => ({ userId, skillTypeId: s.skillTypeId, skillLevel: s.level, isPrimary: s.isPrimary })),
-          });
+          try {
+            await client.userSkill.createMany({
+              data: data.skills.map(s => ({ userId, skillTypeId: s.skillTypeId, skillLevel: s.level, isPrimary: s.isPrimary })),
+            });
+          } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+              throw new BadRequestException('존재하지 않는 세션(skillTypeId)입니다.');
+            }
+            throw e;
+          }
         }
       }
 
       if (data.favoriteGenres !== undefined) {
         await client.favoriteGenre.deleteMany({ where: { userId } });
         if (data.favoriteGenres.length > 0) {
-          await client.favoriteGenre.createMany({
-            data: data.favoriteGenres.map(genreId => ({ userId, genreId })),
-          });
+          try {
+            await client.favoriteGenre.createMany({
+              data: data.favoriteGenres.map(genreId => ({ userId, genreId })),
+            });
+          } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+              throw new BadRequestException('존재하지 않는 장르(genreId)입니다.');
+            }
+            throw e;
+          }
         }
       }
     };

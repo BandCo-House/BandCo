@@ -58,8 +58,8 @@ export const BandLibrary = () => {
   } = useHorizontalScrollEdges<HTMLUListElement>();
 
   return (
-    <div className="flex flex-col gap-6 pb-10">
-      <header className="flex flex-col gap-2 px-5 pt-8 pb-5">
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-col gap-2 px-5 pb-5">
         <h1 className="typo-xl-sb text-grey-50">라이브러리</h1>
         <p className="typo-base-r text-grey-300">
           밴드에서 연습할 합주곡과 연습 장소를

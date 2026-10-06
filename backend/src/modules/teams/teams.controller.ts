@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
@@ -11,7 +11,9 @@ import { CreateTeamBodyDto } from './dto/create-team.dto';
 import { GetBandTeamsQueryDto } from './dto/get-band-teams-query.dto';
 import { GetMyTeamsQueryDto } from './dto/get-my-teams-query.dto';
 import { GetTeamMembersQueryDto } from './dto/get-team-members-query.dto';
+import { ReplaceTeamMembersBodyDto } from './dto/replace-team-members.dto';
 import { UpdateTeamBodyDto } from './dto/update-team.dto';
+import { UpdateTeamMemberSessionBodyDto } from './dto/update-team-member-session.dto';
 import type { AddTeamMemberResult } from './types/add-team-member-result.type';
 import type { ChangeTeamLeaderResult } from './types/change-team-leader-result.type';
 import type { CreateTeamResult } from './types/create-team-result.type';
@@ -21,6 +23,8 @@ import type { GetMyTeamsResult } from './types/get-my-teams-result.type';
 import type { GetTeamMembersResult } from './types/get-team-members-result.type';
 import type { GetTeamResult } from './types/get-team-result.type';
 import type { RemoveTeamMemberResult } from './types/remove-team-member-result.type';
+import type { ReplaceTeamMembersResult } from './types/replace-team-members-result.type';
+import type { UpdateTeamMemberSessionResult } from './types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from './types/update-team-result.type';
 import { TeamsService } from './teams.service';
 
@@ -172,8 +176,49 @@ export class TeamsController {
     @Param('teamId') teamId: string,
     @Body() input: AddTeamMemberBodyDto,
   ): Promise<ApiSuccessResponse<AddTeamMemberResult>> {
-    const result = await this.teamsService.addTeamMember(request.user.id, teamId, input.bandMemberId);
+    const result = await this.teamsService.addTeamMember(request.user.id, teamId, input.bandMemberId, input.skillTypeId);
     return createSuccessResponse('팀 멤버 추가 성공', result);
+  }
+
+  @Patch(':teamId/members/:teamMemberId')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '#67 팀 멤버 세션 변경' })
+  @ApiParam({ name: 'teamId', description: '팀 ID (UUID)', type: String })
+  @ApiParam({ name: 'teamMemberId', description: '팀 멤버 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '팀 멤버 세션 변경 성공' })
+  @ApiResponse({ status: 400, description: '존재하지 않는 세션' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '팀 리더 권한 필요' })
+  @ApiResponse({ status: 404, description: '팀 또는 팀 멤버를 찾을 수 없음' })
+  @ApiResponse({ status: 409, description: '이미 같은 세션으로 등록됨' })
+  async updateTeamMemberSession(
+    @Req() request: AuthenticatedRequest,
+    @Param('teamId') teamId: string,
+    @Param('teamMemberId') teamMemberId: string,
+    @Body() input: UpdateTeamMemberSessionBodyDto,
+  ): Promise<ApiSuccessResponse<UpdateTeamMemberSessionResult>> {
+    const result = await this.teamsService.updateTeamMemberSession(request.user.id, teamId, teamMemberId, input.skillTypeId ?? null);
+    return createSuccessResponse('팀 멤버 세션 변경 성공', result);
+  }
+
+  @Put(':teamId/members')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '팀 명단 일괄 교체' })
+  @ApiParam({ name: 'teamId', description: '팀 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '팀 명단 교체 성공' })
+  @ApiResponse({ status: 400, description: '세션 중복 / 다른 밴드 멤버 / 존재하지 않는 세션 / 리더 제외' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '팀 리더 권한 필요' })
+  @ApiResponse({ status: 404, description: '팀을 찾을 수 없음' })
+  async replaceTeamMembers(
+    @Req() request: AuthenticatedRequest,
+    @Param('teamId') teamId: string,
+    @Body() input: ReplaceTeamMembersBodyDto,
+  ): Promise<ApiSuccessResponse<ReplaceTeamMembersResult>> {
+    const result = await this.teamsService.replaceTeamMembers(request.user.id, teamId, input.members);
+    return createSuccessResponse('팀 명단 교체 성공', result);
   }
 
   @Delete(':teamId')

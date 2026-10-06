@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from 'src/database/prisma';
-import { BandMemberRole } from 'src/generated/prisma';
+import { BandMemberRole, NotificationType } from 'src/generated/prisma';
+
+import type { NotificationsService } from '../notifications/notifications.service';
 
 import type { GetBandJoinRequestsQuery } from './dto/get-band-join-requests-query.dto';
 import type { GetBandMembersQuery } from './dto/get-band-members-query.dto';
@@ -112,6 +114,7 @@ function createBandsRepositoryStub(options?: {
   onFindSentBandJoinRequests?: (userId: string, query: GetSentBandJoinRequestsQuery, tx: unknown) => void;
   onFindSentBandInvitations?: (userId: string, query: GetSentBandInvitationsQuery, tx: unknown) => void;
   onLeaveBand?: (bandMemberId: string, tx: unknown) => void;
+  onHandOverLedTeamsToBandMaster?: (bandMemberId: string, tx: unknown) => void;
   onSearchBands?: (query: SearchBandsQuery, tx: unknown) => void;
   onUpdateBand?: (bandId: string, input: UpdateBandInput, tx: unknown) => void;
   onUpdateBandMemberRole?: (bandMemberId: string, role: BandMemberRole, tx: unknown) => void;
@@ -283,6 +286,11 @@ function createBandsRepositoryStub(options?: {
         userId: INVITEE_USER_ID,
       };
     },
+    async handOverLedTeamsToBandMaster(bandMemberId, tx) {
+      options?.onHandOverLedTeamsToBandMaster?.(bandMemberId, tx);
+
+      return 0;
+    },
     async findBandMembers(bandId, query, tx) {
       options?.onFindBandMembers?.(bandId, query, tx);
 
@@ -326,6 +334,7 @@ function createBandsRepositoryStub(options?: {
             id: 'band-001',
             name: '합주하자',
             description: '주 1회 합주',
+            coverImgUrl: null,
             visibility: true,
             myRole: BandMemberRole.BM,
             joinedAt: '2026-03-01T12:10:00.000Z',
@@ -476,6 +485,7 @@ function createBandsRepositoryStub(options?: {
             bandId: 'band-001',
             name: 'Rocking Stars',
             description: '주 1회 합주하는 직장인 밴드',
+            coverImgUrl: null,
             visibility: true,
             memberCount: 5,
             bandMaster: {
@@ -658,6 +668,29 @@ function createBandsRepositoryStub(options?: {
       };
     },
   };
+}
+
+// ─── NotificationsService Stub ───────────────────────────────────
+interface NotificationInput {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  description: string;
+  targetPath?: string;
+}
+
+function createNotificationsServiceStub() {
+  const capturedNotifications: NotificationInput[] = [];
+  const stub = {
+    async createNotification(input: NotificationInput) {
+      capturedNotifications.push(input);
+    },
+    async createManyNotifications(inputs: NotificationInput[]) {
+      capturedNotifications.push(...inputs);
+    },
+  } as unknown as NotificationsService;
+
+  return { stub, capturedNotifications };
 }
 
 function createPrismaServiceStub(): PrismaService {
@@ -1646,6 +1679,98 @@ describe('BandsService', () => {
     });
   });
 
+  // 프론트는 type INVITE를 "수락/거절할 초대장"으로 다루고 targetPath로 화면을 이동한다.
+  // 실제 초대장이 아닌 통지에 INVITE가 붙거나 없는 라우트를 넘기면 수락 에러·not-found가
+  // 난다 — 밴드 이벤트별 type과 targetPath를 고정한다(#212 B-1).
+  describe('밴드 이벤트 알림', () => {
+    it('밴드 초대만 INVITE 타입으로, 초대 ID를 담아 보낸다', async () => {
+      const repository = createBandsRepositoryStub({ existingUserIds: [INVITEE_USER_ID] });
+      const notifications = createNotificationsServiceStub();
+      const service = new BandsService(repository, createPrismaServiceStub(), notifications.stub);
+
+      await service.createBandInvitation(BAND_MASTER_USER_ID, 'band-001', { inviteeUserId: INVITEE_USER_ID });
+
+      expect(notifications.capturedNotifications).toHaveLength(1);
+      expect(notifications.capturedNotifications[0]).toEqual(
+        expect.objectContaining({
+          userId: INVITEE_USER_ID,
+          type: NotificationType.INVITE,
+          targetPath: '/invitations/received?invitationId=invitation-001',
+        }),
+      );
+    });
+
+    it('가입 요청 수신 알림은 NOTICE 타입이고 targetPath가 없다', async () => {
+      const repository = createBandsRepositoryStub();
+      const notifications = createNotificationsServiceStub();
+      const service = new BandsService(repository, createPrismaServiceStub(), notifications.stub);
+
+      await service.createBandJoinRequest(INVITEE_USER_ID, 'band-001', {});
+
+      // 스텁의 관리자는 BM·ADMIN 둘이고 요청자는 그중 누구도 아니라 2건이 나간다
+      expect(notifications.capturedNotifications).toHaveLength(2);
+      for (const notification of notifications.capturedNotifications) {
+        expect(notification.type).toBe(NotificationType.NOTICE);
+        expect(notification.targetPath).toBeUndefined();
+      }
+    });
+
+    it('가입 요청 승인 알림은 NOTICE 타입이고 밴드 홈으로 보낸다', async () => {
+      const repository = createBandsRepositoryStub();
+      const notifications = createNotificationsServiceStub();
+      const service = new BandsService(repository, createPrismaServiceStub(), notifications.stub);
+
+      await service.approveBandJoinRequest(BAND_MASTER_USER_ID, 'join-request-001');
+
+      expect(notifications.capturedNotifications[0]).toEqual(
+        expect.objectContaining({
+          userId: INVITEE_USER_ID,
+          type: NotificationType.NOTICE,
+          targetPath: '/band/band-001',
+        }),
+      );
+    });
+
+    it('가입 요청 거절 알림은 NOTICE 타입이고 targetPath가 없다', async () => {
+      const repository = createBandsRepositoryStub();
+      const notifications = createNotificationsServiceStub();
+      const service = new BandsService(repository, createPrismaServiceStub(), notifications.stub);
+
+      await service.rejectBandJoinRequest(BAND_MASTER_USER_ID, 'join-request-001');
+
+      expect(notifications.capturedNotifications[0]?.type).toBe(NotificationType.NOTICE);
+      expect(notifications.capturedNotifications[0]?.targetPath).toBeUndefined();
+    });
+
+    it('초대 수락 통지는 NOTICE 타입이고 초대한 사람을 밴드 홈으로 보낸다', async () => {
+      const repository = createBandsRepositoryStub();
+      const notifications = createNotificationsServiceStub();
+      const service = new BandsService(repository, createPrismaServiceStub(), notifications.stub);
+
+      await service.acceptBandInvitation(INVITEE_USER_ID, 'invitation-001');
+
+      expect(notifications.capturedNotifications[0]).toEqual(
+        expect.objectContaining({
+          userId: BAND_MASTER_USER_ID,
+          type: NotificationType.NOTICE,
+          targetPath: '/band/band-001',
+        }),
+      );
+    });
+
+    it('초대 거절 통지는 NOTICE 타입이고 targetPath가 없다', async () => {
+      const repository = createBandsRepositoryStub();
+      const notifications = createNotificationsServiceStub();
+      const service = new BandsService(repository, createPrismaServiceStub(), notifications.stub);
+
+      await service.declineBandInvitation(INVITEE_USER_ID, 'invitation-001');
+
+      expect(notifications.capturedNotifications[0]?.userId).toBe(BAND_MASTER_USER_ID);
+      expect(notifications.capturedNotifications[0]?.type).toBe(NotificationType.NOTICE);
+      expect(notifications.capturedNotifications[0]?.targetPath).toBeUndefined();
+    });
+  });
+
   describe('deleteBandInvitation', () => {
     it('초대를 보낸 사용자가 대기 중인 초대를 취소한다', async () => {
       let capturedInvitationId: string | undefined;
@@ -1842,6 +1967,27 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(service.leaveBand(BAND_MASTER_USER_ID, 'band-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    // 리더가 떠난 팀은 밴드장조차 손댈 수 없는 고아 팀이 됐다(#212 C-1).
+    // 멤버 행을 지우기 전에 같은 tx로 밴드장에게 넘겨야 SetNull이 먼저 일어나지 않는다.
+    it('나가는 멤버가 리더인 팀을 멤버십 삭제 전에 밴드장에게 넘긴다', async () => {
+      const calls: { step: string; bandMemberId: string; tx: unknown }[] = [];
+      const repository = createBandsRepositoryStub({
+        onHandOverLedTeamsToBandMaster(bandMemberId, tx) {
+          calls.push({ step: 'handOver', bandMemberId, tx });
+        },
+        onLeaveBand(bandMemberId, tx) {
+          calls.push({ step: 'leave', bandMemberId, tx });
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.leaveBand(INVITEE_USER_ID, 'band-001');
+
+      expect(calls.map(call => call.step)).toEqual(['handOver', 'leave']);
+      expect(calls[0].bandMemberId).toBe('band-member-001');
+      expect(calls[0].tx).toBe(calls[1].tx);
     });
 
     it('외부 transaction client가 있으면 새 transaction을 열지 않는다', async () => {
@@ -2808,6 +2954,25 @@ describe('BandsService', () => {
       const service = new BandsService(repository, createPrismaServiceStub());
 
       await expect(service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('강퇴되는 멤버가 리더인 팀을 멤버십 삭제 전에 밴드장에게 넘긴다', async () => {
+      const calls: { step: string; bandMemberId: string; tx: unknown }[] = [];
+      const repository = createBandsRepositoryStub({
+        onHandOverLedTeamsToBandMaster(bandMemberId, tx) {
+          calls.push({ step: 'handOver', bandMemberId, tx });
+        },
+        onLeaveBand(bandMemberId, tx) {
+          calls.push({ step: 'leave', bandMemberId, tx });
+        },
+      });
+      const service = new BandsService(repository, createPrismaServiceStub());
+
+      await service.removeBandMember(BAND_MASTER_USER_ID, 'band-001', 'target-user-001');
+
+      expect(calls.map(call => call.step)).toEqual(['handOver', 'leave']);
+      expect(calls[0].bandMemberId).toBe(calls[1].bandMemberId);
+      expect(calls[0].tx).toBe(calls[1].tx);
     });
 
     it('외부 transaction client가 있으면 새 transaction을 열지 않고 그대로 전달한다', async () => {

@@ -6,6 +6,7 @@ import { useSkillTypes } from '@/entities/skill';
 import { updateUserProfile } from '../api/profile-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import PinIcon from '@/assets/icons/pin.svg?react';
 import { TagSelectBottomSheet } from './TagSelectBottomSheet';
 
 export interface SkillEditSectionProps {
@@ -13,6 +14,27 @@ export interface SkillEditSectionProps {
   userId: string;
   skills: Profile['skills'];
 }
+
+/**
+ * 파트 편집 토스트는 하나만 띄운다. 파트를 여러 개 지우면 삭제마다 토스트가 쌓여
+ * 화면을 가렸다 — 같은 id를 주면 새 토스트가 이전 것을 대체한다.
+ * 닫기 버튼은 그래도 켠다(자동으로 사라지기 전에 치울 수 있게).
+ */
+const SKILL_TOAST = { id: 'profile-skill', closeButton: true } as const;
+
+/**
+ * 대표 파트를 맨 앞으로 끌어올린 목록.
+ *
+ * 프로필 조회(user.prisma-repository)가 userSkills를 orderBy 없이 돌려줘서
+ * 배열 순서가 대표와 일치한다는 보장이 없다. 저장 직후에는 요청 순서대로
+ * 들어가 우연히 맞지만, 그 순서에 기대면 대표가 뒤에 있을 때 엉뚱한 칩에 핀이
+ * 붙고 시트도 다른 항목을 1번으로 연다. 기준은 언제나 isPrimary다.
+ * (멤버 검색의 MemberSearchModal도 같은 이유로 isPrimary를 먼저 본다.)
+ */
+const primaryFirst = <T extends { isPrimary: boolean }>(items: T[]): T[] => [
+  ...items.filter((item) => item.isPrimary),
+  ...items.filter((item) => !item.isPrimary),
+];
 
 export function SkillEditSection({
   isMe,
@@ -67,12 +89,12 @@ export function SkillEditSection({
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      toast.success('플레이 파트가 저장되었습니다.');
+      toast.success('플레이 파트가 저장되었습니다.', SKILL_TOAST);
     } catch {
       if (previousProfile) {
         queryClient.setQueryData(queryKey, previousProfile);
       }
-      toast.error('파트 저장 도중 에러가 발생했습니다.');
+      toast.error('파트 저장 도중 에러가 발생했습니다.', SKILL_TOAST);
     } finally {
       isUpdatingRef.current = false;
       setIsUpdating(false);
@@ -89,29 +111,37 @@ export function SkillEditSection({
     await queryClient.cancelQueries({ queryKey });
     const previousProfile = queryClient.getQueryData<Profile>(queryKey);
 
-    const updatedSkills = skills
-      .filter((s) => s.skillTypeId !== skillTypeId)
-      .map((s, index) => ({
-        skillTypeId: s.skillTypeId,
-        level: s.level,
-        isPrimary: index === 0,
-      }));
+    // 대표가 아닌 파트를 지웠을 뿐인데 대표가 바뀌면 안 된다. 남은 대표를 그대로 두고,
+    // 지운 게 대표였을 때만 남은 첫 항목을 승격한다.
+    const remaining = skills.filter((s) => s.skillTypeId !== skillTypeId);
+    const nextPrimaryId =
+      remaining.find((s) => s.isPrimary)?.skillTypeId ??
+      remaining[0]?.skillTypeId;
+    const nextSkills = remaining.map((s) => ({
+      ...s,
+      isPrimary: s.skillTypeId === nextPrimaryId,
+    }));
+    const updatedSkills = nextSkills.map((s) => ({
+      skillTypeId: s.skillTypeId,
+      level: s.level,
+      isPrimary: s.isPrimary,
+    }));
 
     if (previousProfile) {
       queryClient.setQueryData<Profile>(queryKey, {
         ...previousProfile,
-        skills: skills.filter((s) => s.skillTypeId !== skillTypeId),
+        skills: nextSkills,
       });
     }
 
     try {
       await updateUserProfile(userId, { skills: updatedSkills });
-      toast.success('플레이 파트가 삭제되었습니다.');
+      toast.success('플레이 파트가 삭제되었습니다.', SKILL_TOAST);
     } catch {
       if (previousProfile) {
         queryClient.setQueryData(queryKey, previousProfile);
       }
-      toast.error('파트 삭제 도중 에러가 발생했습니다.');
+      toast.error('파트 삭제 도중 에러가 발생했습니다.', SKILL_TOAST);
     } finally {
       isUpdatingRef.current = false;
       setIsUpdating(false);
@@ -132,8 +162,16 @@ export function SkillEditSection({
         {skills.map((skill) => (
           <span
             key={skill.skillTypeId}
-            className="flex items-center rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
+            className="flex items-center gap-1.5 rounded-full border border-surface-2 px-4 py-1.5 typo-base-sb"
           >
+            {/* 대표 파트에 바텀시트와 같은 핀을 단다. 배열 순서가 아니라 isPrimary가 기준이다. */}
+            {skill.isPrimary && (
+              <PinIcon
+                aria-hidden="true"
+                data-slot="svg-icon"
+                className="size-4 shrink-0"
+              />
+            )}
             {skill.skillName}
             {isMe && (
               <button
@@ -170,9 +208,14 @@ export function SkillEditSection({
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         title="플레이 파트"
+        // 첫 선택이 isPrimary로 저장된다. 그 자리를 번호 대신 핀으로 표시하는 게 디자인 결정.
+        description="핀 표시가 대표 파트가 되고, 나머지는 번호순으로 프로필에 보여요."
         items={availableSkills}
-        selectedIds={skills.map((s) => s.skillTypeId)}
-        isLoading={skillsQuery.isLoading}
+        // 시트는 첫 선택을 대표로 저장하므로, 열 때도 대표가 1번 자리에 있어야 한다.
+        selectedIds={primaryFirst(skills).map((s) => s.skillTypeId)}
+        // isLoading은 disabled 쿼리(시트 닫힘→첫 열림 프레임)에서 false라 빈 상태가 먼저 번쩍인다
+        isLoading={skillsQuery.isPending}
+        isError={skillsQuery.isError}
         onSave={handleSaveSkills}
       />
     </section>

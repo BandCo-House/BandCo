@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma';
+import type { BandMemberRole, Prisma } from '../../../generated/prisma';
 import type { CreateTeamInput } from '../dto/create-team.dto';
 import type { GetBandTeamsQuery } from '../dto/get-band-teams-query.dto';
 import type { GetMyTeamsQuery } from '../dto/get-my-teams-query.dto';
@@ -10,9 +10,10 @@ import type { CreateTeamResult } from '../types/create-team-result.type';
 import type { DeleteTeamResult } from '../types/delete-team-result.type';
 import type { GetBandTeamsResult } from '../types/get-band-teams-result.type';
 import type { GetMyTeamsResult } from '../types/get-my-teams-result.type';
-import type { GetTeamMembersResult } from '../types/get-team-members-result.type';
+import type { GetTeamMembersResult, TeamMemberListItem } from '../types/get-team-members-result.type';
 import type { GetTeamResult } from '../types/get-team-result.type';
 import type { RemoveTeamMemberResult } from '../types/remove-team-member-result.type';
+import type { UpdateTeamMemberSessionResult } from '../types/update-team-member-session-result.type';
 import type { UpdateTeamResult } from '../types/update-team-result.type';
 
 export const TEAMS_REPOSITORY = Symbol('TEAMS_REPOSITORY');
@@ -27,13 +28,14 @@ export interface TeamsRepository {
   /** 삭제되지 않은 밴드 존재 여부 확인 */
   findBandById(bandId: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null>;
 
-  /** 밴드 멤버 존재 여부 확인 */
+  /** 밴드 멤버 존재 여부 확인. role은 팀 관리 권한(리더 또는 밴드장) 판정에 쓴다. */
   findBandMemberByBandIdAndUserId(
     bandId: string,
     userId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{
     id: string;
+    role: BandMemberRole;
   } | null>;
 
   /** 밴드 멤버 단건 조회 (팀 멤버 추가 시 밴드 멤버 검증) */
@@ -64,10 +66,14 @@ export interface TeamsRepository {
     teamLeaderBandMemberId: string | null;
   } | null>;
 
-  /** 팀 멤버십 확인 (팀 내 특정 밴드 멤버 조회) */
+  /**
+   * 팀 멤버십 확인 (팀 내 특정 밴드 멤버 + 세션 조회).
+   * 한 사람이 팀 안에서 여러 세션을 맡을 수 있어 세션까지 같아야 같은 배정이다.
+   */
   findTeamMemberByTeamAndBandMember(
     teamId: string,
     bandMemberId: string,
+    skillTypeId?: string | null,
     tx?: Prisma.TransactionClient,
   ): Promise<{
     id: string;
@@ -101,7 +107,62 @@ export interface TeamsRepository {
   findMyTeams(userId: string, query: GetMyTeamsQuery, tx?: Prisma.TransactionClient): Promise<GetMyTeamsResult>;
 
   /** 팀 멤버 추가 */
-  addTeamMember(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+  addTeamMember(teamId: string, bandMemberId: string, skillTypeId?: string | null, tx?: Prisma.TransactionClient): Promise<AddTeamMemberResult>;
+
+  /**
+   * 팀 멤버의 세션 배정을 바꾼다. 세션 변경은 행을 지웠다 다시 만들 일이 아니다.
+   * null이면 미배정으로 되돌린다.
+   */
+  updateTeamMemberSession(teamMemberId: string, skillTypeId: string | null, tx?: Prisma.TransactionClient): Promise<UpdateTeamMemberSessionResult>;
+
+  /**
+   * 팀 안에서 그 사람이 가진 세션 배정 행 수를 센다.
+   * 리더의 마지막 배정인지(=팀에서 빠지는지) 판단할 때 쓴다.
+   */
+  countTeamMemberAssignments(teamId: string, bandMemberId: string, tx?: Prisma.TransactionClient): Promise<number>;
+
+  /**
+   * teams 행을 잠근다(SELECT … FOR UPDATE). 명단 일괄 교체 전용.
+   * 트랜잭션 밖에서 잠그면 즉시 풀려 의미가 없어 tx를 필수로 받는다.
+   */
+  lockTeamForReplace(teamId: string, tx: Prisma.TransactionClient): Promise<void>;
+
+  /**
+   * 팀의 모든 멤버 행. 명단 일괄 교체에서 현재 상태와 대조할 때 쓴다.
+   * joinedAt은 같은 사람의 행을 다시 만들 때 옮기려고, teamRole은 리더 지정과
+   * 어긋난 행을 찾아 바로잡으려고 읽는다.
+   */
+  findTeamMemberRows(
+    teamId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<
+    {
+      id: string;
+      bandMemberId: string;
+      skillTypeId: string | null;
+      teamRole: string;
+      joinedAt: Date;
+    }[]
+  >;
+
+  /** 주어진 밴드 멤버 ID 중 그 밴드에 실제로 속한 것만 추린다. 일괄 검증용. */
+  findBandMemberIdsInBand(bandId: string, bandMemberIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
+
+  /** 팀 멤버 행을 일괄 삭제한다. */
+  deleteTeamMemberRows(teamId: string, teamMemberIds: string[], tx?: Prisma.TransactionClient): Promise<void>;
+
+  /** 팀 멤버 행을 일괄 생성한다. joinedAt이 없으면 스키마 기본값(now)을 쓴다. */
+  createTeamMemberRows(
+    teamId: string,
+    rows: { bandMemberId: string; skillTypeId: string | null; joinedAt?: Date; teamRole: string }[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void>;
+
+  /** 팀 명단 전체 조회(페이지네이션 없음). 일괄 교체 결과를 돌려줄 때 쓴다. */
+  findAllTeamMembers(teamId: string, tx?: Prisma.TransactionClient): Promise<TeamMemberListItem[]>;
+
+  /** 존재하는 skillType ID만 추려 돌려준다. 세션 배정 검증용. */
+  findExistingSkillTypeIds(skillTypeIds: string[], tx?: Prisma.TransactionClient): Promise<string[]>;
 
   /** 팀 삭제 (hard delete, TeamMember cascade) */
   deleteTeam(teamId: string, tx?: Prisma.TransactionClient): Promise<DeleteTeamResult>;

@@ -150,7 +150,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 - Method: `GET`
 - Path: `/users`
-- 인증: 없음 (공개)
+- 인증: AccessToken (2026-09-26 변경: 비로그인에 이메일이 노출돼 인증 필수로 전환, 응답에서 `email` 제거 — #212 B-4)
 
 ### Query Parameters
 
@@ -162,7 +162,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | `cursor__created_at` | N | 커서 기반 페이지네이션 — 마지막 아이템 생성일 |
 | `cursor__id` | N | 커서 기반 페이지네이션 — 마지막 아이템 ID (UUID) |
 | `where__nickname__contain` | N | 닉네임 부분 검색 |
-| `where__email__contain` | N | 이메일 부분 검색 |
+
+> 이메일 부분 검색(`where__email__contain`)은 제거했다. 목록 응답에서 이메일을 빼도 검색어로 이메일 존재 여부를 유추할 수 있어서다(#212 후속). 유저 검색은 닉네임으로만 한다. 요청에 넣으면 `forbidNonWhitelisted`에 걸려 400이 난다.
 
 ### Response 200
 
@@ -174,7 +175,6 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
     "items": [
       {
         "id": "uuid",
-        "email": "user@example.com",
         "nickname": "홍길동",
         "status": "ACTIVE",
         "avatarUrl": null,
@@ -196,6 +196,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | 코드 | 사유 |
 |------|------|
 | 400 | `take` 범위 오류, `order` 값 오류, `cursor__id` UUID 형식 오류 |
+| 401 | 인증 실패 |
 
 ---
 
@@ -407,7 +408,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 - Method: `GET`
 - Path: `/users/:userId/profiles`
-- 인증: 없음 (공개)
+- 인증: AccessToken (2026-09-26 변경: 비로그인에 이메일이 노출돼 인증 필수로 전환 — #212 B-4)
+- `user.email`은 본인 프로필을 조회할 때만 담기고, 다른 사용자의 프로필에서는 `null`이다
 
 ### Path Parameters
 
@@ -469,6 +471,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 | 코드 | 사유 |
 |------|------|
 | 400 | `userId`가 UUID 형식이 아님 |
+| 401 | 인증 실패 |
 | 404 | 존재하지 않는 유저 |
 
 ---
@@ -529,7 +532,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 | 코드 | 사유 |
 |------|------|
-| 400 | 잘못된 입력값 |
+| 400 | 잘못된 입력값 / 존재하지 않는 `skillTypeId`·`genreId` (2026-09-26 전: FK 오류가 500으로 나갔다 — #212 B-4) |
 | 401 | 인증 실패 |
 | 403 | 본인 프로필만 수정 가능 |
 | 404 | 존재하지 않는 유저 |

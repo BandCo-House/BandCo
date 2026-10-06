@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/app/providers/auth-context';
 import { getMyBands } from '@/entities/band/api/band-api';
 import { useBandTeams } from '@/entities/team/api/queries';
 import type { BandSettingsTab } from './tabs';
@@ -15,13 +16,16 @@ export interface BandSettingsAccess {
 /**
  * 밴드 설정 화면의 접근 권한을 계산하는 훅.
  * - Vite 개발 환경(`import.meta.env.DEV`)에서는 모든 탭에 자유롭게 접근할 수 있도록 가드를 자동 바이패스합니다.
- * - 프로덕션 환경에서는:
- *   - 리더(BM) / 부리더(ADMIN): 기본 설정('basic'), 멤버 권한 관리('members'), 팀 관리('teams') 모두 접근 가능
- *   - 팀 리더: 팀 관리('teams')만 접근 가능
+ * - 프로덕션 환경에서는 백엔드 권한 규칙에 맞춘다:
+ *   - 리더(BM): 기본 설정('basic'), 멤버 권한 관리('members'), 팀 관리('teams') 모두 접근 가능
+ *   - 부리더(ADMIN): 'basic'(초대 링크 발급이 운영자 권한), 'teams'만.
+ *     멤버 권한 변경·강퇴는 백엔드가 BM 전용이라 'members' 탭을 열어줘도 저장이 전부 403이다.
+ *   - 팀 리더(실제로 이 밴드의 팀을 이끄는 사람만): 팀 관리('teams')만 접근 가능
  *   - 일반 멤버: 설정 페이지 자체 접근 불가
  */
 export const useBandSettingsAccess = (bandId: string): BandSettingsAccess => {
   const isDev = import.meta.env.DEV;
+  const { user } = useAuth();
 
   const { data: myBands = [], isLoading: isBandsLoading } = useQuery({
     queryKey: ['bands', 'me'],
@@ -47,11 +51,17 @@ export const useBandSettingsAccess = (bandId: string): BandSettingsAccess => {
 
   const isBandLeader = myRole === 'BM';
   const isBandSubLeader = myRole === 'ADMIN';
-  const isTeamLeader = teams.length > 0 && !isBandLeader && !isBandSubLeader;
+  // "밴드에 팀이 있으면 팀 리더"가 아니라, 내가 리더인 팀이 실제로 있는지 본다.
+  const isTeamLeader =
+    !isBandLeader &&
+    !isBandSubLeader &&
+    teams.some((team) => team.teamLeader?.userId === user.id);
 
   const allowedTabs: BandSettingsTab[] = [];
-  if (isBandLeader || isBandSubLeader) {
+  if (isBandLeader) {
     allowedTabs.push('basic', 'members', 'teams');
+  } else if (isBandSubLeader) {
+    allowedTabs.push('basic', 'teams');
   } else if (isTeamLeader) {
     allowedTabs.push('teams');
   }

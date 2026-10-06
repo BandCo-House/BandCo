@@ -250,17 +250,17 @@ export class CreateScheduleBodyDto {
   // 선택 필드
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   placeId?: string;
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   songIds?: string[];
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   participantBandMemberIds?: string[];
 
   @IsOptional()
@@ -301,7 +301,7 @@ export class UpdateScheduleBodyDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   placeId?: string;
 
   @IsOptional()
@@ -311,12 +311,12 @@ export class UpdateScheduleBodyDto {
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   songIds?: string[];
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: uuidValidationMessage })
+  @IsUUID(undefined, { each: true, message: uuidValidationMessage })
   participantBandMemberIds?: string[];
 
   @IsOptional()
@@ -342,7 +342,7 @@ export class GetSchedulesQueryDto {
   // cursor: 이전 페이지 마지막 아이템의 id (동일 startAt 내 순서 보장)
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   cursor__id?: string;
 
   @IsOptional()
@@ -364,7 +364,7 @@ export class GetSchedulesQueryDto {
 
   @IsOptional()
   @IsString({ message: stringValidationMessage })
-  @IsUUID('4', { message: uuidValidationMessage })
+  @IsUUID(undefined, { message: uuidValidationMessage })
   where__place_id?: string;
 
   @IsOptional()

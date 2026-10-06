@@ -1,0 +1,117 @@
+name: release-pr-metadata
+
+# dev→main 릴리즈 PR의 제목·본문 규칙을 자동화한다.
+# 릴리즈는 머지 버튼(merge commit)으로 한다 — 룰셋이 main은 merge만,
+# dev는 squash만 허용하고, merge_commit_title=PR_TITLE 설정 덕에
+# main 커밋 제목이 "Release: … (#N)"이 된다. 본문(PR_BODY)은 커밋
+# 메시지로도 들어가므로 여기서 채우는 목록이 곧 릴리즈 기록이다.
+# - 본문: main..dev의 first-parent 커밋(= squash된 PR 제목들)을 마커 사이에 채운다.
+#   dev가 갱신되면(synchronize) 목록도 따라 갱신되고, 마커 밖 수동 메모는 보존된다.
+# - 제목: "Release:" 프리픽스가 아니면 실패시킨다.
+#
+# release-guard 잡은 main 룰셋의 필수 체크다: dev가 아닌 브랜치에서 main으로
+# 연 PR, 제목이 잘못된 PR은 머지가 막힌다. 비상시엔 admin이 룰셋 bypass로
+# 뚫을 수 있다.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# synchronize 연타 시 이전 실행을 취소해 본문 PATCH 경합을 막는다
+concurrency:
+  group: release-pr-metadata-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-guard:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      # 실패하면 이후 스텝은 스킵되고 잡 전체가 실패 → 필수 체크라 머지 불가.
+      # head.ref만 보면 공개 레포라 fork의 동명 dev 브랜치가 통과한다 —
+      # fork는 토큰이 read-only라 본문 갱신 단계에서 대개 실패하지만,
+      # 본문이 이미 같으면 gh 호출 없이 초록이 되므로 레포까지 함께 본다.
+      - name: main으로는 이 레포 dev에서만 PR 허용
+        if: >-
+          github.event.pull_request.head.ref != 'dev' ||
+          github.event.pull_request.head.repo.full_name != github.repository
+        env:
+          HEAD_LABEL: ${{ github.event.pull_request.head.label }}
+        run: |
+          echo "::error::main으로 가는 PR은 ${{ github.repository }}의 dev에서만 열 수 있습니다 (현재: $HEAD_LABEL). 급한 수정도 dev를 거쳐 릴리즈해 주세요."
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: 본문에 포함 PR 목록 갱신
+        shell: python
+        run: |
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+
+          START = "<!-- release-prs:start -->"
+          END = "<!-- release-prs:end -->"
+
+          pr = os.environ["PR"]
+          titles = subprocess.check_output(
+              ["git", "log", "--first-parent", "--format=- %s", "origin/main..HEAD"],
+              text=True,
+          ).strip()
+          section = START + "\n## 포함된 PR\n\n" + (titles or "- (없음)") + "\n" + END
+
+          body = json.loads(
+              subprocess.check_output(
+                  ["gh", "pr", "view", pr, "--json", "body"], text=True
+              )
+          )["body"] or ""
+
+          if START in body or END in body:
+              # 한쪽 마커만 남으면 subn이 0건 교체 후 본문이 그대로라, 아래
+              # "변경 없음" 분기에 걸려 목록이 낡은 채로 초록이 된다 → 명시적 실패.
+              new, replaced = re.subn(
+                  re.escape(START) + ".*?" + re.escape(END),
+                  lambda _: section,
+                  body,
+                  flags=re.S,
+              )
+              if replaced == 0:
+                  print(
+                      "::error::본문의 release-prs 마커 쌍이 깨져 있어 포함 PR 목록을"
+                      f" 갱신할 수 없습니다. 본문에서 {START} / {END} 줄을 모두 지우면"
+                      " 다음 실행에서 자동으로 다시 만들어집니다."
+                  )
+                  sys.exit(1)
+          else:
+              new = (body.rstrip() + "\n\n" + section).lstrip()
+
+          # 변경 없으면 PATCH하지 않는다 — edited 이벤트 재트리거 루프 방지.
+          if new != body:
+              subprocess.run(["gh", "pr", "edit", pr, "--body", new], check=True)
+
+      # Actions 표현식의 startsWith는 대소문자를 구분하지 않아 'release:'도
+      # 통과한다. merge_commit_title=PR_TITLE이라 그 제목이 그대로 main
+      # 커밋에 남으므로, 대소문자를 구분하는 셸 case로 검사한다.
+      - name: 제목 Release 프리픽스 검사
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          case "$TITLE" in
+            "Release: "*) ;;
+            *)
+              echo "::error::릴리즈 PR 제목은 'Release: '로 시작해야 합니다 (대소문자 구분, 현재: $TITLE)"
+              exit 1
+              ;;
+          esac

@@ -32,14 +32,20 @@ export function BandInviteModal({
   const [selectedBandId, setSelectedBandId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const availableBands = useMemo(() => {
-    const myBms = bands.filter((b) => b.myRole === 'BM');
-    return myBms.length > 0 ? myBms : bands;
-  }, [bands]);
+  // 백엔드는 BM·ADMIN에게만 초대 권한을 준다. 일반 멤버 밴드를 보여주면 전송 시 403만 난다.
+  const availableBands = useMemo(
+    () => bands.filter((b) => b.myRole === 'BM' || b.myRole === 'ADMIN'),
+    [bands],
+  );
 
   useEffect(() => {
     if (open && availableBands.length > 0) {
-      setSelectedBandId((prev) => prev || availableBands[0].id);
+      // 목록이 갱신돼 기존 선택이 초대 가능 밴드에서 빠지면 첫 항목으로 되돌린다.
+      setSelectedBandId((prev) =>
+        prev && availableBands.some((b) => b.id === prev)
+          ? prev
+          : availableBands[0].id,
+      );
     }
   }, [open, availableBands]);
 
@@ -93,7 +99,7 @@ export function BandInviteModal({
               >
                 {availableBands.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} ({b.myRole === 'BM' ? '마스터' : '멤버'})
+                    {b.name} ({b.myRole === 'BM' ? '마스터' : '부리더'})
                   </option>
                 ))}
               </select>
@@ -103,7 +109,7 @@ export function BandInviteModal({
           <div className="py-4 text-center typo-sm-r text-grey-300">
             {isLoading
               ? '밴드 목록을 불러오고 있습니다...'
-              : '초대할 수 있는 소속 밴드가 없습니다. 밴드를 먼저 생성해보세요!'}
+              : '초대 권한이 있는 밴드가 없습니다. 초대는 밴드 마스터·부리더만 보낼 수 있어요.'}
           </div>
         )}
 

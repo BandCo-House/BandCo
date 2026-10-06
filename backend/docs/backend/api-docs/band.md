@@ -178,7 +178,7 @@
 
 ## #71 DELETE /bands/{bandId}/users/{userId}
 
-**설명:** 밴드장이 멤버를 강퇴한다. 권한 변경(#9)과 같은 규칙을 따른다. 밴드장 자신은 대상이 될 수 없다(나가기·삭제 API 사용).
+**설명:** 밴드장이 멤버를 강퇴한다. 권한 변경(#9)과 같은 규칙을 따른다. 밴드장 자신은 대상이 될 수 없다(나가기·삭제 API 사용). 강퇴되는 멤버가 리더인 팀은 밴드장에게 자동 위임된다(#212 C-1, teams.md 변환 노트 참고).
 **인증:** 필요 (JWT Bearer)
 
 > [설계자 보완 2026-09-06] 프론트 밴드 설정 화면이 이미 호출 중이던 경로를 구현. Notion에는 미등록 — 수동 등록 필요.
@@ -245,6 +245,7 @@
         "id": "a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1",
         "name": "합주하자",
         "description": "주 1회 합주",
+        "coverImgUrl": "https://cdn.example.com/bands/cover-1.png",
         "visibility": true,
         "myRole": "BM",
         "joinedAt": "2026-03-01T12:10:00.000+09:00",
@@ -255,6 +256,7 @@
         "id": "e2f9a1c1-3d4b-4f2a-9d1f-8a7c1f2d3e4a",
         "name": "락스타",
         "description": "im mother fukking rock star shit!",
+        "coverImgUrl": null,
         "visibility": true,
         "myRole": "MEMBER",
         "joinedAt": "2026-02-20T18:30:00.000+09:00",
@@ -395,6 +397,7 @@
         "bandId": "a8c6b7b1-0f0a-4e3a-8a0c-4f6ef3d2d9c1",
         "name": "Rocking Stars",
         "description": "주 1회 합주하는 직장인 밴드",
+        "coverImgUrl": "https://cdn.example.com/bands/cover-1.png",
         "visibility": true,
         "memberCount": 5,
         "bandMaster": {
@@ -481,7 +484,7 @@
 
 ## #52 DELETE /bands/{bandId}/me
 
-**설명:** 인증된 유저가 밴드에서 나간다. 밴드장(BM)은 이 API로 나갈 수 없다.
+**설명:** 인증된 유저가 밴드에서 나간다. 밴드장(BM)은 이 API로 나갈 수 없다. 나가는 유저가 리더인 팀은 밴드장에게 자동 위임된다(#212 C-1, teams.md 변환 노트 참고).
 **인증:** 필요 (JWT Bearer)
 
 ### Request

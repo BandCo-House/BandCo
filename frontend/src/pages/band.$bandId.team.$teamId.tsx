@@ -14,8 +14,7 @@ import {
   teamKeys,
   useTeamDetail,
   useTeamMembers,
-  useAddTeamMember,
-  useRemoveTeamMember,
+  useReplaceTeamMembers,
 } from '@/entities/team/api/queries';
 import { deleteTeam } from '@/entities/team/api/team-api';
 import {
@@ -44,8 +43,9 @@ export const Route = createFileRoute('/band/$bandId/team/$teamId')({
 /** 최상단 공통 RouteHeader에 동적으로 반영되는 옵저버 타이틀 렌더러 */
 function HeaderTitle() {
   const { isEditing } = useTeamHeaderState();
+  // 다른 하위 페이지 기본 크기(typo-lg-sb)와 같게 — RouteHeader 기본 매핑과 맞춘다
   return (
-    <h1 className="min-w-0 truncate typo-xl-sb text-grey-50">
+    <h1 className="min-w-0 truncate typo-lg-sb text-grey-50">
       {isEditing ? '팀원 수정' : '팀 상세'}
     </h1>
   );
@@ -103,12 +103,12 @@ function BandTeamDetailRoutePage() {
     searchModalOpen,
     setSearchModalOpen,
     handleToggleMember,
+    handleChangeSession,
     handleOpenSearchForSession,
     handleOpenSearchForNewMember,
   } = useTeamMemberEdit({ propMembers: initialMembers });
 
-  const { mutateAsync: addMember } = useAddTeamMember(teamId);
-  const { mutateAsync: removeMember } = useRemoveTeamMember(teamId);
+  const { mutateAsync: replaceMembers } = useReplaceTeamMembers(teamId);
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -130,24 +130,35 @@ function BandTeamDetailRoutePage() {
   }, [teamId, bandId, navigate, queryClient]);
 
   const handleSaveMembers = useCallback(async () => {
+    // UI에서 막고 있지만 저장 직전에 한 번 더 본다. 상세에서 불러온 편성이 이미
+    // 중복이었거나(과거 데이터) 화면을 거치지 않고 상태가 바뀌면 여기가 마지막
+    // 방어선이다 — 넘어가면 중복 skillTypeId 요청이 그대로 나간다.
+    const assignedSessions = currentMembers
+      .map((m) => m.skillType?.skillTypeId)
+      .filter((id): id is string => !!id);
+    if (new Set(assignedSessions).size !== assignedSessions.length) {
+      toast.error('한 세션에는 한 명만 배정할 수 있어요.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const originalIds = new Set(initialMembers.map((m) => m.bandMemberId));
-      const updatedIds = new Set(currentMembers.map((m) => m.bandMemberId));
+      // 명단 전체를 그대로 보낸다. 무엇이 추가·제거·변경됐는지는 서버가 가른다 —
+      // 여기서 diff해 요청 셋을 나눠 던지면 일부만 성공한 상태가 남을 수 있다.
+      //
+      // teamMemberId는 "기존 행을 이어받아라"는 표시라 원본에 있던 행에만 붙인다.
+      // 새 행의 임시 id(tm-${Date.now()})는 UUID가 아니라 그대로 보내면 400이다.
+      const originalIds = new Set(initialMembers.map((m) => m.teamMemberId));
 
-      // 제거된 멤버: 원본에 있고 편집 후에 없는 것
-      const toRemove = initialMembers.filter(
-        (m) => !updatedIds.has(m.bandMemberId),
+      await replaceMembers(
+        currentMembers.map((member) => ({
+          ...(originalIds.has(member.teamMemberId)
+            ? { teamMemberId: member.teamMemberId }
+            : {}),
+          bandMemberId: member.bandMemberId,
+          skillTypeId: member.skillType?.skillTypeId ?? null,
+        })),
       );
-      // 추가된 멤버: 편집 후에 있고 원본에 없는 것
-      const toAdd = currentMembers.filter(
-        (m) => !originalIds.has(m.bandMemberId),
-      );
-
-      await Promise.all([
-        ...toRemove.map((m) => removeMember(m.teamMemberId)),
-        ...toAdd.map((m) => addMember(m.bandMemberId)),
-      ]);
 
       toast.success('팀원 설정이 저장되었습니다.');
       navigate({ search: {} });
@@ -156,7 +167,7 @@ function BandTeamDetailRoutePage() {
     } finally {
       setIsSaving(false);
     }
-  }, [initialMembers, currentMembers, addMember, removeMember, navigate]);
+  }, [initialMembers, currentMembers, replaceMembers, navigate]);
 
   const handleToggleEdit = useCallback(() => {
     navigate({
@@ -205,6 +216,7 @@ function BandTeamDetailRoutePage() {
         onToggleEdit={handleToggleEdit}
         onOpenSearchForSession={handleOpenSearchForSession}
         onOpenSearchForNewMember={handleOpenSearchForNewMember}
+        onChangeSession={handleChangeSession}
         searchModalOpen={searchModalOpen}
         setSearchModalOpen={setSearchModalOpen}
         handleToggleMember={handleToggleMember}

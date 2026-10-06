@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/shared/api/upload';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
 import { bandCreateSchema } from './schema';
 import { useBandCreate } from './useBandCreate';
 
@@ -19,6 +20,7 @@ export const useBandCreateForm = (
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
+  const { selectFile, cropDialogProps } = useImageCrop();
   const {
     submit,
     isLoading: isSubmitLoading,
@@ -42,19 +44,20 @@ export const useBandCreateForm = (
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setForm((f) => ({ ...f, coverImage: file }));
+    selectFile(e.target.files?.[0]);
+    // 같은 파일을 다시 골라도 change가 발생하도록 값을 비운다(크롭을 취소한 뒤 재시도).
+    e.target.value = '';
+  };
+
+  /** 크롭 모달이 돌려준 파일만 폼에 들어간다. 원본은 여기까지 오지 않는다. */
+  const applyCroppedCover = (file: File) => {
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
     }
-    if (file) {
-      const url = URL.createObjectURL(file);
-      previewUrlRef.current = url;
-      setPreview(url);
-    } else {
-      setPreview(null);
-    }
+    const url = URL.createObjectURL(file);
+    previewUrlRef.current = url;
+    setForm((f) => ({ ...f, coverImage: file }));
+    setPreview(url);
   };
 
   const clearCover = () => {
@@ -126,6 +129,8 @@ export const useBandCreateForm = (
     isSubmitDisabled,
     handleOpenChange,
     handleCoverChange,
+    applyCroppedCover,
+    cropDialogProps,
     clearCover,
     handleSubmit,
     setName,

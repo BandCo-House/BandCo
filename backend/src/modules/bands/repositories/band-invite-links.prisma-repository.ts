@@ -118,6 +118,27 @@ export class BandInviteLinksPrismaRepository implements BandInviteLinksRepositor
   }
 
   /**
+   * 밴드에 발급된 초대 링크의 만료 시각을 조회한다. 원본 코드는 저장하지 않으므로 존재 여부·만료 판단에만 쓴다.
+   *
+   * @param {string} bandId - 대상 밴드 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<BandInviteLinkJoinContext | null>} 링크가 없으면 null
+   */
+  async findBandInviteLinkByBandId(bandId: string, tx?: Prisma.TransactionClient): Promise<BandInviteLinkJoinContext | null> {
+    const client = tx ?? this.prisma;
+
+    return client.bandInviteLink.findFirst({
+      where: {
+        bandId,
+      },
+      select: {
+        bandId: true,
+        expiredAt: true,
+      },
+    });
+  }
+
+  /**
    * 코드 해시로 유효성 판단에 필요한 링크와 활성 밴드를 조회한다.
    *
    * @param {string} codeHash - 정규화한 코드의 SHA-256 해시

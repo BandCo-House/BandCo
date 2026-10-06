@@ -1,0 +1,153 @@
+import type { ReactNode } from 'react';
+import { Users } from 'lucide-react';
+import {
+  AppSheetClose,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/shared/ui/sheet';
+import { getKoreanParticle } from '@/shared/lib/korean-particle';
+import { cn } from '@/shared/lib/utils';
+
+/**
+ * footer에 꽂는 공용 버튼 스타일. 시트가 라이트 톤 고정 디자인이라 시트와 같은 hex를 쓴다.
+ * (다크 테마 토큰과 별개 팔레트 — 시트 전체 리스타일링 때 함께 토큰화한다)
+ */
+export const inviteSheetOutlineButtonClass =
+  'flex h-[50px] w-0 flex-1 cursor-pointer items-center justify-center rounded-[43px] border-[1.5px] border-[#1B1B32] text-center typo-sm-sb text-[#1B1B32] transition-colors hover:bg-black/5 active:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50';
+
+export const inviteSheetPrimaryButtonClass =
+  'flex h-[50px] w-0 flex-[3] cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
+
+export const inviteSheetFullButtonClass =
+  'flex h-[50px] w-full cursor-pointer items-center justify-center rounded-[43px] bg-[#1B1B32] text-center typo-sm-sb text-white transition-opacity hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
+
+interface InviteSheetLayoutProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** 초대자 닉네임. 모르면 비워 둔다 — 지어내지 않는다. */
+  inviter?: string;
+  /** 밴드 이름. 모르면 비워 둔다. */
+  band?: string;
+  bandDescription?: string;
+  memberCount?: number;
+  /** 초대장 조회가 실패했을 때 그 사실을 알린다. 추정값으로 메우지 않기 위한 자리. */
+  errorMessage?: string;
+  /**
+   * 어떤 경로로 들어온 초대인지. 밴드명 유무로 판단하면 안 된다 — 알림으로 연 초대장도
+   * 조회 전·조회 실패에는 밴드명이 비어, 링크로 들어온 것처럼 안내하게 된다.
+   */
+  entry: 'notification' | 'link';
+  /** 하단 액션 영역. 알림 초대장은 거절/수락, 링크 랜딩은 로그인 유도 등 진입 경로마다 다르다. */
+  footer: ReactNode;
+}
+
+/**
+ * 밴드 초대장 시트의 프레젠테이션 레이아웃.
+ * 알림 초대장(ReceivedInviteSheet)과 초대 링크 랜딩(/invite/$code)이 같은 화면을
+ * 공유하고 하단 버튼만 다르므로, 마크업을 여기 한 곳에 둔다.
+ */
+export function InviteSheetLayout({
+  isOpen,
+  onOpenChange,
+  inviter,
+  band,
+  bandDescription,
+  memberCount,
+  errorMessage,
+  entry,
+  footer,
+}: InviteSheetLayoutProps) {
+  return (
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[80dvh] w-full max-w-[648px] flex-col rounded-t-[24px] border-t border-[#DFDFE1] bg-gradient-to-b from-[#F9F8F0] to-[#E6E9F0] p-6 pb-[calc(1.5rem_+_env(safe-area-inset-bottom))] shadow-[0_-3px_9px_2px_rgba(0,0,0,0.1)] outline-none"
+        showCloseButton={false}
+      >
+        <AppSheetClose
+          floating
+          className="text-gradient-top hover:bg-black/5 hover:text-gradient-top active:bg-black/10"
+        />
+
+        {/* 헤더 및 타이틀 — 아는 것만 말한다. '새로운 밴드'·'-' 같은 그럴듯한 값을 채우면
+            사용자는 그걸 실제 정보로 읽는다. 모르면 그 줄을 쓰지 않는다. */}
+        <SheetHeader className="mt-4 flex flex-col items-center gap-2 p-0 text-center">
+          <SheetTitle className="typo-lg-sb text-gradient-top">
+            밴드 초대장
+          </SheetTitle>
+          <div className="flex flex-col typo-sm-sb text-gradient-top">
+            {band && inviter ? (
+              <>
+                <span>{inviter}님이 회원님을</span>
+                <span>{band}에 초대했습니다</span>
+              </>
+            ) : band ? (
+              <span>{band}에 초대받았어요</span>
+            ) : inviter ? (
+              <span>{inviter}님이 회원님을 초대했습니다</span>
+            ) : entry === 'link' ? (
+              <span>초대 링크로 들어왔어요</span>
+            ) : (
+              <span>초대장을 확인하고 있어요</span>
+            )}
+          </div>
+        </SheetHeader>
+
+        {/* 밴드 요약 정보 카드 */}
+        <div className="mt-8 flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto">
+          {errorMessage ? (
+            <span
+              role="alert"
+              className="text-center typo-sm-r text-destructive"
+            >
+              {errorMessage}
+            </span>
+          ) : band ? (
+            <span className="text-center typo-sm-r text-grey-300">
+              {band}
+              {getKoreanParticle(band, '은/는')} 이런 밴드에요
+            </span>
+          ) : entry === 'link' ? (
+            <span className="text-center typo-sm-r text-grey-300">
+              수락하면 어떤 밴드인지 확인할 수 있어요
+            </span>
+          ) : null}
+
+          {(bandDescription || memberCount != null) && (
+            <div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6 shadow-sm">
+              {bandDescription && (
+                <p className="text-center typo-sm-sb text-[#555568]">
+                  "{bandDescription}"
+                </p>
+              )}
+
+              {memberCount != null && (
+                <div
+                  className={cn(
+                    'flex w-full items-center justify-center px-6',
+                    bandDescription && 'border-t border-[#DFDFE1] pt-4',
+                  )}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Users className="h-4 w-4 text-grey-300" />
+                    <span className="typo-lg-sb text-gradient-top">
+                      {memberCount}
+                    </span>
+                    <span className="typo-sm-r text-grey-300">멤버</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 하단 액션 버튼 그룹 또는 처리 완료 상태 표시 */}
+        <div className="mt-6 flex w-full shrink-0 justify-center gap-3">
+          {footer}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

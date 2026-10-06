@@ -7,8 +7,13 @@ import { ApiExceptionFilter, extractExceptionMessage } from './api-exception.fil
 const createHost = () => {
   const json = jest.fn();
   const status = jest.fn().mockReturnValue({ json });
-  const host = { switchToHttp: () => ({ getResponse: () => ({ status }) }) } as unknown as ArgumentsHost;
-  return { host, status, json };
+  const request: { method: string; baseUrl: string; route?: { path: string } } = {
+    method: 'POST',
+    baseUrl: '',
+    route: { path: '/bandspaces/:bandspaceId/schedules' },
+  };
+  const host = { switchToHttp: () => ({ getRequest: () => request, getResponse: () => ({ status }) }) } as unknown as ArgumentsHost;
+  return { host, status, json, request };
 };
 
 describe('extractExceptionMessage', () => {
@@ -30,6 +35,38 @@ describe('ApiExceptionFilter', () => {
 
   beforeEach(() => {
     jest.spyOn(filter['logger'], 'error').mockImplementation(() => undefined);
+    jest.spyOn(filter['logger'], 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('400 검증 실패는 요청 본문 없이 메서드와 라우트 및 메시지만 warn으로 남긴다', () => {
+    const { host } = createHost();
+
+    filter.catch(new BadRequestException('genreId는 유효한 uuid이어야 합니다.'), host);
+
+    expect(filter['logger'].warn).toHaveBeenCalledWith({
+      message: 'genreId는 유효한 uuid이어야 합니다.',
+      method: 'POST',
+      path: '/bandspaces/:bandspaceId/schedules',
+      statusCode: 400,
+    });
+  });
+
+  it('일치하지 않는 경로의 404 메시지에서는 원본 URL을 로그에 남기지 않는다', () => {
+    const { host, request } = createHost();
+    delete request.route;
+
+    filter.catch(new NotFoundException('Cannot GET /private-token'), host);
+
+    expect(filter['logger'].warn).toHaveBeenCalledWith({
+      message: 'NOT_FOUND',
+      method: 'POST',
+      path: '<unmatched>',
+      statusCode: 404,
+    });
   });
 
   it('HttpException은 상태 코드와 메시지를 fail envelope으로 응답한다', () => {

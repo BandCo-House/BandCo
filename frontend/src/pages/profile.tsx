@@ -17,7 +17,6 @@ import { GenreEditSection } from '@/features/profile-update/ui/GenreEditSection'
 import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
-import { compressProfileImage } from '@/features/profile-update/model/image-compression';
 import { uploadFile } from '@/shared/api/upload';
 import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
 import {
@@ -25,9 +24,12 @@ import {
   AppDialogContent,
   AppDialogFooter,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
 
 // UI Imports
 
@@ -69,6 +71,11 @@ export const Route = createFileRoute('/profile')({
     }
   },
   component: ProfileRoutePage,
+  // 프로필 카드가 화면 끝까지 닿고 높이도 직접 잡는 화면이라 레이아웃 기본 패딩을 받지 않는다.
+  // (이전에는 같은 효과를 본문에서 -mx-5 -my-8 음수 마진으로 되돌렸다.)
+  staticData: {
+    bleed: 'all',
+  },
 });
 
 function ProfileRoutePage() {
@@ -107,6 +114,7 @@ function ProfileRoutePage() {
   const [isMusicSearchOpen, setIsMusicSearchOpen] = useState(false);
   const [isLeaveEditDialogOpen, setIsLeaveEditDialogOpen] = useState(false);
   const avatarPreviewUrlRef = useRef<string | null>(null);
+  const { selectFile, cropDialogProps } = useImageCrop();
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -255,8 +263,10 @@ function ProfileRoutePage() {
 
   const profileName = profile.profile?.nickname || '익명의 아티스트';
 
+  // 네비와 상단 safe area를 뺀 화면 높이만 최소로 잡는다 — 100dvh로 잡으면
+  // 레이아웃이 더하는 네비 mb·safe area만큼 유령 스크롤이 생긴다
   return (
-    <div className="relative -mx-5 -my-8 min-h-screen">
+    <div className="relative min-h-[calc(100dvh-var(--bottom-nav-clearance,0px)-env(safe-area-inset-top))]">
       {/* Background Neon Blob Decoration */}
 
       <div className="relative z-10">
@@ -274,22 +284,7 @@ function ProfileRoutePage() {
           onInvite={() => setIsInviting(true)}
           onToggleEdit={requestExitEditMode}
           onSave={handleSave}
-          onAvatarFileSelect={(file) => {
-            void compressProfileImage(file)
-              .then(({ file: compressedFile, previewUrl }) => {
-                revokeAvatarPreviewUrl();
-                avatarPreviewUrlRef.current = previewUrl;
-                setAvatarFile(compressedFile);
-                setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
-              })
-              .catch((error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : '이미지 처리 도중 에러가 발생했습니다.',
-                );
-              });
-          }}
+          onAvatarFileSelect={selectFile}
           onOpenMusicSearch={() => setIsMusicSearchOpen(true)}
         />
         <div className="bg-gradient-top pb-6">
@@ -337,14 +332,14 @@ function ProfileRoutePage() {
           open={isLeaveEditDialogOpen}
           onOpenChange={setIsLeaveEditDialogOpen}
         >
-          <AppDialogContent className="max-w-[calc(100%-2rem)] p-8 sm:max-w-2xl">
+          <AppDialogContent>
             <AppDialogBody className="items-center gap-6 text-center">
               <DialogTitle className="typo-xl-sb text-grey-50">
                 편집 모드를 나가시겠습니까?
               </DialogTitle>
-              <p className="typo-lg-sb text-grey-100">
+              <DialogDescription className="typo-lg-sb text-grey-100">
                 변경사항이 저장되지 않습니다
-              </p>
+              </DialogDescription>
             </AppDialogBody>
             <AppDialogFooter className="mt-8 flex-row gap-4">
               <Button
@@ -369,6 +364,19 @@ function ProfileRoutePage() {
             </AppDialogFooter>
           </AppDialogContent>
         </Dialog>
+
+        <ImageCropDialog
+          {...cropDialogProps}
+          aspect={CROP_ASPECT.profileBanner}
+          title="프로필 배경 자르기"
+          onCropped={(file) => {
+            revokeAvatarPreviewUrl();
+            const previewUrl = URL.createObjectURL(file);
+            avatarPreviewUrlRef.current = previewUrl;
+            setAvatarFile(file);
+            setEditForm((prev) => ({ ...prev, avatarUrl: previewUrl }));
+          }}
+        />
       </div>
     </div>
   );

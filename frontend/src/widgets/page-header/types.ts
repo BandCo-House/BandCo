@@ -31,6 +31,7 @@ export type HeaderResolveContext = {
  */
 export type HeaderResolveResult = {
   title?: string | (() => ReactNode);
+  /** 기본 18px(typo-lg-sb). 'lg'는 홈·내 밴드 같은 최상위 화면 전용 24px. */
   titleSize?: 'md' | 'lg';
   subtitle?: string;
   brandLabel?: string;
@@ -75,6 +76,21 @@ export type HeaderStaticConfig = {
  */
 export type RouteStaticData = {
   header?: HeaderStaticConfig;
-  /** 본문 wrapper의 기본 패딩(px-5 py-8)을 제거하고 페이지가 직접 패딩을 관리한다. */
-  fullBleed?: boolean;
+  /**
+   * 본문 wrapper의 기본 패딩(px-5 py-8) 중 무엇을 흘릴지.
+   * - 없음: px-5 py-8 둘 다 적용 (대부분의 화면)
+   * - 'x': 가로만 흘린다. 캘린더·투표 그리드처럼 화면 끝까지 닿아야 하는 화면용.
+   *        세로 여백은 레이아웃이 계속 책임지므로 헤더 아래 시작 위치가 자동으로 통일된다.
+   * - 'all': 둘 다 끈다. 높이를 100dvh에 딱 맞추는 화면(로그인)이나 자체 상단 바를
+   *        붙이는 화면(검색)처럼 세로 여백까지 직접 잡아야 할 때만.
+   *
+   * 'x'로 충분한 화면에 'all'을 쓰면 페이지마다 pt 값이 갈려 시작 위치가 어긋난다.
+   */
+  bleed?: 'x' | 'all';
+  /**
+   * 하단 네비게이션을 숨긴다. 화면 하단을 고정 CTA가 차지해 네비와 겹치거나,
+   * 그 화면의 작업을 끝내기 전에는 다른 탭으로 새지 않게 하고 싶을 때 쓴다.
+   * --bottom-nav-clearance도 0이 되므로 고정 CTA가 자동으로 바닥까지 내려간다.
+   */
+  hideBottomNav?: boolean;
 };

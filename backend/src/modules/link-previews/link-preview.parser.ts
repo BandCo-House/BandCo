@@ -109,5 +109,8 @@ export function parseLinkPreviewHtml(html: string, baseUrl: URL): LinkPreviewMet
     title: findOpenGraphContent(head, 'og:title') ?? findTitle(head),
     siteName: findOpenGraphContent(head, 'og:site_name'),
     faviconUrl: findFaviconUrl(head, baseUrl),
+    // 일반 페이지는 링크 첨부 표시에 제목·파비콘만 쓰므로 대표 이미지·작성자는 읽지 않는다.
+    imageUrl: null,
+    authorName: null,
   };
 }

@@ -79,6 +79,8 @@ export interface CreateSpaceRequest {
   status?: SpaceStatus;
   startDate?: string;
   endDate?: string;
+  /** 공간 참여 멤버의 bandMemberId 목록. 생성자는 백엔드가 LEADER로 넣는다. */
+  bandMemberIds?: string[];
 }
 
 export const createSpace = async (

@@ -8,7 +8,9 @@ import { API_URL } from '../config';
 export const BAND_MEMBERS: BandMemberListItem[] = [
   {
     bandMemberId: 'member-1',
-    userId: 'user-1',
+    // 첫 멤버는 mock 로그인 사용자(auth mock 토큰의 user-001)와 같은 사람으로 둔다.
+    // 투표 삭제 버튼처럼 "내 멤버십"을 userId로 찾는 화면이 dev에서도 동작하게 한다.
+    userId: 'user-001',
     nickname: '김민수',
     avatarUrl: null,
     role: 'BM',

@@ -19,7 +19,9 @@ interface WheelDatePickerProps {
   maxYear?: number;
   /**
    * 이 피커가 무엇을 고르는지 알린다(예: 시작·종료).
-   * 피커를 둘 이상 세로로 쌓으면 라벨 없이는 시각·스크린리더 양쪽 다 구분할 수 없다.
+   * 화면에는 그리지 않는다 — 휠 왼쪽에 7칸짜리 작은 글씨로 두니 마스크에 묻혀
+   * 읽히지도 않으면서 휠 폭만 줄였다. 대신 group의 이름으로 남겨 스크린리더는
+   * 여전히 두 피커를 구분할 수 있게 한다.
    */
   label?: string;
   className?: string;
@@ -54,18 +56,14 @@ export const WheelDatePicker = ({
       aria-label={label}
       className={cn('flex items-center gap-2', className)}
     >
-      {label && (
-        <span className="w-7 shrink-0 typo-xs-sb text-grey-200">{label}</span>
-      )}
       <div
         className="flex flex-1 items-center justify-center"
         // 가운데 선택 줄을 은은하게 강조하는 마스크(위아래 페이드).
-        // 라벨은 이 밖에 둔다 — 안에 있으면 마스크에 같이 흐려진다.
         style={{
           maskImage:
-            'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
+            'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
           WebkitMaskImage:
-            'linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)',
+            'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
         }}
       >
         <WheelColumn

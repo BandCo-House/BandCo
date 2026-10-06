@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
+import { ParticipantSection } from '@/features/schedule-create/ui/components/ParticipantSection';
 import {
   AppDialogBody,
   AppDialogClose,
+  AppDialogHeader,
   AppDialogContent,
   Dialog,
+  DialogDescription,
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
@@ -13,6 +16,7 @@ import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
 import { Switch } from '@/shared/ui/switch';
 import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
+import { WheelFieldCard } from '@/shared/ui/wheel-field-card';
 import {
   toDateString,
   toWheelDate,
@@ -29,12 +33,18 @@ interface SpaceCreateModalProps {
 // 뱃지는 spaceType(PRACTICE)로 상시 처리하므로 이 날짜 자체는 표시에 쓰이지 않는다.
 const ONGOING_END_DATE = '9999-12-31';
 
+// 문구를 흐름에 두고 id로 휠 카드와 잇는다. absolute로 띄우면 레이아웃은 안 밀지만
+// 스크롤 컨테이너의 overflow에는 그대로 잡혀, 정작 문구는 보이지 않은 채
+// 모달에만 스크롤이 생긴다(측정: scrollHeight 508 → 532, clientHeight 508).
+const SPACE_PERIOD_ERROR_ID = 'space-period-error';
+
 const compareDate = (a: WheelDate, b: WheelDate) =>
   a.year - b.year || a.month - b.month || a.day - b.day;
 
 /**
- * 합주 공간 만들기 모달. 이름/설명 + 합주 기간(종료 날짜 토글로 상시/기간제).
+ * 합주 공간 만들기 모달. 이름/설명 + 합주 기간(종료 날짜 토글로 상시/기간제) + 참여자.
  * 종료 있음 → PERFORMANCE(D-day), 종료 없음(상시) → PRACTICE. status는 ACTIVE 고정.
+ * 참여자는 일정과 같은 방식(직접 추가·팀 추가)으로 고른다.
  */
 export const SpaceCreateModal = ({
   open,
@@ -52,6 +62,7 @@ export const SpaceCreateModal = ({
   const [endDate, setEndDate] = useState<WheelDate>(() =>
     toWheelDate(new Date()),
   );
+  const [bandMemberIds, setBandMemberIds] = useState<string[]>([]);
 
   // 열릴 때 폼을 초기화한다(effect 대신 렌더 중 파생).
   const [prevOpen, setPrevOpen] = useState(open);
@@ -64,11 +75,16 @@ export const SpaceCreateModal = ({
       setHasEnd(true);
       setStartDate(today);
       setEndDate(today);
+      setBandMemberIds([]);
     }
   }
 
   const endBeforeStart = hasEnd && compareDate(endDate, startDate) < 0;
-  const canSubmit = name.trim().length > 0 && !endBeforeStart && !isPending;
+  const canSubmit =
+    name.trim().length > 0 &&
+    bandMemberIds.length > 0 &&
+    !endBeforeStart &&
+    !isPending;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -81,6 +97,7 @@ export const SpaceCreateModal = ({
         status: 'ACTIVE',
         startDate: toDateString(startDate),
         endDate: hasEnd ? toDateString(endDate) : ONGOING_END_DATE,
+        bandMemberIds,
       },
       {
         onSuccess: () => {
@@ -98,12 +115,14 @@ export const SpaceCreateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="flex max-h-[85dvh] flex-col gap-10 p-5 text-grey-50">
-        <AppDialogClose
-          className="top-5 right-5"
-          aria-label="합주 공간 만들기 닫기"
-        />
-        <DialogTitle className="pr-12">합주 공간 만들기</DialogTitle>
+      <AppDialogContent size="full" className="gap-10 text-grey-50">
+        <AppDialogHeader className="mb-0">
+          <DialogTitle>합주 공간 만들기</DialogTitle>
+          <AppDialogClose aria-label="합주 공간 만들기 닫기" />
+        </AppDialogHeader>
+        <DialogDescription className="sr-only">
+          이름과 기간을 입력해 새 합주 공간을 만듭니다.
+        </DialogDescription>
 
         <AppDialogBody className="gap-9 overflow-y-auto">
           <Field
@@ -134,7 +153,7 @@ export const SpaceCreateModal = ({
             />
           </Field>
 
-          <div className="relative flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <FieldLabel required size="lg">
                 합주 기간
@@ -149,8 +168,22 @@ export const SpaceCreateModal = ({
               </span>
             </div>
 
+            <p className="typo-sm-r text-grey-200">
+              {hasEnd
+                ? '위가 시작, 아래가 종료 날짜예요'
+                : '시작 날짜를 골라주세요'}
+            </p>
+
             {/* 토글 여부와 무관하게 높이를 232로 고정하고, 내용을 세로 중앙에 둬 위아래 여백을 준다. */}
-            <div className="flex h-[232px] flex-col justify-center gap-6 rounded-md field-border border-surface-1 bg-grey-600/20 px-2.5 backdrop-blur-md">
+            <WheelFieldCard
+              className="h-[232px] justify-center px-2.5 py-0"
+              role="group"
+              aria-label="합주 기간"
+              aria-invalid={endBeforeStart || undefined}
+              aria-describedby={
+                endBeforeStart ? SPACE_PERIOD_ERROR_ID : undefined
+              }
+            >
               <WheelDatePicker
                 label="시작"
                 value={startDate}
@@ -167,14 +200,22 @@ export const SpaceCreateModal = ({
                   정해진 기간이 없는 합주 공간
                 </p>
               )}
-            </div>
-            {/* 주변에 다른 요소가 없어 absolute로 띄워 레이아웃을 밀지 않는다. */}
+            </WheelFieldCard>
             {endBeforeStart && (
-              <p className="absolute top-full mt-1 typo-sm-r text-destructive">
+              <p
+                id={SPACE_PERIOD_ERROR_ID}
+                className="typo-sm-r text-destructive"
+              >
                 종료 날짜는 시작 날짜 이후여야 해요.
               </p>
             )}
           </div>
+
+          <ParticipantSection
+            bandId={bandId}
+            value={bandMemberIds}
+            onChange={setBandMemberIds}
+          />
         </AppDialogBody>
 
         {/* 버튼은 스크롤 본문 밖(푸터)에 둔다: 본문 overflow가 shining 글로우를 자르지 않도록. */}

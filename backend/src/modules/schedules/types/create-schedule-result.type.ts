@@ -4,6 +4,8 @@ export interface ScheduleSongItem {
   songId: string;
   title: string;
   artistName: string;
+  /** 곡 키(SongKey enum 값). 미입력이면 null. */
+  key: string | null;
 }
 
 export interface CreateScheduleResult {

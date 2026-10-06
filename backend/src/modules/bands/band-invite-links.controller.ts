@@ -1,11 +1,16 @@
-import { Controller, Delete, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
 import type { AuthUser } from '../users/repositoreis/user.repository';
 
-import type { CreateBandInviteLinkResult, JoinBandByInviteLinkResult, RevokeBandInviteLinkResult } from './types/band-invite-link.type';
+import type {
+  CreateBandInviteLinkResult,
+  GetBandInviteLinkResult,
+  JoinBandByInviteLinkResult,
+  RevokeBandInviteLinkResult,
+} from './types/band-invite-link.type';
 import { BandInviteLinksService } from './band-invite-links.service';
 
 interface AuthenticatedRequest {
@@ -18,6 +23,22 @@ interface AuthenticatedRequest {
 @Controller()
 export class BandInviteLinksController {
   constructor(private readonly bandInviteLinksService: BandInviteLinksService) {}
+
+  @Get('bands/:bandId/invite-link')
+  @ApiOperation({ summary: '밴드 초대 링크 존재 여부 조회' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '밴드 초대 링크 조회 성공 (원본 코드는 포함하지 않음)' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '권한 없음' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
+  async getBandInviteLink(
+    @Req() request: AuthenticatedRequest,
+    @Param('bandId') bandId: string,
+  ): Promise<ApiSuccessResponse<GetBandInviteLinkResult>> {
+    const inviteLink = await this.bandInviteLinksService.getBandInviteLink(request.user.id, bandId);
+
+    return createSuccessResponse('밴드 초대 링크를 조회했습니다.', inviteLink);
+  }
 
   @Post('bands/:bandId/invite-link')
   @ApiOperation({ summary: '밴드 초대 링크 발급·재발급' })

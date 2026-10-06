@@ -1,4 +1,4 @@
-import type { TeamMemberUserInfo } from './get-team-members-result.type';
+import type { TeamMemberSkillType, TeamMemberUserInfo } from './get-team-members-result.type';
 
 export interface AddTeamMemberResult {
   teamMemberId: string;
@@ -7,4 +7,5 @@ export interface AddTeamMemberResult {
   user: TeamMemberUserInfo;
   teamRole: string;
   joinedAt: string;
+  skillType: TeamMemberSkillType | null;
 }

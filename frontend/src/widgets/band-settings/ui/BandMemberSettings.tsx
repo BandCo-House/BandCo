@@ -130,7 +130,7 @@ export const BandMemberSettings: React.FC<BandMemberSettingsProps> = ({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 px-5 py-4 text-foreground">
+    <div className="flex w-full flex-col gap-6 text-foreground">
       {/* 1. 리더 멤버 섹션 */}
       <BandLeaderSection
         bandId={bandId}

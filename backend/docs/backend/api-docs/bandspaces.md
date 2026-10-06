@@ -80,6 +80,9 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
 }
 ```
 
+- `memberCount`: 공간 멤버(`space_members`) 수.
+- `songCount`: 공간 안 일정에 연결된 곡 수. 같은 곡이 여러 일정에 걸려도 한 번만 센다. 일정이 없으면 0.
+
 ### Error Responses
 
 | 상태 코드 | 사유 |
@@ -130,6 +133,8 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
   }
 }
 ```
+
+- `songCount`: 목록 조회(#28)와 같은 기준으로 공간 일정에 연결된 곡 수.
 
 ### Error Responses
 
@@ -261,11 +266,13 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
   "spaceType": "STUDIO",
   "status": "ACTIVE",
   "startDate": "2026-07-01",
-  "endDate": "2026-08-20"
+  "endDate": "2026-08-20",
+  "bandMemberIds": ["band-member-uuid"]
 }
 ```
 
 - `description`은 선택 항목이며 생략할 수 있다.
+- `bandMemberIds`는 선택 항목이다. 공간 참여 멤버의 밴드 멤버 ID 목록이며, 생성자는 목록과 관계없이 LEADER로 들어가고 나머지는 MEMBER로 들어간다.
 
 ### Response
 
@@ -293,6 +300,7 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
 
 | 상태 코드 | 사유 |
 |-----------|------|
+| 400 | `bandMemberIds`에 다른 밴드의 멤버가 있음 |
 | 401 | 인증되지 않은 요청 |
 | 403 | 해당 밴드의 멤버가 아님 |
 | 404 | 밴드를 찾을 수 없음 |
@@ -311,9 +319,12 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
   "spaceType": "STUDIO",
   "status": "ACTIVE",
   "startDate": "2026-07-01",
-  "endDate": "2026-08-20"
+  "endDate": "2026-08-20",
+  "bandMemberIds": ["band-member-uuid"]
 }
 ```
+
+- `bandMemberIds`를 보내면 LEADER를 제외한 공간 멤버를 이 목록으로 전체 교체한다. LEADER는 목록에 없어도 유지된다. 보내지 않으면 멤버를 변경하지 않는다.
 
 ### Response
 
@@ -340,6 +351,7 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
 
 | 상태 코드 | 사유 |
 |-----------|------|
+| 400 | `bandMemberIds`에 다른 밴드의 멤버가 있음 |
 | 401 | 인증되지 않은 요청 |
 | 403 | 권한 없음 |
 | 404 | 합주 공간을 찾을 수 없음 |

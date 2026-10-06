@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -83,10 +83,7 @@ describe('SongCreateModal', () => {
     expect(screen.getByRole('button', { name: '추가' })).toBeEnabled();
   });
 
-  it('검색 결과가 없으면 직접 입력하기로 검색어를 곡 제목에 옮긴다', async () => {
-    const user = userEvent.setup();
-    renderModal();
-
+  const enterManually = async (user: ReturnType<typeof userEvent.setup>) => {
     await searchFor(user, '없는곡');
     const manualEntry = await screen.findByRole(
       'button',
@@ -94,7 +91,33 @@ describe('SongCreateModal', () => {
       { timeout: 3000 },
     );
     await user.click(manualEntry);
+  };
 
-    expect(screen.getByLabelText('곡 제목')).toHaveValue('없는곡');
+  it('직접 입력하기로 넘어오면 검색어를 옮기지 않고 유튜브 링크 입력을 보여준다', async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    await enterManually(user);
+
+    // 검색어에는 가수 이름이 섞여 있을 수 있어 곡 제목으로 넘기지 않는다.
+    expect(screen.getByLabelText('곡 제목')).toHaveValue('');
+    expect(screen.getByLabelText('유튜브 링크로 채우기')).toBeInTheDocument();
+  });
+
+  it('유튜브 링크를 불러오면 곡 제목·아티스트 초안이 채워진다', async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    await enterManually(user);
+    await user.type(
+      screen.getByLabelText('유튜브 링크로 채우기'),
+      'https://youtu.be/LjhCEhWiKXk',
+    );
+    await user.click(screen.getByRole('button', { name: '불러오기' }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('곡 제목')).toHaveValue('Count On Me'),
+    );
+    expect(screen.getByLabelText('아티스트')).toHaveValue('Bruno Mars');
   });
 });
