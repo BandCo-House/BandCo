@@ -78,7 +78,7 @@ export const SQL_CATALOG: Record<string, SqlCatalogTable> = {
       name: '기술 이름',
     },
   },
-  favorite_genres: {
+  favor_genres: {
     alias: 'fg',
     description: '사용자 선호 장르',
     columns: {
@@ -236,8 +236,8 @@ export const SQL_CATALOG_JOINS: SqlCatalogJoin[] = [
   { left: 'users.id', right: 'user_profiles.user_id' },
   { left: 'users.id', right: 'user_skills.user_id' },
   { left: 'user_skills.skill_type_id', right: 'skill_types.id' },
-  { left: 'users.id', right: 'favorite_genres.user_id' },
-  { left: 'favorite_genres.genre_id', right: 'genres.id' },
+  { left: 'users.id', right: 'favor_genres.user_id' },
+  { left: 'favor_genres.genre_id', right: 'genres.id' },
   { left: 'band_spaces.id', right: 'schedules.band_space_id' },
   { left: 'places.id', right: 'schedules.place_id' },
   { left: 'schedules.id', right: 'schedule_participants.schedule_id' },
@@ -290,7 +290,7 @@ export const SQL_REQUIRED_RELATIONS: Record<string, string[]> = {
   users: ['band_members'],
   user_profiles: ['users'],
   user_skills: ['users'],
-  favorite_genres: ['users'],
+  favor_genres: ['users'],
   schedules: ['band_spaces'],
   schedule_participants: ['schedules', 'band_members'],
   schedule_song: ['schedules', 'songs'],

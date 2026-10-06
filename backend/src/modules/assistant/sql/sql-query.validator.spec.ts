@@ -12,6 +12,19 @@ describe('SqlQueryValidator', () => {
     unsupportedReason: null,
   });
 
+  it('실제 선호 장르 테이블을 사용하는 밴드 범위 조회를 통과시킨다', async () => {
+    const sql = `SELECT COUNT(fg.id)::int AS member_count FROM bands b
+      JOIN band_members bm ON bm.band_id = b.id JOIN users u ON u.id = bm.user_id
+      JOIN favor_genres fg ON fg.user_id = u.id JOIN genres g ON g.id = fg.genre_id
+      WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL AND g.name = $2`;
+    await expect(validator.validate(createResponse(sql, [{ position: 2, type: 'TEXT', value: '록' }]))).resolves.toMatchObject({
+      parameters: ['록'],
+    });
+    await expect(
+      validator.validate(createResponse(sql.replaceAll('favor_genres', 'favorite_genres'), [{ position: 2, type: 'TEXT', value: '록' }])),
+    ).rejects.toMatchObject({ code: 'TABLE_NOT_ALLOWED' });
+  });
+
   it('밴드 범위와 허용 JOIN을 사용한 COUNT SELECT를 통과시킨다', async () => {
     const result = await validator.validate(
       createResponse(
