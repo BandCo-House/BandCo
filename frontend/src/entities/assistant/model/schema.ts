@@ -40,6 +40,43 @@ const memberParticipationRowSchema = z.object({
 
 // entity가 rows의 형태를 결정하므로 판별 유니온으로 파싱한다.
 const assistantQueryResultSchema = z.discriminatedUnion('entity', [
+  z
+    .object({
+      entity: z.literal('table'),
+      columns: z.array(
+        z.object({
+          key: z.string(),
+          label: z.string(),
+          format: z.enum(['plain', 'datetime']),
+        }),
+      ),
+      rows: z
+        .array(
+          z.record(
+            z.string(),
+            z.union([z.string(), z.number(), z.boolean(), z.null()]),
+          ),
+        )
+        .max(50),
+      hasMore: z.boolean(),
+      maxRows: z.literal(50),
+      resultMode: z.enum(['LIST', 'TOP_N', 'AGGREGATE', 'LEGACY']),
+      conditions: z.array(z.string()),
+    })
+    .refine(
+      (result) => {
+        const keys = result.columns.map((column) => column.key);
+        return (
+          new Set(keys).size === keys.length &&
+          result.rows.every(
+            (row) =>
+              Object.keys(row).length === keys.length &&
+              keys.every((key) => Object.hasOwn(row, key)),
+          )
+        );
+      },
+      { message: '결과 컬럼과 행이 일치하지 않습니다.' },
+    ),
   z.object({ entity: z.literal('schedule'), rows: z.array(scheduleRowSchema) }),
   z.object({
     entity: z.literal('attendance'),

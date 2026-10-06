@@ -143,4 +143,102 @@ describe('AssistantPanel', () => {
 
     expect(screen.getByLabelText('밴드 데이터에 대한 질문')).toBeDisabled();
   });
+
+  it('요약에 생략된 행도 표에서 보여주고 조건과 추가 결과를 안내한다', async () => {
+    setup({
+      data: {
+        answerable: true,
+        summary: '명단 요약 5명',
+        meta: createMeta(true),
+        result: {
+          entity: 'table',
+          columns: [{ key: 'nickname', label: '닉네임', format: 'plain' }],
+          rows: Array.from({ length: 50 }, (_, index) => ({
+            nickname: `멤버${index + 1}`,
+          })),
+          hasMore: true,
+          maxRows: 50,
+          resultMode: 'LIST',
+          conditions: ['참석 상태: 미응답'],
+        },
+      },
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: '다음 합주 일정이 언제야?' }),
+    );
+    expect(
+      screen.getByRole('table', { name: '조회 결과' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('멤버50')).toBeInTheDocument();
+    expect(screen.getByText('50건 표시')).toBeInTheDocument();
+    expect(screen.getByText('조회에 사용한 조건')).toBeInTheDocument();
+    expect(screen.getByText(/추가 결과가 있어 처음 50건/)).toBeInTheDocument();
+  });
+
+  it('빈 표 결과와 큰 숫자 문자열을 구분해 표시한다', async () => {
+    const view = setup({
+      data: {
+        answerable: true,
+        summary: '조회 결과',
+        meta: createMeta(true),
+        result: {
+          entity: 'table',
+          columns: [{ key: 'value', label: '값', format: 'plain' }],
+          rows: [],
+          hasMore: false,
+          maxRows: 50,
+          resultMode: 'LIST',
+          conditions: [],
+        },
+      },
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: '다음 합주 일정이 언제야?' }),
+    );
+    expect(screen.getByText('조건에 맞는 결과가 없어요.')).toBeInTheDocument();
+    view.unmount();
+    setup({
+      data: {
+        answerable: true,
+        summary: '집계',
+        meta: createMeta(true),
+        result: {
+          entity: 'table',
+          columns: [{ key: 'value', label: '값', format: 'plain' }],
+          rows: [{ value: '9007199254740993.123456789' }],
+          hasMore: false,
+          maxRows: 50,
+          resultMode: 'AGGREGATE',
+          conditions: [],
+        },
+      },
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: '다음 합주 일정이 언제야?' }),
+    );
+    expect(screen.getByText('9007199254740993.123456789')).toBeInTheDocument();
+    expect(screen.queryByText(/추가 결과가 있어/)).not.toBeInTheDocument();
+  });
+  it('서버가 날짜로 표시한 셀은 한국 시간으로 보여준다', async () => {
+    setup({
+      data: {
+        answerable: true,
+        summary: '일정',
+        meta: createMeta(true),
+        result: {
+          entity: 'table',
+          columns: [{ key: 'when', label: '시작', format: 'datetime' }],
+          rows: [{ when: '2026-09-01T00:00:00.000Z' }],
+          hasMore: false,
+          maxRows: 50,
+          resultMode: 'TOP_N',
+          conditions: [],
+        },
+      },
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: '다음 합주 일정이 언제야?' }),
+    );
+    expect(screen.getByRole('cell', { name: /09:00/ })).toBeInTheDocument();
+  });
 });
