@@ -46,3 +46,18 @@ export class LlmInvalidOutputError extends Error {
     this.name = 'LlmInvalidOutputError';
   }
 }
+
+/**
+ * 출력 토큰 한도에 걸려 응답이 잘린 실패. 장애가 아니라서 같은 provider에 한도를 늘려 다시 부르면 회복될 수 있다.
+ * JSON 파싱 실패로 뭉뚱그리면 "토큰 부족"이 "provider 장애"처럼 보인다.
+ */
+export class LlmOutputTruncatedError extends Error {
+  constructor(
+    readonly providerName: string,
+    readonly maxOutputTokens: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'LlmOutputTruncatedError';
+  }
+}

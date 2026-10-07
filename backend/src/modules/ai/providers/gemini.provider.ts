@@ -1,5 +1,5 @@
 import type { LlmProviderConfig } from '../ai.config';
-import { LlmInvalidOutputError, LlmRateLimitError, LlmRequestError, LlmUnavailableError } from '../llm.errors';
+import { LlmInvalidOutputError, LlmOutputTruncatedError, LlmRateLimitError, LlmRequestError, LlmUnavailableError } from '../llm.errors';
 import type { JsonSchema } from '../types/json-schema.type';
 import type { LlmStructuredRequest } from '../types/llm-request.type';
 import type { LlmStructuredResponse } from '../types/llm-response.type';
@@ -46,7 +46,15 @@ export class GeminiProvider implements LlmProvider {
     }
 
     const body = (await response.json()) as GeminiGenerateContentResponse;
-    const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = body.candidates?.[0];
+    const maxOutputTokens = request.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+
+    // 잘린 JSON은 파싱 실패로 보이므로 파싱 전에 한도 초과를 먼저 구분한다.
+    if (candidate?.finishReason === 'MAX_TOKENS') {
+      throw new LlmOutputTruncatedError(this.name, maxOutputTokens, `Gemini 응답이 출력 토큰 한도(${maxOutputTokens})에서 잘렸습니다.`);
+    }
+
+    const text = candidate?.content?.parts?.[0]?.text;
 
     if (text === undefined || text.trim() === '') {
       throw new LlmInvalidOutputError(this.name, 'Gemini 응답 본문이 비어 있습니다.');

@@ -1,5 +1,5 @@
 import type { LlmProviderConfig } from '../ai.config';
-import { LlmInvalidOutputError, LlmRateLimitError, LlmRequestError, LlmUnavailableError } from '../llm.errors';
+import { LlmInvalidOutputError, LlmOutputTruncatedError, LlmRateLimitError, LlmRequestError, LlmUnavailableError } from '../llm.errors';
 import type { JsonSchema } from '../types/json-schema.type';
 import type { LlmStructuredRequest } from '../types/llm-request.type';
 import type { LlmStructuredResponse } from '../types/llm-response.type';
@@ -10,7 +10,7 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 1024;
 const RESPONSE_SCHEMA_NAME = 'query_plan';
 
 interface ChatCompletionResponse {
-  choices?: { message?: { content?: string } }[];
+  choices?: { message?: { content?: string }; finish_reason?: string }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 }
 
@@ -48,7 +48,15 @@ export class OpenAiCompatibleProvider implements LlmProvider {
     }
 
     const body = (await response.json()) as ChatCompletionResponse;
-    const content = body.choices?.[0]?.message?.content;
+    const choice = body.choices?.[0];
+    const maxOutputTokens = request.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+
+    // 잘린 JSON은 파싱 실패로 보이므로 파싱 전에 한도 초과를 먼저 구분한다.
+    if (choice?.finish_reason === 'length') {
+      throw new LlmOutputTruncatedError(this.name, maxOutputTokens, `${this.name} 응답이 출력 토큰 한도(${maxOutputTokens})에서 잘렸습니다.`);
+    }
+
+    const content = choice?.message?.content;
 
     if (content === undefined || content.trim() === '') {
       throw new LlmInvalidOutputError(this.name, `${this.name} 응답 본문이 비어 있습니다.`);

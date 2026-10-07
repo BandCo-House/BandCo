@@ -4,7 +4,10 @@ import { LLM_PROVIDER_GROUPS, type LlmProvider, type LlmProviderGroup } from './
 import type { LlmStructuredRequest } from './types/llm-request.type';
 import type { LlmStructuredResponse } from './types/llm-response.type';
 import { AI_CONFIG, type AiConfig } from './ai.config';
-import { LlmRateLimitError, LlmUnavailableError } from './llm.errors';
+import { LlmOutputTruncatedError, LlmRateLimitError, LlmUnavailableError } from './llm.errors';
+
+/** 출력이 잘렸을 때 같은 provider로 한 번 더 부를 때의 토큰 상한. 비용이 끝없이 늘지 않게 막는다. */
+const MAX_OUTPUT_TOKENS_ON_TRUNCATION_RETRY = 4_096;
 
 @Injectable()
 export class LlmService {
@@ -89,12 +92,14 @@ export class LlmService {
   /**
    * provider 하나를 재시도 정책에 따라 호출한다.
    * 이 provider로는 더 시도할 의미가 없다고 판단되면 null을 돌려 호출자가 다음 provider로 넘어가게 한다.
+   * 출력 토큰 한도로 응답이 잘리면 장애가 아니므로 같은 provider에 한도를 두 배로 늘려 한 번만 다시 부른다.
    *
    * @param {LlmProvider} provider - 호출할 provider
    * @param {LlmStructuredRequest} request - 생성 요청
+   * @param {boolean} canRetryTruncation - 잘린 응답을 한도를 늘려 다시 부를 수 있는지
    * @returns {Promise<LlmStructuredResponse | null>} 성공 응답, 실패 시 null
    */
-  private async tryProvider(provider: LlmProvider, request: LlmStructuredRequest): Promise<LlmStructuredResponse | null> {
+  private async tryProvider(provider: LlmProvider, request: LlmStructuredRequest, canRetryTruncation = true): Promise<LlmStructuredResponse | null> {
     for (let attempt = 0; attempt <= this.config.maxRetriesPerProvider; attempt += 1) {
       try {
         return await provider.generateStructured(request, this.config.requestTimeoutMs);
@@ -102,6 +107,18 @@ export class LlmService {
         if (error instanceof LlmRateLimitError) {
           this.logger.warn(`[${provider.name}] 호출량 제한으로 다음 호출 대상으로 전환합니다.`);
           return null;
+        }
+
+        if (error instanceof LlmOutputTruncatedError) {
+          const expanded = Math.min(error.maxOutputTokens * 2, MAX_OUTPUT_TOKENS_ON_TRUNCATION_RETRY);
+
+          if (!canRetryTruncation || expanded <= error.maxOutputTokens) {
+            this.logger.warn(`[${provider.name}] 출력 토큰 한도(${error.maxOutputTokens}) 부족으로 응답이 잘려 다음 호출 대상으로 전환합니다.`);
+            return null;
+          }
+
+          this.logger.warn(`[${provider.name}] 출력 토큰 한도(${error.maxOutputTokens})에서 응답이 잘려 ${expanded}로 늘려 1회 다시 시도합니다.`);
+          return this.tryProvider(provider, { ...request, maxOutputTokens: expanded }, false);
         }
 
         if (error instanceof LlmUnavailableError && attempt < this.config.maxRetriesPerProvider) {

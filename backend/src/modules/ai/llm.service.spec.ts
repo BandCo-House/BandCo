@@ -3,7 +3,7 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import type { LlmProvider, LlmProviderGroup } from './providers/llm-provider';
 import type { LlmStructuredResponse } from './types/llm-response.type';
 import type { AiConfig } from './ai.config';
-import { LlmRateLimitError, LlmRequestError, LlmUnavailableError } from './llm.errors';
+import { LlmOutputTruncatedError, LlmRateLimitError, LlmRequestError, LlmUnavailableError } from './llm.errors';
 import { LlmService } from './llm.service';
 
 const request = {
@@ -163,5 +163,49 @@ describe('LlmService', () => {
     const service = new LlmService([], createConfig());
 
     await expect(service.generateStructured(request)).rejects.toThrow(ServiceUnavailableException);
+  });
+
+  it('출력 토큰 한도로 잘리면 같은 provider에 한도를 두 배로 늘려 한 번 다시 부른다', async () => {
+    const provider = createProvider('gemini');
+    provider.generateStructured
+      .mockRejectedValueOnce(new LlmOutputTruncatedError('gemini', 1_500, '잘림'))
+      .mockResolvedValueOnce(createResponse('gemini'));
+    const service = new LlmService([createGroup('gemini', provider)], createConfig());
+
+    const response = await service.generateStructured({ ...request, maxOutputTokens: 1_500 });
+
+    expect(response.providerName).toBe('gemini');
+    expect(provider.generateStructured).toHaveBeenCalledTimes(2);
+    expect(provider.generateStructured.mock.calls[1][0].maxOutputTokens).toBe(3_000);
+  });
+
+  it('늘린 한도에서도 잘리면 더 늘리지 않고 다음 호출 대상으로 넘긴다', async () => {
+    const primary = createProvider('gemini');
+    const secondary = createProvider('openai');
+    primary.generateStructured
+      .mockRejectedValueOnce(new LlmOutputTruncatedError('gemini', 1_500, '잘림'))
+      .mockRejectedValueOnce(new LlmOutputTruncatedError('gemini', 3_000, '잘림'));
+    secondary.generateStructured.mockResolvedValue(createResponse('openai'));
+    const service = new LlmService(
+      [createGroup('gemini', primary), createGroup('openai', secondary)],
+      createConfig({ providerRotationEnabled: true }),
+    );
+
+    const response = await service.generateStructured({ ...request, maxOutputTokens: 1_500 });
+
+    expect(primary.generateStructured).toHaveBeenCalledTimes(2);
+    expect(response.providerName).toBe('openai');
+  });
+
+  it('잘린 응답의 재시도 한도는 상한을 넘지 않는다', async () => {
+    const provider = createProvider('gemini');
+    provider.generateStructured
+      .mockRejectedValueOnce(new LlmOutputTruncatedError('gemini', 3_000, '잘림'))
+      .mockResolvedValueOnce(createResponse('gemini'));
+    const service = new LlmService([createGroup('gemini', provider)], createConfig());
+
+    await service.generateStructured({ ...request, maxOutputTokens: 3_000 });
+
+    expect(provider.generateStructured.mock.calls[1][0].maxOutputTokens).toBe(4_096);
   });
 });
