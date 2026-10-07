@@ -66,7 +66,7 @@ export const AssistantTurn = ({
       aria-busy={pending}
       className="flex animate-in flex-col gap-4 duration-300 fade-in slide-in-from-bottom-2 motion-reduce:animate-none"
     >
-      <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-grey-500/24 px-4 py-2.5 typo-sm-r text-grey-50">
+      <p className="max-w-[85%] self-end rounded-sm rounded-br-xs bg-surface-3 px-4 py-2.5 typo-sm-r text-grey-50">
         {turn.label}
       </p>
 
@@ -80,7 +80,7 @@ export const AssistantTurn = ({
             size="sm"
             variant="outline"
             onClick={onRetry}
-            className="border-grey-300 text-grey-50"
+            className="border-grey-200 text-grey-100"
           >
             다시 시도
           </Button>
@@ -114,7 +114,7 @@ export const AssistantTurn = ({
                   {answer.result.conditions.map((condition) => (
                     <li
                       key={condition}
-                      className="rounded-full bg-grey-500/24 px-2.5 py-1 typo-xs-r text-grey-200"
+                      className="rounded-full bg-surface-3 px-2.5 py-1 typo-xs-r text-grey-200"
                     >
                       {condition}
                     </li>
@@ -204,7 +204,7 @@ const LoadingState = () => {
     <div role="status" className={`flex items-center gap-3 ${REVEAL}`}>
       <span
         aria-hidden="true"
-        className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-grey-500/24 px-4 py-3"
+        className="flex items-center gap-1 rounded-sm rounded-bl-xs bg-surface-3 px-4 py-3"
       >
         {TYPING_DOT_DELAYS.map((delay) => (
           <span

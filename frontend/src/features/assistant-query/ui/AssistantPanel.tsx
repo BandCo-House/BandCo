@@ -10,6 +10,7 @@ import type {
   AssistantPreset,
 } from '@/entities/assistant/model/types';
 import { AssistantScreen } from './AssistantScreen';
+import { SuggestionChip } from './SuggestionChip';
 import { AssistantTurn, type AssistantTurnState } from './AssistantTurn';
 
 const MAX_QUESTION_LENGTH = 200;
@@ -44,26 +45,28 @@ const QuestionForm = ({
 
   return (
     <form onSubmit={onSubmit} className="flex items-center gap-2">
-      <Input
-        id={inputId}
-        value={draft}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        maxLength={MAX_QUESTION_LENGTH}
-        placeholder="예: 지난달 합주 몇 번 했어?"
-        aria-label="밴드 데이터에 대한 질문"
-        enterKeyHint="send"
-        disabled={disabled}
-        className="h-11 min-w-0 flex-1 py-0 typo-sm-r"
-      />
+      {/* 버튼이 나타나도 입력창이 줄어들 수 있게 감싼다. 입력창 모양은 공용 기본값을 그대로 쓴다. */}
+      <div className="min-w-0 flex-1">
+        <Input
+          id={inputId}
+          value={draft}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          maxLength={MAX_QUESTION_LENGTH}
+          placeholder="예: 지난달 합주 몇 번 했어?"
+          aria-label="밴드 데이터에 대한 질문"
+          enterKeyHint="send"
+          disabled={disabled}
+        />
+      </div>
       {showSubmit && (
         <Button
           type="submit"
-          size="sm"
+          size="pill"
           variant="accent"
           disabled={draft.trim().length < MIN_QUESTION_LENGTH || disabled}
-          className="animate-in duration-200 zoom-in-95 fade-in motion-reduce:animate-none"
+          className="animate-in typo-base-b duration-200 zoom-in-95 fade-in motion-reduce:animate-none"
         >
           질문
         </Button>
@@ -154,11 +157,8 @@ export const AssistantPanel = ({ bandId }: AssistantPanelProps) => {
   };
 
   return (
-    <section
-      aria-label="밴드에 대해 물어보기"
-      className="flex flex-col gap-3 rounded-2xl border border-grey-500 p-4"
-    >
-      <h2 className="typo-sm-b text-grey-100">밴드에 대해 물어보기</h2>
+    <section aria-label="밴드에 대해 물어보기" className="flex flex-col gap-3">
+      <h2 className="typo-base-sb text-grey-100">밴드에 대해 물어보기</h2>
       <QuestionForm
         inputId="assistant-home-question"
         draft={draft}
@@ -172,14 +172,11 @@ export const AssistantPanel = ({ bandId }: AssistantPanelProps) => {
         <ul aria-label="추천 질문" className="flex flex-wrap gap-2">
           {presets.map((preset) => (
             <li key={preset.id}>
-              <button
-                type="button"
-                onClick={() => askPreset(preset)}
-                aria-label={preset.question}
-                className="rounded-full border border-key-muted px-3 py-1.5 typo-xs-r text-grey-200"
-              >
-                {preset.label ?? preset.question}
-              </button>
+              <SuggestionChip
+                label={preset.label ?? preset.question}
+                ariaLabel={preset.question}
+                onSelect={() => askPreset(preset)}
+              />
             </li>
           ))}
         </ul>

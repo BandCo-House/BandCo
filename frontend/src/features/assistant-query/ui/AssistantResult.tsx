@@ -59,7 +59,7 @@ const TableResult = ({ result }: { result: AssistantTableResult }) => {
       <EmptyState
         title="조건에 맞는 결과가 없어요."
         description="위 조건을 확인하고 기간이나 조건을 바꿔 다시 물어보세요."
-        className="rounded-xl bg-grey-500/24 py-6"
+        className="rounded-sm bg-surface-3 py-6"
       />
     );
   }
@@ -97,7 +97,7 @@ const TableResult = ({ result }: { result: AssistantTableResult }) => {
           {values.map((value, index) => (
             <li
               key={`${value}-${index}`}
-              className="truncate rounded-lg bg-grey-500/24 px-2 py-2 text-center"
+              className="truncate rounded-xs bg-surface-3 px-2 py-2 text-center"
             >
               {value}
             </li>
@@ -117,7 +117,7 @@ const SingleRowCard = ({ result }: { result: AssistantTableResult }) => {
   return (
     <div
       aria-label="조회 결과"
-      className="flex flex-col gap-3 rounded-xl bg-grey-500/24 p-4"
+      className="flex flex-col gap-3 rounded-sm bg-surface-3 p-4"
     >
       <p className="typo-lg-sb text-grey-50">
         {formatResultCell(row[primary.key], primary.format)}
@@ -149,12 +149,13 @@ const StackedList = ({
   const [primary, ...rest] = result.columns;
   const ranked = result.resultMode === 'TOP_N';
   return (
-    <ol aria-label="조회 결과" className="flex flex-col">
+    // 행 사이 구분선 대신 한 장의 카드 안에 간격으로 나눈다.
+    <ol
+      aria-label="조회 결과"
+      className="flex flex-col gap-1 rounded-sm bg-surface-3 px-4 py-2"
+    >
       {rows.map((row, index) => (
-        <li
-          key={index}
-          className="flex items-start gap-3 border-b border-grey-500 py-2.5 last:border-b-0"
-        >
+        <li key={index} className="flex items-start gap-3 py-2">
           {ranked && (
             <span className="w-5 shrink-0 typo-sm-b text-primary tabular-nums">
               {index + 1}

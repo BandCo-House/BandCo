@@ -39,7 +39,8 @@ export const AssistantScreen = ({
         <SheetDescription className="sr-only">
           밴드 일정, 참석, 곡, 팀 정보를 물어보고 답을 봅니다.
         </SheetDescription>
-        <header className="flex items-center justify-between gap-3 border-b border-grey-500 px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
+        {/* 머리와 바닥은 다른 전체 화면 모달처럼 선 대신 반투명 바탕과 빛 번짐으로 나눈다. */}
+        <header className="flex items-center justify-between gap-3 bg-gradient-top/65 px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 header-glow backdrop-blur-sm">
           <SheetTitle className="typo-lg-sb text-grey-50">
             밴드에 대해 물어보기
           </SheetTitle>
@@ -51,7 +52,7 @@ export const AssistantScreen = ({
         >
           {children}
         </div>
-        <div className="border-t border-grey-500 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <div className="bg-gradient-top/65 px-5 pt-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] footer-glow backdrop-blur-sm">
           {footer}
         </div>
       </div>
