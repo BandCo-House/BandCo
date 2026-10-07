@@ -1,4 +1,4 @@
-import { BandMainTabs, BandSettingsAction } from '@/widgets/band-main';
+import { BandMainHeaderActions, BandMainTabs } from '@/widgets/band-main';
 import type { RouteStaticData } from '@/widgets/page-header';
 import { resolveBandDetailHeader } from './-band-header-utils';
 
@@ -13,7 +13,7 @@ export const bandMainTabStaticData: RouteStaticData = {
     brandLabel: '밴드',
     showBack: true,
     backTo: '/my-bands',
-    renderRight: () => <BandSettingsAction />,
+    renderRight: () => <BandMainHeaderActions />,
     renderBottom: () => <BandMainTabs />,
     bottomBlur: true,
     resolve: resolveBandDetailHeader,

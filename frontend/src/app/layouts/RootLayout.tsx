@@ -7,6 +7,10 @@ import {
   resolveHeader,
 } from '@/widgets/page-header';
 import { BottomNavBar } from '@/widgets/bottom-nav';
+import {
+  AssistantConversationProvider,
+  AssistantDock,
+} from '@/features/assistant-query';
 
 /** 하단 네비게이션을 표시하지 않을 경로 목록 */
 const HIDDEN_NAV_PATHS = [
@@ -54,50 +58,57 @@ export const RootLayout = () => {
   });
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[648px] flex-col">
-      {header ? <RouteHeader header={header} params={currentParams} /> : null}
+    // 물어보기 대화는 헤더 아이콘·밴드 홈 카드·이어서 보기 바가 함께 쓰므로 레이아웃 전체에 둔다.
+    <AssistantConversationProvider>
+      <div className="mx-auto flex min-h-dvh max-w-[648px] flex-col">
+        {header ? <RouteHeader header={header} params={currentParams} /> : null}
 
-      <main
-        className={cn(
-          // 높이는 부모(min-h-dvh flex-col)의 flex-1 스트레치가 잡는다. 여기에
-          // min-h-screen(100vh)을 얹으면 모바일 주소창 높이 + 네비 mb만큼 실제
-          // 화면보다 커져 콘텐츠가 없어도 유령 스크롤이 생긴다.
-          'mx-auto min-h-0 w-full flex-1',
-          !header && 'pt-[env(safe-area-inset-top)]',
-          // 4.5rem = BottomNavBar의 h-18. 값이 어긋나면 마지막 콘텐츠가 네비 뒤에 가려진다.
-          showBottomNav && 'mb-[calc(4.5rem_+_env(safe-area-inset-bottom))]',
-          // 네비가 없는 화면(로그인·가입 등)은 하단 safe area를 아무도 안 잡아줘서
-          // 마지막 줄이 홈 인디케이터·브라우저 툴바에 물린다. 네비가 있을 땐 위 mb가 이미 포함.
-          !showBottomNav && 'pb-[env(safe-area-inset-bottom)]',
-        )}
-        style={
-          header
-            ? {
-                // 실측 높이에는 헤더의 pt(safe-area-inset-top)가 이미 포함돼 있다.
-                // 폴백에만 safe area를 따로 더한다.
-                marginTop: `var(--route-header-height, calc(${
-                  header.renderBottom
-                    ? // 탭 등 하단 영역이 붙으면 기본 높이 + 그 영역. 폴백이라 대략치면 된다.
-                      '120px'
-                    : HEIGHT_FALLBACKS[header.heightVariant || 'lg']
-                } + env(safe-area-inset-top)))`,
-              }
-            : undefined
-        }
-      >
-        <div
+        <main
           className={cn(
-            'mx-auto w-full max-w-7xl',
-            !bleed && 'px-5',
-            // 세로 여백은 bleed='all'일 때만 페이지에 넘긴다. 가로만 흘리는 화면까지
-            // py-8을 넘기면 페이지마다 pt 값이 갈려 헤더 아래 시작 위치가 어긋난다.
-            bleed !== 'all' && 'py-8',
+            // 높이는 부모(min-h-dvh flex-col)의 flex-1 스트레치가 잡는다. 여기에
+            // min-h-screen(100vh)을 얹으면 모바일 주소창 높이 + 네비 mb만큼 실제
+            // 화면보다 커져 콘텐츠가 없어도 유령 스크롤이 생긴다.
+            'mx-auto min-h-0 w-full flex-1',
+            !header && 'pt-[env(safe-area-inset-top)]',
+            // 4.5rem = BottomNavBar의 h-18. 값이 어긋나면 마지막 콘텐츠가 네비 뒤에 가려진다.
+            showBottomNav && 'mb-[calc(4.5rem_+_env(safe-area-inset-bottom))]',
+            // 네비가 없는 화면(로그인·가입 등)은 하단 safe area를 아무도 안 잡아줘서
+            // 마지막 줄이 홈 인디케이터·브라우저 툴바에 물린다. 네비가 있을 땐 위 mb가 이미 포함.
+            !showBottomNav && 'pb-[env(safe-area-inset-bottom)]',
           )}
+          style={
+            header
+              ? {
+                  // 실측 높이에는 헤더의 pt(safe-area-inset-top)가 이미 포함돼 있다.
+                  // 폴백에만 safe area를 따로 더한다.
+                  marginTop: `var(--route-header-height, calc(${
+                    header.renderBottom
+                      ? // 탭 등 하단 영역이 붙으면 기본 높이 + 그 영역. 폴백이라 대략치면 된다.
+                        '120px'
+                      : HEIGHT_FALLBACKS[header.heightVariant || 'lg']
+                  } + env(safe-area-inset-top)))`,
+                }
+              : undefined
+          }
         >
-          <Outlet />
-        </div>
-      </main>
-      {showBottomNav ? <BottomNavBar /> : null}
-    </div>
+          <div
+            className={cn(
+              'mx-auto w-full max-w-7xl',
+              !bleed && 'px-5',
+              // 세로 여백은 bleed='all'일 때만 페이지에 넘긴다. 가로만 흘리는 화면까지
+              // py-8을 넘기면 페이지마다 pt 값이 갈려 헤더 아래 시작 위치가 어긋난다.
+              bleed !== 'all' && 'py-8',
+            )}
+          >
+            <Outlet />
+          </div>
+        </main>
+        {showBottomNav ? <BottomNavBar /> : null}
+        <AssistantDock
+          currentBandId={currentParams.bandId}
+          pathname={pathname}
+        />
+      </div>
+    </AssistantConversationProvider>
   );
 };

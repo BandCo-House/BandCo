@@ -19,9 +19,16 @@ export const useAssistantPresets = () =>
 
 /**
  * 질문 1건을 조회한다.
- * 대화 이력을 서버에 쌓지 않으므로 mutation으로 다루고, 화면에서 마지막 답변만 보관한다.
+ * 대화 이력을 서버에 쌓지 않으므로 mutation으로 다룬다.
+ * 대화가 앱 전체에서 하나라 밴드가 바뀔 수 있어, bandId는 훅이 아니라 호출마다 받는다.
  */
-export const useAskAssistant = (bandId: string) =>
+export const useAskAssistant = () =>
   useMutation({
-    mutationFn: (body: AskAssistantRequest) => askAssistant(bandId, body),
+    mutationFn: ({
+      bandId,
+      body,
+    }: {
+      bandId: string;
+      body: AskAssistantRequest;
+    }) => askAssistant(bandId, body),
   });

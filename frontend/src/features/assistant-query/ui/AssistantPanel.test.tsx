@@ -2,6 +2,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AssistantAnswer } from '@/entities/assistant/model/types';
+import { AssistantConversationProvider } from './AssistantConversationProvider';
+import { AssistantDock } from './AssistantDock';
+import { AssistantHeaderAction } from './AssistantHeaderAction';
 import { AssistantPanel } from './AssistantPanel';
 
 const askMock = vi.fn();
@@ -71,8 +74,17 @@ const SCHEDULE_ANSWER = tableAnswer({
 const setup = (answer: AssistantAnswer = SCHEDULE_ANSWER) => {
   useAssistantPresetsMock.mockReturnValue({ data: presets });
   askMock.mockResolvedValue(answer);
-  return render(<AssistantPanel bandId="band-1" />);
+  return render(
+    <AssistantConversationProvider>
+      <AssistantHeaderAction bandId="band-1" />
+      <AssistantPanel bandId="band-1" />
+      <AssistantDock currentBandId="band-1" pathname="/band/band-1" />
+    </AssistantConversationProvider>,
+  );
 };
+
+/** 서버에 보낸 질문 본문. bandId는 늘 지금 밴드여야 한다. */
+const asked = (body: object) => ({ bandId: 'band-1', body });
 
 const homeInput = () =>
   screen.getAllByRole('textbox', { name: '밴드 데이터에 대한 질문' })[0];
@@ -107,9 +119,11 @@ describe('AssistantPanel', () => {
     expect(
       within(dialog).getByText('지난달 합주 몇 번 했어?'),
     ).toBeInTheDocument();
-    expect(askMock).toHaveBeenCalledWith({
-      question: '지난달 합주 몇 번 했어?',
-    });
+    expect(askMock).toHaveBeenCalledWith(
+      asked({
+        question: '지난달 합주 몇 번 했어?',
+      }),
+    );
   });
 
   it('추천 칩을 누르면 presetId로 묻는다', async () => {
@@ -117,7 +131,7 @@ describe('AssistantPanel', () => {
 
     await askByPreset();
 
-    expect(askMock).toHaveBeenCalledWith({ presetId: 'next-schedule' });
+    expect(askMock).toHaveBeenCalledWith(asked({ presetId: 'next-schedule' }));
     expect(await screen.findByText('정기 합주')).toBeInTheDocument();
   });
 
@@ -131,9 +145,11 @@ describe('AssistantPanel', () => {
       }),
     );
 
-    expect(askMock).toHaveBeenLastCalledWith({
-      question: '다음 합주에서 연습할 곡은 뭐야?',
-    });
+    expect(askMock).toHaveBeenLastCalledWith(
+      asked({
+        question: '다음 합주에서 연습할 곡은 뭐야?',
+      }),
+    );
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getAllByRole('article')).toHaveLength(2);
     // 이미 물은 짝 질문은 빠지고 남은 짝 질문만 마지막 답 아래에 보인다.
@@ -149,17 +165,97 @@ describe('AssistantPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('닫은 뒤 다시 물으면 이전 대화 없이 새로 시작한다', async () => {
+  it('닫아도 대화가 남아 이어서 보기 바로 다시 열 수 있다', async () => {
     setup();
 
     await askByPreset();
     await screen.findByText('정기 합주');
     await userEvent.click(screen.getByRole('button', { name: '닫기' }));
-    await askByPreset();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
+    await userEvent.click(
+      screen.getByRole('button', { name: '물어보기 대화 이어서 보기' }),
+    );
     expect(
       within(await screen.findByRole('dialog')).getAllByRole('article'),
     ).toHaveLength(1);
+  });
+
+  it('홈 카드에서 다시 물으면 이전 대화를 이어 붙이지 않고 새 대화로 시작한다', async () => {
+    setup();
+
+    await askByPreset();
+    await screen.findByText('정기 합주');
+    await userEvent.click(screen.getByRole('button', { name: '닫기' }));
+    await userEvent.type(homeInput(), '다음 합주 언제야?');
+    await userEvent.click(screen.getByRole('button', { name: '질문' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByRole('article')).toHaveLength(1);
+    expect(within(dialog).getByText('다음 합주 언제야?')).toBeInTheDocument();
+  });
+
+  it('새 대화를 누르면 이전 질문을 비우고 추천 질문부터 보여준다', async () => {
+    setup();
+
+    await askByPreset();
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByText('정기 합주');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: '새 대화' }),
+    );
+
+    expect(within(dialog).queryAllByRole('article')).toHaveLength(0);
+    expect(
+      within(dialog).getByText('이런 질문은 바로 답할 수 있어요'),
+    ).toBeInTheDocument();
+  });
+
+  it('대화를 끝내면 이어서 보기 바가 사라진다', async () => {
+    setup();
+
+    await askByPreset();
+    await screen.findByText('정기 합주');
+    await userEvent.click(screen.getByRole('button', { name: '닫기' }));
+    await userEvent.click(screen.getByRole('button', { name: '대화 끝내기' }));
+
+    expect(
+      screen.queryByRole('button', { name: '물어보기 대화 이어서 보기' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('대화 화면이 열린 채 경로가 바뀌면 화면을 내리고 대화는 남긴다', async () => {
+    const { rerender } = setup();
+
+    await askByPreset();
+    await screen.findByText('정기 합주');
+    rerender(
+      <AssistantConversationProvider>
+        <AssistantHeaderAction bandId="band-1" />
+        <AssistantPanel bandId="band-1" />
+        <AssistantDock currentBandId="band-1" pathname="/band/band-1/archive" />
+      </AssistantConversationProvider>,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '물어보기 대화 이어서 보기' }),
+    ).toBeInTheDocument();
+  });
+
+  it('헤더 아이콘으로 열면 빈 대화 화면에서 추천 질문으로 바로 물을 수 있다', async () => {
+    setup();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '밴드에 물어보기' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: '다음 합주 일정이 언제야?' }),
+    );
+
+    expect(askMock).toHaveBeenCalledWith(asked({ presetId: 'next-schedule' }));
+    expect(await within(dialog).findByText('정기 합주')).toBeInTheDocument();
   });
 
   it('집계 결과는 표 대신 큰 숫자로, 설명은 결과 제목 헤드라인으로 보여준다', async () => {
@@ -315,9 +411,11 @@ describe('AssistantPanel', () => {
       await screen.findByRole('button', { name: '아티스트 A' }),
     );
 
-    expect(askMock).toHaveBeenLastCalledWith({
-      question: "'아티스트 A' 곡 알려줘",
-    });
+    expect(askMock).toHaveBeenLastCalledWith(
+      asked({
+        question: "'아티스트 A' 곡 알려줘",
+      }),
+    );
   });
 
   it('요청이 실패하면 질문을 입력창에 되돌리고 같은 요청을 다시 시도할 수 있다', async () => {
@@ -338,7 +436,9 @@ describe('AssistantPanel', () => {
     await userEvent.click(
       within(dialog).getByRole('button', { name: '다시 시도' }),
     );
-    expect(askMock).toHaveBeenLastCalledWith({ question: '다음 합주 언제야?' });
+    expect(askMock).toHaveBeenLastCalledWith(
+      asked({ question: '다음 합주 언제야?' }),
+    );
     expect(await within(dialog).findByText('정기 합주')).toBeInTheDocument();
   });
 

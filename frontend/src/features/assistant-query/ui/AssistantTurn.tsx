@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from '@/shared/ui/button';
 import type {
-  AskAssistantRequest,
   AssistantAnswer,
   AssistantPreset,
 } from '@/entities/assistant/model/types';
+import type { AssistantTurnState } from '../model/assistant-conversation';
 import { AssistantResult } from './AssistantResult';
 import { SuggestionList } from './SuggestionList';
 
@@ -26,18 +26,6 @@ const FALLBACK_TITLE: Partial<Record<AssistantAnswer['kind'], string>> = {
   UNSUPPORTED: '이런 질문은 답할 수 있어요',
   REPHRASE: '이런 질문은 바로 답할 수 있어요',
 };
-
-/** 질문 하나와 그 답. 화면에는 이 단위가 대화처럼 아래로 쌓인다. */
-export interface AssistantTurnState {
-  id: number;
-  body: AskAssistantRequest;
-  label: string;
-  /** 처음 누른 추천 질문에 짝지은 이어서 물어보기 중 아직 묻지 않은 것. 자유 질문이면 비어 있다. */
-  followUps: string[];
-  pending: boolean;
-  answer?: AssistantAnswer;
-  error?: unknown;
-}
 
 interface AssistantTurnProps {
   turn: AssistantTurnState;

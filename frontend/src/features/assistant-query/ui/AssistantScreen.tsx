@@ -1,4 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
+import { Button } from '@/shared/ui/button';
 import {
   AppSheetClose,
   Sheet,
@@ -11,18 +12,21 @@ interface AssistantScreenProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
+  /** 주면 머리에 새 대화 버튼을 둔다. 대화가 비어 있으면 넘기지 않는다. */
+  onStartNew?: () => void;
   footer: ReactNode;
   children: ReactNode;
 }
 
 /**
  * 질문과 답을 대화처럼 쌓아 보여주는 전체 화면. 아래에서 올라오며 하단 탭바와 고정 헤더를 모두 덮는다.
- * 입력창은 하단에 고정해 답이 길어져도 밀리지 않는다.
+ * 입력창은 하단에 고정해 답이 길어져도 밀리지 않는다. 닫아도 대화는 남는다.
  */
 export const AssistantScreen = ({
   open,
   onOpenChange,
   scrollRef,
+  onStartNew,
   footer,
   children,
 }: AssistantScreenProps) => (
@@ -44,7 +48,20 @@ export const AssistantScreen = ({
           <SheetTitle className="typo-lg-sb text-grey-50">
             밴드에 대해 물어보기
           </SheetTitle>
-          <AppSheetClose aria-label="닫기" />
+          <div className="flex shrink-0 items-center gap-4">
+            {onStartNew && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onStartNew}
+                className="text-grey-100"
+              >
+                새 대화
+              </Button>
+            )}
+            <AppSheetClose />
+          </div>
         </header>
         <div
           ref={scrollRef}
