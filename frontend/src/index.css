@@ -51,7 +51,7 @@
   --color-success-surface: var(--success-surface);
   --color-border: var(--overlay-40);
   --color-input: var(--overlay-24);
-  --color-ring: var(--secondary);
+  --color-ring: var(--primary);
   --color-key: var(--key);
   --color-key-foreground: var(--key-foreground);
   --color-key-surface: var(--key-surface);
