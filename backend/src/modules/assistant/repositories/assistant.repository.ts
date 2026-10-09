@@ -1,5 +1,6 @@
 import type { Prisma } from '../../../generated/prisma';
 import type { SqlQueryPage, SqlQueryRow } from '../sql/generated-sql.type';
+import type { AssistantQueryLogEntry } from '../telemetry/assistant-query-log.type';
 
 export const ASSISTANT_REPOSITORY = Symbol('ASSISTANT_REPOSITORY');
 
@@ -20,4 +21,5 @@ export interface AssistantRepository {
     bandId: string,
     tx: Prisma.TransactionClient,
   ): Promise<SqlQueryRow[]>;
+  recordQueryLog(entry: AssistantQueryLogEntry): Promise<void>;
 }

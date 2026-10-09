@@ -1,13 +1,23 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsOptional, IsString, Length } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
 
 import { normalizeOptionalStringValue } from '../../../common/validation/transform.util';
+import { intValidationMessage } from '../../../common/validation-message/int-validation.message';
 import { lengthValidationMessage } from '../../../common/validation-message/length-validation.message';
+import { maxValidationMessage } from '../../../common/validation-message/max-validation.message';
+import { minValidationMessage } from '../../../common/validation-message/min-validation.message';
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
+import { uuidValidationMessage } from '../../../common/validation-message/uuid-validation.message';
 
 /** 질문 길이 상한. 프롬프트 크기와 토큰 비용을 입력 단계에서 제한한다. */
 export const MAX_QUESTION_LENGTH = 200;
+
+/**
+ * 한 대화에 기록할 턴 수의 상한. 측정 입력이므로 넘겨도 조회를 막지 않고 값만 거절한다.
+ * 실제 대화 길이 제한은 화면이 담당한다.
+ */
+export const MAX_TURN_INDEX = 100;
 
 /**
  * 자유 질문과 추천 질문을 한 엔드포인트로 받는다.
@@ -26,6 +36,25 @@ export class AskAssistantBodyDto {
   @IsOptional()
   @IsString({ message: stringValidationMessage })
   presetId?: string;
+
+  /**
+   * 한 대화를 묶는 키다. 측정 전용이며 권한과 조회 범위에는 쓰이지 않는다.
+   * 밴드 범위는 서버가 멤버십을 확인한 bandId로만 정하므로, 이 값을 바꿔도 보이는 데이터는 같다.
+   */
+  @ApiPropertyOptional({ description: '대화 세션 ID (UUID). 품질 측정에만 사용한다.', format: 'uuid' })
+  @Transform(normalizeOptionalStringValue)
+  @IsOptional()
+  @IsUUID('4', { message: uuidValidationMessage })
+  sessionId?: string;
+
+  /** 그 대화에서 몇 번째 질문인지. 0부터 시작한다. */
+  @ApiPropertyOptional({ description: '대화 안의 질문 순서. 0부터 시작한다.', minimum: 0, maximum: MAX_TURN_INDEX })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt({ message: intValidationMessage })
+  @Min(0, { message: minValidationMessage })
+  @Max(MAX_TURN_INDEX, { message: maxValidationMessage })
+  turnIndex?: number;
 }
 
 export type AskAssistantInput = AskAssistantBodyDto;

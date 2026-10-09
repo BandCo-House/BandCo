@@ -10,7 +10,8 @@ import type { AnswerRenderer } from './rendering/answer-renderer';
 import type { AssistantRepository } from './repositories/assistant.repository';
 import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import type { SqlQueryValidator } from './sql/sql-query.validator';
-import { InvalidSqlQueryError, UnsupportedQuestionError } from './sql/sql-query.validator';
+import { InvalidSqlQueryError, SqlPolicyViolationError, UnsupportedQuestionError } from './sql/sql-query.validator';
+import type { AssistantQueryLogEntry } from './telemetry/assistant-query-log.type';
 import { AssistantService } from './assistant.service';
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
@@ -30,6 +31,7 @@ interface HarnessOptions {
   executionError?: Error;
   artistCandidates?: string[];
   artistLookupError?: Error;
+  recordLogError?: Error;
 }
 
 function createHarness(options: HarnessOptions = {}) {
@@ -37,6 +39,7 @@ function createHarness(options: HarnessOptions = {}) {
   const validationInputs: unknown[] = [];
   const scopeTransactions: unknown[] = [];
   const configuredTransactions: unknown[] = [];
+  const recordedLogs: AssistantQueryLogEntry[] = [];
   const executedTransactions: unknown[] = [];
   const executedQueries: ValidatedSqlQuery[] = [];
   const artistLookups: Array<{ bandId: string; value: string; question: string; tx: unknown }> = [];
@@ -93,6 +96,10 @@ function createHarness(options: HarnessOptions = {}) {
     async findBandMemberByBandIdAndUserId() {
       return { id: MEMBER_ID };
     },
+    async recordQueryLog(entry) {
+      if (options.recordLogError) throw options.recordLogError;
+      recordedLogs.push(entry);
+    },
     async configureReadOnlyTransaction(tx) {
       configuredTransactions.push(tx);
     },
@@ -134,6 +141,7 @@ function createHarness(options: HarnessOptions = {}) {
     executedTransactions,
     executedQueries,
     artistLookups,
+    recordedLogs,
     getTransactionCount: () => transactionCount,
     internalTx,
   };
@@ -353,5 +361,112 @@ describe('AssistantService', () => {
     const harness = createHarness({ executionError: new Error('database error') });
 
     await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수 알려줘' })).rejects.toThrow(ServiceUnavailableException);
+  });
+});
+
+describe('AssistantService 측정 기록', () => {
+  const listQuery: ValidatedSqlQuery = {
+    intent: '관리자 멤버',
+    sql: 'SELECT up.nickname FROM bands b WHERE b.id=$1::uuid AND b.deleted_at IS NULL',
+    parameters: [],
+    parameterTypes: [],
+    resultMode: 'LIST',
+  };
+
+  it('검증·실행이 끝나면 execOk를 남기고 answered는 비워 둔다', async () => {
+    const harness = createHarness({ validationResults: [listQuery], rows: [{ nickname: '초록' }] });
+
+    await harness.service.askAssistant(USER_ID, BAND_ID, { question: '관리자 멤버 알려줘' });
+
+    expect(harness.recordedLogs).toHaveLength(1);
+    const [log] = harness.recordedLogs;
+    expect(log.execOk).toBe(true);
+    // 실행 성공은 질문 충족이 아니다. 판정이 붙기 전까지 모른다고 남긴다.
+    expect(log.answered).toBeNull();
+    expect(log.bucket).toBe('OK');
+    expect(log.signals).toEqual([]);
+    expect(log.rowCount).toBe(1);
+    expect(log.policyViolations).toEqual([]);
+  });
+
+  it('세션 키와 턴 순서를 그대로 남긴다', async () => {
+    const harness = createHarness({ validationResults: [listQuery], rows: [{ nickname: '초록' }] });
+    const sessionId = '8ad0f9f0-0e0e-4a2e-9a11-6a62f0c1b111';
+
+    await harness.service.askAssistant(USER_ID, BAND_ID, { question: '관리자 멤버 알려줘', sessionId, turnIndex: 2 });
+
+    expect(harness.recordedLogs[0].sessionId).toBe(sessionId);
+    expect(harness.recordedLogs[0].turnIndex).toBe(2);
+  });
+
+  it('성공으로 끝났지만 결과가 0행이면 EMPTY_RESULT로 분류한다', async () => {
+    const harness = createHarness({ validationResults: [listQuery], rows: [] });
+
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '관리자 멤버 알려줘' });
+
+    expect(answer.answerable).toBe(true);
+    expect(harness.recordedLogs[0].execOk).toBe(true);
+    expect(harness.recordedLogs[0].bucket).toBe('EMPTY_RESULT');
+    expect(harness.recordedLogs[0].signals).toContain('EMPTY_RESULT');
+  });
+
+  it('허용 목록 밖 시도는 재생성 횟수와 별도로 policyViolations에 남는다', async () => {
+    const harness = createHarness({
+      validationResults: [new SqlPolicyViolationError('TABLE_NOT_ALLOWED', '허용되지 않은 테이블입니다: payments'), listQuery],
+      rows: [{ nickname: '초록' }],
+    });
+
+    await harness.service.askAssistant(USER_ID, BAND_ID, { question: '결제 내역 보여줘' });
+
+    const [log] = harness.recordedLogs;
+    expect(log.policyViolations).toEqual(['TABLE_NOT_ALLOWED']);
+    expect(log.validationFailures).toBe(1);
+    expect(log.bucket).toBe('POLICY_VIOLATION');
+  });
+
+  it('고칠 수 있는 의미 위반은 policyViolations에 들어가지 않는다', async () => {
+    const harness = createHarness({
+      validationResults: [new InvalidSqlQueryError('SOFT_DELETE_SCOPE_MISSING', 'b.deleted_at IS NULL 조건이 필요합니다.'), listQuery],
+      rows: [{ nickname: '초록' }],
+    });
+
+    await harness.service.askAssistant(USER_ID, BAND_ID, { question: '관리자 멤버 알려줘' });
+
+    const [log] = harness.recordedLogs;
+    expect(log.policyViolations).toEqual([]);
+    expect(log.validationFailures).toBe(1);
+    expect(log.signals).toContain('REGENERATED');
+  });
+
+  it('DB로 답할 수 없는 질문은 UNSUPPORTED로 남기고 실행 성공으로 세지 않는다', async () => {
+    const harness = createHarness({ validationResults: [new UnsupportedQuestionError('밴드 데이터에 날씨 정보가 없습니다.')] });
+
+    await harness.service.askAssistant(USER_ID, BAND_ID, { question: '오늘 서울 날씨 어때?' });
+
+    expect(harness.recordedLogs[0].execOk).toBe(false);
+    expect(harness.recordedLogs[0].bucket).toBe('UNSUPPORTED');
+  });
+
+  it('실행 실패는 INFRA로 남긴다', async () => {
+    const harness = createHarness({ validationResults: [listQuery], executionError: new Error('statement timeout') });
+
+    await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: '관리자 멤버 알려줘' })).rejects.toThrow(ServiceUnavailableException);
+
+    expect(harness.recordedLogs[0].bucket).toBe('INFRA');
+    expect(harness.recordedLogs[0].execOk).toBe(false);
+  });
+
+  it('측정 기록이 실패해도 조회 결과를 그대로 돌려준다', async () => {
+    const harness = createHarness({
+      validationResults: [listQuery],
+      rows: [{ nickname: '초록' }],
+      recordLogError: new Error('log table missing'),
+    });
+
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '관리자 멤버 알려줘' });
+
+    expect(answer.answerable).toBe(true);
+    expect(answer.result?.rows).toEqual([{ nickname: '초록' }]);
+    expect(harness.recordedLogs).toHaveLength(0);
   });
 });

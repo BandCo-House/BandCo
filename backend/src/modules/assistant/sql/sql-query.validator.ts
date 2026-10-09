@@ -81,6 +81,18 @@ export class InvalidSqlQueryError extends Error {
   }
 }
 
+/**
+ * 허용 목록 밖 테이블·컬럼·함수, 쓰기, 다중 문장처럼 모델이 넘어서는 안 되는 경계를 건드린 위반이다.
+ * 고칠 수 있는 의미 규칙 위반과 같은 클래스로 두면 로그에서 둘이 섞여, 질문이 경계를 시험했는지
+ * 나중에 알 수 없다. 재생성 정책은 의미 위반과 같게 유지하고 분류만 나눈다.
+ */
+export class SqlPolicyViolationError extends InvalidSqlQueryError {
+  constructor(code: string, detail: string, codes: string[] = [code]) {
+    super(code, detail, codes);
+    this.name = 'SqlPolicyViolationError';
+  }
+}
+
 /** 서로 독립인 위반을 한 번에 알려 재생성에서 하나를 고치다 다른 규칙을 다시 어기지 않게 한다. */
 function combineViolations(violations: InvalidSqlQueryError[]): InvalidSqlQueryError {
   if (violations.length === 1) return violations[0];
@@ -360,13 +372,13 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
   const statements = Array.isArray(ast.stmts) ? ast.stmts : [];
 
   if (statements.length !== 1) {
-    throw new InvalidSqlQueryError('SINGLE_STATEMENT_REQUIRED', 'SQL은 정확히 한 문장이어야 합니다.');
+    throw new SqlPolicyViolationError('SINGLE_STATEMENT_REQUIRED', 'SQL은 정확히 한 문장이어야 합니다.');
   }
 
   const statement = getNestedRecord(statements[0], ['stmt']);
 
   if (statement === null || !isRecord(statement.SelectStmt)) {
-    throw new InvalidSqlQueryError('SELECT_ONLY', 'SELECT 문만 실행할 수 있습니다.');
+    throw new SqlPolicyViolationError('SELECT_ONLY', 'SELECT 문만 실행할 수 있습니다.');
   }
 
   const analysis: AstAnalysis = {
@@ -384,13 +396,13 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
 
   walkAst(ast, (tag, node, ancestors) => {
     if (FORBIDDEN_NODE_TAGS.has(tag)) {
-      throw new InvalidSqlQueryError('WRITE_STATEMENT_BLOCKED', `${tag} 노드는 사용할 수 없습니다.`);
+      throw new SqlPolicyViolationError('WRITE_STATEMENT_BLOCKED', `${tag} 노드는 사용할 수 없습니다.`);
     }
 
     if (tag === 'SelectStmt') validateSelectNode(node, analysis);
     if (tag === 'RangeVar') collectTableReference(node, analysis.aliases);
     if (tag === 'RangeSubselect' || tag === 'RangeFunction') {
-      throw new InvalidSqlQueryError('RANGE_SOURCE_BLOCKED', `${tag}는 사용할 수 없습니다.`);
+      throw new SqlPolicyViolationError('RANGE_SOURCE_BLOCKED', `${tag}는 사용할 수 없습니다.`);
     }
     if (tag === 'ColumnRef') analysis.columnNodes.push(node);
     if (tag === 'A_Expr') analysis.expressionNodes.push(node);
@@ -400,16 +412,16 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
     if (tag === 'TypeName') validateCastType(node);
     if (tag === 'SQLValueFunction') validateSqlValueFunction(node);
     if (tag === 'A_Const' && isRecord(node.sval)) {
-      throw new InvalidSqlQueryError('STRING_LITERAL_BLOCKED', '문자열 값은 파라미터로 분리해야 합니다.');
+      throw new SqlPolicyViolationError('STRING_LITERAL_BLOCKED', '문자열 값은 파라미터로 분리해야 합니다.');
     }
     if (tag === 'A_Star' && !ancestors.includes('FuncCall')) {
-      throw new InvalidSqlQueryError('SELECT_STAR_BLOCKED', 'SELECT *는 사용할 수 없습니다.');
+      throw new SqlPolicyViolationError('SELECT_STAR_BLOCKED', 'SELECT *는 사용할 수 없습니다.');
     }
     if (tag === 'JoinExpr') analysis.joinNodes.push(node);
   });
 
   if (analysis.selectNodes.length === 0) {
-    throw new InvalidSqlQueryError('SELECT_ONLY', 'SELECT 문이 없습니다.');
+    throw new SqlPolicyViolationError('SELECT_ONLY', 'SELECT 문이 없습니다.');
   }
 
   collectScopeAndRelations(analysis);
@@ -420,19 +432,19 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
 /** SELECT 내부의 쓰기·집합 연산·CTE를 차단한다. */
 function validateSelectNode(node: AstRecord, analysis: AstAnalysis): void {
   if (node.op !== undefined && node.op !== 'SETOP_NONE') {
-    throw new InvalidSqlQueryError('SET_OPERATION_BLOCKED', 'UNION, INTERSECT, EXCEPT는 사용할 수 없습니다.');
+    throw new SqlPolicyViolationError('SET_OPERATION_BLOCKED', 'UNION, INTERSECT, EXCEPT는 사용할 수 없습니다.');
   }
 
   if (node.withClause !== undefined) {
-    throw new InvalidSqlQueryError('CTE_BLOCKED', 'WITH 절은 MVP에서 사용할 수 없습니다.');
+    throw new SqlPolicyViolationError('CTE_BLOCKED', 'WITH 절은 MVP에서 사용할 수 없습니다.');
   }
 
   if (node.intoClause !== undefined) {
-    throw new InvalidSqlQueryError('SELECT_INTO_BLOCKED', 'SELECT INTO는 사용할 수 없습니다.');
+    throw new SqlPolicyViolationError('SELECT_INTO_BLOCKED', 'SELECT INTO는 사용할 수 없습니다.');
   }
 
   if (Array.isArray(node.lockingClause) && node.lockingClause.length > 0) {
-    throw new InvalidSqlQueryError('ROW_LOCK_BLOCKED', '행 잠금 SELECT는 사용할 수 없습니다.');
+    throw new SqlPolicyViolationError('ROW_LOCK_BLOCKED', '행 잠금 SELECT는 사용할 수 없습니다.');
   }
 
   analysis.selectNodes.push(node);
@@ -441,11 +453,11 @@ function validateSelectNode(node: AstRecord, analysis: AstAnalysis): void {
 /** 물리 테이블과 별칭이 catalog 안에 있는지 확인한다. */
 function collectTableReference(node: AstRecord, aliases: Map<string, string>): void {
   if (typeof node.schemaname === 'string' || typeof node.catalogname === 'string') {
-    throw new InvalidSqlQueryError('QUALIFIED_TABLE_BLOCKED', '스키마를 직접 지정할 수 없습니다.');
+    throw new SqlPolicyViolationError('QUALIFIED_TABLE_BLOCKED', '스키마를 직접 지정할 수 없습니다.');
   }
 
   if (typeof node.relname !== 'string' || SQL_CATALOG[node.relname] === undefined) {
-    throw new InvalidSqlQueryError('TABLE_NOT_ALLOWED', `허용되지 않은 테이블입니다: ${String(node.relname)}`);
+    throw new SqlPolicyViolationError('TABLE_NOT_ALLOWED', `허용되지 않은 테이블입니다: ${String(node.relname)}`);
   }
 
   const aliasRecord = isRecord(node.alias) ? node.alias : null;
@@ -467,7 +479,7 @@ function validateFunctionCall(node: AstRecord): void {
   const names = readStringNodeArray(node.funcname);
 
   if (names.length !== 1 || !SQL_ALLOWED_FUNCTIONS.has(names[0].toLowerCase())) {
-    throw new InvalidSqlQueryError('FUNCTION_NOT_ALLOWED', `허용되지 않은 함수입니다: ${names.join('.') || 'unknown'}`);
+    throw new SqlPolicyViolationError('FUNCTION_NOT_ALLOWED', `허용되지 않은 함수입니다: ${names.join('.') || 'unknown'}`);
   }
 }
 
@@ -477,14 +489,14 @@ function validateCastType(node: AstRecord): void {
   const castType = names.at(-1)?.toLowerCase();
 
   if (castType === undefined || !ALLOWED_CAST_TYPES.has(castType)) {
-    throw new InvalidSqlQueryError('CAST_NOT_ALLOWED', `허용되지 않은 형 변환입니다: ${names.join('.')}`);
+    throw new SqlPolicyViolationError('CAST_NOT_ALLOWED', `허용되지 않은 형 변환입니다: ${names.join('.')}`);
   }
 }
 
 /** 현재 날짜·시각 외의 세션 정보 함수는 결과 노출을 막기 위해 제외한다. */
 function validateSqlValueFunction(node: AstRecord): void {
   if (typeof node.op !== 'string' || !ALLOWED_SQL_VALUE_FUNCTIONS.has(node.op)) {
-    throw new InvalidSqlQueryError('SQL_VALUE_FUNCTION_NOT_ALLOWED', `허용되지 않은 SQL 값 함수입니다: ${String(node.op)}`);
+    throw new SqlPolicyViolationError('SQL_VALUE_FUNCTION_NOT_ALLOWED', `허용되지 않은 SQL 값 함수입니다: ${String(node.op)}`);
   }
 }
 
@@ -503,7 +515,7 @@ function validateColumnReferences(columnNodes: AstRecord[], aliases: Map<string,
     const fields = readColumnFields(node);
 
     if (fields.includes('*')) {
-      throw new InvalidSqlQueryError('SELECT_STAR_BLOCKED', 'SELECT *는 사용할 수 없습니다.');
+      throw new SqlPolicyViolationError('SELECT_STAR_BLOCKED', 'SELECT *는 사용할 수 없습니다.');
     }
 
     if (fields.length === 1 && outputAliases.has(fields[0])) {
@@ -522,7 +534,7 @@ function validateColumnReferences(columnNodes: AstRecord[], aliases: Map<string,
     }
 
     if (SQL_CATALOG[tableName].columns[column] === undefined) {
-      throw new InvalidSqlQueryError('COLUMN_NOT_ALLOWED', `허용되지 않은 컬럼입니다: ${tableName}.${column}`);
+      throw new SqlPolicyViolationError('COLUMN_NOT_ALLOWED', `허용되지 않은 컬럼입니다: ${tableName}.${column}`);
     }
   }
 }

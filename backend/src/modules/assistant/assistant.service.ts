@@ -14,8 +14,10 @@ import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createCandidateQuestion, readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
-import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
+import { InvalidSqlQueryError, SqlPolicyViolationError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
 import { createSqlRepairInstruction, getSqlCountUnit } from './sql/sql-query-context';
+import type { AssistantQueryLogEntry } from './telemetry/assistant-query-log.type';
+import { type AssistantQueryBucketName, type AssistantQuerySignal, detectSignals, resolveExecutedBucket } from './telemetry/assistant-query-signal';
 import type { AssistantAnswer, AssistantClarification, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
 
@@ -27,6 +29,8 @@ interface GeneratedQuery {
   query: ValidatedSqlQuery;
   meta: AssistantQueryMeta;
   validationFailures: number;
+  /** 허용 목록 밖을 건드린 위반 코드. 의미 위반과 섞이면 질문이 경계를 시험했는지 볼 수 없다. */
+  policyViolations: string[];
 }
 
 interface UnsupportedQuery {
@@ -34,6 +38,7 @@ interface UnsupportedQuery {
   reason: string;
   meta: AssistantQueryMeta;
   validationFailures: number;
+  policyViolations: string[];
 }
 
 interface ClarificationQuery extends Omit<UnsupportedQuery, 'status'> {
@@ -50,7 +55,11 @@ const REPHRASE_SUMMARY = '질문을 정확히 이해하지 못했어요. 누구�
  * 사용자 응답에서는 장애가 아니라 질문을 바꿔 달라는 안내로 바꾼다.
  */
 class SqlGenerationExhaustedError extends ServiceUnavailableException {
-  constructor(readonly meta: AssistantQueryMeta) {
+  constructor(
+    readonly meta: AssistantQueryMeta,
+    readonly validationFailures: number,
+    readonly policyViolations: string[],
+  ) {
     super('안전한 조회 SQL을 만들지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
   }
 }
@@ -87,15 +96,17 @@ export class AssistantService {
       generated = preset ? await this.createPresetQuery(preset) : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, tx);
     } catch (error) {
       if (!(error instanceof SqlGenerationExhaustedError)) throw error;
-      this.logger.log(
-        JSON.stringify({
-          event: 'assistant.text_to_sql',
-          userId: scope.userId,
-          bandId: scope.bandId,
-          question: input.question ?? null,
-          outcome: 'rephrase_required',
-        }),
-      );
+      await this.recordQuery({
+        scope,
+        input,
+        outcome: 'rephrase_required',
+        bucket: 'REPHRASE',
+        execOk: false,
+        latencyMs: Date.now() - startedAt,
+        meta: error.meta,
+        validationFailures: error.validationFailures,
+        policyViolations: error.policyViolations,
+      });
 
       return {
         answerable: false,
@@ -108,14 +119,17 @@ export class AssistantService {
     }
 
     if (generated.status !== 'QUERY') {
-      this.logQueryAudit(
+      await this.recordQuery({
         scope,
         input,
-        generated,
-        generated.status === 'CLARIFICATION' ? 'clarification_required' : 'unsupported',
-        0,
-        Date.now() - startedAt,
-      );
+        outcome: generated.status === 'CLARIFICATION' ? 'clarification_required' : 'unsupported',
+        bucket: generated.status === 'CLARIFICATION' ? 'CLARIFICATION' : 'UNSUPPORTED',
+        execOk: false,
+        latencyMs: Date.now() - startedAt,
+        meta: generated.meta,
+        validationFailures: generated.validationFailures,
+        policyViolations: generated.policyViolations,
+      });
 
       return {
         answerable: false,
@@ -135,11 +149,47 @@ export class AssistantService {
       result = await mapSqlResult(generated.query, page);
     } catch (error) {
       this.logger.warn(`검증된 SQL 실행에 실패했습니다: ${toMessage(error)}`);
-      this.logQueryAudit(scope, input, generated, 'execution_failed', 0, Date.now() - startedAt);
+      await this.recordQuery({
+        scope,
+        input,
+        outcome: 'execution_failed',
+        bucket: 'INFRA',
+        execOk: false,
+        latencyMs: Date.now() - startedAt,
+        meta: generated.meta,
+        query: generated.query,
+        validationFailures: generated.validationFailures,
+        policyViolations: generated.policyViolations,
+      });
       throw new ServiceUnavailableException('생성한 조회를 실행하지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
     }
 
-    this.logQueryAudit(scope, input, generated, 'success', page.rows.length, Date.now() - startedAt);
+    // 검증·실행이 끝났을 뿐이다. 질문에 답했는지는 결정론으로 알 수 없어 의심 신호만 붙인다.
+    const signals = detectSignals({
+      resultMode: generated.query.resultMode,
+      page,
+      question: input.question ?? null,
+      generatedSql: generated.query.sql,
+      parameterTypes: generated.query.parameterTypes ?? [],
+      validationFailures: generated.validationFailures,
+      policyViolations: generated.policyViolations,
+    });
+
+    await this.recordQuery({
+      scope,
+      input,
+      outcome: 'success',
+      bucket: resolveExecutedBucket(signals),
+      execOk: true,
+      latencyMs: Date.now() - startedAt,
+      meta: generated.meta,
+      query: generated.query,
+      validationFailures: generated.validationFailures,
+      policyViolations: generated.policyViolations,
+      signals,
+      rowCount: page.rows.length,
+      hasMore: page.hasMore,
+    });
 
     // 50건 초과 안내는 화면이 결과 아래에 한 번만 보여준다.
     return {
@@ -178,6 +228,7 @@ export class AssistantService {
       query: await this.validator.validate(preset.createQuery(new Date())),
       meta: { providerName: null, modelName: null, usedLlm: false, inputTokens: 0, outputTokens: 0, latencyMs: 0 },
       validationFailures: 0,
+      policyViolations: [],
     };
   }
 
@@ -188,6 +239,8 @@ export class AssistantService {
   private async generateSqlFromQuestion(question: string, now: Date, bandId: string, tx?: Prisma.TransactionClient): Promise<SqlGenerationResult> {
     const baseInstruction = createSqlGenerationSystemInstruction(now, question);
     const failures: string[] = [];
+    // 허용 목록 밖을 건드린 코드만 따로 모은다. 재생성 횟수 하나에 합치면 나중에 구분할 수 없다.
+    const policyViolations: string[] = [];
     let previousSql = '';
     let inputTokens = 0;
     let outputTokens = 0;
@@ -217,13 +270,21 @@ export class AssistantService {
         const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
         const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
         if ('reason' in resolved) {
-          return { status: 'CLARIFICATION', reason: resolved.reason, clarification: resolved.clarification, meta, validationFailures: attempt };
+          return {
+            status: 'CLARIFICATION',
+            reason: resolved.reason,
+            clarification: resolved.clarification,
+            meta,
+            validationFailures: attempt,
+            policyViolations,
+          };
         }
         return {
           status: 'QUERY',
           query: resolved,
           meta,
           validationFailures: attempt,
+          policyViolations,
         };
       } catch (error) {
         if (error instanceof UnsupportedQuestionError) {
@@ -232,10 +293,13 @@ export class AssistantService {
             reason: error.reason,
             meta,
             validationFailures: attempt,
+            policyViolations,
           };
         }
 
         if (error instanceof InvalidSqlQueryError) {
+          // SqlPolicyViolationError는 InvalidSqlQueryError를 상속하므로 재생성 정책은 그대로다.
+          if (error instanceof SqlPolicyViolationError) policyViolations.push(...error.codes);
           failures.push(error.message);
           previousSql = readGeneratedSql(response.parsed);
           this.logger.warn(`SQL 검증에 실패해 재생성합니다: ${error.message}`);
@@ -246,14 +310,18 @@ export class AssistantService {
       }
     }
 
-    throw new SqlGenerationExhaustedError({
-      providerName: null,
-      modelName: null,
-      usedLlm: true,
-      inputTokens,
-      outputTokens,
-      latencyMs: 0,
-    });
+    throw new SqlGenerationExhaustedError(
+      {
+        providerName: null,
+        modelName: null,
+        usedLlm: true,
+        inputTokens,
+        outputTokens,
+        latencyMs: 0,
+      },
+      MAX_SQL_REGENERATIONS + 1,
+      policyViolations,
+    );
   }
 
   /** SQL은 보존하고 아티스트 equality의 바인딩만 실제 밴드 이름으로 확인한다. */
@@ -308,31 +376,97 @@ export class AssistantService {
     });
   }
 
-  /** 실험 비교에 필요한 생성 SQL과 검증 실패 횟수를 값 파라미터 없이 기록한다. */
-  private logQueryAudit(
-    scope: AssistantScope,
-    input: AskAssistantInput,
-    generated: SqlGenerationResult,
-    outcome: string,
-    rowCount: number,
-    latencyMs: number,
-  ): void {
+  /**
+   * 조회 한 건을 측정 기록으로 남긴다. 값 파라미터는 담지 않는다.
+   *
+   * ★stdout 로그를 함께 남기는 이유: CloudWatch Logs Insights에 이미 걸어 둔 질의가 있고,
+   *   DB 기록이 꺼져도 오류 추적은 계속돼야 한다. 두 경로는 같은 사실을 서로 다른 수명으로 담는다.
+   * ★기록 실패가 조회 결과를 되돌리지 않는다. 측정이 제품을 막으면 측정을 끄게 된다.
+   */
+  private async recordQuery(record: QueryRecord): Promise<void> {
+    const signals = record.signals ?? [];
+
     this.logger.log(
       JSON.stringify({
         event: 'assistant.text_to_sql',
-        userId: scope.userId,
-        bandId: scope.bandId,
-        presetId: input.presetId ?? null,
-        question: input.question ?? null,
-        intent: generated.status === 'QUERY' ? generated.query.intent : null,
-        sql: generated.status === 'QUERY' ? generated.query.sql : null,
-        validationFailures: generated.validationFailures,
-        outcome,
-        rowCount,
-        latencyMs,
+        userId: record.scope.userId,
+        bandId: record.scope.bandId,
+        sessionId: record.input.sessionId ?? null,
+        turnIndex: record.input.turnIndex ?? null,
+        presetId: record.input.presetId ?? null,
+        question: record.input.question ?? null,
+        intent: record.query?.intent ?? null,
+        sql: record.query?.sql ?? null,
+        validationFailures: record.validationFailures,
+        policyViolations: record.policyViolations,
+        outcome: record.outcome,
+        execOk: record.execOk,
+        bucket: record.bucket,
+        signals,
+        rowCount: record.rowCount ?? 0,
+        latencyMs: record.latencyMs,
       }),
     );
+
+    if (!isQueryLogEnabled()) return;
+
+    const entry: AssistantQueryLogEntry = {
+      bandId: record.scope.bandId,
+      userId: record.scope.userId,
+      sessionId: record.input.sessionId ?? null,
+      turnIndex: record.input.turnIndex ?? null,
+      presetId: record.input.presetId ?? null,
+      question: record.input.question ?? null,
+      intent: record.query?.intent ?? null,
+      generatedSql: record.query?.sql ?? null,
+      resultMode: record.query?.resultMode ?? null,
+      execOk: record.execOk,
+      // 질문에 답했는지는 사람·모델 판정이 붙을 때 채운다.
+      answered: null,
+      bucket: record.bucket,
+      signals,
+      rowCount: record.rowCount ?? 0,
+      hasMore: record.hasMore ?? false,
+      validationFailures: record.validationFailures,
+      policyViolations: record.policyViolations,
+      latencyMs: record.latencyMs,
+      usedLlm: record.meta.usedLlm,
+      modelName: record.meta.modelName,
+      inputTokens: record.meta.inputTokens,
+      outputTokens: record.meta.outputTokens,
+    };
+
+    try {
+      await this.repository.recordQueryLog(entry);
+    } catch (error) {
+      this.logger.warn(`질의 측정 기록에 실패했습니다: ${toMessage(error)}`);
+    }
   }
+}
+
+/** recordQuery 한 번에 필요한 사실. 경로마다 아는 범위가 달라 선택값으로 둔다. */
+interface QueryRecord {
+  scope: AssistantScope;
+  input: AskAssistantInput;
+  outcome: string;
+  bucket: AssistantQueryBucketName;
+  execOk: boolean;
+  latencyMs: number;
+  meta: AssistantQueryMeta;
+  validationFailures: number;
+  policyViolations: string[];
+  query?: ValidatedSqlQuery;
+  signals?: AssistantQuerySignal[];
+  rowCount?: number;
+  hasMore?: boolean;
+}
+
+/**
+ * 측정 기록을 끌 수 있게 둔다. 호출 시점에 읽어 재배포 없이 바꿀 수 있다.
+ * 기본값은 켜짐이며, 끄면 stdout 로그만 남는다.
+ */
+function isQueryLogEnabled(): boolean {
+  return process.env.ASSISTANT_QUERY_LOG_ENABLED !== 'false';
 }
 
 /** 알 수 없는 실행 오류를 운영 로그에서 확인할 수 있는 문자열로 만든다. */
