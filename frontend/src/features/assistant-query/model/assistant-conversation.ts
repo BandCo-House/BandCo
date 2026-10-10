@@ -7,6 +7,8 @@ import type {
 /** 질문 하나와 그 답. 화면에는 이 단위가 대화처럼 아래로 쌓인다. */
 export interface AssistantTurnState {
   id: number;
+  /** 서버에 보낸 대화 안의 순서. 다시 시도해도 같은 턴이므로 그대로 쓴다. */
+  turnIndex: number;
   body: AskAssistantRequest;
   label: string;
   /** 처음 누른 추천 질문에 짝지은 이어서 물어보기 중 아직 묻지 않은 것. 자유 질문이면 비어 있다. */

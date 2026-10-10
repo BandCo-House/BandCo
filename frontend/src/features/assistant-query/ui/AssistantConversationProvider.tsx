@@ -12,6 +12,16 @@ const MIN_QUESTION_LENGTH = 2;
 const MIN_REPLY_MS = 700;
 
 /**
+ * 측정에 쓰는 대화 키다. 화면 상태(conversation)와 달리 렌더를 기다리지 않아야 해서 ref로 둔다.
+ * 질문을 연달아 누르면 setState가 아직 반영되지 않은 사이에도 턴 순서가 밀리지 않아야 한다.
+ */
+interface SessionKey {
+  bandId: string;
+  sessionId: string;
+  nextTurnIndex: number;
+}
+
+/**
  * 물어보기 대화를 앱 전체에서 하나만 들고 있는다.
  *
  * 화면을 닫고 다른 페이지로 옮겨도 대화가 남아 이어서 볼 수 있다.
@@ -27,6 +37,7 @@ export const AssistantConversationProvider = ({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const nextTurnId = useRef(0);
+  const sessionKey = useRef<SessionKey | null>(null);
   const { mutateAsync } = useAskAssistant();
   const pending = conversation?.turns.some((turn) => turn.pending) ?? false;
 
@@ -42,12 +53,40 @@ export const AssistantConversationProvider = ({
         },
     );
 
-  const run = (id: number, bandId: string, body: AskAssistantRequest) => {
+  /**
+   * 이 질문이 속한 대화 키와 턴 순서를 정한다.
+   * 새 대화이거나 다른 밴드면 새 키를 만든다. 조건은 대화 상태를 비우는 조건과 같다.
+   */
+  const beginTurn = (bandId: string, fresh: boolean) => {
+    const previous = sessionKey.current;
+    if (fresh || previous === null || previous.bandId !== bandId) {
+      sessionKey.current = {
+        bandId,
+        sessionId: crypto.randomUUID(),
+        nextTurnIndex: 0,
+      };
+    }
+    const current = sessionKey.current as SessionKey;
+    const turnIndex = current.nextTurnIndex;
+    current.nextTurnIndex += 1;
+
+    return { sessionId: current.sessionId, turnIndex };
+  };
+
+  const run = (
+    id: number,
+    bandId: string,
+    body: AskAssistantRequest,
+    session: { sessionId: string; turnIndex: number },
+  ) => {
     // 추천 질문은 수십 ms 만에 와서 질문과 답이 한꺼번에 뜬다. 답하는 중임을 잠깐 보여준 뒤 답을 연다.
     const minimumReply = new Promise((resolve) =>
       setTimeout(resolve, MIN_REPLY_MS),
     );
-    void Promise.all([mutateAsync({ bandId, body }), minimumReply])
+    void Promise.all([
+      mutateAsync({ bandId, body: { ...body, ...session } }),
+      minimumReply,
+    ])
       .then(([answer]) => updateTurn(id, { pending: false, answer }))
       .catch((error: unknown) => {
         updateTurn(id, { pending: false, error });
@@ -63,8 +102,10 @@ export const AssistantConversationProvider = ({
     followUps: string[],
     fresh = false,
   ) => {
+    const session = beginTurn(bandId, fresh);
     const turn: AssistantTurnState = {
       id: nextTurnId.current++,
+      turnIndex: session.turnIndex,
       body,
       label,
       followUps,
@@ -76,7 +117,7 @@ export const AssistantConversationProvider = ({
         : { bandId, turns: [turn] },
     );
     setOpen(true);
-    run(turn.id, bandId, body);
+    run(turn.id, bandId, body, session);
   };
 
   const submitDraft = (bandId: string, fresh = false) => {
@@ -102,17 +143,24 @@ export const AssistantConversationProvider = ({
   const startNew = () => {
     setConversation((previous) => previous && { ...previous, turns: [] });
     setDraft('');
+    // 새 대화는 새 키를 받는다. 다음 질문에서 beginTurn이 만든다.
+    sessionKey.current = null;
   };
 
   const end = () => {
     setConversation(null);
     setDraft('');
+    sessionKey.current = null;
   };
 
+  // 같은 질문을 다시 보내는 것이라 턴을 새로 세지 않는다. 재시도가 턴 수를 부풀리면 턴별 실패율이 왜곡된다.
   const retry = (turn: AssistantTurnState) => {
-    if (conversation === null) return;
+    if (conversation === null || sessionKey.current === null) return;
     updateTurn(turn.id, { pending: true, error: undefined });
-    run(turn.id, conversation.bandId, turn.body);
+    run(turn.id, conversation.bandId, turn.body, {
+      sessionId: sessionKey.current.sessionId,
+      turnIndex: turn.turnIndex,
+    });
   };
 
   return (

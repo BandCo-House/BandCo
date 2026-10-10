@@ -84,7 +84,14 @@ const setup = (answer: AssistantAnswer = SCHEDULE_ANSWER) => {
 };
 
 /** 서버에 보낸 질문 본문. bandId는 늘 지금 밴드여야 한다. */
-const asked = (body: object) => ({ bandId: 'band-1', body });
+/**
+ * 요청 본문에는 측정용 세션 키가 함께 실린다.
+ * 값은 매번 새로 만들어지므로 모양만 확인하고, 세션 동작은 아래 describe에서 따로 본다.
+ */
+const asked = (body: object, turnIndex = 0) => ({
+  bandId: 'band-1',
+  body: { ...body, sessionId: expect.any(String), turnIndex },
+});
 
 const homeInput = () =>
   screen.getAllByRole('textbox', { name: '밴드 데이터에 대한 질문' })[0];
@@ -146,9 +153,12 @@ describe('AssistantPanel', () => {
     );
 
     expect(askMock).toHaveBeenLastCalledWith(
-      asked({
-        question: '다음 합주에서 연습할 곡은 뭐야?',
-      }),
+      asked(
+        {
+          question: '다음 합주에서 연습할 곡은 뭐야?',
+        },
+        1,
+      ),
     );
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getAllByRole('article')).toHaveLength(2);
@@ -412,9 +422,12 @@ describe('AssistantPanel', () => {
     );
 
     expect(askMock).toHaveBeenLastCalledWith(
-      asked({
-        question: "'아티스트 A' 곡 알려줘",
-      }),
+      asked(
+        {
+          question: "'아티스트 A' 곡 알려줘",
+        },
+        1,
+      ),
     );
   });
 
@@ -467,5 +480,57 @@ describe('AssistantPanel', () => {
     expect(
       within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
     ).toBeEnabled();
+  });
+
+  describe('측정용 세션 키', () => {
+    const sentBody = (call: number) =>
+      askMock.mock.calls[call][0].body as {
+        sessionId: string;
+        turnIndex: number;
+      };
+
+    it('같은 대화에서 이어 물으면 세션은 그대로 두고 턴만 올린다', async () => {
+      setup();
+
+      await askByPreset();
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: '다음 합주에서 연습할 곡은 뭐야?',
+        }),
+      );
+
+      expect(sentBody(0).sessionId).toBe(sentBody(1).sessionId);
+      expect(sentBody(0).turnIndex).toBe(0);
+      expect(sentBody(1).turnIndex).toBe(1);
+    });
+
+    it('새 대화로 시작하면 세션 키가 바뀌고 턴이 0부터 다시 센다', async () => {
+      setup();
+
+      await askByPreset();
+      await userEvent.click(screen.getByRole('button', { name: '새 대화' }));
+      await askByPreset();
+
+      expect(sentBody(1).sessionId).not.toBe(sentBody(0).sessionId);
+      expect(sentBody(1).turnIndex).toBe(0);
+    });
+
+    // 재시도가 턴을 새로 세면 턴별 실패율이 왜곡된다.
+    it('다시 시도는 같은 턴으로 보낸다', async () => {
+      setup();
+      askMock.mockRejectedValueOnce(new Error('network'));
+
+      await userEvent.type(homeInput(), '다음 합주 언제야?');
+      await userEvent.click(screen.getByRole('button', { name: '질문' }));
+      await screen.findByRole('alert');
+      await userEvent.click(
+        within(screen.getByRole('dialog')).getByRole('button', {
+          name: '다시 시도',
+        }),
+      );
+
+      expect(sentBody(1).sessionId).toBe(sentBody(0).sessionId);
+      expect(sentBody(1).turnIndex).toBe(sentBody(0).turnIndex);
+    });
   });
 });
