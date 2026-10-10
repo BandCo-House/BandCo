@@ -1,11 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Length, Min } from 'class-validator';
 
 import { normalizeOptionalStringValue } from '../../../common/validation/transform.util';
 import { intValidationMessage } from '../../../common/validation-message/int-validation.message';
 import { lengthValidationMessage } from '../../../common/validation-message/length-validation.message';
-import { maxValidationMessage } from '../../../common/validation-message/max-validation.message';
 import { minValidationMessage } from '../../../common/validation-message/min-validation.message';
 import { stringValidationMessage } from '../../../common/validation-message/string-validation.message';
 import { uuidValidationMessage } from '../../../common/validation-message/uuid-validation.message';
@@ -14,8 +13,8 @@ import { uuidValidationMessage } from '../../../common/validation-message/uuid-v
 export const MAX_QUESTION_LENGTH = 200;
 
 /**
- * 한 대화에 기록할 턴 수의 상한. 측정 입력이므로 넘겨도 조회를 막지 않고 값만 거절한다.
- * 실제 대화 길이 제한은 화면이 담당한다.
+ * 기록할 턴 순서의 상한. 넘어오면 400이 아니라 서버가 이 값으로 깎아서 기록한다.
+ * 측정 필드가 조회를 막으면 측정을 끄게 되고, 실제 대화 길이 제한은 화면이 담당한다.
  */
 export const MAX_TURN_INDEX = 100;
 
@@ -47,13 +46,15 @@ export class AskAssistantBodyDto {
   @IsUUID('4', { message: uuidValidationMessage })
   sessionId?: string;
 
-  /** 그 대화에서 몇 번째 질문인지. 0부터 시작한다. */
-  @ApiPropertyOptional({ description: '대화 안의 질문 순서. 0부터 시작한다.', minimum: 0, maximum: MAX_TURN_INDEX })
+  /**
+   * 그 대화에서 몇 번째 질문인지. 0부터 시작한다.
+   * 상한을 넘겨도 거절하지 않는다. 측정 필드 하나 때문에 조회가 실패하면 안 된다.
+   */
+  @ApiPropertyOptional({ description: `대화 안의 질문 순서. 0부터 시작하며 ${MAX_TURN_INDEX}을 넘으면 서버가 깎아 기록한다.`, minimum: 0 })
   @Type(() => Number)
   @IsOptional()
   @IsInt({ message: intValidationMessage })
   @Min(0, { message: minValidationMessage })
-  @Max(MAX_TURN_INDEX, { message: maxValidationMessage })
   turnIndex?: number;
 }
 

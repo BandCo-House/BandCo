@@ -4,7 +4,7 @@ import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
 import { LlmService } from '../ai/llm.service';
 
-import type { AskAssistantInput } from './dto/ask-assistant.dto';
+import { type AskAssistantInput, MAX_TURN_INDEX } from './dto/ask-assistant.dto';
 import { AssistantScopeResolver } from './execution/assistant-scope.resolver';
 import { ASSISTANT_PRESETS, type AssistantPreset, findPresetById } from './query-plan/query-plan.presets';
 import { AnswerRenderer } from './rendering/answer-renderer';
@@ -14,7 +14,7 @@ import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createCandidateQuestion, readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
-import { InvalidSqlQueryError, SqlPolicyViolationError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
+import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
 import { createSqlRepairInstruction, getSqlCountUnit } from './sql/sql-query-context';
 import type { AssistantQueryLogEntry } from './telemetry/assistant-query-log.type';
 import { type AssistantQueryBucketName, type AssistantQuerySignal, detectSignals, resolveExecutedBucket } from './telemetry/assistant-query-signal';
@@ -54,6 +54,22 @@ const REPHRASE_SUMMARY = '질문을 정확히 이해하지 못했어요. 누구�
  * 재생성까지 안전한 SQL을 만들지 못했다. 평가 도구는 이 예외를 생성 실패로 집계하고,
  * 사용자 응답에서는 장애가 아니라 질문을 바꿔 달라는 안내로 바꾼다.
  */
+/**
+ * 모델 호출·이름 확인처럼 재생성으로 풀리지 않는 장애다. 원인 예외를 그대로 다시 던져
+ * 사용자 응답과 상태 코드는 바꾸지 않고, 그때까지 쓴 토큰만 측정에 남기기 위해 감싼다.
+ */
+class SqlGenerationFailedError extends Error {
+  constructor(
+    readonly cause: unknown,
+    readonly meta: AssistantQueryMeta,
+    readonly validationFailures: number,
+    readonly policyViolations: string[],
+  ) {
+    super('조회 SQL 생성 중 장애가 발생했습니다.');
+    this.name = 'SqlGenerationFailedError';
+  }
+}
+
 class SqlGenerationExhaustedError extends ServiceUnavailableException {
   constructor(
     readonly meta: AssistantQueryMeta,
@@ -95,6 +111,23 @@ export class AssistantService {
     try {
       generated = preset ? await this.createPresetQuery(preset) : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, tx);
     } catch (error) {
+      if (error instanceof SqlGenerationFailedError) {
+        // 장애도 실패율 분모에 들어가야 하고, 이미 쓴 토큰이 비용 집계에서 빠지면 안 된다.
+        await this.recordQuery({
+          scope,
+          input,
+          outcome: 'generation_failed',
+          bucket: 'INFRA',
+          execOk: false,
+          latencyMs: Date.now() - startedAt,
+          meta: error.meta,
+          validationFailures: error.validationFailures,
+          policyViolations: error.policyViolations,
+        });
+
+        throw error.cause;
+      }
+
       if (!(error instanceof SqlGenerationExhaustedError)) throw error;
       await this.recordQuery({
         scope,
@@ -244,70 +277,85 @@ export class AssistantService {
     let previousSql = '';
     let inputTokens = 0;
     let outputTokens = 0;
+    // 장애가 났을 때 그때까지 쓴 시도 횟수를 측정에 남긴다.
+    let attemptsUsed = 0;
 
-    for (let attempt = 0; attempt <= MAX_SQL_REGENERATIONS; attempt += 1) {
-      const response = await this.llmService.generateStructured({
-        systemInstruction:
-          attempt === 0 ? baseInstruction : `${baseInstruction}\n\n${createSqlRepairInstruction(failures, previousSql)}\n규칙에 맞게 다시 생성한다.`,
-        userMessage: question,
-        responseSchema: SQL_GENERATION_RESPONSE_SCHEMA,
-        maxOutputTokens: 1_500,
-      });
+    try {
+      for (let attempt = 0; attempt <= MAX_SQL_REGENERATIONS; attempt += 1) {
+        attemptsUsed = attempt;
+        const response = await this.llmService.generateStructured({
+          systemInstruction:
+            attempt === 0
+              ? baseInstruction
+              : `${baseInstruction}\n\n${createSqlRepairInstruction(failures, previousSql)}\n규칙에 맞게 다시 생성한다.`,
+          userMessage: question,
+          responseSchema: SQL_GENERATION_RESPONSE_SCHEMA,
+          maxOutputTokens: 1_500,
+        });
 
-      inputTokens += response.usage?.inputTokens ?? 0;
-      outputTokens += response.usage?.outputTokens ?? 0;
+        inputTokens += response.usage?.inputTokens ?? 0;
+        outputTokens += response.usage?.outputTokens ?? 0;
 
-      const meta: AssistantQueryMeta = {
-        providerName: response.providerName,
-        modelName: response.modelName,
-        usedLlm: true,
-        inputTokens,
-        outputTokens,
-        latencyMs: response.latencyMs,
-      };
-
-      try {
-        const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
-        const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
-        if ('reason' in resolved) {
-          return {
-            status: 'CLARIFICATION',
-            reason: resolved.reason,
-            clarification: resolved.clarification,
-            meta,
-            validationFailures: attempt,
-            policyViolations,
-          };
-        }
-        return {
-          status: 'QUERY',
-          query: resolved,
-          meta,
-          validationFailures: attempt,
-          policyViolations,
+        const meta: AssistantQueryMeta = {
+          providerName: response.providerName,
+          modelName: response.modelName,
+          usedLlm: true,
+          inputTokens,
+          outputTokens,
+          latencyMs: response.latencyMs,
         };
-      } catch (error) {
-        if (error instanceof UnsupportedQuestionError) {
+
+        try {
+          const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
+          const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
+          if ('reason' in resolved) {
+            return {
+              status: 'CLARIFICATION',
+              reason: resolved.reason,
+              clarification: resolved.clarification,
+              meta,
+              validationFailures: attempt,
+              policyViolations,
+            };
+          }
           return {
-            status: 'UNSUPPORTED',
-            reason: error.reason,
+            status: 'QUERY',
+            query: resolved,
             meta,
             validationFailures: attempt,
             policyViolations,
           };
-        }
+        } catch (error) {
+          if (error instanceof UnsupportedQuestionError) {
+            return {
+              status: 'UNSUPPORTED',
+              reason: error.reason,
+              meta,
+              validationFailures: attempt,
+              policyViolations,
+            };
+          }
 
-        if (error instanceof InvalidSqlQueryError) {
-          // SqlPolicyViolationError는 InvalidSqlQueryError를 상속하므로 재생성 정책은 그대로다.
-          if (error instanceof SqlPolicyViolationError) policyViolations.push(...error.codes);
-          failures.push(error.message);
-          previousSql = readGeneratedSql(response.parsed);
-          this.logger.warn(`SQL 검증에 실패해 재생성합니다: ${error.message}`);
-          continue;
-        }
+          if (error instanceof InvalidSqlQueryError) {
+            // 클래스가 아니라 policyCodes를 읽는다. 여러 위반이 합쳐지면 클래스는 평범한 오류가 된다.
+            policyViolations.push(...error.policyCodes);
+            failures.push(error.message);
+            previousSql = readGeneratedSql(response.parsed);
+            this.logger.warn(`SQL 검증에 실패해 재생성합니다: ${error.message}`);
+            continue;
+          }
 
-        throw error;
+          throw error;
+        }
       }
+    } catch (error) {
+      // 모델 호출·이름 확인 장애는 재생성으로 풀리지 않는다. 원인은 그대로 올리고 토큰만 측정에 남긴다.
+      throw new SqlGenerationFailedError(
+        error,
+        { providerName: null, modelName: null, usedLlm: true, inputTokens, outputTokens, latencyMs: 0 },
+        attemptsUsed,
+        policyViolations,
+      );
     }
 
     throw new SqlGenerationExhaustedError(
@@ -414,7 +462,7 @@ export class AssistantService {
       bandId: record.scope.bandId,
       userId: record.scope.userId,
       sessionId: record.input.sessionId ?? null,
-      turnIndex: record.input.turnIndex ?? null,
+      turnIndex: clampTurnIndex(record.input.turnIndex),
       presetId: record.input.presetId ?? null,
       question: record.input.question ?? null,
       intent: record.query?.intent ?? null,
@@ -424,6 +472,7 @@ export class AssistantService {
       // 질문에 답했는지는 사람·모델 판정이 붙을 때 채운다.
       answered: null,
       bucket: record.bucket,
+      outcome: record.outcome,
       signals,
       rowCount: record.rowCount ?? 0,
       hasMore: record.hasMore ?? false,
@@ -467,6 +516,11 @@ interface QueryRecord {
  */
 function isQueryLogEnabled(): boolean {
   return process.env.ASSISTANT_QUERY_LOG_ENABLED !== 'false';
+}
+
+/** 긴 대화의 턴 순서를 상한으로 깎는다. 측정 필드 때문에 조회를 거절하지 않는다. */
+function clampTurnIndex(turnIndex: number | undefined): number | null {
+  return turnIndex === undefined ? null : Math.min(turnIndex, MAX_TURN_INDEX);
 }
 
 /** 알 수 없는 실행 오류를 운영 로그에서 확인할 수 있는 문자열로 만든다. */

@@ -20,6 +20,7 @@ CREATE TABLE "assistant_query_logs" (
     "exec_ok" BOOLEAN NOT NULL,
     "answered" BOOLEAN,
     "bucket" "AssistantQueryBucket" NOT NULL,
+    "outcome" VARCHAR(32) NOT NULL,
     "signals" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "row_count" INTEGER NOT NULL,
     "has_more" BOOLEAN NOT NULL,

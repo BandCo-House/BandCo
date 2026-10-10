@@ -75,6 +75,11 @@ export class InvalidSqlQueryError extends Error {
     readonly code: string,
     detail: string,
     readonly codes: string[] = [code],
+    /**
+     * 이 오류에 포함된 정책 위반 코드. 여러 위반을 합쳐도 분류가 사라지지 않게 오류가 직접 들고 다닌다.
+     * 클래스(instanceof)로 판별하면 combineViolations가 합치는 순간 정책 위반을 놓친다.
+     */
+    readonly policyCodes: string[] = [],
   ) {
     super(codes.length > 1 ? detail : `${code}: ${detail}`);
     this.name = 'InvalidSqlQueryError';
@@ -88,7 +93,7 @@ export class InvalidSqlQueryError extends Error {
  */
 export class SqlPolicyViolationError extends InvalidSqlQueryError {
   constructor(code: string, detail: string, codes: string[] = [code]) {
-    super(code, detail, codes);
+    super(code, detail, codes, codes);
     this.name = 'SqlPolicyViolationError';
   }
 }
@@ -100,6 +105,8 @@ function combineViolations(violations: InvalidSqlQueryError[]): InvalidSqlQueryE
     violations[0].code,
     violations.map(violation => violation.message).join('\n'),
     violations.flatMap(violation => violation.codes),
+    // 합쳐진 오류에도 정책 위반 코드를 남긴다. 허용 목록 밖 시도가 의미 위반과 함께 오면 묻히기 때문이다.
+    violations.flatMap(violation => violation.policyCodes),
   );
 }
 

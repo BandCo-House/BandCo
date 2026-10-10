@@ -19,6 +19,8 @@ export interface AssistantQueryLogEntry {
   /** 질문에 답했는지. 결정론으로는 알 수 없어 판정이 붙기 전까지 null이다 */
   answered: boolean | null;
   bucket: AssistantQueryBucketName;
+  /** 어느 단계에서 끝났는지. bucket이 INFRA일 때 생성 장애와 실행 장애를 가른다. */
+  outcome: string;
   signals: AssistantQuerySignal[];
   rowCount: number;
   hasMore: boolean;

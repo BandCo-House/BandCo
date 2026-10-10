@@ -10,6 +10,7 @@
 | `answered` | 질문에 실제로 답했다 | **아직 아무도 채우지 않는다. 항상 NULL** |
 | `signals` | 의심할 만한 자리 | 서버 (결정론) |
 | `bucket` | 결정론으로 정할 수 있는 분류 하나 | 서버 (결정론) |
+| `outcome` | 어느 단계에서 끝났는지 | 서버 (결정론) |
 
 `exec_ok = true`인데 질문과 어긋난 답일 수 있다. 그 경우를 코드가 직접 알 수는 없으므로
 `signals`로 "의심할 자리"만 모으고, 판정은 사람·모델이 붙을 때 `answered`에 쓴다.
@@ -84,6 +85,14 @@ SELECT turn_index, count(*) AS n,
 FROM assistant_query_logs
 WHERE turn_index IS NOT NULL
 GROUP BY turn_index ORDER BY turn_index;
+```
+
+```sql
+-- 장애를 단계별로 가른다. bucket이 INFRA인 것만으로는 생성 장애와 실행 장애가 섞인다.
+SELECT outcome, count(*) AS n
+FROM assistant_query_logs
+WHERE bucket = 'INFRA' AND created_at >= now() - interval '7 days'
+GROUP BY outcome ORDER BY n DESC;
 ```
 
 ```sql
