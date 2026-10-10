@@ -17,7 +17,8 @@ const profileChipVariants = cva('items-center', {
   variants: {
     variant: {
       basic: 'inline-flex gap-2',
-      assigned: 'inline-flex gap-1.5 rounded-full bg-surface-2 py-1 pr-3 pl-3',
+      assigned:
+        'inline-flex max-w-full gap-1.5 rounded-full bg-surface-2 py-1 pr-3 pl-3',
       full: 'flex min-w-0 flex-1 gap-2 rounded-full p-0.5',
       search:
         'flex min-w-0 flex-1 gap-2 rounded-md border border-surface-2 bg-surface-3 p-0.5 text-left transition-colors',
@@ -94,11 +95,14 @@ export const ProfileChip = ({
     return (
       <span className={cn(profileChipVariants({ variant }), className)}>
         {sessionName && (
-          <span className="shrink-0 typo-base-sb text-primary">
+          // 세션이 여러 개 붙어 길어지면 이쪽이 줄어든다 — 사람 이름이 잘리는 것보다 낫다.
+          <span className="min-w-0 truncate typo-base-sb text-primary">
             {sessionName}:
           </span>
         )}
-        <span className="inline-flex items-center gap-2">{identity}</span>
+        <span className="inline-flex shrink-0 items-center gap-2">
+          {identity}
+        </span>
       </span>
     );
   }

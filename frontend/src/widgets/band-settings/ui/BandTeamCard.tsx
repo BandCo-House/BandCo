@@ -79,15 +79,17 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
         </div>
       </div>
 
-      {/* 2. 세션 요약 텍스트 (예: 기타: 김민준  베이스: 김루나 ...) */}
+      {/* 2. 세션 요약 (예: 기타: 김민준  베이스: 김루나 …).
+          한 줄로 묶고 넘치면 말줄임한다. 줄바꿈을 허용하면 팀원이 많을수록 요약이 서너 줄로
+          늘어나, 아래 펼쳐 보는 팀원 목록보다 요약이 더 길어진다. 전체는 펼치면 보인다. */}
       {members.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 typo-xs-r text-grey-200">
+        <p className="truncate typo-xs-r text-grey-200">
           {members.map((member, idx) => (
-            <span key={member.teamMemberId} className="whitespace-nowrap">
+            <span key={member.teamMemberId} className="mr-3 last:mr-0">
               {getSessionName(member, idx)}: {member.user.nickname}
             </span>
           ))}
-        </div>
+        </p>
       )}
 
       {/* 3. 아코디언 펼침: 팀원 상세 아바타 + 이름 칩 목록.
