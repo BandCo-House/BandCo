@@ -11,20 +11,42 @@
 
 <br>
 
-<p align="center">
-  <img src="docs/readme/demo-ai.gif" alt="AI 물어보기: 질문을 입력하면 다음 합주 일정과 참석 인원을 찾아 답하는 화면" width="31%">
-  <img src="docs/readme/demo-poll.gif" alt="일정 투표: 가능한 시간을 드래그로 골라 투표하는 화면" width="31%">
-  <img src="docs/readme/demo-space.gif" alt="공연 스페이스: 일정과 세션 편성을 여는 화면" width="31%">
-</p>
+<div align="center">
+  <h3>공연 스페이스</h3>
+  <p>공연마다 합주와 회의를 타임라인으로 정리하고<br>곡과 키, 파트별 멤버와 장비까지 담아요.</p>
+  <img src="docs/readme/demo-space.gif" alt="밴드 홈에서 공연 스페이스로 들어가 일정을 여는 화면" width="36%">
+  <img src="docs/readme/screen-schedule.webp" alt="연습할 곡과 세션 편성이 담긴 일정 상세 화면" width="36%">
+</div>
 
-## 주요 기능
+<br>
 
-- **AI 물어보기** “다음 합주 몇 명 와?”처럼 물으면 밴드 데이터에서 찾아 답해요. 어떤 조건으로 찾았는지도 함께 알려 줘요.
-- **일정 투표** 후보 날짜와 시간대를 정해 투표를 열면, 멤버는 되는 시간을 드래그로 골라요. 시간대마다 가능한 인원이 바로 쌓여요.
-- **공연 스페이스** 공연마다 합주와 회의를 타임라인으로 정리해요. 일정을 열면 연습할 곡과 키, 파트별 멤버와 장비까지 보여요.
-- **밴드 홈** 공지, 이번 주 일정, 준비 중인 공연을 한 화면에서 봐요.
-- **라이브러리** 합주곡과 연습실을 모아 두고, 곡마다 키·BPM·음원 링크를 저장해요.
-- **초대 · 멤버 관리** 초대 링크나 이름 검색으로 멤버를 추가하고, 권한과 팀을 관리해요.
+<div align="center">
+  <h3>일정 투표</h3>
+  <p>되는 시간을 드래그로 고르면<br>시간대마다 가능한 인원이 바로 쌓여요.</p>
+  <img src="docs/readme/demo-poll.gif" alt="가능한 시간을 드래그로 골라 투표하는 화면" width="36%">
+  <img src="docs/readme/screen-poll.webp" alt="시간대별 가능한 인원이 표시된 투표 결과 화면" width="36%">
+</div>
+
+<br>
+
+<div align="center">
+  <h3>밴드 홈 · 라이브러리 · 초대</h3>
+  <p>공지와 일정은 홈에서, 합주곡은 라이브러리에서<br>새 멤버는 초대 링크 하나로 모아요.</p>
+  <img src="docs/readme/screen-home.webp" alt="공지, 캘린더, 공연 목록이 있는 밴드 홈 화면" width="28%">
+  <img src="docs/readme/screen-library.webp" alt="합주곡과 연습 장소가 있는 라이브러리 화면" width="28%">
+  <img src="docs/readme/screen-invite.webp" alt="초대 링크 발급과 멤버 추가가 있는 밴드 설정 화면" width="28%">
+</div>
+
+<br>
+
+<div align="center">
+  <h3>AI 물어보기</h3>
+  <p>“다음 합주 몇 명 와?”처럼 물으면<br>밴드 데이터에서 찾아 바로 답해요.</p>
+  <img src="docs/readme/demo-ai.gif" alt="질문을 입력하면 다음 합주 일정과 참석 인원을 찾아 답하는 화면" width="36%">
+  <img src="docs/readme/screen-ai.webp" alt="이번 달 많이 연습한 곡을 순위로 보여 주는 답변 화면" width="36%">
+</div>
+
+<br>
 
 ## 기술 스택
 
