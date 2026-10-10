@@ -51,7 +51,7 @@ describe('NotificationCard', () => {
     );
     const cardDiv = container.firstChild as HTMLElement;
 
-    expect(cardDiv).toHaveClass('bg-[rgba(220,226,249,0.4)]');
+    expect(cardDiv).toHaveClass('bg-surface-1');
     expect(screen.getByText('새로운 공지사항')).toHaveClass('text-white');
   });
 
@@ -62,7 +62,7 @@ describe('NotificationCard', () => {
     );
     const cardDiv = container.firstChild as HTMLElement;
 
-    expect(cardDiv).toHaveClass('bg-[rgba(101,99,122,0.48)]');
+    expect(cardDiv).toHaveClass('bg-surface-3');
     expect(screen.getByText('새로운 공지사항')).toHaveClass('text-grey-200');
   });
 

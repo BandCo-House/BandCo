@@ -265,7 +265,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                     </div>
 
                     {/* 2. 중간: 프로필 알약 칩 (아바타 + 닉네임) */}
-                    <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
+                    <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-surface-2 py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
                       <Avatar className="size-8 rounded-full">
                         <AvatarImage src={member.avatarUrl ?? undefined} />
                         <AvatarFallback className="typo-xs-sb">
@@ -286,7 +286,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                             handleOpenEditMember(member.bandMemberId)
                           }
                           aria-label={`${member.nickname} 변경`}
-                          className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] text-primary transition-opacity hover:opacity-90 active:scale-95"
+                          className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary transition-opacity hover:opacity-90 active:scale-95"
                         >
                           <Search className="size-5" />
                         </button>

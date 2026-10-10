@@ -84,11 +84,7 @@ export const NotificationCard = ({
       }
       className={`relative flex gap-3 rounded-2xl border border-[rgba(39,43,34,0.8)] p-4 transition-all duration-200 ${
         isClickable ? 'cursor-pointer active:scale-[0.995]' : ''
-      } ${
-        !noti.isRead
-          ? 'bg-[rgba(220,226,249,0.4)]'
-          : 'bg-[rgba(101,99,122,0.48)]'
-      }`}
+      } ${!noti.isRead ? 'bg-surface-1' : 'bg-surface-3'}`}
     >
       {/* 선택 토글은 카드 전체가 담당하므로 체크박스는 표시 전용이다. */}
       {isEditMode && (
