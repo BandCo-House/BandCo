@@ -3,7 +3,10 @@ import type { ScheduleDetail } from '@/entities/schedule/model/types';
 import {
   createEmptyForm,
   detailToForm,
+  isEndAfterStart,
   isFormValid,
+  resolveEndDate,
+  shiftStartDate,
   toScheduleRequest,
   type ScheduleFormState,
 } from './types';
@@ -73,20 +76,21 @@ describe('toScheduleRequest', () => {
     );
   });
 
-  it('종료 시각이 시작보다 이르면 종료를 다음 날로 넘긴다(하루 +1)', () => {
+  it('시작과 종료의 날짜를 각각 실어 자정을 넘기는 일정을 표현한다', () => {
     const req = toScheduleRequest({
       ...baseForm(),
       title: '심야 합주',
       placeId: 'place-1',
       songId: 'band-song-1',
+      startDate: { year: 2026, month: 3, day: 1 },
       startTime: '23:00',
+      endDate: { year: 2026, month: 3, day: 2 },
       endTime: '01:00',
     });
 
     const start = new Date(req.startAt);
     const end = new Date(req.endAt);
-    expect(end.getTime()).toBeGreaterThan(start.getTime());
-    // 시작 다음 날 01:00 → 시작과 2시간 차.
+    expect(end.getDate()).toBe(2);
     expect((end.getTime() - start.getTime()) / (60 * 60 * 1000)).toBe(2);
   });
 
@@ -420,5 +424,68 @@ describe('detailToForm', () => {
         fileName: '악보.pdf',
       },
     ]);
+  });
+});
+
+describe('isEndAfterStart', () => {
+  it('같은 날 종료 시각이 시작보다 이르면 순서가 틀렸다고 본다', () => {
+    const form = { ...baseForm(), startTime: '23:00', endTime: '01:00' };
+
+    expect(isEndAfterStart(form)).toBe(false);
+    expect(
+      isEndAfterStart({ ...form, endDate: { year: 2026, month: 3, day: 2 } }),
+    ).toBe(true);
+  });
+
+  it('종료가 시작보다 앞서면 다른 필수값이 다 차도 폼은 유효하지 않다', () => {
+    const form: ScheduleFormState = {
+      ...baseForm(),
+      scheduleType: 'MEETING',
+      title: '정기 회의',
+      placeId: 'place-1',
+      participantBandMemberIds: ['member-1'],
+    };
+
+    expect(isFormValid(form)).toBe(true);
+    expect(isFormValid({ ...form, endTime: '18:00' })).toBe(false);
+  });
+});
+
+describe('shiftStartDate', () => {
+  it('시작 날짜를 옮기면 종료 날짜도 같은 일수만큼 따라 옮긴다', () => {
+    const form = {
+      ...baseForm(),
+      endDate: { year: 2026, month: 3, day: 2 },
+    };
+
+    expect(shiftStartDate(form, { year: 2026, month: 3, day: 31 })).toEqual({
+      startDate: { year: 2026, month: 3, day: 31 },
+      endDate: { year: 2026, month: 4, day: 1 },
+    });
+  });
+});
+
+describe('resolveEndDate', () => {
+  const start = { year: 2026, month: 12, day: 31 };
+
+  it('종료 월·일이 시작보다 뒤면 시작과 같은 해로 본다', () => {
+    expect(
+      resolveEndDate(
+        { year: 2026, month: 3, day: 1 },
+        {
+          year: 2020,
+          month: 3,
+          day: 2,
+        },
+      ),
+    ).toEqual({ year: 2026, month: 3, day: 2 });
+  });
+
+  it('종료 월·일이 시작보다 앞서면 해를 넘긴 것으로 본다', () => {
+    expect(resolveEndDate(start, { year: 2026, month: 1, day: 1 })).toEqual({
+      year: 2027,
+      month: 1,
+      day: 1,
+    });
   });
 });

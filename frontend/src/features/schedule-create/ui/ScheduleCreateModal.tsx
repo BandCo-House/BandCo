@@ -30,6 +30,12 @@ interface ScheduleCreateModalProps {
   initialDate?: Date;
   /** 기존 일정을 눌러 연 경우의 일정 ID. 주면 폼 대신 상세로 연다. */
   initialScheduleId?: string | null;
+  /**
+   * 추가·수정이 저장된 직후 그 일정의 시작 날짜로 불린다.
+   * 폼에서 날짜를 바꿀 수 있어, 캘린더가 보던 날짜와 저장된 날짜가 다를 수 있다 —
+   * 사용처가 그 날짜로 옮겨 가야 닫고 나왔을 때 방금 저장한 일정이 보인다.
+   */
+  onSaved?: (date: Date) => void;
 }
 
 /**
@@ -44,6 +50,7 @@ export const ScheduleCreateModal = ({
   bandId,
   initialDate,
   initialScheduleId = null,
+  onSaved,
 }: ScheduleCreateModalProps) => {
   const [view, setView] = useState<'form' | 'detail'>('form');
   const [mode, setMode] = useState<'create' | 'edit'>('create');
@@ -100,18 +107,24 @@ export const ScheduleCreateModal = ({
       setIsUploading(false);
     }
 
+    const savedDate = new Date(payload.startAt);
+
     if (mode === 'create') {
       create(payload, {
         onSuccess: (result) => {
           setScheduleId(result.scheduleId);
           setView('detail');
+          onSaved?.(savedDate);
         },
         onError: () =>
           toast.error('일정을 추가하지 못했어요. 잠시 후 다시 시도해주세요.'),
       });
     } else {
       update(payload, {
-        onSuccess: () => setView('detail'),
+        onSuccess: () => {
+          setView('detail');
+          onSaved?.(savedDate);
+        },
         onError: () =>
           toast.error('일정을 수정하지 못했어요. 잠시 후 다시 시도해주세요.'),
       });

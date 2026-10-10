@@ -366,6 +366,7 @@ export const SchedulePollCreateForm = ({
               <PopoverContent className="w-80 rounded-md bg-gradient-top p-4">
                 <WheelDatePicker
                   label="마감"
+                  labelHidden
                   value={deadlineDate}
                   onChange={(date) =>
                     setCustomDeadline({ date, time: deadlineTime })

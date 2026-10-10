@@ -4,6 +4,8 @@ import { cn } from '@/shared/lib/utils';
 export const WHEEL_ITEM_HEIGHT = 32;
 // 가운데를 선택값으로 두고 위아래 1칸씩 노출한다(총 3칸).
 export const WHEEL_VISIBLE_COUNT = 3;
+// 두 자리 값(월·일·시·분) 컬럼을 좁힐 때 쓰는 폭. 기본(w-14)은 연도 네 자리에 맞춘 값이다.
+export const WHEEL_COLUMN_DENSE_CLASS = 'w-11';
 const PADDING = ((WHEEL_VISIBLE_COUNT - 1) / 2) * WHEEL_ITEM_HEIGHT;
 
 interface WheelColumnProps {
