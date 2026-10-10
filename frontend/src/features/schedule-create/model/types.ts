@@ -110,17 +110,22 @@ export const shiftStartDate = (
   return { startDate, endDate: toWheelDate(shifted) };
 };
 
+const DECEMBER = 12;
+const JANUARY = 1;
+
 /**
  * 종료 휠에서 고른 월·일에 연도를 붙인다. 연도 휠이 없으므로 시작 연도를 따르되,
- * 월·일이 시작보다 앞서면 해를 넘긴 것으로 본다(12월 31일 시작 → 1월 1일 종료).
+ * 12월에 시작해 1월에 끝나는 경우만 해를 넘긴 것으로 본다(12월 31일 → 1월 1일).
+ *
+ * "시작보다 앞선 날짜면 다음 해"로 넓게 잡으면 안 된다. 3월 10일 시작에서 종료 휠이
+ * 실수로 3월 9일에 놓이면 내년 3월 9일로 풀려, 오류 없이 364일짜리 일정이 저장된다.
+ * 연말연시가 아니면 같은 해로 두어 "종료는 시작보다 뒤여야 해요" 검증에 걸리게 한다.
  */
 export const resolveEndDate = (
   startDate: WheelDate,
   picked: WheelDate,
 ): WheelDate => {
-  const wrapsYear =
-    picked.month < startDate.month ||
-    (picked.month === startDate.month && picked.day < startDate.day);
+  const wrapsYear = startDate.month === DECEMBER && picked.month === JANUARY;
   return { ...picked, year: startDate.year + (wrapsYear ? 1 : 0) };
 };
 
