@@ -243,7 +243,9 @@ export const ScheduleFormView = ({
         />
       </Field>
 
-      {/* 시작. 날짜는 캘린더에서 보던 날짜로 시작하지만 여기서 바꿀 수 있다. */}
+      {/* 시작. 날짜는 캘린더에서 보던 날짜로 시작하지만 여기서 바꿀 수 있다.
+          연도는 올해부터 고른다. 지난 해의 일정을 고칠 때는 그 해까지 내려 준다 —
+          휠 범위 밖이면 엉뚱한 연도가 선택된 것처럼 보인다. */}
       <Field label="시작" required>
         <ScheduleTimeSheet
           label="시작"
@@ -253,10 +255,12 @@ export const ScheduleFormView = ({
           }
           time={form.startTime}
           onTimeChange={(startTime) => onChange({ startTime })}
+          yearMode="wheel"
+          minYear={Math.min(new Date().getFullYear(), form.startDate.year)}
         />
       </Field>
 
-      {/* 종료 */}
+      {/* 종료. 연도는 고르지 않고 시작에서 추론한 값을 보여주기만 한다(resolveEndDate). */}
       <Field label="종료" required>
         <ScheduleTimeSheet
           label="종료"
@@ -266,6 +270,7 @@ export const ScheduleFormView = ({
           }
           time={form.endTime}
           onTimeChange={(endTime) => onChange({ endTime })}
+          yearMode="readonly"
           invalid={endBeforeStart}
           errorId={SCHEDULE_TIME_ERROR_ID}
         />

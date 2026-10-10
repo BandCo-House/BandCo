@@ -481,15 +481,21 @@ describe('resolveEndDate', () => {
     ).toEqual({ year: 2026, month: 3, day: 2 });
   });
 
-  it('12월에 시작해 1월에 끝나면 해를 넘긴 것으로 본다', () => {
+  it('종료 월이 시작 월보다 앞서면 해를 넘긴 것으로 본다', () => {
     expect(resolveEndDate(start, { year: 2026, month: 1, day: 1 })).toEqual({
       year: 2027,
       month: 1,
       day: 1,
     });
+    expect(
+      resolveEndDate(
+        { year: 2026, month: 11, day: 20 },
+        { year: 2026, month: 1, day: 5 },
+      ).year,
+    ).toBe(2027);
   });
 
-  it('연말연시가 아니면 시작보다 앞선 날짜를 골라도 같은 해로 둬 검증에 걸리게 한다', () => {
+  it('같은 달의 앞선 날짜는 같은 해로 둬 검증에 걸리게 한다', () => {
     const form = {
       ...baseForm(),
       startDate: { year: 2026, month: 3, day: 10 },

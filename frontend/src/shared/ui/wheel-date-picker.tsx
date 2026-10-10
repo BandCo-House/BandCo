@@ -22,10 +22,12 @@ interface WheelDatePickerProps {
   /** 라벨을 화면에 그리지 않고 group 이름으로만 남긴다. */
   labelHidden?: boolean;
   /**
-   * 연도 휠을 숨기고 월·일만 고르게 한다. 연도는 value의 것을 그대로 유지한다.
-   * 일정처럼 거의 항상 올해인 값에서 휠 한 칸을 덜어 낼 때 쓴다.
+   * 연도를 어떻게 다룰지.
+   * - 'wheel'(기본): 휠로 고른다.
+   * - 'readonly': 고를 수는 없고 value의 연도를 글자로 보여준다. 연도를 다른 값에서
+   *   추론하는 피커(일정 종료일)가, 추론 결과를 숨기지 않고 알리려고 쓴다.
    */
-  hideYear?: boolean;
+  yearMode?: 'wheel' | 'readonly';
   /** 두 자리 컬럼(월·일)을 좁혀, 시간 휠과 한 줄에 나란히 놓을 수 있게 한다. */
   dense?: boolean;
   className?: string;
@@ -42,7 +44,7 @@ export const WheelDatePicker = ({
   maxYear,
   label,
   labelHidden,
-  hideYear = false,
+  yearMode = 'wheel',
   dense = false,
   className,
 }: WheelDatePickerProps) => {
@@ -61,13 +63,20 @@ export const WheelDatePicker = ({
 
   return (
     <WheelRow label={label} labelHidden={labelHidden} className={className}>
-      {!hideYear && (
+      {yearMode === 'wheel' ? (
         <WheelColumn
           label="년"
           items={years}
           value={value.year}
           onChange={(year) => commit({ ...value, year })}
         />
+      ) : (
+        // 휠 컬럼과 같은 폭을 차지해 시작 카드의 연도 휠과 세로로 줄이 맞는다.
+        // 고를 수 없는 값이라 휠의 비선택 항목과 같은 흐린 색으로 둔다.
+        <span className="w-14 text-center typo-base-sb text-grey-300">
+          <span className="sr-only">연도 </span>
+          {value.year}
+        </span>
       )}
       <WheelColumn
         className={columnClass}
