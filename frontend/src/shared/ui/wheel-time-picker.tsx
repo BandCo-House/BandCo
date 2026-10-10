@@ -2,7 +2,7 @@ import { pad2 } from './wheel-date';
 import {
   WHEEL_COLUMN_DENSE_CLASS,
   WheelColumn,
-  wheelSeparatorClass,
+  WHEEL_SEPARATOR_CLASS,
 } from './wheel-column';
 import { cn } from '@/shared/lib/utils';
 import { WheelRow } from './wheel-row';
@@ -85,7 +85,14 @@ export const WheelTimePicker = ({
         onChange={(hour12) => commit({ hour12 })}
         format={pad2}
       />
-      <span className={cn(wheelSeparatorClass(dense), 'text-grey-50')}>:</span>
+      <span
+        className={cn(
+          WHEEL_SEPARATOR_CLASS[dense ? 'dense' : 'regular'],
+          'text-grey-50',
+        )}
+      >
+        :
+      </span>
       <WheelColumn
         className={columnClass}
         label="분"

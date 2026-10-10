@@ -2,7 +2,7 @@ import { pad2, type WheelDate } from './wheel-date';
 import {
   WHEEL_COLUMN_DENSE_CLASS,
   WheelColumn,
-  wheelSeparatorClass,
+  WHEEL_SEPARATOR_CLASS,
 } from './wheel-column';
 import { cn } from '@/shared/lib/utils';
 import { WheelRow } from './wheel-row';
@@ -91,7 +91,12 @@ export const WheelDatePicker = ({
         onChange={(month) => commit({ ...value, month })}
         format={pad2}
       />
-      <span className={cn(wheelSeparatorClass(dense), 'text-grey-100')}>
+      <span
+        className={cn(
+          WHEEL_SEPARATOR_CLASS[dense ? 'dense' : 'regular'],
+          'text-grey-100',
+        )}
+      >
         월
       </span>
       <WheelColumn
@@ -102,7 +107,12 @@ export const WheelDatePicker = ({
         onChange={(day) => commit({ ...value, day })}
         format={pad2}
       />
-      <span className={cn(wheelSeparatorClass(dense), 'text-grey-100')}>
+      <span
+        className={cn(
+          WHEEL_SEPARATOR_CLASS[dense ? 'dense' : 'regular'],
+          'text-grey-100',
+        )}
+      >
         일
       </span>
     </WheelRow>

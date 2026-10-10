@@ -11,8 +11,10 @@ export const WHEEL_COLUMN_DENSE_CLASS = 'w-11';
  * 위아래로 쌓였을 때 [연도|오전오후] [월|시] [일|분] 컬럼이 같은 x에 서려면, 글자 폭이
  * 제각각인 구분자까지 같은 폭이어야 한다.
  */
-export const wheelSeparatorClass = (dense: boolean): string =>
-  dense ? 'w-6 text-center typo-base-sb' : 'px-1 typo-base-sb';
+export const WHEEL_SEPARATOR_CLASS = {
+  regular: 'px-1 typo-base-sb',
+  dense: 'w-6 text-center typo-base-sb',
+} as const;
 const PADDING = ((WHEEL_VISIBLE_COUNT - 1) / 2) * WHEEL_ITEM_HEIGHT;
 
 interface WheelColumnProps {
