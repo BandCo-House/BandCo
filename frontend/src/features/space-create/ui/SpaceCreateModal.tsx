@@ -141,6 +141,8 @@ export const SpaceCreateModal = ({
     if (open) setForm(createInitialForm(editTarget));
   }
 
+  // 폼을 열었을 때의 종료 날짜 사용 여부. 수정 저장 시 기간을 건드렸는지 가르는 기준이다.
+  const initialHasEnd = createInitialForm(editTarget).hasEnd;
   const endBeforeStart = hasEnd && compareDate(endDate, startDate) < 0;
   const canSubmit =
     name.trim().length > 0 &&
@@ -151,12 +153,14 @@ export const SpaceCreateModal = ({
   const handleSubmit = () => {
     if (!canSubmit) return;
     const trimmedDescription = description.trim();
-    const payload = {
+    const basePayload = {
       name: name.trim(),
-      spaceType: hasEnd ? 'PERFORMANCE' : 'PRACTICE',
       startDate: toDateString(startDate),
-      endDate: hasEnd ? toDateString(endDate) : ONGOING_END_DATE,
       bandMemberIds,
+    };
+    const periodPayload = {
+      spaceType: hasEnd ? 'PERFORMANCE' : 'PRACTICE',
+      endDate: hasEnd ? toDateString(endDate) : ONGOING_END_DATE,
     } as const;
     const callbacks = {
       onSuccess: () => {
@@ -171,13 +175,21 @@ export const SpaceCreateModal = ({
     if (mode === 'edit') {
       // 수정은 빈 문자열도 그대로 보낸다 — 생략하면 "설명을 지움"을 표현할 수 없다.
       updateMutation.mutate(
-        { ...payload, description: trimmedDescription },
+        {
+          ...basePayload,
+          // 원래 종료가 없던 공간을 그대로 두면 유형·종료일을 보내지 않는다. 보내면
+          // 이름만 고쳐도 유형이 PRACTICE로, 저장돼 있던 종료일이 sentinel로 덮인다
+          // (폼은 PERFORMANCE가 아닌 유형을 전부 "종료 없음"으로만 보여준다).
+          ...(hasEnd || initialHasEnd ? periodPayload : {}),
+          description: trimmedDescription,
+        },
         callbacks,
       );
     } else {
       createMutation.mutate(
         {
-          ...payload,
+          ...basePayload,
+          ...periodPayload,
           description: trimmedDescription || undefined,
           status: 'ACTIVE',
         },
