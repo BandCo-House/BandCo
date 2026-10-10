@@ -59,7 +59,7 @@ describe('NotificationList', () => {
 
   // 탭 관련 검증은 NotificationTabs.test.tsx로 옮겼다 — 탭이 헤더로 빠졌다.
 
-  it('모두 읽음 버튼이 알약(캡슐) 모양의 스타일(border-grey-300 rounded-full)로 표시된다', async () => {
+  it('모두 읽음 버튼이 알약(캡슐) 모양으로 표시된다', async () => {
     server.use(
       http.get(`${API_URL}/notifications/me`, () => {
         return HttpResponse.json({
@@ -88,13 +88,7 @@ describe('NotificationList', () => {
 
     const markAllBtn = await screen.findByRole('button', { name: '모두 읽음' });
     expect(markAllBtn).toBeInTheDocument();
-    expect(markAllBtn).toHaveClass(
-      'rounded-full',
-      'border',
-      'border-grey-300',
-      'px-4',
-      'py-1.5',
-    );
+    expect(markAllBtn).toHaveClass('rounded-full', 'px-4', 'py-1.5');
   });
 
   it('초대장 알림 리스트에서 수락 클릭 시 acceptInvite API가 성공적으로 호출되고 밴드로 이동한다', async () => {

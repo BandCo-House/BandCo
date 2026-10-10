@@ -5,7 +5,7 @@ import { Music, ChevronRight } from 'lucide-react';
 
 export const TeamSongSection: React.FC = () => {
   return (
-    <section className={cn(cardSurfaceClass, 'shadow-sm backdrop-blur-md')}>
+    <section className={cn(cardSurfaceClass, '')}>
       <h3 className="pb-3 typo-base-sb text-grey-100">합주곡</h3>
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">

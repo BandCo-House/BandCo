@@ -128,7 +128,7 @@ export function ProfileCard({
             type="button"
             aria-label="프로필 배경 이미지 변경"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute top-[285px] left-5 z-30 flex size-9 cursor-pointer items-center justify-center rounded-full bg-surface-1 p-2.5 text-primary shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-95"
+            className="absolute top-[285px] left-5 z-30 flex size-9 cursor-pointer items-center justify-center rounded-full bg-surface-1 glass-surface p-2.5 text-primary shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-95"
           >
             <GalleryIcon className="size-4" />
           </button>
@@ -257,7 +257,7 @@ export function ProfileCard({
           </div>
         </div>
         <div className="absolute right-5 -bottom-7 left-5 z-20 mx-auto max-w-sm rounded-full p-0.5">
-          <div className="absolute inset-0 rounded-full bg-surface-2 backdrop-blur-sm" />
+          <div className="absolute inset-0 rounded-full bg-surface-2/50 glass-surface backdrop-blur-xl!" />
           <div className="relative flex items-start gap-2 rounded-full px-4 py-2.5">
             <Button
               variant="neutral"

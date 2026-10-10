@@ -152,7 +152,7 @@ export function SkillEditSection({
   return (
     <section
       aria-labelledby="profile-skill-title"
-      className="relative flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 p-4 text-grey-50"
+      className="relative flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 glass-surface p-4 text-grey-50"
     >
       <h2 id="profile-skill-title" className="typo-base-b">
         플레이 파트

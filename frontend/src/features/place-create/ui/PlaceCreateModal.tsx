@@ -189,7 +189,7 @@ export const PlaceCreateModal = ({
                 <ThumbnailRemoveButton label="커버 제거" onClick={clearCover} />
               </div>
             ) : (
-              <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300">
+              <label className="flex cursor-pointer items-center gap-3 rounded-full bg-grey-500/24 glass-surface px-5 py-4 text-grey-300">
                 <Upload aria-hidden="true" className="size-6" />
                 <span className="typo-base-sb">파일을 선택하세요</span>
                 <input

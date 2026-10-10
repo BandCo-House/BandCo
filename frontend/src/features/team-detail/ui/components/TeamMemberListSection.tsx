@@ -50,12 +50,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
     return defaultIndex !== undefined ? `세션${defaultIndex + 1}` : '세션';
   };
   return (
-    <div
-      className={cn(
-        cardSurfaceClass,
-        'flex w-full flex-col gap-3 shadow-sm backdrop-blur-md',
-      )}
-    >
+    <div className={cn(cardSurfaceClass, 'flex w-full flex-col gap-3')}>
       {/* 카드 헤더 */}
       <div className="flex items-center justify-between">
         <h3 className="typo-base-b text-grey-50">팀원 목록</h3>
@@ -131,7 +126,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               </div>
 
               {/* 멤버 칩 */}
-              <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-surface-2 px-3 py-1.5">
+              <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-surface-2 glass-surface px-3 py-1.5">
                 <Avatar className="h-8 w-8 shrink-0 rounded-full">
                   <AvatarImage
                     src={member.user.profileImageUrl || undefined}
@@ -150,7 +145,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenSearchForSession(idx)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary transition-colors hover:bg-[#61759E]/80"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 glass-surface text-primary transition-colors hover:bg-[#61759E]/80"
                 aria-label={`${getSessionName(member, idx)} 멤버 변경`}
               >
                 <Search className="h-6 w-6" />
@@ -168,7 +163,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
             <button
               type="button"
               onClick={onOpenSearchForNewMember}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary transition-colors hover:bg-[#61759E]/80"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 glass-surface text-primary transition-colors hover:bg-[#61759E]/80"
               aria-label="세션 멤버 검색"
             >
               <Search className="h-6 w-6" />

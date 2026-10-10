@@ -14,9 +14,7 @@ export const TeamPracticeSpaceSection: React.FC<
 > = ({ bandId = 'band-1', spaces = [] }) => {
   if (spaces.length === 0) {
     return (
-      <div
-        className={cn(cardSurfaceClass, 'w-full shadow-sm backdrop-blur-md')}
-      >
+      <div className={cn(cardSurfaceClass, 'w-full')}>
         <div className="shrink-0 pb-2">
           <p className="typo-base-b text-grey-50">참여중인 합주 공간</p>
         </div>
@@ -28,7 +26,7 @@ export const TeamPracticeSpaceSection: React.FC<
   }
 
   return (
-    <div className={cn(cardSurfaceClass, 'w-full shadow-sm backdrop-blur-md')}>
+    <div className={cn(cardSurfaceClass, 'w-full')}>
       <div className="shrink-0 pb-2">
         <p className="typo-base-b text-grey-50">참여중인 합주 공간</p>
       </div>
