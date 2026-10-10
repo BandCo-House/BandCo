@@ -5,10 +5,10 @@ import { useFieldRequired } from './field-context';
 
 const inputVariantClassNames = {
   roundedFull:
-    'rounded-full field-border bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-primary focus-visible:outline-2 focus-visible:outline-primary',
+    'glass-surface rounded-full border-0 bg-transparent p-4 outline-solid outline-1 outline-transparent hover:outline-primary focus-visible:outline-2 focus-visible:outline-primary',
   // 밑줄형은 라벨과 좌측을 맞추기 위해 앞쪽 패딩을 두지 않는다.
   underline:
-    'rounded-none border-0 border-b bg-transparent py-3 pr-5 pl-0 outline-none hover:border-primary focus-visible:border-primary focus-visible:ring-0',
+    'rounded-none border-0 border-b bg-transparent py-3 pr-5 pl-0 outline-none transition-[border-color,color,box-shadow,outline-color,outline-width] hover:border-primary focus-visible:border-primary focus-visible:ring-0',
 } as const;
 
 type InputProps = React.ComponentProps<'input'> & {
@@ -57,7 +57,7 @@ const Input = ({
       type={type}
       data-slot="input"
       className={cn(
-        'w-full border-border text-grey-50 transition-[border-color,color,box-shadow,outline-color,outline-width] selection:bg-key selection:text-key-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed',
+        'w-full border-border text-grey-50 selection:bg-key selection:text-key-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed',
         inputVariantClassNames[variant],
         'aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-invalid:outline-destructive dark:aria-invalid:ring-destructive/40',
         isSearchBar && 'pl-11',
