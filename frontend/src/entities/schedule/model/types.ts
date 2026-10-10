@@ -151,7 +151,7 @@ export interface ScheduleDetail {
   startAt: string | null;
   endAt: string | null;
   status: ScheduleStatus;
-  place: { placeId: string; name: string; address: string } | null;
+  place: { placeId: string; name: string; address: string | null } | null;
   songs: ScheduleSong[];
   participants: ScheduleParticipantDetail[];
   memo: string | null;

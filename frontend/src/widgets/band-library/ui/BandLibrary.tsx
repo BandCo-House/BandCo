@@ -8,6 +8,7 @@ import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { SongLibraryItem } from '@/entities/song/ui/SongLibraryItem';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { PlaceCard } from '@/entities/place/ui/PlaceCard';
+import { PlaceDetailSheet } from '@/entities/place/ui/PlaceDetailSheet';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
 import { SongCreateModal } from '@/features/song-create';
 import { LibrarySectionHeader } from './LibrarySectionHeader';
@@ -49,6 +50,14 @@ export const BandLibrary = () => {
 
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
+  // 객체가 아니라 ID를 들고 목록에서 다시 찾는다. 수정 후 목록이 갱신되면
+  // 열려 있는 상세도 새 값으로 바뀌어야 한다.
+  const [detailPlaceId, setDetailPlaceId] = useState<string | null>(null);
+  // 닫을 때 ID는 남긴다. 같이 비우면 시트가 내려가는 동안 내용이 먼저 사라진다.
+  const [isPlaceDetailOpen, setIsPlaceDetailOpen] = useState(false);
+  const [isPlaceEditOpen, setIsPlaceEditOpen] = useState(false);
+  const detailPlace =
+    places.find((place) => place.placeId === detailPlaceId) ?? null;
 
   // 합주곡 가로 스크롤: 스크롤바를 숨기고 스크롤 가능한 끝만 mask로 페이드한다.
   const {
@@ -107,7 +116,13 @@ export const BandLibrary = () => {
           <ul className="grid grid-cols-2 gap-2">
             {places.map((place) => (
               <li key={place.placeId}>
-                <PlaceCard place={place} />
+                <PlaceCard
+                  place={place}
+                  onClick={() => {
+                    setDetailPlaceId(place.placeId);
+                    setIsPlaceDetailOpen(true);
+                  }}
+                />
               </li>
             ))}
           </ul>
@@ -127,6 +142,22 @@ export const BandLibrary = () => {
         onOpenChange={setIsSongModalOpen}
         bandId={bandId}
       />
+
+      <PlaceDetailSheet
+        open={isPlaceDetailOpen}
+        place={detailPlace}
+        onClose={() => setIsPlaceDetailOpen(false)}
+        onEdit={() => setIsPlaceEditOpen(true)}
+      />
+
+      {detailPlace && (
+        <PlaceCreateModal
+          open={isPlaceEditOpen}
+          onOpenChange={setIsPlaceEditOpen}
+          bandId={bandId}
+          place={detailPlace}
+        />
+      )}
 
       <PlaceCreateModal
         open={isPlaceModalOpen}
