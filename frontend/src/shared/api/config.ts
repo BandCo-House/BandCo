@@ -14,3 +14,8 @@ export const GOOGLE_CLIENT_ID =
 
 // 로그인 요청의 401은 자격 증명 오류라 토큰 갱신 대상이 아니다. 응답 인터셉터가 이 prefix로 구분한다.
 export const LOGIN_ENDPOINT_PREFIX = '/auth/login/';
+
+// 카카오맵 JavaScript 키(공개값). 카카오 개발자 콘솔에 사이트 도메인을 등록해야 동작한다.
+// 비어 있으면 주소 검색 모달이 지도 대신 안내 문구를 보여준다.
+export const KAKAO_MAP_APP_KEY: string =
+  import.meta.env.VITE_KAKAO_MAP_APP_KEY ?? '';

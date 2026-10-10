@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { Upload } from 'lucide-react';
+import { MapPin, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { uploadFile } from '@/shared/api';
@@ -16,6 +16,10 @@ import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
 import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
+import {
+  AddressSearchModal,
+  type AddressSelection,
+} from './AddressSearchModal';
 
 interface PlaceCreateModalProps {
   open: boolean;
@@ -27,6 +31,7 @@ interface PlaceCreateModalProps {
 
 /**
  * 연습 장소 추가(풀스크린). 이름·주소(필수)와 커버 이미지(선택)를 입력한다.
+ * 주소는 직접 타이핑하지 않고 카카오맵 검색 모달에서 고른다(상세주소는 선택).
  * 커버는 presigned 업로드로 objectUrl을 받아 imageUrl로 전송한다.
  */
 export const PlaceCreateModal = ({
@@ -39,6 +44,8 @@ export const PlaceCreateModal = ({
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [detailAddress, setDetailAddress] = useState('');
+  const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,6 +58,8 @@ export const PlaceCreateModal = ({
     if (open) {
       setName('');
       setAddress('');
+      setDetailAddress('');
+      setIsAddressSearchOpen(false);
       setCoverFile(null);
       setCoverPreview(null);
       setIsUploading(false);
@@ -68,6 +77,13 @@ export const PlaceCreateModal = ({
     setCoverFile(null);
     setCoverPreview(null);
   };
+
+  const applyAddress = (selection: AddressSelection) => {
+    setAddress(selection.address);
+    setDetailAddress(selection.detailAddress);
+  };
+
+  const displayAddress = [address, detailAddress].filter(Boolean).join(' ');
 
   const handleCoverSelect = (event: ChangeEvent<HTMLInputElement>) => {
     selectFile(event.target.files?.[0]);
@@ -106,7 +122,12 @@ export const PlaceCreateModal = ({
     }
 
     mutate(
-      { name: name.trim(), address: address.trim(), imageUrl },
+      {
+        name: name.trim(),
+        address: address.trim(),
+        detailAddress: detailAddress.trim() || undefined,
+        imageUrl,
+      },
       {
         onSuccess: (created) => {
           toast.success('연습 장소를 추가했어요.');
@@ -166,15 +187,28 @@ export const PlaceCreateModal = ({
           </Field>
 
           <Field label="주소" required labelSize="lg" htmlFor="place-address">
-            <Input
-              id="place-address"
-              variant="underline"
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="주소를 입력해주세요(상세주소 포함)"
-              maxLength={255}
-              aria-required
-            />
+            <div className="flex items-center gap-1">
+              {/* 직접 타이핑 대신 검색 모달로만 채운다. 칸을 눌러도 모달이 열린다. */}
+              <Input
+                id="place-address"
+                variant="underline"
+                className="min-w-0 flex-1 cursor-pointer truncate"
+                value={displayAddress}
+                readOnly
+                onClick={() => setIsAddressSearchOpen(true)}
+                placeholder="주소를 검색해주세요"
+                aria-required
+              />
+              <Button
+                type="button"
+                variant="accent"
+                className="h-[46px] gap-1 px-4 typo-base-b"
+                onClick={() => setIsAddressSearchOpen(true)}
+              >
+                <MapPin aria-hidden="true" className="size-[18px]" />
+                검색
+              </Button>
+            </div>
           </Field>
 
           <div className="flex flex-col gap-2">
@@ -230,6 +264,12 @@ export const PlaceCreateModal = ({
         aspect={CROP_ASPECT.square}
         title="장소 커버 자르기"
         onCropped={applyCroppedCover}
+      />
+
+      <AddressSearchModal
+        open={isAddressSearchOpen}
+        onOpenChange={setIsAddressSearchOpen}
+        onSelect={applyAddress}
       />
     </Sheet>
   );
