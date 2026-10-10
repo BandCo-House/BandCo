@@ -124,7 +124,10 @@ export const ScheduleFormView = ({
     onChange({ externalLinks: links.filter((l) => l !== url) });
   };
 
-  const { data: places = [] } = useBandPlaces(bandId);
+  // 삭제된(isActive=false) 장소는 새 일정에서 고를 수 없게 한다.
+  const { data: places = [] } = useBandPlaces(bandId, {
+    where__is_active: true,
+  });
   const { data: songs = [] } = useBandSongs(
     bandId,
     {},

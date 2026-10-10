@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '@/shared/api/client';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api/client';
 import {
   type CreateScheduleRequest,
   type CreateScheduleResult,
@@ -58,6 +58,12 @@ export const updateSchedule = (
   scheduleId: string,
   body: UpdateScheduleRequest,
 ) => apiPatch<CreateScheduleResult>(`/schedules/${scheduleId}`, body);
+
+/** 일정 삭제(DELETE /schedules/:scheduleId). */
+export const deleteSchedule = (scheduleId: string) =>
+  apiDelete<{ scheduleId: string; deletedAt: string }>(
+    `/schedules/${scheduleId}`,
+  );
 
 /**
  * 일정 상세(GET /schedules/:scheduleId).

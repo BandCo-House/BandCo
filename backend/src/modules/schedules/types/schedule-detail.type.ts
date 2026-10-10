@@ -21,7 +21,7 @@ export interface ScheduleParticipantDetail {
 export interface SchedulePlaceDetail {
   placeId: string;
   name: string;
-  address: string;
+  address: string | null;
 }
 
 export interface GetScheduleDetailResult {

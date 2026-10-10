@@ -28,9 +28,22 @@
   "name": "연습실 A",
   "address": "서울시 강남구 테헤란로 123",
   "detailAddress": "2층",
+  "latitude": 37.5006,
+  "longitude": 127.0364,
   "imageUrl": "hello.jpg"
 }
 ```
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| name | string | ✅ | 장소 이름 (최대 120자) |
+| address | string | - | 주소 (최대 255자). 이름만으로 충분한 장소("동방 1호")는 생략한다 |
+| detailAddress | string | - | 상세 위치 메모 (최대 255자) |
+| latitude | number | - | 위도. 지도 검색으로 고른 위치일 때만 전달한다 |
+| longitude | number | - | 경도. `latitude`와 반드시 쌍으로 전달한다 |
+| imageUrl | string | - | 커버 이미지 URL |
+
+비고: `latitude`·`longitude`는 한쪽만 보내거나 `address` 없이 보내면 400 오류가 반환된다. 응답의 `address`·`latitude`·`longitude`는 값이 없으면 `null`이다.
 
 ### Response 200
 
@@ -42,6 +55,8 @@
     "name": "합정 연습실 A",
     "address": "서울 마포구 합정동 123-45",
     "detailAddress": "3층 301호",
+    "latitude": 37.5496,
+    "longitude": 126.9139,
     "imageUrl": "https://example.com/place.png",
     "isActive": true,
     "createdAt": "2026-04-30T12:00:00Z"
@@ -54,6 +69,7 @@
 
 | 코드 | 조건 |
 |------|------|
+| 400 | 입력 검증 실패, 좌표 쌍 불일치 또는 address 없는 좌표 |
 | 401 | 인증 실패 |
 | 403 | 밴드 멤버가 아님 |
 | 404 | 밴드 없음 |
@@ -96,6 +112,10 @@
         "name": "합정 연습실 A",
         "address": "서울 마포구 합정동 123-45",
         "detailAddress": "3층 301호",
+        "latitude": 37.5496,
+        "longitude": 126.9139,
+    "latitude": 37.5496,
+    "longitude": 126.9139,
         "imageUrl": "https://example.com/place.png",
         "isActive": true,
         "createdAt": "2026-04-30T12:00:00Z",
@@ -154,6 +174,8 @@
     "name": "합정 연습실 A",
     "address": "서울 마포구 합정동 123-45",
     "detailAddress": "3층 301호",
+    "latitude": 37.5496,
+    "longitude": 126.9139,
     "imageUrl": "https://example.com/place.png",
     "isActive": true,
     "createdAt": "2026-04-30T12:00:00Z",
@@ -192,9 +214,15 @@
   "name": "합정 연습실 B",
   "address": "서울 마포구 합정동 123-45",
   "detailAddress": "4층 401호",
+  "latitude": 37.5496,
+  "longitude": 126.9139,
   "imageUrl": "https://example.com/place-new.png"
 }
 ```
+
+비고: `address`·`detailAddress`·`imageUrl`은 `null`(또는 빈 문자열)을 보내면 값을 지운다. 필드를 아예 보내지 않으면 기존 값을 유지한다. `name`은 지울 수 없다.
+
+비고: `address`를 수정하면 이전 좌표는 더 이상 맞지 않으므로, `latitude`·`longitude`를 함께 보내지 않으면 좌표가 `null`로 비워진다. 좌표만 단독으로 수정할 수는 없다.
 
 ### Response 200
 
@@ -206,6 +234,8 @@
     "name": "합정 연습실 B",
     "address": "서울 마포구 합정동 123-45",
     "detailAddress": "4층 401호",
+    "latitude": 37.5496,
+    "longitude": 126.9139,
     "imageUrl": "https://example.com/place-new.png",
     "isActive": true,
     "updatedAt": "2026-04-30T12:00:00Z"
@@ -218,7 +248,7 @@
 
 | 코드 | 조건 |
 |------|------|
-| 400 | 수정할 필드가 없음 (name, address, detailAddress, imageUrl 중 하나 이상 필요) |
+| 400 | 수정할 필드가 없음 (name, address, detailAddress, imageUrl 중 하나 이상 필요), 좌표 쌍 불일치 또는 address 없는 좌표 |
 | 401 | 인증 실패 |
 | 403 | 수정 권한 없음 (밴드 멤버 아님) |
 | 404 | 장소 없음 |

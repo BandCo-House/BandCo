@@ -35,6 +35,27 @@ export function normalizeOptionalStringValue({ value }: TransformFnParams): unkn
 }
 
 /**
+ * PATCH에서 지울 수 있는 문자열은 빈 값을 null로 정리한다.
+ * undefined(안 보냄 = 그대로 둠)와 null(지움)을 구분해야 하므로 빈 문자열을 undefined로 접지 않는다.
+ *
+ * @param {TransformFnParams} params - class-transformer가 전달한 원본 값
+ * @returns {unknown} 정리된 문자열, null 또는 원본 값
+ */
+export function normalizeNullableStringValue({ value }: TransformFnParams): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length === 0) {
+    return null;
+  }
+
+  return trimmedValue;
+}
+
+/**
  * 쿼리 문자열의 boolean 값을 명시적으로 boolean 으로 바꾼다.
  *
  * @param {TransformFnParams} params - class-transformer가 전달한 원본 값
