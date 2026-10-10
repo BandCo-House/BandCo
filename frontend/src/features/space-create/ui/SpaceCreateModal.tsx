@@ -200,8 +200,8 @@ export const SpaceCreateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent size="full" className="gap-10 text-grey-50">
-        <AppDialogHeader className="mb-0">
+      <AppDialogContent size="full" className="gap-0 text-grey-50">
+        <AppDialogHeader className="mb-10">
           <DialogTitle>{copy.title}</DialogTitle>
           <AppDialogClose aria-label={`${copy.title} 닫기`} />
         </AppDialogHeader>
@@ -303,8 +303,10 @@ export const SpaceCreateModal = ({
           />
         </AppDialogBody>
 
-        {/* 버튼은 스크롤 본문 밖(푸터)에 둔다: 본문 overflow가 shining 글로우를 자르지 않도록. */}
-        <div className="flex justify-end">
+        {/* 버튼은 스크롤 본문 밖(푸터)에 둔다: 본문 overflow가 shining 글로우를 자르지 않도록.
+            위 간격은 16으로 좁게 둔다 — 본문 끝 40px이 이미 흐려져 있어, 헤더처럼 40을
+            띄우면 빈 띠가 두 배로 보인다. */}
+        <div className="mt-4 flex justify-end">
           <Button
             type="button"
             variant="shining"
