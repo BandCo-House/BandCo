@@ -201,7 +201,7 @@ export const SpaceCreateModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AppDialogContent size="full" className="gap-0 text-grey-50">
-        <AppDialogHeader className="mb-10">
+        <AppDialogHeader className="mb-6">
           <DialogTitle>{copy.title}</DialogTitle>
           <AppDialogClose aria-label={`${copy.title} 닫기`} />
         </AppDialogHeader>
@@ -209,7 +209,10 @@ export const SpaceCreateModal = ({
           {copy.description}
         </DialogDescription>
 
-        <AppDialogBody className="gap-9 overflow-y-auto">
+        {/* -mx-2 px-2: 스크롤 영역만 좌우로 8px 넓힌다(내용 위치는 그대로).
+            스크롤 컨테이너는 가로로도 잘라서, 카드 밖으로 6px 걸친 참여자 제거(X) 버튼이
+            오른쪽 끝에서 잘렸다. */}
+        <AppDialogBody className="-mx-2 gap-9 overflow-y-auto px-2">
           <Field
             label="합주 공간 이름"
             required
