@@ -45,9 +45,12 @@ const buildBandPlaces = (bandId: string): Place[] =>
   ).map((place) => ({ ...place, ...placeOverrides.get(place.placeId) }));
 
 export const placeHandlers = [
-  http.get(`${API_URL}/bands/:bandId/places`, ({ params }) => {
+  http.get(`${API_URL}/bands/:bandId/places`, ({ params, request }) => {
     const { bandId } = params as { bandId: string };
-    const items = buildBandPlaces(bandId);
+    const isActive = new URL(request.url).searchParams.get('where__is_active');
+    const items = buildBandPlaces(bandId).filter(
+      (place) => isActive === null || String(place.isActive) === isActive,
+    );
 
     return HttpResponse.json<
       ApiSuccessResponse<{ bandId: string; items: Place[]; meta: unknown }>
@@ -116,6 +119,24 @@ export const placeHandlers = [
       error: null,
       message: '요청 성공',
       data: { ...current, placeId, ...patch },
+    });
+  }),
+
+  // 연습 장소 삭제 mock (DELETE /places/:placeId). 소프트 삭제라 isActive만 내린다.
+  http.delete(`${API_URL}/places/:placeId`, ({ params }) => {
+    const { placeId } = params as { placeId: string };
+    placeOverrides.set(placeId, {
+      ...placeOverrides.get(placeId),
+      isActive: false,
+    });
+
+    return HttpResponse.json<
+      ApiSuccessResponse<{ placeId: string; bandId: string; isActive: boolean }>
+    >({
+      status: 'success',
+      error: null,
+      message: '요청 성공',
+      data: { placeId, bandId: 'band-1', isActive: false },
     });
   }),
 ];

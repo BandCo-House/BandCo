@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
+import { useAuth } from '@/app/providers/auth-context';
+import { useBandMembers } from '@/entities/member/api/useBandMembers';
 import {
   horizontalFadeMask,
   useHorizontalScrollEdges,
@@ -8,10 +10,12 @@ import { useBandSongs } from '@/entities/song/api/useBandSongs';
 import { SongLibraryItem } from '@/entities/song/ui/SongLibraryItem';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { PlaceCard } from '@/entities/place/ui/PlaceCard';
-import { PlaceDetailSheet } from '@/entities/place/ui/PlaceDetailSheet';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
+import { PlaceDetailModal } from '@/features/place-create/ui/PlaceDetailModal';
 import { SongCreateModal } from '@/features/song-create';
 import { LibrarySectionHeader } from './LibrarySectionHeader';
+
+const PLACE_DELETABLE_ROLES = ['BM', 'ADMIN'];
 
 const STATE_MESSAGE_CLASS = 'py-6 text-center typo-sm-r text-grey-300';
 
@@ -43,7 +47,8 @@ const SectionState = ({
 export const BandLibrary = () => {
   const { bandId } = useParams({ from: '/band/$bandId' });
   const songsQuery = useBandSongs(bandId);
-  const placesQuery = useBandPlaces(bandId);
+  // 삭제는 소프트 삭제(isActive=false)라, 걸러서 받지 않으면 지운 장소가 그대로 남아 보인다.
+  const placesQuery = useBandPlaces(bandId, { where__is_active: true });
 
   const songs = songsQuery.data ?? [];
   const places = placesQuery.data ?? [];
@@ -55,7 +60,12 @@ export const BandLibrary = () => {
   const [detailPlaceId, setDetailPlaceId] = useState<string | null>(null);
   // 닫을 때 ID는 남긴다. 같이 비우면 시트가 내려가는 동안 내용이 먼저 사라진다.
   const [isPlaceDetailOpen, setIsPlaceDetailOpen] = useState(false);
-  const [isPlaceEditOpen, setIsPlaceEditOpen] = useState(false);
+  // 장소 삭제는 리더·부리더만 된다(백엔드 규칙). 권한 없는 멤버에게는 액션을 숨긴다.
+  const { user } = useAuth();
+  const { data: members = [] } = useBandMembers(bandId);
+  const myRole = members.find((member) => member.userId === user.id)?.role;
+  const canDeletePlace =
+    myRole !== undefined && PLACE_DELETABLE_ROLES.includes(myRole);
   const detailPlace =
     places.find((place) => place.placeId === detailPlaceId) ?? null;
 
@@ -143,21 +153,13 @@ export const BandLibrary = () => {
         bandId={bandId}
       />
 
-      <PlaceDetailSheet
+      <PlaceDetailModal
         open={isPlaceDetailOpen}
+        onOpenChange={setIsPlaceDetailOpen}
+        bandId={bandId}
         place={detailPlace}
-        onClose={() => setIsPlaceDetailOpen(false)}
-        onEdit={() => setIsPlaceEditOpen(true)}
+        canDelete={canDeletePlace}
       />
-
-      {detailPlace && (
-        <PlaceCreateModal
-          open={isPlaceEditOpen}
-          onOpenChange={setIsPlaceEditOpen}
-          bandId={bandId}
-          place={detailPlace}
-        />
-      )}
 
       <PlaceCreateModal
         open={isPlaceModalOpen}

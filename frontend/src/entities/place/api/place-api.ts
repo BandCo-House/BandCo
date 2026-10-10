@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apiGet, apiPatch, apiPost } from '@/shared/api';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api';
 import { placeSchema } from '../model/schema';
 import type { Place } from '../model/types';
 
@@ -74,3 +74,10 @@ export const updatePlace = async (
   const updated = await apiPatch<unknown>(`/places/${placeId}`, data);
   return placeSchema.parse(updated);
 };
+
+/**
+ * 연습 장소 삭제(DELETE /places/:placeId). 소프트 삭제라 이 장소를 쓰던 일정은 그대로 남는다.
+ * 밴드 리더·부리더만 가능하다.
+ */
+export const deletePlace = (placeId: string) =>
+  apiDelete<unknown>(`/places/${placeId}`);

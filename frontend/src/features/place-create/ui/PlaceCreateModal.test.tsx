@@ -31,32 +31,16 @@ const FOUND = {
   longitude: 126.9139,
 };
 
-const renderModal = (place?: Place) =>
+const renderModal = () =>
   render(
     <QueryClientProvider
       client={
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <PlaceCreateModal
-        open
-        onOpenChange={vi.fn()}
-        bandId="band-1"
-        place={place}
-      />
+      <PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />
     </QueryClientProvider>,
   );
-
-const SAVED: Place = {
-  placeId: 'place-1',
-  name: '합정 사운드룸',
-  address: '서울 마포구 양화로 45',
-  detailAddress: '지하 1층',
-  latitude: 37.5496,
-  longitude: 126.9139,
-  imageUrl: 'https://example.com/cover.png',
-  isActive: true,
-};
 
 const pickLocation = async () => {
   fireEvent.click(screen.getByRole('button', { name: '지도에서 찾기' }));
@@ -144,59 +128,5 @@ describe('PlaceCreateModal', () => {
         name: '합정 사운드룸',
       }),
     );
-  });
-
-  describe('수정', () => {
-    let updatePlace: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-      updatePlace = vi.spyOn(placeApi, 'updatePlace').mockResolvedValue(SAVED);
-    });
-
-    it('기존 값을 채워 열고, 손대지 않은 커버는 보내지 않는다', async () => {
-      renderModal(SAVED);
-
-      expect(screen.getByLabelText('장소 이름')).toHaveValue('합정 사운드룸');
-      expect(screen.getByLabelText('상세 위치')).toHaveValue('지하 1층');
-      expect(screen.getByText('서울 마포구 양화로 45')).toBeInTheDocument();
-
-      fireEvent.change(screen.getByLabelText('장소 이름'), {
-        target: { value: '합정 사운드룸 B' },
-      });
-      fireEvent.click(screen.getByRole('button', { name: '수정' }));
-
-      await waitFor(() =>
-        expect(updatePlace).toHaveBeenCalledWith('place-1', {
-          name: '합정 사운드룸 B',
-          address: '서울 마포구 양화로 45',
-          latitude: 37.5496,
-          longitude: 126.9139,
-          detailAddress: '지하 1층',
-          imageUrl: undefined,
-        }),
-      );
-      expect(createPlace).not.toHaveBeenCalled();
-    });
-
-    it('지운 위치·상세 위치·커버는 null로 보내 서버에서도 지운다', async () => {
-      // PATCH는 안 보낸 필드를 유지하므로, undefined로 보내면 지운 줄 알았는데 그대로 남는다.
-      renderModal(SAVED);
-
-      fireEvent.click(screen.getByRole('button', { name: '위치 지우기' }));
-      fireEvent.change(screen.getByLabelText('상세 위치'), {
-        target: { value: '' },
-      });
-      fireEvent.click(screen.getByRole('button', { name: '커버 제거' }));
-      fireEvent.click(screen.getByRole('button', { name: '수정' }));
-
-      await waitFor(() =>
-        expect(updatePlace).toHaveBeenCalledWith('place-1', {
-          name: '합정 사운드룸',
-          address: null,
-          detailAddress: null,
-          imageUrl: null,
-        }),
-      );
-    });
   });
 });

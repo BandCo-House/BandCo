@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import {
@@ -18,6 +20,12 @@ import {
 import { resolveReferenceFiles } from '../model/reference-files';
 import { useCreateSchedule } from '../api/useCreateSchedule';
 import { useUpdateSchedule } from '../api/useUpdateSchedule';
+import {
+  removeScheduleDetailCache,
+  useDeleteSchedule,
+} from '../api/useDeleteSchedule';
+import { getApiErrorMessage } from '@/shared/api/error';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { ScheduleFormView } from './ScheduleFormView';
 import { ScheduleDetailView } from './ScheduleDetailView';
 import { ScheduleActionBar } from './components/ScheduleActionBar';
@@ -36,6 +44,7 @@ interface ScheduleCreateModalProps {
  * 합주/회의 일정 플로우(풀스크린). 추가 폼 → 추가 → 상세 → 확인(닫기)/수정(폼 재진입).
  * - 추가: POST /bandspaces/:spaceId/schedules → 상세로 전환
  * - 수정: 앱바 '일정 수정' + 값 프리필 → PATCH /schedules/:id → 상세로 복귀
+ * - 삭제: 상세·수정 앱바 우측 '일정 삭제' → 확인 → DELETE /schedules/:id → 닫기
  */
 export const ScheduleCreateModal = ({
   isOpen,
@@ -79,6 +88,39 @@ export const ScheduleCreateModal = ({
   const { mutate: create, isPending: isCreating } = useCreateSchedule(spaceId);
   const { mutate: update, isPending: isUpdating } =
     useUpdateSchedule(scheduleId);
+
+  const queryClient = useQueryClient();
+  const { mutate: remove, isPending: isDeleting } = useDeleteSchedule();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  // 방금 지운 일정 ID. 상세 구독(scheduleId)이 끊긴 다음 렌더에서 캐시를 지우려고 들고 있는다.
+  const [deletedScheduleId, setDeletedScheduleId] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!deletedScheduleId) return;
+    removeScheduleDetailCache(queryClient, deletedScheduleId);
+  }, [deletedScheduleId, queryClient]);
+
+  // 이미 있는 일정을 보고 있을 때(상세·수정)만 지울 수 있다. 추가 폼에는 지울 대상이 없다.
+  const canDelete =
+    scheduleId !== null && (view === 'detail' || mode === 'edit');
+
+  const handleDelete = () => {
+    // 확인 버튼 연타로 삭제 요청이 중복 전송되지 않게 진행 중이면 무시하고 즉시 닫는다.
+    if (!scheduleId || isDeleting) return;
+    setIsDeleteConfirmOpen(false);
+    remove(scheduleId, {
+      onSuccess: () => {
+        toast.success('일정을 삭제했어요.');
+        setDeletedScheduleId(scheduleId);
+        setScheduleId(null);
+        onClose();
+      },
+      onError: (error) => {
+        toast.error(getApiErrorMessage(error, '일정 삭제에 실패했어요.'));
+      },
+    });
+  };
 
   const updateForm = (patch: Partial<ScheduleFormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
@@ -159,9 +201,20 @@ export const ScheduleCreateModal = ({
           >
             <ArrowRightIcon aria-hidden="true" className="size-6 rotate-180" />
           </button>
-          <SheetTitle className="typo-lg-sb text-grey-50">
+          <SheetTitle className="min-w-0 truncate typo-lg-sb text-grey-50">
             {headerTitle}
           </SheetTitle>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => setIsDeleteConfirmOpen(true)}
+              disabled={isDeleting}
+              className="ml-auto flex shrink-0 items-center gap-1.5 typo-xs-sb text-grey-300 transition-colors hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>일정 삭제</span>
+              <Trash2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          )}
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 pt-2 pb-6">
@@ -205,6 +258,15 @@ export const ScheduleCreateModal = ({
             onPrimary={onClose}
           />
         )}
+
+        <ConfirmDialog
+          open={isDeleteConfirmOpen}
+          onOpenChange={setIsDeleteConfirmOpen}
+          title="일정을 삭제하시겠습니까?"
+          description="참여자 편성과 첨부가 함께 삭제되며 복구할 수 없습니다."
+          confirmLabel="삭제"
+          onConfirm={handleDelete}
+        />
       </SheetContent>
     </Sheet>
   );

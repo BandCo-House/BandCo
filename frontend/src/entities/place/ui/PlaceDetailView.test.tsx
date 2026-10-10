@@ -1,9 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as kakaoMaps from '@/shared/lib/kakao-maps';
 import type { KakaoMaps } from '@/shared/lib/kakao-maps';
 import type { Place } from '../model/types';
-import { PlaceDetailSheet } from './PlaceDetailSheet';
+import { PlaceDetailView } from './PlaceDetailView';
 
 vi.mock('@/shared/lib/kakao-maps', () => ({
   isKakaoMapsAvailable: true,
@@ -35,21 +35,14 @@ const mockSdk = () => {
   vi.mocked(kakaoMaps.loadKakaoMaps).mockResolvedValue(maps);
 };
 
-describe('PlaceDetailSheet', () => {
+describe('PlaceDetailView', () => {
   beforeEach(() => {
     vi.mocked(kakaoMaps.loadKakaoMaps).mockReset();
   });
 
   it('이름과 위치를 보여주고, 지도는 장소명이 붙은 카카오맵 링크가 된다', async () => {
     mockSdk();
-    render(
-      <PlaceDetailSheet
-        open
-        place={place}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<PlaceDetailView place={place} />);
 
     expect(
       screen.getByRole('heading', { name: '연습실 A' }),
@@ -67,12 +60,7 @@ describe('PlaceDetailSheet', () => {
 
   it('좌표가 없는 장소는 위치 섹션을 보여주지 않는다', () => {
     render(
-      <PlaceDetailSheet
-        open
-        place={{ ...place, latitude: null, longitude: null }}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
+      <PlaceDetailView place={{ ...place, latitude: null, longitude: null }} />,
     );
 
     expect(
@@ -83,46 +71,10 @@ describe('PlaceDetailSheet', () => {
 
   it('지도를 못 불러오면 빈 칸 대신 안내 문구를 보여준다', async () => {
     vi.mocked(kakaoMaps.loadKakaoMaps).mockRejectedValue(new Error('blocked'));
-    render(
-      <PlaceDetailSheet
-        open
-        place={place}
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<PlaceDetailView place={place} />);
 
     expect(
       await screen.findByText('지도를 불러오지 못했어요.'),
     ).toBeInTheDocument();
-  });
-
-  it('확인을 누르면 닫는다', () => {
-    mockSdk();
-    const onClose = vi.fn();
-    render(
-      <PlaceDetailSheet
-        open
-        place={place}
-        onClose={onClose}
-        onEdit={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '확인' }));
-
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('수정을 누르면 수정 화면으로 넘긴다', () => {
-    mockSdk();
-    const onEdit = vi.fn();
-    render(
-      <PlaceDetailSheet open place={place} onClose={vi.fn()} onEdit={onEdit} />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '수정' }));
-
-    expect(onEdit).toHaveBeenCalled();
   });
 });
