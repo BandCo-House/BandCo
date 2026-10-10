@@ -21,8 +21,10 @@ export class AuthController {
   @ApiOperation({ summary: '액세스 토큰 재발급' })
   @ApiResponse({ status: 201, description: '액세스 토큰 재발급 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
-  TokenAccess(@Req() req: { user: { id: string; email: string } }): ApiSuccessResponse<{ accessToken: string }> {
+  async TokenAccess(@Req() req: { user: { id: string; email: string } }): Promise<ApiSuccessResponse<{ accessToken: string }>> {
     const { email, id } = req.user;
+    // 앱을 계속 쓰는 동안 액세스 토큰만 재발급되므로 여기서도 접속 시각을 남겨야 활성 유저 집계가 맞는다
+    await this.authService.recordLastLogin(id);
     const accessToken = this.authService.signToken(email, id, false);
     return createSuccessResponse('액세스 토큰 재발급 성공', { accessToken });
   }
@@ -45,9 +47,11 @@ export class AuthController {
   @ApiOperation({ summary: '이메일 로그인' })
   @ApiResponse({ status: 201, description: '로그인 성공' })
   @ApiResponse({ status: 401, description: 'Authorization 헤더 없음 | 잘못된 Basic 토큰 형식 | 존재하지 않는 유저 | 비밀번호 불일치' })
-  loginEmail(@Req() req: { user: { id: string; email: string } }): ApiSuccessResponse<{ accessToken: string; refreshToken: string }> {
+  @ApiResponse({ status: 403, description: '이용 정지된 계정' })
+  async loginEmail(@Req() req: { user: { id: string; email: string } }): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
     // BasicTokenGuard가 인증을 마치고 req.user에 담은 유저로 토큰을 발급한다.
     const { email, id } = req.user;
+    await this.authService.recordLastLogin(id);
     const tokens = this.authService.loginUser(email, id);
     return createSuccessResponse('로그인 성공', tokens);
   }
@@ -57,6 +61,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: '로그인 성공 (신규 가입·기존 연결 모두 동일 응답)' })
   @ApiResponse({ status: 400, description: '유효성 검사 실패 (idToken 누락)' })
   @ApiResponse({ status: 401, description: '유효하지 않은 Google 토큰 | 이메일 미인증 Google 계정 | 탈퇴한 계정' })
+  @ApiResponse({ status: 403, description: '이용 정지된 계정' })
   async loginGoogle(@Body() { idToken }: LoginGoogleDto): Promise<ApiSuccessResponse<{ accessToken: string; refreshToken: string }>> {
     const tokens = await this.authService.loginWithGoogle(idToken);
     return createSuccessResponse('로그인 성공', tokens);

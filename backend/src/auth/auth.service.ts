@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -10,6 +10,12 @@ import { GoogleUserPayload, JwtPayload } from './types/auth.types';
 import { GoogleAuthClient } from './google-auth.client';
 
 const GMAIL_DOMAIN = '@gmail.com';
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/**
+ * 정지 해제 시각을 사용자에게 보여줄 KST 문자열(YYYY-MM-DD HH:mm)로 바꾼다.
+ */
+const formatKstDateTime = (date: Date): string => new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 16).replace('T', ' ');
 
 /**
  * Google이 이메일 소유권을 보증하는 계정인지 판단한다.
@@ -23,6 +29,7 @@ const isGoogleAuthoritativeEmail = ({ email, hostedDomain }: GoogleUserPayload):
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly jwtSecret: string;
   private readonly bcryptSaltRounds: number;
 
@@ -98,6 +105,8 @@ export class AuthService {
     };
 
     const user = tx ? await run(tx) : await this.prisma.$transaction(run);
+    await this.assertNotSuspended(user.id, tx);
+    await this.recordLastLogin(user.id, tx);
     return this.loginUser(user.email, user.id);
   }
 
@@ -136,6 +145,9 @@ export class AuthService {
       throw new UnauthorizedException('비밀번호가 일치하지 않습니다.');
     }
 
+    // 비밀번호까지 맞은 뒤에 확인해야 정지 여부가 제3자에게 노출되지 않는다
+    await this.assertNotSuspended(user.id);
+
     return {
       id: user.id,
       email: user.email,
@@ -154,7 +166,44 @@ export class AuthService {
   async registerWithEmail(email: string, password: string, nickname: string, tx?: Prisma.TransactionClient) {
     const hash = await bcrypt.hash(password, this.bcryptSaltRounds);
     const newUser = await this.usersService.createUserWithEmail(email, hash, nickname, tx);
+    await this.recordLastLogin(newUser.id, tx);
     return this.loginUser(newUser.email!, newUser.id);
+  }
+
+  /**
+   * 로그인·토큰 재발급 시점을 마지막 접속 시각으로 남긴다.
+   * 활성 유저 집계용 기록이라, 저장에 실패해도 로그인·토큰 발급은 막지 않고 로그만 남긴다.
+   *
+   * @param {string} userId - 인증된 유저 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<void>} 기록 완료
+   */
+  async recordLastLogin(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    try {
+      await this.usersService.recordLastLogin(userId, tx);
+    } catch (error) {
+      // 상위 트랜잭션 안에서 실패하면 그 트랜잭션은 이미 쓸 수 없어 삼키지 않는다
+      if (tx) throw error;
+      this.logger.warn({ message: '마지막 접속 시각 기록 실패', userId, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  /**
+   * 어드민이 이용 정지한 계정이면 로그인을 막고 해제 시각을 안내한다.
+   * 토큰 인증 단계에서는 정지 유저가 조회되지 않아 401로 끊기므로, 여기서는 로그인 화면용 안내만 담당한다.
+   *
+   * @param {string} userId - 로그인하려는 유저 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   */
+  private async assertNotSuspended(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const suspension = await this.usersService.getActiveSuspension(userId, tx);
+    if (suspension === null) {
+      return;
+    }
+    if (suspension.endsAt === null) {
+      throw new ForbiddenException('이용이 영구 정지된 계정입니다.');
+    }
+    throw new ForbiddenException(`이용이 정지된 계정입니다. (해제 예정: ${formatKstDateTime(suspension.endsAt)} KST)`);
   }
 
   decodeBasicToken(token: string) {
