@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { WEEKDAY_LABELS, formatLocalDate, startOfDay } from '@/shared/lib/date';
+import {
+  WEEKDAY_LABELS,
+  formatLocalDate,
+  getMonthDays,
+  startOfDay,
+} from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
 
 interface MonthCalendarProps {
@@ -11,20 +16,6 @@ interface MonthCalendarProps {
   minDate?: Date;
   className?: string;
 }
-
-/** 해당 월의 날짜들을 주 단위 그리드(앞쪽 빈 칸 포함)로 만든다. */
-const buildMonthDays = (year: number, month: number): (Date | null)[] => {
-  const first = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (Date | null)[] = Array.from(
-    { length: first.getDay() },
-    () => null,
-  );
-  for (let day = 1; day <= daysInMonth; day++) {
-    cells.push(new Date(year, month, day));
-  }
-  return cells;
-};
 
 /**
  * 여러 날짜를 고르는 월 캘린더. 일정 투표에서 후보 날짜 선택에 쓴다.
@@ -57,7 +48,7 @@ export const MonthCalendar = ({
         : [...value, dateKey].sort(),
     );
 
-  const days = buildMonthDays(viewMonth.getFullYear(), viewMonth.getMonth());
+  const days = getMonthDays(viewMonth.getFullYear(), viewMonth.getMonth());
 
   return (
     <div className={cn('flex w-full flex-col gap-3 p-3 pb-4', className)}>

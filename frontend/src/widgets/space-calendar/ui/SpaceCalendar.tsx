@@ -4,7 +4,10 @@ import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { WEEKDAY_LABELS, addDays } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
 import { useSpace } from '@/entities/space/api/useSpace';
-import { useDaySchedules } from '@/entities/schedule/model/queries';
+import {
+  useDaySchedules,
+  useMonthScheduleCounts,
+} from '@/entities/schedule/model/queries';
 import { SpaceSummaryHeader } from '@/entities/space/ui/SpaceSummaryHeader';
 import { ScheduleFilterBar } from '@/features/schedule-filter/ui/ScheduleFilterBar';
 import { ScheduleFilterSheet } from '@/features/schedule-filter/ui/ScheduleFilterSheet';
@@ -14,8 +17,10 @@ import {
   type ScheduleTypeFilter,
 } from '@/features/schedule-filter/model/types';
 import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreateModal';
-import { WeekDatePicker } from '@/shared/ui/week-date-picker';
+import { MonthDatePicker } from '@/shared/ui/month-date-picker';
+import { WeekDateStrip } from '@/shared/ui/week-date-picker';
 import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
+import { CalendarNav, type CalendarView } from './CalendarNav';
 import { DayTimeline } from './DayTimeline';
 
 const formatCompactDate = (date: Date): string =>
@@ -26,10 +31,11 @@ const formatCompactDate = (date: Date): string =>
 // 노치 기기에선 실제 높이가 168px쯤이라 필터 바가 헤더 뒤로 들어갔다.
 const HEADER_FALLBACK_PX = 120;
 
-/** 합주 공간 메인(단일 일 타임라인). */
+/** 합주 공간 메인. 주별/월별 날짜 선택 + 고른 하루의 타임라인. */
 export const SpaceCalendar = () => {
   const { spaceId, bandId } = useParams({ strict: false });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [calendarView, setCalendarView] = useState<CalendarView>('week');
   const [scheduleType, setScheduleType] =
     useState<ScheduleTypeFilter>(undefined);
   const [onlyMine, setOnlyMine] = useState(false);
@@ -69,14 +75,23 @@ export const SpaceCalendar = () => {
   }, [headerPx]);
 
   const { data: spaceDetail } = useSpace(spaceId ?? '');
-  const { data: blocks = [] } = useDaySchedules(spaceId ?? '', {
-    date: selectedDate,
+  const scheduleFilter = {
     scheduleType,
     onlyMine,
     songIds: detailFilter.songIds,
     placeIds: detailFilter.placeIds,
     teamIds: detailFilter.teamIds,
+  };
+  const { data: blocks = [] } = useDaySchedules(spaceId ?? '', {
+    date: selectedDate,
+    ...scheduleFilter,
   });
+  // 점은 타임라인과 같은 필터를 받는다 — 점이 있는 날을 눌렀는데 비어 있으면 안 된다.
+  const { data: monthCounts } = useMonthScheduleCounts(
+    spaceId ?? '',
+    { month: selectedDate, ...scheduleFilter },
+    { enabled: calendarView === 'month' },
+  );
 
   const fabActions: SpeedDialAction[] = [
     {
@@ -109,7 +124,24 @@ export const SpaceCalendar = () => {
             songCount={spaceDetail.songCount}
           />
         )}
-        <WeekDatePicker value={selectedDate} onChange={setSelectedDate} />
+        <section className="flex flex-col gap-5">
+          <CalendarNav
+            view={calendarView}
+            onViewChange={setCalendarView}
+            value={selectedDate}
+            onChange={setSelectedDate}
+          />
+          {calendarView === 'month' ? (
+            <MonthDatePicker
+              value={selectedDate}
+              onChange={setSelectedDate}
+              markers={monthCounts}
+              markerLabel="일정"
+            />
+          ) : (
+            <WeekDateStrip value={selectedDate} onChange={setSelectedDate} />
+          )}
+        </section>
       </div>
 
       <div ref={stickSentinelRef} className="h-0" />
@@ -188,6 +220,7 @@ export const SpaceCalendar = () => {
         spaceId={spaceId ?? ''}
         bandId={bandId ?? ''}
         initialDate={selectedDate}
+        onSaved={setSelectedDate}
         initialScheduleId={detailScheduleId}
       />
     </div>
