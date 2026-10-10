@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandMembers } from '@/entities/member/api/useBandMembers';
+import { calcPrimarySkillName } from '@/entities/skill';
+import { ProfileChip, ProfileLink } from '@/entities/user';
 import { useBandTeams } from '@/entities/team/api/queries';
 import type { BandMemberListItem } from '@/entities/member/model/types';
 import {
@@ -11,8 +13,6 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
-import { cn } from '@/shared/lib/utils';
 import { MEMBER_PICKER_TAKE } from '@/shared/lib/member-picker';
 
 interface MemberSearchModalProps {
@@ -33,14 +33,11 @@ interface MemberSearchModalProps {
 
 type Tab = 'member' | 'team';
 
-const primarySession = (member: BandMemberListItem): string | undefined =>
-  (member.skills.find((s) => s.isPrimary) ?? member.skills[0])?.skillName;
-
-/** 라우팅 미연동(프로필/상세보기)용 우측 링크 버튼. 지금은 no-op. */
+/** 팀 상세보기용 우측 링크 버튼. 라우팅 미연동이라 지금은 no-op. */
 const RowLink = ({ label }: { label: string }) => (
   <button
     type="button"
-    // TODO: 프로필/팀 상세 라우팅 연동 예정. 지금은 닫기(X)만 동작.
+    // TODO: 팀 상세 라우팅 연동 예정. 지금은 닫기(X)만 동작.
     className="flex shrink-0 items-center gap-2.5 rounded-3xl px-3 py-2 text-grey-200"
   >
     <span className="typo-sm-sb">{label}</span>
@@ -52,7 +49,7 @@ const RowLink = ({ label }: { label: string }) => (
  * 멤버/팀 검색 모달.
  * - 멤버 탭: 기본은 여러 명 토글, `singleSelect`면 한 명만 고르고 닫힌다
  * - 팀 탭: 행을 탭하면 그 팀을 통째로 반영한다
- * 프로필/상세보기 라우팅은 아직 미연동.
+ * 팀 상세보기 라우팅은 아직 미연동.
  */
 export const MemberSearchModal = ({
   open,
@@ -64,13 +61,20 @@ export const MemberSearchModal = ({
   isSelectingTeam = false,
   singleSelect = false,
 }: MemberSearchModalProps) => {
+  // 팀을 통째로 고르는 화면(일정 참여자)에서만 팀 탭이 의미가 있다. 팀 생성·팀 상세·부리더 지정처럼
+  // 사람 한 명을 고르는 자리에 팀 탭이 있으면 눌러도 아무 일도 일어나지 않는다.
+  const canSelectTeam = onSelectTeam !== undefined;
   const [tab, setTab] = useState<Tab>('member');
   const [query, setQuery] = useState('');
 
   const { data: members = [] } = useBandMembers(bandId, {
     take: MEMBER_PICKER_TAKE,
   });
-  const { data: teams = [] } = useBandTeams(bandId, {}, { enabled: open });
+  const { data: teams = [] } = useBandTeams(
+    bandId,
+    {},
+    { enabled: open && canSelectTeam },
+  );
 
   const keyword = query.trim();
   const filteredMembers = keyword
@@ -87,29 +91,41 @@ export const MemberSearchModal = ({
         size="full"
         className="max-h-[70dvh] gap-8 text-grey-50"
       >
-        <DialogTitle className="sr-only">멤버·팀 검색</DialogTitle>
+        <DialogTitle className="sr-only">
+          {canSelectTeam ? '멤버·팀 검색' : '멤버 검색'}
+        </DialogTitle>
         <DialogDescription className="sr-only">
-          이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.
+          {canSelectTeam
+            ? '이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.'
+            : '이름으로 멤버를 검색해 선택합니다.'}
         </DialogDescription>
 
         <div className="relative z-10 flex items-center gap-8">
           <div className="flex flex-1 items-center gap-7 typo-lg-sb">
-            <button
-              type="button"
-              aria-pressed={tab === 'member'}
-              onClick={() => setTab('member')}
-              className={tab === 'member' ? 'text-grey-50' : 'text-grey-300'}
-            >
-              멤버 검색
-            </button>
-            <button
-              type="button"
-              aria-pressed={tab === 'team'}
-              onClick={() => setTab('team')}
-              className={tab === 'team' ? 'text-grey-50' : 'text-grey-300'}
-            >
-              팀 검색
-            </button>
+            {canSelectTeam ? (
+              <>
+                <button
+                  type="button"
+                  aria-pressed={tab === 'member'}
+                  onClick={() => setTab('member')}
+                  className={
+                    tab === 'member' ? 'text-grey-50' : 'text-grey-300'
+                  }
+                >
+                  멤버 검색
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={tab === 'team'}
+                  onClick={() => setTab('team')}
+                  className={tab === 'team' ? 'text-grey-50' : 'text-grey-300'}
+                >
+                  팀 검색
+                </button>
+              </>
+            ) : (
+              <span aria-hidden="true">멤버 검색</span>
+            )}
           </div>
           <AppDialogClose />
         </div>
@@ -141,10 +157,7 @@ export const MemberSearchModal = ({
               </p>
             ) : (
               filteredMembers.map((member) => (
-                <div
-                  key={member.bandMemberId}
-                  className="flex items-center justify-between gap-2"
-                >
+                <div key={member.bandMemberId} className="flex items-center">
                   <button
                     type="button"
                     role={singleSelect ? 'radio' : undefined}
@@ -159,31 +172,20 @@ export const MemberSearchModal = ({
                         : selected.has(member.bandMemberId)
                     }
                     onClick={() => onToggleMember(member)}
-                    className={cn(
-                      'flex flex-1 items-center justify-between gap-2 rounded-[20px] border bg-surface-3 p-2 transition-colors',
-                      selected.has(member.bandMemberId)
-                        ? 'border-primary'
-                        : 'border-surface-2',
-                    )}
+                    className="flex min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
                   >
-                    <span className="flex items-center gap-2">
-                      <Avatar size="default">
-                        <AvatarImage src={member.avatarUrl ?? undefined} />
-                        <AvatarFallback>
-                          {member.nickname.slice(0, 1)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="typo-sm-sb text-grey-50">
-                        {member.nickname}
-                      </span>
-                    </span>
-                    {primarySession(member) && (
-                      <span className="px-1.5 typo-xs-r text-grey-200">
-                        {primarySession(member)}
-                      </span>
-                    )}
+                    <ProfileChip
+                      variant="search"
+                      selected={selected.has(member.bandMemberId)}
+                      nickname={member.nickname}
+                      avatarUrl={member.avatarUrl}
+                      sessionName={calcPrimarySkillName(member.skills)}
+                    />
                   </button>
-                  <RowLink label="프로필" />
+                  <ProfileLink
+                    userId={member.userId}
+                    nickname={member.nickname}
+                  />
                 </div>
               ))
             )
