@@ -21,6 +21,8 @@ type PlaceRecord = Prisma.PlaceGetPayload<{
     name: true;
     address: true;
     detailAddress: true;
+    latitude: true;
+    longitude: true;
     imageUrl: true;
     isActive: true;
     createdAt: true;
@@ -72,6 +74,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
         name: input.name,
         address: input.address,
         detailAddress: input.detailAddress,
+        latitude: input.latitude,
+        longitude: input.longitude,
         imageUrl: input.imageUrl,
       },
       select: {
@@ -80,6 +84,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
         name: true,
         address: true,
         detailAddress: true,
+        latitude: true,
+        longitude: true,
         imageUrl: true,
         isActive: true,
         createdAt: true,
@@ -92,6 +98,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
       name: place.name,
       address: place.address,
       detailAddress: place.detailAddress,
+      latitude: place.latitude,
+      longitude: place.longitude,
       imageUrl: place.imageUrl,
       isActive: place.isActive,
       createdAt: place.createdAt.toISOString(),
@@ -116,6 +124,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
         name: true,
         address: true,
         detailAddress: true,
+        latitude: true,
+        longitude: true,
         imageUrl: true,
         isActive: true,
         createdAt: true,
@@ -164,6 +174,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
         name: true,
         address: true,
         detailAddress: true,
+        latitude: true,
+        longitude: true,
         imageUrl: true,
         isActive: true,
         createdAt: true,
@@ -181,6 +193,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
       name: place.name,
       address: place.address,
       detailAddress: place.detailAddress,
+      latitude: place.latitude,
+      longitude: place.longitude,
       imageUrl: place.imageUrl,
       isActive: place.isActive,
       createdAt: place.createdAt.toISOString(),
@@ -210,7 +224,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
       where: { id: placeId },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
-        ...(input.address !== undefined ? { address: input.address } : {}),
+        // 주소가 바뀌면 이전 좌표는 다른 곳을 가리키므로, 새 좌표가 없으면 함께 비운다.
+        ...(input.address !== undefined ? { address: input.address, latitude: input.latitude ?? null, longitude: input.longitude ?? null } : {}),
         ...(input.detailAddress !== undefined ? { detailAddress: input.detailAddress } : {}),
         ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
       },
@@ -220,6 +235,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
         name: true,
         address: true,
         detailAddress: true,
+        latitude: true,
+        longitude: true,
         imageUrl: true,
         isActive: true,
         updatedAt: true,
@@ -232,6 +249,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
       name: place.name,
       address: place.address,
       detailAddress: place.detailAddress,
+      latitude: place.latitude,
+      longitude: place.longitude,
       imageUrl: place.imageUrl,
       isActive: place.isActive,
       updatedAt: place.updatedAt.toISOString(),
@@ -276,6 +295,8 @@ export class PlacesPrismaRepository implements PlacesRepository {
       name: place.name,
       address: place.address,
       detailAddress: place.detailAddress,
+      latitude: place.latitude,
+      longitude: place.longitude,
       imageUrl: place.imageUrl,
       isActive: place.isActive,
       createdAt: place.createdAt.toISOString(),

@@ -27,6 +27,8 @@ const DEFAULT_PLACE_DETAIL: PlaceDetail = {
   name: '연습실',
   address: '서울',
   detailAddress: null,
+  latitude: null,
+  longitude: null,
   imageUrl: null,
   isActive: true,
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -38,6 +40,8 @@ const DEFAULT_CREATE_RESULT: CreatePlaceResult = {
   name: '연습실',
   address: '서울',
   detailAddress: null,
+  latitude: null,
+  longitude: null,
   imageUrl: null,
   isActive: true,
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -53,6 +57,8 @@ const DEFAULT_UPDATE_RESULT: UpdatePlaceResult = {
   name: '연습실',
   address: '서울',
   detailAddress: null,
+  latitude: null,
+  longitude: null,
   imageUrl: null,
   isActive: true,
   updatedAt: '2026-01-01T00:00:00.000Z',
@@ -214,6 +220,36 @@ describe('PlacesService', () => {
       await expect(service.updatePlace(USER_ID, PLACE_ID, {})).rejects.toThrow(BadRequestException);
     });
 
+    it('주소·상세 위치·커버를 null로 보내 지울 수 있다', async () => {
+      const capturedInputs: UpdatePlaceInput[] = [];
+      const repository = createPlacesRepositoryStub({
+        onUpdatePlace: (_placeId, input) => {
+          capturedInputs.push(input);
+        },
+      });
+      const service = new PlacesService(repository, createPrismaServiceStub());
+
+      await service.updatePlace(USER_ID, PLACE_ID, { address: null, detailAddress: null, imageUrl: null });
+
+      expect(capturedInputs).toEqual([{ address: null, detailAddress: null, imageUrl: null }]);
+    });
+
+    it('주소를 지우면서 좌표를 보내면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+
+      await expect(service.updatePlace(USER_ID, PLACE_ID, { address: null, latitude: 37.55, longitude: 126.91 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('주소 없이 좌표만 수정하면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+
+      await expect(service.updatePlace(USER_ID, PLACE_ID, { name: '새 연습실', latitude: 37.55, longitude: 126.91 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('tx가 있으면 같은 tx를 Repository에 전달한다', async () => {
       const capturedTransactions: unknown[] = [];
       const repository = createPlacesRepositoryStub({
@@ -337,6 +373,40 @@ describe('PlacesService', () => {
 
       expect(result.placeId).toBe(PLACE_ID);
       expect(result.bandId).toBe(BAND_ID);
+    });
+
+    it('주소 없이 이름만으로 장소를 생성한다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+
+      await expect(service.createPlace(USER_ID, BAND_ID, { name: '동방 1호' })).resolves.toBeDefined();
+    });
+
+    it('주소와 좌표를 함께 받아 Repository에 전달한다', async () => {
+      const capturedInputs: CreatePlaceInput[] = [];
+      const repository = createPlacesRepositoryStub({
+        onCreatePlace: (_bandId, input) => {
+          capturedInputs.push(input);
+        },
+      });
+      const service = new PlacesService(repository, createPrismaServiceStub());
+
+      await service.createPlace(USER_ID, BAND_ID, { name: '연습실', address: '서울', latitude: 37.55, longitude: 126.91 });
+
+      expect(capturedInputs).toEqual([{ name: '연습실', address: '서울', latitude: 37.55, longitude: 126.91 }]);
+    });
+
+    it('좌표가 한쪽만 있으면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+
+      await expect(service.createPlace(USER_ID, BAND_ID, { name: '연습실', address: '서울', latitude: 37.55 })).rejects.toThrow(BadRequestException);
+    });
+
+    it('주소 없이 좌표만 있으면 BadRequestException을 던진다', async () => {
+      const service = new PlacesService(createPlacesRepositoryStub(), createPrismaServiceStub());
+
+      await expect(service.createPlace(USER_ID, BAND_ID, { name: '연습실', latitude: 37.55, longitude: 126.91 })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('밴드가 없으면 NotFoundException을 던진다', async () => {

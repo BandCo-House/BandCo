@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../../auth/guard/bearer-token.guard';
 import { type ApiSuccessResponse, createSuccessResponse } from '../../common/api-response';
@@ -19,6 +20,7 @@ interface AuthenticatedRequest {
   user: User;
 }
 
+@ApiTags('장소')
 @Controller()
 export class PlacesController {
   constructor(private readonly placesService: PlacesService) {}
@@ -35,6 +37,14 @@ export class PlacesController {
    */
   @Post('bands/:bandId/places')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '장소 생성' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 201, description: '장소 생성 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청 (좌표 쌍 불일치·주소 없는 좌표 포함)' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '밴드 멤버가 아님' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async createPlace(
     @Req() request: AuthenticatedRequest,
     @Param('bandId', new ParseUUIDPipe()) bandId: string,
@@ -57,6 +67,14 @@ export class PlacesController {
    */
   @Get('bands/:bandId/places')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '밴드 장소 목록 조회' })
+  @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '장소 목록 조회 성공' })
+  @ApiResponse({ status: 400, description: '커서 쌍 불일치 또는 정렬 방향 불일치' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '밴드 멤버가 아님' })
+  @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
   async getBandPlaces(
     @Req() request: AuthenticatedRequest,
     @Param('bandId', new ParseUUIDPipe()) bandId: string,
@@ -79,6 +97,13 @@ export class PlacesController {
    */
   @Get('places/:placeId')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '장소 상세 조회' })
+  @ApiParam({ name: 'placeId', description: '장소 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '장소 상세 조회 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '밴드 멤버가 아님' })
+  @ApiResponse({ status: 404, description: '장소를 찾을 수 없음' })
   async getPlace(
     @Req() request: AuthenticatedRequest,
     @Param('placeId', new ParseUUIDPipe()) placeId: string,
@@ -102,6 +127,14 @@ export class PlacesController {
    */
   @Patch('places/:placeId')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '장소 수정' })
+  @ApiParam({ name: 'placeId', description: '장소 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '장소 수정 성공' })
+  @ApiResponse({ status: 400, description: '수정할 필드 없음 또는 잘못된 요청 (좌표 쌍 불일치·주소 없는 좌표 포함)' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '밴드 멤버가 아님' })
+  @ApiResponse({ status: 404, description: '장소를 찾을 수 없음' })
   async updatePlace(
     @Req() request: AuthenticatedRequest,
     @Param('placeId', new ParseUUIDPipe()) placeId: string,
@@ -123,6 +156,13 @@ export class PlacesController {
    */
   @Delete('places/:placeId')
   @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '장소 삭제 (소프트 삭제)' })
+  @ApiParam({ name: 'placeId', description: '장소 ID (UUID)', type: String })
+  @ApiResponse({ status: 200, description: '장소 삭제 성공' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 403, description: '밴드 리더·부리더가 아님' })
+  @ApiResponse({ status: 404, description: '장소를 찾을 수 없음' })
   async deletePlace(
     @Req() request: AuthenticatedRequest,
     @Param('placeId', new ParseUUIDPipe()) placeId: string,
