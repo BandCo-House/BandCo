@@ -79,25 +79,32 @@
      뒤편(= 뷰포트 밖 canvas)까지는 덮지 못했다.
 
      attachment는 쓰지 않는다. fixed로 두면 iOS 사파리가 이를 사실상 scroll로 처리해
-     그라데이션이 문서 맨 위에 한 번만 그려지고, 첫 화면 높이 아래로는 배경색만 남아
-     딱 그 자리에 경계선이 생긴다(100lvh로 크기를 고정했던 게 원인).
+     그라데이션이 문서 맨 위에 한 번만 그려진다.
 
-     대신 크기를 100% 100%로 둬 루트 박스(= 문서 전체 높이)에 걸쳐 늘린다. 스크롤해도
-     이음매가 없고 fixed 지원 여부와 무관하다. 대신 긴 페이지에선 그라데이션이 화면마다
-     반복되지 않고 문서 전체에 한 번 걸린다 — 이 앱은 대부분 1~2화면이라 그 편이 낫다.
+     그라데이션은 첫 화면 높이(100lvh)에만 한 번 그리고, 그 아래는 끝색(gradient-bottom)
+     단색으로 잇는다. 문서 전체 높이에 늘리면(100% 100%) 긴 페이지일수록 첫 화면에
+     그라데이션의 앞부분만 걸려, 같은 앱인데 합주 메인(24시간 타임라인)은 밝은 남색,
+     밴드 메인은 어두운 남색으로 화면마다 배경색이 달라 보였다.
 
-     background-color는 그라데이션의 끝색(gradient-bottom)으로 둔다. 문서가 짧아 canvas가
-     루트 박스보다 큰 경우(하단 툴바 뒤)에 남는 자리가 그라데이션 끝과 이어져 보인다. */
+     위에 세로 페이드를 한 겹 더 얹는 이유: 135deg 대각선은 아래 변이 한 색이 아니라
+     왼쪽이 더 밝다. 그대로 자르면 그 자리에 단색 배경과의 경계선이 생긴다. 아래 변을
+     끝색으로 모아 줘야 이음매 없이 이어진다.
+
+     lvh를 쓰는 건 주소창이 접히고 펴질 때 높이가 바뀌지 않아서다(dvh면 스크롤 중에
+     그라데이션이 출렁인다). lvh를 모르는 브라우저는 앞 줄의 vh로 떨어진다. */
   html {
     overscroll-behavior-y: none;
     background-color: var(--gradient-bottom);
-    background-image: linear-gradient(
-      135deg,
-      var(--gradient-top) 0%,
-      var(--gradient-bottom) 100%
-    );
+    background-image:
+      linear-gradient(to bottom, transparent 50%, var(--gradient-bottom) 100%),
+      linear-gradient(
+        135deg,
+        var(--gradient-top) 0%,
+        var(--gradient-bottom) 100%
+      );
     background-repeat: no-repeat;
-    background-size: 100% 100%;
+    background-size: 100% 100vh;
+    background-size: 100% 100lvh;
   }
   body {
     @apply text-foreground;
