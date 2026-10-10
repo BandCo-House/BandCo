@@ -51,7 +51,7 @@
   --color-success-surface: var(--success-surface);
   --color-border: var(--overlay-40);
   --color-input: var(--overlay-24);
-  --color-ring: var(--secondary);
+  --color-ring: var(--primary);
   --color-key: var(--key);
   --color-key-foreground: var(--key-foreground);
   --color-key-surface: var(--key-surface);
@@ -88,7 +88,16 @@
 
      background-color는 그라데이션의 끝색(gradient-bottom)으로 둔다. 문서가 짧아 canvas가
      루트 박스보다 큰 경우(하단 툴바 뒤)에 남는 자리가 그라데이션 끝과 이어져 보인다. */
+  /* PC에서 스크롤바가 자리를 차지하는 환경(Windows, 마우스를 연결한 macOS)이면 긴 페이지와 짧은
+     페이지를 오갈 때 스크롤바 폭만큼 화면 전체가 좌우로 밀린다. 자리를 늘 비워 둬 위치를 고정한다. */
+  /* 모달이 스크롤을 잠그면 Radix가 body에 스크롤바 폭만큼 margin-right를 직접 준다. 비워 둔 자리까지
+     남아 있으면 두 번 보정돼, 전체 화면 모달 오른쪽에 그 폭만큼 바탕이 덮이지 않은 띠가 생긴다. */
+  html:has(body[data-scroll-locked]) {
+    scrollbar-gutter: auto;
+  }
+
   html {
+    scrollbar-gutter: stable;
     overscroll-behavior-y: none;
     background-color: var(--gradient-bottom);
     background-image: linear-gradient(

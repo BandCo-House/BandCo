@@ -1,0 +1,76 @@
+import type { PrismaService } from '../../../database/prisma';
+
+import { AssistantPrismaRepository } from './assistant.prisma-repository';
+
+describe('AssistantPrismaRepository', () => {
+  const createPrismaMock = () => ({
+    bandMember: { findFirst: jest.fn() },
+  });
+
+  it('삭제되지 않은 밴드의 멤버십을 조회한다', async () => {
+    const prisma = createPrismaMock();
+    prisma.bandMember.findFirst.mockResolvedValue({ id: 'member-1' });
+    const repository = new AssistantPrismaRepository(prisma as unknown as PrismaService);
+
+    await repository.findBandMemberByBandIdAndUserId('band-1', 'user-1');
+
+    expect(prisma.bandMember.findFirst).toHaveBeenCalledWith({
+      where: { userId: 'user-1', band: { id: 'band-1', deletedAt: null } },
+      select: { id: true },
+    });
+  });
+
+  it('transaction을 read-only와 3초 statement timeout으로 설정한다', async () => {
+    const prisma = createPrismaMock();
+    const repository = new AssistantPrismaRepository(prisma as unknown as PrismaService);
+    const executeRawUnsafe = jest.fn().mockResolvedValue(0);
+    const tx = { $executeRawUnsafe: executeRawUnsafe };
+
+    await repository.configureReadOnlyTransaction(tx as never);
+
+    expect(executeRawUnsafe).toHaveBeenNthCalledWith(1, 'SET TRANSACTION READ ONLY');
+    expect(executeRawUnsafe).toHaveBeenNthCalledWith(2, "SET LOCAL statement_timeout = '3000ms'");
+  });
+
+  it('아티스트 후보는 현재 밴드와 삭제 조건으로 제한하고 따옴표·와일드카드를 값으로 바인딩한다', async () => {
+    const queryRawUnsafe = jest.fn().mockResolvedValue([{ artist_name: '아티스트 B' }]);
+    const repository = new AssistantPrismaRepository(createPrismaMock() as unknown as PrismaService);
+    const value = "B%_'";
+    const result = await repository.findArtistNameCandidates('band-1', value, '아티스트 B 곡', { $queryRawUnsafe: queryRawUnsafe } as never);
+    const [sql, ...values] = queryRawUnsafe.mock.calls[0];
+    expect(sql).toContain('b.id = $1::uuid AND b.deleted_at IS NULL');
+    expect(sql).toContain('JOIN songs so ON so.band_id = b.id');
+    expect(sql).toContain('STRPOS(LOWER(so.artist_name), LOWER($2))');
+    expect(sql).toContain('GROUP BY so.artist_name');
+    expect(sql).toContain('LIMIT 6');
+    expect(sql).not.toContain(value);
+    expect(values).toEqual(['band-1', value, '아티스트 B 곡']);
+    expect(result).toEqual(['아티스트 B']);
+  });
+
+  it('서버 bandId를 $1에 바인딩하고 외부 LIMIT을 적용한다', async () => {
+    const prisma = createPrismaMock();
+    const repository = new AssistantPrismaRepository(prisma as unknown as PrismaService);
+    const queryRawUnsafe = jest.fn().mockResolvedValue([{ member_count: 3 }]);
+    const tx = { $queryRawUnsafe: queryRawUnsafe };
+
+    const result = await repository.executeGeneratedQuery('SELECT COUNT(bm.id)::int AS member_count FROM bands b', ['기타'], 'band-1', tx as never);
+
+    expect(queryRawUnsafe).toHaveBeenCalledWith(
+      'SELECT * FROM (SELECT COUNT(bm.id)::int AS member_count FROM bands b) AS assistant_result LIMIT 51',
+      'band-1',
+      '기타',
+    );
+    expect(result).toEqual([{ member_count: 3 }]);
+  });
+
+  it.each([0, 20, 21, 50, 51])('%i행에서 추가 결과 여부와 표시 행 수를 구분한다', async count => {
+    const rows = Array.from({ length: count }, (_, index) => ({ nickname: `멤버${index}` }));
+    const queryRawUnsafe = jest.fn().mockResolvedValue(rows);
+    const repository = new AssistantPrismaRepository(createPrismaMock() as unknown as PrismaService);
+    const page = await repository.executeGeneratedQueryPage('SELECT b.name FROM bands b', [], 'band-1', { $queryRawUnsafe: queryRawUnsafe } as never);
+    expect(page.rows).toHaveLength(Math.min(count, 50));
+    expect(page.hasMore).toBe(count > 50);
+    expect(queryRawUnsafe.mock.calls[0][0]).toContain('LIMIT 51');
+  });
+});

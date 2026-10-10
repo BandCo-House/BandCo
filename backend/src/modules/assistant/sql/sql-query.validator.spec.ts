@@ -1,0 +1,458 @@
+import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql-query.validator';
+
+describe('SqlQueryValidator', () => {
+  const validator = new SqlQueryValidator();
+  const scopedSelect = 'SELECT b.id FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL';
+
+  const createResponse = (sql: string, params: unknown[] = []) => ({
+    status: 'QUERY',
+    intent: '테스트 조회',
+    sql,
+    params,
+    unsupportedReason: null,
+  });
+
+  const participantFrom = `FROM bands b JOIN band_spaces bs ON bs.band_id = b.id
+    JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id
+    JOIN band_members bm ON bm.id = sp.band_member_id
+    WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND bs.deleted_at IS NULL`;
+
+  it('다중 세션 인원과 참석 횟수는 각각 고유 멤버와 고유 일정만 센다', async () => {
+    await expect(validator.validate(createResponse(`SELECT COUNT(sp.id) ${participantFrom}`), 'PEOPLE')).rejects.toMatchObject({
+      code: 'COUNT_UNIT_MISMATCH',
+    });
+    await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT sp.band_member_id) ${participantFrom}`), 'PEOPLE')).resolves.toBeDefined();
+    await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT bm.id) ${participantFrom}`), 'PEOPLE')).resolves.toBeDefined();
+    await expect(
+      validator.validate(createResponse(`SELECT COUNT(DISTINCT sp.band_member_id) ${participantFrom}`), 'SCHEDULES'),
+    ).rejects.toMatchObject({ code: 'COUNT_UNIT_MISMATCH' });
+    await expect(validator.validate(createResponse(`SELECT COUNT(DISTINCT sc.id) ${participantFrom}`), 'SCHEDULES')).resolves.toBeDefined();
+  });
+
+  it('관계 누락과 집계 단위처럼 서로 독립인 위반은 한 번에 모두 알린다', async () => {
+    const sql = `SELECT COUNT(sp.band_member_id) FROM bands b JOIN band_spaces bs ON bs.band_id = b.id
+      JOIN schedules sc ON sc.band_space_id = bs.id JOIN schedule_participants sp ON sp.schedule_id = sc.id
+      WHERE b.id = $1::uuid AND bs.deleted_at IS NULL`;
+
+    await expect(validator.validate(createResponse(sql), 'PEOPLE')).rejects.toMatchObject({
+      code: 'SOFT_DELETE_SCOPE_MISSING',
+      codes: ['SOFT_DELETE_SCOPE_MISSING', 'REQUIRED_RELATION_MISSING', 'COUNT_UNIT_MISMATCH'],
+    });
+  });
+
+  it('참여·팀 편성은 검증 후 (일정, 멤버)·(팀, 멤버)마다 대표 행 하나만 남겨 실행한다', async () => {
+    const participants = await validator.validate(createResponse(`SELECT COUNT(sp.band_member_id) ${participantFrom}`));
+    expect(participants.sql.replace(/\s+/g, ' ')).toContain(
+      'NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0 WHERE grain_dup_0.schedule_id = sp.schedule_id AND grain_dup_0.band_member_id = sp.band_member_id AND grain_dup_0.id < sp.id))',
+    );
+
+    const team = await validator.validate(
+      createResponse(`SELECT t.name, COUNT(tm.band_member_id) FROM bands b JOIN teams t ON t.band_id = b.id
+        JOIN team_members tm ON tm.team_id = t.id JOIN band_members bm ON bm.id = tm.band_member_id
+        WHERE b.id = $1::uuid AND b.deleted_at IS NULL GROUP BY t.id, t.name`),
+    );
+    expect(team.sql.replace(/\s+/g, ' ')).toContain('grain_dup_0.team_id = tm.team_id');
+  });
+
+  it('서버 변환이 파생 관계를 쓰더라도 모델이 작성한 파생 테이블은 거부한다', async () => {
+    const sql = 'SELECT b.id FROM (SELECT original.id, original.deleted_at FROM bands original) b WHERE b.id = $1::uuid AND b.deleted_at IS NULL';
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'RANGE_SOURCE_BLOCKED' });
+  });
+
+  it('원래 SQL과 하위 SELECT의 별칭을 피해서 서버 별칭을 만든다', async () => {
+    const sql = `SELECT COUNT(grain_dup_0.id) ${participantFrom.replaceAll('sp.', 'grain_dup_0.').replace('schedule_participants sp ', 'schedule_participants grain_dup_0 ')}
+      AND EXISTS (SELECT grain_dup_1.id FROM bands grain_dup_1 WHERE grain_dup_1.id = $1::uuid AND grain_dup_1.deleted_at IS NULL)`;
+    const query = await validator.validate(createResponse(sql));
+    expect(query.sql).toContain('AS grain_dup_2');
+    expect(query.sql).toContain('grain_dup_2.id < grain_dup_0.id');
+    expect(query.sql).not.toContain('grain_dup_0.id < grain_dup_0.id');
+  });
+
+  it('하위 SELECT의 참여 테이블에는 그 SELECT 안에서 대표 행 조건을 적용한다', async () => {
+    const nested = await validator.validate(
+      createResponse(`SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND EXISTS (
+        SELECT sp.id FROM band_spaces bs JOIN schedules sc ON sc.band_space_id = bs.id
+        JOIN schedule_participants sp ON sp.schedule_id = sc.id JOIN band_members bm ON bm.id = sp.band_member_id
+        WHERE bs.band_id = b.id AND bs.deleted_at IS NULL)`),
+    );
+    const sql = nested.sql.replace(/\s+/g, ' ');
+    expect(sql).toContain('FROM band_spaces AS bs');
+    expect(sql).toContain('SELECT * FROM schedule_participants AS sp WHERE NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0');
+    expect(sql.match(/grain_dup_/g)?.length).toBe(4);
+  });
+
+  it('명시적 행 수와 다중 세션 관계가 없는 인원은 기존 자유 집계를 허용한다', async () => {
+    await expect(validator.validate(createResponse(`SELECT COUNT(*) ${participantFrom}`))).resolves.toBeDefined();
+    await expect(
+      validator.validate(
+        createResponse('SELECT COUNT(bm.id) FROM bands b JOIN band_members bm ON bm.band_id = b.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL'),
+        'PEOPLE',
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it('내부 일정 선택의 COUNT를 바깥 인원 집계로 오인하지 않는다', async () => {
+    const nested = 'SELECT COUNT(b2.id) FROM bands b2 WHERE b2.id = $1::uuid AND b2.deleted_at IS NULL';
+    await expect(
+      validator.validate(createResponse(`SELECT COUNT(DISTINCT sp.band_member_id), (${nested}) AS count ${participantFrom}`), 'PEOPLE'),
+    ).resolves.toBeDefined();
+  });
+
+  it('목록의 최상위 LIMIT만 제거하고 내부 일정 선택 LIMIT은 보존한다', async () => {
+    const sql = `SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL
+      AND b.id = (SELECT b2.id FROM bands b2 WHERE b2.id = $1::uuid AND b2.deleted_at IS NULL LIMIT 1) LIMIT 20`;
+    const result = await validator.validate({ ...createResponse(sql), resultMode: 'LIST' });
+    expect(result.sql.match(/LIMIT/gi)).toHaveLength(1);
+    expect(result.sql).toContain('LIMIT 1');
+    expect(result.resultMode).toBe('LIST');
+  });
+
+  it('상위 N개와 집계의 의미상 LIMIT은 보존한다', async () => {
+    const ranking = await validator.validate({ ...createResponse(`${scopedSelect} LIMIT 10`), resultMode: 'TOP_N' });
+    expect(ranking.sql).toContain('LIMIT 10');
+    const count = 'SELECT COUNT(b.id)::int AS count FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL LIMIT 1';
+    const aggregate = await validator.validate({ ...createResponse(count), resultMode: 'AGGREGATE' });
+    expect(aggregate.sql).toContain('LIMIT 1');
+  });
+
+  it.each([1, 3, 50])('상위 %i개의 직접 INTEGER LIMIT 파라미터를 값 검증 후 보존한다', async value => {
+    const result = await validator.validate({
+      ...createResponse(`${scopedSelect} LIMIT $2`, [{ position: 2, type: 'INTEGER', value: String(value) }]),
+      resultMode: 'TOP_N',
+    });
+    expect(result.sql).toContain('LIMIT $2');
+    expect(result.parameters).toEqual([value]);
+  });
+
+  it.each(['0', '-1', '51'])('범위 밖 LIMIT 파라미터 %s는 거부한다', async value => {
+    await expect(
+      validator.validate({ ...createResponse(`${scopedSelect} LIMIT $2`, [{ position: 2, type: 'INTEGER', value }]), resultMode: 'TOP_N' }),
+    ).rejects.toMatchObject({ code: 'TOP_N_LIMIT_REQUIRED' });
+  });
+
+  it.each(['TEXT', 'BOOLEAN'])('LIMIT의 %s 타입을 정수로 추측하지 않는다', async type => {
+    await expect(
+      validator.validate({
+        ...createResponse(`${scopedSelect} LIMIT $2`, [{ position: 2, type, value: type === 'BOOLEAN' ? 'true' : '3' }]),
+        resultMode: 'TOP_N',
+      }),
+    ).rejects.toMatchObject({ code: 'TOP_N_LIMIT_REQUIRED' });
+  });
+
+  it.each(['$1', '$2 + 1', '$2::int'])('LIMIT 표현식 %s는 직접 정수 파라미터로 허용하지 않는다', async limit => {
+    const params = limit === '$1' ? [] : [{ position: 2, type: 'INTEGER', value: '3' }];
+    await expect(validator.validate({ ...createResponse(`${scopedSelect} LIMIT ${limit}`, params), resultMode: 'TOP_N' })).rejects.toMatchObject({
+      code: 'TOP_N_LIMIT_REQUIRED',
+    });
+  });
+
+  it('잘못된 결과 유형과 목록 OFFSET은 거부한다', async () => {
+    await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'ALL' })).rejects.toMatchObject({ code: 'INVALID_RESULT_MODE' });
+    await expect(validator.validate({ ...createResponse(`${scopedSelect} OFFSET 5`), resultMode: 'LIST' })).rejects.toMatchObject({
+      code: 'LIST_OFFSET_NOT_ALLOWED',
+    });
+  });
+
+  it('제한 없는 상위 조회와 집계를 가장한 목록은 거부한다', async () => {
+    await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'TOP_N' })).rejects.toMatchObject({
+      code: 'TOP_N_LIMIT_REQUIRED',
+    });
+    await expect(validator.validate({ ...createResponse(scopedSelect), resultMode: 'AGGREGATE' })).rejects.toMatchObject({
+      code: 'SCALAR_AGGREGATE_REQUIRED',
+    });
+    await expect(validator.validate({ ...createResponse(`${scopedSelect} LIMIT 51`), resultMode: 'TOP_N' })).rejects.toMatchObject({
+      code: 'TOP_N_LIMIT_REQUIRED',
+    });
+  });
+
+  const leaderSql = `SELECT up.nickname FROM bands b
+    JOIN teams t ON t.band_id = b.id
+    JOIN band_members bm ON bm.id = t.team_leader_band_member_id
+    JOIN users u ON u.id = bm.user_id
+    JOIN user_profiles up ON up.user_id = u.id
+    WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL AND t.name = $2`;
+  const leaderParams = [{ position: 2, type: 'TEXT', value: '보컬팀' }];
+
+  it('실제 선호 장르 테이블을 사용하는 밴드 범위 조회를 통과시킨다', async () => {
+    const sql = `SELECT COUNT(fg.id)::int AS member_count FROM bands b
+      JOIN band_members bm ON bm.band_id = b.id JOIN users u ON u.id = bm.user_id
+      JOIN favor_genres fg ON fg.user_id = u.id JOIN genres g ON g.id = fg.genre_id
+      WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL AND g.name = $2`;
+    await expect(validator.validate(createResponse(sql, [{ position: 2, type: 'TEXT', value: '록' }]))).resolves.toMatchObject({
+      parameters: ['록'],
+    });
+    await expect(
+      validator.validate(createResponse(sql.replaceAll('favor_genres', 'favorite_genres'), [{ position: 2, type: 'TEXT', value: '록' }])),
+    ).rejects.toMatchObject({ code: 'TABLE_NOT_ALLOWED' });
+  });
+
+  it('밴드 소속 팀에서 팀장 멤버의 프로필로 연결되는 조회를 통과시킨다', async () => {
+    await expect(validator.validate(createResponse(leaderSql, leaderParams))).resolves.toMatchObject({ parameters: ['보컬팀'] });
+  });
+
+  it('팀장 관계가 있어도 현재 밴드 조건을 제거하거나 OR로 우회하지 못한다', async () => {
+    await expect(validator.validate(createResponse(leaderSql.replace('b.id = $1::uuid AND ', ''), leaderParams))).rejects.toBeInstanceOf(
+      InvalidSqlQueryError,
+    );
+    await expect(
+      validator.validate(
+        createResponse(leaderSql.replace('b.id = $1::uuid AND b.deleted_at IS NULL', '(b.id = $1::uuid OR b.deleted_at IS NULL)'), leaderParams),
+      ),
+    ).rejects.toMatchObject({ code: 'BAND_SCOPE_MISSING' });
+  });
+
+  it('서버 밴드 ID 대신 모델 파라미터의 다른 밴드 ID를 사용할 수 없다', async () => {
+    const sql = leaderSql.replace('b.id = $1::uuid', 'b.id = $3::uuid');
+    const params = [...leaderParams, { position: 3, type: 'TEXT', value: '22222222-2222-4222-8222-222222222222' }];
+    await expect(validator.validate(createResponse(sql, params))).rejects.toBeInstanceOf(InvalidSqlQueryError);
+  });
+
+  it('팀장 조회 안에서도 밴드 범위가 없는 프로필 중첩 조회를 차단한다', async () => {
+    const sql = leaderSql.replace(
+      'SELECT up.nickname',
+      'SELECT (SELECT up2.nickname FROM users u2 JOIN user_profiles up2 ON up2.user_id = u2.id WHERE u2.deleted_at IS NULL LIMIT 1) AS nickname',
+    );
+    await expect(validator.validate(createResponse(sql, leaderParams))).rejects.toBeInstanceOf(InvalidSqlQueryError);
+  });
+
+  it('밴드 범위와 허용 JOIN을 사용한 COUNT SELECT를 통과시킨다', async () => {
+    const result = await validator.validate(
+      createResponse(
+        'SELECT COUNT(bm.id)::int AS member_count FROM bands b JOIN band_members bm ON bm.band_id = b.id WHERE b.id = $1::uuid AND b.deleted_at IS NULL LIMIT 1',
+      ),
+    );
+
+    expect(result.intent).toBe('테스트 조회');
+    expect(result.sql.toLowerCase()).toContain('count');
+    expect(result.parameters).toEqual([]);
+  });
+
+  it('여러 JOIN과 파라미터를 사용하는 다음 일정 미응답자 조회를 통과시킨다', async () => {
+    const sql = `
+      SELECT up.nickname, sp.attendance_status::text AS attendance_status
+      FROM bands b
+      JOIN band_spaces bs ON bs.band_id = b.id
+      JOIN schedules sc ON sc.band_space_id = bs.id
+      JOIN schedule_participants sp ON sp.schedule_id = sc.id
+      JOIN band_members bm ON bm.id = sp.band_member_id
+      JOIN users u ON u.id = bm.user_id
+      JOIN user_profiles up ON up.user_id = u.id
+      WHERE b.id = $1::uuid
+        AND b.deleted_at IS NULL
+        AND bs.deleted_at IS NULL
+        AND u.deleted_at IS NULL
+        AND sc.id = (
+          SELECT sc2.id
+          FROM band_spaces bs2
+          JOIN schedules sc2 ON sc2.band_space_id = bs2.id
+          WHERE bs2.band_id = b.id
+            AND bs2.deleted_at IS NULL
+            AND sc2.schedule_type::text = $2
+            AND sc2.status::text = $3
+            AND sc2.start_at >= $4::timestamptz
+          ORDER BY sc2.start_at ASC
+          LIMIT 1
+        )
+        AND (sp.attendance_status IS NULL OR sp.attendance_status::text = $5)
+      ORDER BY up.nickname ASC
+      LIMIT 20
+    `;
+    const result = await validator.validate(
+      createResponse(sql, [
+        { position: 2, type: 'TEXT', value: 'PRACTICE' },
+        { position: 3, type: 'TEXT', value: 'PLANNED' },
+        { position: 4, type: 'TIMESTAMPTZ', value: '2026-08-31T00:00:00.000Z' },
+        { position: 5, type: 'TEXT', value: 'PENDING' },
+      ]),
+    );
+
+    expect(result.parameters).toEqual(['PRACTICE', 'PLANNED', '2026-08-31T00:00:00.000Z', 'PENDING']);
+  });
+
+  it('UNSUPPORTED 응답은 실행 계획으로 만들지 않는다', async () => {
+    await expect(
+      validator.validate({
+        status: 'UNSUPPORTED',
+        intent: '날씨 조회',
+        sql: '',
+        params: [],
+        unsupportedReason: '밴드 데이터에 날씨 정보가 없습니다.',
+      }),
+    ).rejects.toThrow(UnsupportedQuestionError);
+  });
+
+  it('쓰기와 스키마 변경 문장을 차단한다', async () => {
+    const blockedStatements = [
+      ['UP', 'DATE band_members SET role = role'].join(''),
+      ['DE', 'LETE FROM band_members'].join(''),
+      ['DR', 'OP TABLE band_members'].join(''),
+    ];
+
+    for (const sql of blockedStatements) {
+      await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'SELECT_ONLY' });
+    }
+  });
+
+  it.each([
+    ['수정', ['UP', 'DATE band_members SET role = role'].join('')],
+    ['삭제', ['DE', 'LETE FROM band_members'].join('')],
+    ['테이블 제거', ['DR', 'OP TABLE band_members'].join('')],
+    ['추가', ['IN', "SERT INTO bands (name) VALUES ('injected')"].join('')],
+    ['구조 변경', ['AL', 'TER TABLE bands ADD COLUMN injected text'].join('')],
+    ['전체 제거', ['TRUN', 'CATE TABLE band_members'].join('')],
+    ['테이블 생성', ['CRE', 'ATE TABLE injected (id int)'].join('')],
+    ['권한 부여', ['GR', 'ANT SELECT ON bands TO public'].join('')],
+    ['권한 회수', ['REV', 'OKE SELECT ON bands FROM public'].join('')],
+    ['파일 복사', ['CO', "PY bands TO '/tmp/bands.csv'"].join('')],
+    ['프로시저', ['CA', 'LL injected()'].join('')],
+    ['익명 블록', ['D', 'O $$ BEGIN NULL; END $$'].join('')],
+    ['잠금', ['LO', 'CK TABLE bands'].join('')],
+    ['병합', ['MER', 'GE INTO bands b USING bands b2 ON b.id = b2.id WHEN MATCHED THEN DELETE'].join('')],
+    ['합집합', [scopedSelect, ' UNI', 'ON ', scopedSelect].join('')],
+    ['교집합', [scopedSelect, ' INTER', 'SECT ', scopedSelect].join('')],
+    ['차집합', [scopedSelect, ' EX', 'CEPT ', scopedSelect].join('')],
+    ['공통식', ['WI', `TH scoped AS (${scopedSelect}) SELECT scoped.id FROM scoped`].join('')],
+    ['다중 문장', [scopedSelect, '; DE', 'LETE FROM band_members'].join('')],
+    ['위험 함수', 'SELECT pg_sleep($2::int) FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL'],
+  ])('악성 SQL 20종 중 %s 패턴을 차단한다', async (_name, sql) => {
+    const params = sql.includes('$2') ? [{ position: 2, type: 'INTEGER', value: '10' }] : [];
+
+    await expect(validator.validate(createResponse(sql, params))).rejects.toBeInstanceOf(InvalidSqlQueryError);
+  });
+
+  it('집합 연산과 CTE를 차단한다', async () => {
+    const setSql =
+      'SELECT b.id FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL UNION SELECT b2.id FROM bands b2 WHERE b2.id = $1::uuid AND b2.deleted_at IS NULL';
+    const cteSql = 'WITH x AS (SELECT b.id FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL) SELECT x.id FROM x';
+
+    await expect(validator.validate(createResponse(setSql))).rejects.toMatchObject({ code: 'SET_OPERATION_BLOCKED' });
+    await expect(validator.validate(createResponse(cteSql))).rejects.toMatchObject({ code: 'CTE_BLOCKED' });
+  });
+
+  it('여러 SQL 문장을 한 번에 실행하지 못하게 한다', async () => {
+    const sql = 'SELECT b.id FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL; SELECT 1';
+
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'SINGLE_STATEMENT_REQUIRED' });
+  });
+
+  it('허용하지 않은 테이블과 컬럼을 차단한다', async () => {
+    const unknownTableSql = 'SELECT s.secret FROM secrets s JOIN bands b ON b.id = s.band_id WHERE b.id = $1::uuid AND b.deleted_at IS NULL';
+
+    await expect(validator.validate(createResponse(unknownTableSql))).rejects.toMatchObject({ code: 'TABLE_NOT_ALLOWED' });
+
+    const privateColumnSql =
+      'SELECT u.email FROM bands b JOIN band_members bm ON bm.band_id = b.id JOIN users u ON u.id = bm.user_id WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND u.deleted_at IS NULL';
+
+    await expect(validator.validate(createResponse(privateColumnSql))).rejects.toMatchObject({ code: 'COLUMN_NOT_ALLOWED' });
+  });
+
+  it('허용하지 않은 함수와 문자열 리터럴을 차단한다', async () => {
+    const functionSql = 'SELECT pg_sleep($2::int) AS waited FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL';
+
+    await expect(validator.validate(createResponse(functionSql, [{ position: 2, type: 'INTEGER', value: '10' }]))).rejects.toMatchObject({
+      code: 'FUNCTION_NOT_ALLOWED',
+    });
+
+    const literalSql = "SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND b.name = '다른 밴드'";
+
+    await expect(validator.validate(createResponse(literalSql))).rejects.toMatchObject({ code: 'STRING_LITERAL_BLOCKED' });
+  });
+
+  it('bandId 범위가 없거나 OR 안에 숨은 쿼리를 차단한다', async () => {
+    await expect(validator.validate(createResponse('SELECT b.name FROM bands b WHERE b.deleted_at IS NULL'))).rejects.toMatchObject({
+      code: 'PARAMETER_MISMATCH',
+    });
+
+    await expect(
+      validator.validate(createResponse('SELECT b.name FROM bands b WHERE b.id = $1::uuid OR b.deleted_at IS NULL')),
+    ).rejects.toMatchObject({
+      code: 'BAND_SCOPE_MISSING',
+    });
+  });
+
+  it('서버가 문자열로 바인딩하는 bandId에 uuid 변환이 없으면 차단한다', async () => {
+    const sql = 'SELECT b.name FROM bands b WHERE b.id = $1 AND b.deleted_at IS NULL';
+
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'BAND_SCOPE_MISSING' });
+  });
+
+  it('밴드에서 허용 JOIN으로 연결되지 않은 테이블을 차단한다', async () => {
+    const sql = 'SELECT so.title FROM bands b CROSS JOIN songs so WHERE b.id = $1::uuid AND b.deleted_at IS NULL LIMIT 20';
+
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'TABLE_OUTSIDE_BAND_SCOPE' });
+  });
+
+  it('일정과 참석자가 의미상 필요한 양쪽 관계에 연결되지 않으면 차단한다', async () => {
+    const sql = `
+      SELECT up.nickname
+      FROM bands b
+      JOIN band_members bm ON bm.band_id = b.id
+      JOIN users u ON u.id = bm.user_id
+      JOIN user_profiles up ON up.user_id = u.id
+      JOIN schedule_participants sp ON sp.band_member_id = bm.id
+      JOIN schedules sc ON sc.id = sp.schedule_id
+      WHERE b.id = $1::uuid
+        AND b.deleted_at IS NULL
+        AND u.deleted_at IS NULL
+      LIMIT 20
+    `;
+
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'REQUIRED_RELATION_MISSING' });
+  });
+
+  it('enum 컬럼을 TEXT 파라미터와 직접 비교하면 차단한다', async () => {
+    const sql = `
+      SELECT sc.title
+      FROM bands b
+      JOIN band_spaces bs ON bs.band_id = b.id
+      JOIN schedules sc ON sc.band_space_id = bs.id
+      WHERE b.id = $1::uuid
+        AND b.deleted_at IS NULL
+        AND bs.deleted_at IS NULL
+        AND sc.schedule_type = $2
+      LIMIT 20
+    `;
+    const params = [{ position: 2, type: 'TEXT', value: 'PRACTICE' }];
+
+    await expect(validator.validate(createResponse(sql, params))).rejects.toMatchObject({ code: 'ENUM_CAST_REQUIRED' });
+  });
+
+  it('enum 컬럼을 text로 변환한 파라미터 비교는 통과시킨다', async () => {
+    const sql = `
+      SELECT sc.title
+      FROM bands b
+      JOIN band_spaces bs ON bs.band_id = b.id
+      JOIN schedules sc ON sc.band_space_id = bs.id
+      WHERE b.id = $1::uuid
+        AND b.deleted_at IS NULL
+        AND bs.deleted_at IS NULL
+        AND sc.schedule_type::text = $2
+      LIMIT 20
+    `;
+    const params = [{ position: 2, type: 'TEXT', value: 'PRACTICE' }];
+
+    await expect(validator.validate(createResponse(sql, params))).resolves.toMatchObject({ parameters: ['PRACTICE'] });
+  });
+
+  it('SQL 파라미터와 params 위치가 다르면 차단한다', async () => {
+    const sql = 'SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND b.name ILIKE $2';
+
+    await expect(validator.validate(createResponse(sql))).rejects.toMatchObject({ code: 'PARAMETER_MISMATCH' });
+  });
+
+  it('파라미터 타입을 검증해 런타임 값으로 변환한다', async () => {
+    const sql = 'SELECT b.name FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL AND b.visibility = $2::bool LIMIT $3::int';
+    const response = createResponse(sql, [
+      { position: 2, type: 'BOOLEAN', value: 'true' },
+      { position: 3, type: 'INTEGER', value: '10' },
+    ]);
+
+    const result = await validator.validate(response);
+
+    expect(result.parameters).toEqual([true, 10]);
+  });
+
+  it('객체가 아닌 응답을 차단한다', async () => {
+    await expect(validator.validate('SELECT * FROM users')).rejects.toBeInstanceOf(InvalidSqlQueryError);
+  });
+});

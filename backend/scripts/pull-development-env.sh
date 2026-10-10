@@ -30,25 +30,6 @@ secret_json=$(aws secretsmanager get-secret-value \
   --query SecretString \
   --output text)
 
-jq -e '
-  def nonempty($key): has($key) and ((.[$key] | tostring | length) > 0);
-
-  type == "object" and
-  .NODE_ENV == "development" and
-  nonempty("BACKEND_PORT") and
-  nonempty("DATABASE_URL") and
-  nonempty("JWT_SECRET") and
-  nonempty("BCRYPT_SALT_ROUNDS") and
-  nonempty("AWS_REGION") and
-  nonempty("AWS_STORAGE_BUCKET") and
-  nonempty("AWS_ACCESS_KEY_ID") and
-  nonempty("AWS_SECRET_ACCESS_KEY") and
-  nonempty("GOOGLE_CLIENT_ID") and
-  all(keys[]; test("^[A-Z][A-Z0-9_]*$"))
-' <<EOF >/dev/null
-$secret_json
-EOF
-
 jq -r 'to_entries[] | "\(.key)=\(.value | tostring | @json)"' <<EOF >"$TEMP_ENV_FILE"
 $secret_json
 EOF
