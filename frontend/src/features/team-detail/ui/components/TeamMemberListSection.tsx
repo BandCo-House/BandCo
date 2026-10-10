@@ -1,6 +1,9 @@
 import React from 'react';
 import { Pencil, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { ProfileChip } from '@/entities/user';
+import { cardSurfaceClass } from '@/shared/ui/card-surface';
+import { cn } from '@/shared/lib/utils';
 import { useSkillTypes } from '@/entities/skill/api/useSkillTypes';
 import { SelectField } from '@/shared/ui/select-field';
 import type { TeamMember } from '@/entities/team/model/types';
@@ -47,16 +50,23 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
     return defaultIndex !== undefined ? `세션${defaultIndex + 1}` : '세션';
   };
   return (
-    <div className="w-full rounded-[20px] border border-[#28272a] bg-[#65637a]/48 p-5 shadow-sm backdrop-blur-md">
+    <div
+      className={cn(
+        cardSurfaceClass,
+        'flex w-full flex-col gap-3 shadow-sm backdrop-blur-md',
+      )}
+    >
       {/* 카드 헤더 */}
-      <div className="flex items-center justify-between pb-3">
+      <div className="flex items-center justify-between">
         <h3 className="typo-base-b text-grey-50">팀원 목록</h3>
         {!isEditing && (
           <button
             type="button"
             onClick={onToggleEdit}
             aria-label="팀원 수정"
-            className="flex items-center gap-2 rounded-full px-3 py-2 text-grey-300 transition-colors hover:text-white"
+            // 누르는 영역(px-3 py-2)은 유지하되 음수 마진으로 줄 높이에서 뺀다. 그대로 두면 버튼이
+            // 제목보다 커서 헤더가 늘어나고, 카드 위쪽 여백만 두꺼워 보인다.
+            className="-my-2 -mr-3 flex items-center gap-2 rounded-full px-3 py-2 text-grey-300 transition-colors hover:text-white"
           >
             <span className="typo-sm-sb">수정</span>
             <Pencil className="h-4 w-4" />
@@ -66,35 +76,20 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
 
       {!isEditing ? (
         /* 읽기 모드: 피그마 알약 캡슐(Pill) 스타일 (text-primary 라임 세션명 + 32px 아바타 + white 닉네임) */
-        <div className="flex flex-wrap items-start gap-1.5 pt-1">
+        <div className="flex flex-wrap items-start gap-x-2.5 gap-y-2">
           {members.map((member) => (
-            <div
+            <ProfileChip
               key={member.teamMemberId}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(97,117,158,0.56)] px-3 py-1 shadow-xs"
-            >
-              <span className="typo-base-sb text-primary">
-                {getSessionName(member)}:
-              </span>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8 shrink-0 rounded-full">
-                  <AvatarImage
-                    src={member.user.profileImageUrl || undefined}
-                    alt={member.user.nickname}
-                  />
-                  <AvatarFallback className="typo-xs-sb">
-                    {member.user.nickname.slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="typo-sm-sb text-grey-50">
-                  {member.user.nickname}
-                </span>
-              </div>
-            </div>
+              variant="assigned"
+              sessionName={getSessionName(member)}
+              nickname={member.user.nickname}
+              avatarUrl={member.user.profileImageUrl}
+            />
           ))}
         </div>
       ) : (
         /* 피그마 팀원 수정 모드: (라임 #ECFCAB 밑줄 Input + 40px 원형 🔍 돋보기 버튼) */
-        <div className="flex w-full flex-col gap-4 pt-1">
+        <div className="flex w-full flex-col gap-4">
           {/* placeholder 문구만으로는 스크린리더에 변화가 전달되지 않는다. */}
           {isSkillTypesError && (
             <p role="alert" className="typo-sm-r text-destructive">
@@ -136,7 +131,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               </div>
 
               {/* 멤버 칩 */}
-              <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] px-3 py-1.5">
+              <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-surface-2 px-3 py-1.5">
                 <Avatar className="h-8 w-8 shrink-0 rounded-full">
                   <AvatarImage
                     src={member.user.profileImageUrl || undefined}
@@ -155,7 +150,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenSearchForSession(idx)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] text-primary transition-colors hover:bg-[#61759E]/80"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary transition-colors hover:bg-[#61759E]/80"
                 aria-label={`${getSessionName(member, idx)} 멤버 변경`}
               >
                 <Search className="h-6 w-6" />
@@ -173,7 +168,7 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
             <button
               type="button"
               onClick={onOpenSearchForNewMember}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(97,117,158,0.56)] text-primary transition-colors hover:bg-[#61759E]/80"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary transition-colors hover:bg-[#61759E]/80"
               aria-label="세션 멤버 검색"
             >
               <Search className="h-6 w-6" />

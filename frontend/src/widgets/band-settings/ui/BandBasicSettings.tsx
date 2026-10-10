@@ -281,7 +281,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
           <Button
             type="button"
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex shrink-0 items-center justify-center gap-1 rounded-full bg-primary px-4 py-3 typo-base-b transition-colors focus-visible:outline-2 focus-visible:outline-secondary"
+            className="flex shrink-0 items-center justify-center gap-1 rounded-full bg-primary px-4 py-3 typo-base-b text-grey-600 transition-colors focus-visible:outline-2 focus-visible:outline-secondary"
           >
             <Search aria-hidden="true" className="size-4.5" />
             <span>검색</span>

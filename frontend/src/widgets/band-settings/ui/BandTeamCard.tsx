@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { ChevronRight, ChevronUp } from 'lucide-react';
 import { useTeamMembers } from '@/entities/team/api/queries';
 import type { BandTeamListItem, TeamMember } from '@/entities/team/model/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { ProfileChip } from '@/entities/user';
+import { cardSurfaceClass } from '@/shared/ui/card-surface';
 import { Checkbox } from '@/shared/ui/checkbox';
+import { cn } from '@/shared/lib/utils';
 
 interface BandTeamCardProps {
   bandId: string;
@@ -49,7 +51,10 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
           handleCardClick();
         }
       }}
-      className="group/card flex w-full cursor-pointer flex-col gap-2 rounded-[16px] border border-[#c6c6c8]/30 bg-[rgba(101,99,122,0.48)] p-4 shadow-sm backdrop-blur-md transition-all hover:border-[#c6c6c8]/60 hover:bg-[rgba(101,99,122,0.6)]"
+      className={cn(
+        cardSurfaceClass,
+        'group/card flex w-full cursor-pointer flex-col gap-3 shadow-sm backdrop-blur-md transition-colors hover:border-grey-200',
+      )}
     >
       {/* 1. 상단 행: 체크박스 + 팀명 + 상세 링크 아이콘 */}
       <div className="flex items-center gap-2">
@@ -67,44 +72,49 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-between">
-          <span className="truncate typo-sm-b text-grey-50">{team.name}</span>
+          <span className="truncate typo-base-sb text-grey-50">
+            {team.name}
+          </span>
           <ChevronRight className="h-5 w-5 text-grey-300 transition-transform group-hover/card:translate-x-0.5 group-hover/card:text-white" />
         </div>
       </div>
 
-      {/* 2. 세션 요약 텍스트 (예: 기타: 김민준  베이스: 김루나 ...) */}
+      {/* 2. 세션 요약 (예: 기타: 김민준  베이스: 김루나 …).
+          한 줄로 묶고 넘치면 말줄임한다. 줄바꿈을 허용하면 팀원이 많을수록 요약이 서너 줄로
+          늘어나, 아래 펼쳐 보는 팀원 목록보다 요약이 더 길어진다. 전체는 펼치면 보인다. */}
       {members.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1.5 typo-xs-sb text-grey-200">
+        <p className="truncate typo-xs-r text-grey-200">
           {members.map((member, idx) => (
-            <span key={member.teamMemberId} className="whitespace-nowrap">
+            <span key={member.teamMemberId} className="mr-3 last:mr-0">
               {getSessionName(member, idx)}: {member.user.nickname}
             </span>
           ))}
-        </div>
+        </p>
       )}
 
-      {/* 3. 아코디언 펼침: 팀원 상세 아바타 + 이름 칩 목록 */}
-      {isExpanded && members.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2.5 pt-1">
-          {members.map((member) => (
-            <div
-              key={member.teamMemberId}
-              className="inline-flex items-center gap-2 rounded-full bg-[rgba(97,117,158,0.56)] px-2.5 py-1"
-            >
-              <Avatar className="h-8 w-8 shrink-0 rounded-full">
-                <AvatarImage
-                  src={member.user.profileImageUrl || undefined}
-                  alt={member.user.nickname}
+      {/* 3. 아코디언 펼침: 팀원 상세 아바타 + 이름 칩 목록.
+          높이를 모르는 내용을 접으려고 grid 행을 0fr↔1fr로 바꾼다 — height는 auto로 전환이 안 된다.
+          접혀 있어도 DOM에 남으므로 스크린리더에는 숨긴다(안에 누를 수 있는 건 없다). */}
+      {members.length > 0 && (
+        <div
+          aria-hidden={!isExpanded}
+          className={cn(
+            // 카드의 gap(12px)을 안쪽 pt로 옮긴다. 그대로 두면 접힌 뒤에도 빈 행의 gap이 남는다.
+            '-mt-3 grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+            isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-wrap items-start gap-x-2.5 gap-y-2 pt-3">
+              {members.map((member) => (
+                <ProfileChip
+                  key={member.teamMemberId}
+                  nickname={member.user.nickname}
+                  avatarUrl={member.user.profileImageUrl}
                 />
-                <AvatarFallback className="typo-xs-sb">
-                  {member.user.nickname.slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <span className="typo-sm-sb text-grey-50">
-                {member.user.nickname}
-              </span>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
 
@@ -116,16 +126,20 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
             e.stopPropagation();
             setIsExpanded((prev) => !prev);
           }}
-          className="flex w-full items-center justify-center pt-1 text-grey-300 transition-colors hover:text-white"
+          // 아이콘(16px)만으로는 누르기 어렵다. 위아래로 영역을 넓히되, 음수 마진으로 카드 아래 여백은 그대로 둔다.
+          className="-mt-2 -mb-3 flex w-full items-center justify-center py-3 text-grey-300 transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+          aria-expanded={isExpanded}
           aria-label={
             isExpanded ? `${team.name} 팀원 접기` : `${team.name} 팀원 펼치기`
           }
         >
-          {isExpanded ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
+          <ChevronUp
+            aria-hidden="true"
+            className={cn(
+              'size-4 transition-transform duration-200 motion-reduce:transition-none',
+              !isExpanded && 'rotate-180',
+            )}
+          />
         </button>
       )}
     </div>

@@ -9,6 +9,8 @@ import {
 } from '@/entities/schedule-poll/lib/poll-grid';
 import { formatClockTime, formatDotDate } from '@/shared/lib/date';
 import { Button } from '@/shared/ui/button';
+import { cardSurfaceClass } from '@/shared/ui/card-surface';
+import { cn } from '@/shared/lib/utils';
 import { EmptyState } from '@/shared/ui/empty-state';
 
 interface SchedulePollListProps {
@@ -56,7 +58,10 @@ const SchedulePollCard = ({
     <Link
       to="/band/$bandId/space/$spaceId/polls/$pollId"
       params={{ bandId, spaceId, pollId }}
-      className="block w-full rounded-sm border border-primary-surface bg-surface-3 p-4 focus-visible:outline-2 focus-visible:outline-primary"
+      className={cn(
+        cardSurfaceClass,
+        'block w-full focus-visible:outline-2 focus-visible:outline-primary',
+      )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-2">

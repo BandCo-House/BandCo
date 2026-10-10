@@ -1,9 +1,12 @@
 import React from 'react';
+import { cn } from '@/shared/lib/utils';
+import { cardSurfaceClass } from '@/shared/ui/card-surface';
 import type {
   BandMemberListItem,
   BandMemberRole,
 } from '@/entities/member/model/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { calcSkillNames } from '@/entities/skill';
+import { ProfileChip } from '@/entities/user';
 import {
   Select,
   SelectContent,
@@ -11,6 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
+
+// 세션을 전부 늘어놓으면 닉네임 자리를 밀어낸다. 대표 세션부터 이만큼만 보여준다.
+const MAX_SESSIONS = 3;
 
 interface BandMemberRowProps {
   member: BandMemberListItem;
@@ -32,42 +38,30 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
   onKick,
 }) => {
   const isLeaderStyle = isLeader || variant === 'leader';
+  const sessionNames = calcSkillNames(member.skills, MAX_SESSIONS);
+  const hiddenSessionCount = member.skills.length - sessionNames.length;
+  // 잘린 세션이 있으면 몇 개가 더 있는지 붙인다 — 없으면 3개가 전부인 줄 안다.
+  const sessionSummary = [
+    sessionNames.join(' · '),
+    hiddenSessionCount > 0 && `+${hiddenSessionCount}`,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
-      className={
-        isLeaderStyle
-          ? 'flex w-full items-center justify-between rounded-[16px] border border-[#c6c6c8] bg-[rgba(220,226,249,0.4)] p-4 shadow-sm backdrop-blur-md'
-          : 'flex w-full items-center justify-between rounded-[16px] border border-[#646468] bg-[rgba(101,99,122,0.48)] p-4 shadow-sm backdrop-blur-md'
-      }
+      className={cn(
+        cardSurfaceClass,
+        'flex w-full items-center gap-2 shadow-sm backdrop-blur-md',
+        isLeaderStyle && 'bg-surface-1',
+      )}
     >
-      {/* 1. 좌측: 아바타 + 닉네임 + 스킬 파트 */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">
-        <div className="flex shrink-0 items-center gap-2">
-          <Avatar className="h-8 w-8 rounded-full">
-            <AvatarImage
-              src={member.avatarUrl || undefined}
-              alt={member.nickname}
-            />
-            <AvatarFallback className="typo-xs-sb">
-              {member.nickname.slice(0, 2)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="truncate typo-sm-sb text-white">
-            {member.nickname}
-          </span>
-        </div>
-
-        {member.skills && member.skills.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 px-1.5 typo-xs-sb text-grey-200">
-            {member.skills.map((skill) => (
-              <span key={skill.skillTypeId} className="whitespace-nowrap">
-                {skill.skillName}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <ProfileChip
+        variant="full"
+        nickname={member.nickname}
+        avatarUrl={member.avatarUrl}
+        sessionName={sessionSummary}
+      />
 
       {/* 2. 우측: 역할 뱃지 / 드롭다운 & 강퇴 버튼 */}
       <div className="flex shrink-0 items-center gap-2">
@@ -85,7 +79,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
               value={currentRole}
               onValueChange={(val) => onRoleChange?.(val as BandMemberRole)}
             >
-              <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-0 bg-[#646468] px-3.5 py-1.5 typo-sm-sb text-white hover:bg-[#727277]">
+              <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-0 bg-grey-400 px-3.5 py-1.5 typo-sm-sb text-grey-50 hover:bg-grey-400/80">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -98,7 +92,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
               <button
                 type="button"
                 onClick={() => onKick(member)}
-                className="px-2.5 py-1 typo-xs-sb text-[#d6705c] transition-opacity hover:opacity-80"
+                className="px-2.5 py-1 typo-xs-sb text-destructive transition-opacity hover:opacity-80"
               >
                 강퇴
               </button>

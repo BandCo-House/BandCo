@@ -55,7 +55,7 @@ export const NotificationCardMenuSheet = ({
         showCloseButton={false}
       >
         {/* Card 1: Actions (거절하기/삭제하기 & 읽음 처리) */}
-        <div className="relative flex w-full flex-col overflow-hidden rounded-[20px] border border-b-[2px] border-[rgba(220,226,249,0.4)] bg-white/24 p-0 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px]">
+        <div className="relative flex w-full flex-col overflow-hidden rounded-[20px] border border-b-[2px] border-surface-1 bg-white/24 p-0 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px]">
           {/* Glow Background */}
           <GlowBlob className="absolute -top-[500px] right-auto bottom-auto left-0 h-[678px] w-full" />
           <GlassRim />
@@ -106,7 +106,7 @@ export const NotificationCardMenuSheet = ({
         <button
           type="button"
           onClick={handleClose}
-          className="relative flex h-[60px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-[20px] border border-b-[2px] border-[rgba(220,226,249,0.4)] bg-white/24 typo-lg-sb text-grey-100 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px] transition-colors hover:bg-white/5 active:bg-white/10"
+          className="relative flex h-[60px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-[20px] border border-b-[2px] border-surface-1 bg-white/24 typo-lg-sb text-grey-100 shadow-[0_3px_6px_2px_rgba(255,255,255,0.16)] backdrop-blur-[20px] transition-colors hover:bg-white/5 active:bg-white/10"
         >
           <span className="relative z-10">이전</span>
           {/* Glow Background */}

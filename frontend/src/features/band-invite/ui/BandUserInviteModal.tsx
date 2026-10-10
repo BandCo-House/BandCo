@@ -1,7 +1,6 @@
-import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { useNavigate } from '@tanstack/react-router';
 import { X } from 'lucide-react';
-import type { UserSearchItem } from '@/entities/user';
+import { calcPrimarySkillName } from '@/entities/skill';
+import { ProfileChip, ProfileLink } from '@/entities/user';
 import {
   Dialog,
   AppDialogContent,
@@ -22,33 +21,6 @@ export interface BandUserInviteModalProps {
   initialQuery?: string;
   onSuccess?: (invitedCount: number) => void;
 }
-
-const primarySession = (user: UserSearchItem): string | undefined =>
-  (user.skills?.find((s) => s.isPrimary) ?? user.skills?.[0])?.skillName;
-
-interface RowLinkProps {
-  label: string;
-  userId?: string;
-}
-
-const RowLink = ({ label, userId }: RowLinkProps) => {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        if (userId) {
-          navigate({ to: `/profile/${userId}` as never });
-        }
-      }}
-      className="flex shrink-0 items-center gap-1.5 rounded-3xl px-3 py-2 text-grey-200 transition-colors hover:text-white"
-    >
-      <span className="typo-sm-sb">{label}</span>
-      <ArrowRightIcon aria-hidden="true" className="size-4" />
-    </button>
-  );
-};
 
 export const BandUserInviteModal = ({
   open,
@@ -157,40 +129,23 @@ export const BandUserInviteModal = ({
             searchResults.map((user) => {
               const selected = isUserSelected(user.id);
               return (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between gap-2"
-                >
+                <div key={user.id} className="flex items-center">
                   <button
                     type="button"
                     role="option"
                     aria-selected={selected}
                     onClick={() => toggleUser(user)}
-                    className={cn(
-                      'flex flex-1 items-center justify-between gap-2 rounded-[20px] border bg-surface-3 p-2 transition-colors',
-                      selected
-                        ? 'border-primary'
-                        : 'border-surface-2 hover:border-grey-300',
-                    )}
+                    className="flex min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
                   >
-                    <span className="flex items-center gap-2">
-                      <Avatar size="default">
-                        <AvatarImage src={user.avatarUrl ?? undefined} />
-                        <AvatarFallback>
-                          {user.nickname.slice(0, 1)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="typo-sm-sb text-grey-50">
-                        {user.nickname}
-                      </span>
-                    </span>
-                    {primarySession(user) && (
-                      <span className="px-1.5 typo-xs-r text-grey-200">
-                        {primarySession(user)}
-                      </span>
-                    )}
+                    <ProfileChip
+                      variant="search"
+                      selected={selected}
+                      nickname={user.nickname}
+                      avatarUrl={user.avatarUrl}
+                      sessionName={calcPrimarySkillName(user.skills)}
+                    />
                   </button>
-                  <RowLink label="프로필" userId={user.id} />
+                  <ProfileLink userId={user.id} nickname={user.nickname} />
                 </div>
               );
             })
@@ -214,7 +169,7 @@ export const BandUserInviteModal = ({
             className={cn(
               'rounded-full px-6 py-2.5 typo-sm-sb transition-colors',
               selectedCount > 0 && !isSubmitting
-                ? 'bg-primary font-semibold hover:bg-primary/90'
+                ? 'bg-primary font-semibold text-grey-600 hover:bg-primary/90'
                 : 'cursor-not-allowed bg-grey-500 opacity-60',
             )}
           >

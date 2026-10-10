@@ -63,13 +63,13 @@ function HeaderRightAction() {
         onClick={() => onSaveMembers?.()}
         disabled={isSaving}
         aria-label="저장"
-        className="flex items-center gap-1.5 typo-xs-sb text-grey-300 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex items-center gap-2.5 rounded-3xl px-3 py-2 typo-sm-sb text-primary focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-grey-400"
       >
         <span>{isSaving ? '저장 중...' : '저장'}</span>
         {isSaving ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Check className="h-4 w-4 text-secondary" />
+          <Check className="h-4 w-4" />
         )}
       </button>
     );
@@ -80,7 +80,8 @@ function HeaderRightAction() {
       type="button"
       onClick={() => onDeleteTeam?.()}
       aria-label="팀 삭제"
-      className="flex items-center gap-1.5 typo-xs-sb text-grey-300 transition-colors hover:text-destructive"
+      // 크기·여백은 밴드 설정 헤더의 저장(BandSettingsSaveAction)과 같다. 헤더 액션끼리 글자 크기가 달랐다.
+      className="flex items-center gap-2.5 rounded-3xl px-3 py-2 typo-sm-sb text-grey-300 transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-destructive"
     >
       <span>팀 삭제</span>
       <Trash2 className="h-4 w-4" />

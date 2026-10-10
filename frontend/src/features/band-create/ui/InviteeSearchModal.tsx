@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Check } from 'lucide-react';
-import { useUserSearch, type UserSearchItem } from '@/entities/user';
+import { calcPrimarySkillName } from '@/entities/skill';
+import {
+  ProfileChip,
+  ProfileLink,
+  useUserSearch,
+  type UserSearchItem,
+} from '@/entities/user';
 import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
-import { cn } from '@/shared/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import {
   AppDialogClose,
   AppDialogContent,
@@ -24,10 +27,6 @@ type InviteeSearchModalProps = {
   /** 로그인 사용자 ID. 밴드 생성자는 초대 대상이 될 수 없어 결과에서 뺀다. */
   currentUserId?: string | null;
 };
-
-const primarySkillName = (user: UserSearchItem): string | undefined =>
-  (user.skills?.find((skill) => skill.isPrimary) ?? user.skills?.[0])
-    ?.skillName;
 
 /**
  * 닉네임으로 유저를 찾아 초대 대상에 담는 검색 모달.
@@ -95,31 +94,23 @@ export const InviteeSearchModal = ({
     return candidates.map((user) => {
       const isSelected = selectedIds.has(user.id);
       return (
-        <button
-          key={user.id}
-          type="button"
-          aria-pressed={isSelected}
-          onClick={() => onToggle(user)}
-          className={cn(
-            'flex items-center gap-2 rounded-[20px] border bg-surface-3 p-2 text-left transition-colors',
-            isSelected ? 'border-primary' : 'border-surface-2',
-          )}
-        >
-          <Avatar size="default" aria-hidden="true">
-            <AvatarImage src={user.avatarUrl ?? undefined} />
-            <AvatarFallback>{user.nickname.slice(0, 1)}</AvatarFallback>
-          </Avatar>
-          <span className="typo-sm-sb text-grey-50">{user.nickname}</span>
-          {primarySkillName(user) && (
-            <span className="px-1.5 typo-xs-r text-grey-200">
-              {primarySkillName(user)}
-            </span>
-          )}
-          {/* 선택 상태를 테두리 색으로만 전하지 않는다. */}
-          {isSelected && (
-            <Check aria-hidden="true" className="ml-auto size-5 text-primary" />
-          )}
-        </button>
+        <div key={user.id} className="flex items-center">
+          <button
+            type="button"
+            aria-pressed={isSelected}
+            onClick={() => onToggle(user)}
+            className="flex min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <ProfileChip
+              variant="search"
+              selected={isSelected}
+              nickname={user.nickname}
+              avatarUrl={user.avatarUrl}
+              sessionName={calcPrimarySkillName(user.skills)}
+            />
+          </button>
+          <ProfileLink userId={user.id} nickname={user.nickname} />
+        </div>
       );
     });
   };
