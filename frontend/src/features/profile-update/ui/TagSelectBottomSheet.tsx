@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { chipSurfaceClass } from '@/shared/ui/chip-surface';
 import {
   Sheet,
   SheetContent,
@@ -181,8 +182,8 @@ function TagSelectContent({
               className={cn(
                 'flex items-center justify-center gap-2 rounded-md px-4 py-2 typo-xs-sb transition-colors select-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:outline-none',
                 isSelected
-                  ? 'bg-primary text-gradient-top'
-                  : 'border border-grey-400 bg-grey-500/24 text-grey-100 hover:border-grey-300',
+                  ? chipSurfaceClass.selected
+                  : chipSurfaceClass.unselected,
               )}
             >
               {/* 첫 선택은 핀(대표), 그 뒤는 번호. 번호가 2부터 시작하는 건 1번 자리를

@@ -146,7 +146,7 @@ export function ProfileCard({
         </>
       )}
 
-      <div className="relative z-20 mt-72 mb-12 rounded-md backdrop-blur-lg">
+      <div className="relative z-20 mt-72 mb-12 rounded-md">
         <div className="absolute h-full w-full rounded-md bg-white/40 backdrop-blur-lg" />
         <GlassRim />
 
