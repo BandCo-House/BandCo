@@ -7,6 +7,7 @@ import {
   getBandSpaces,
   getSpace,
   getSpaceDetail,
+  updateSpace,
 } from './space-api';
 
 const mock = new MockAdapter(apiClient);
@@ -113,6 +114,39 @@ describe('band space api 어댑터', () => {
     expect(result.space.name).toBe('2026 하계 공연 무대');
     expect(result.memberCount).toBe(2);
     expect(result.songCount).toBe(6);
+    expect(result.memberBandMemberIds).toEqual(['m-1', 'm-2']);
+  });
+
+  it('스페이스를 bandspaces 경로로 수정하고 보낸 필드만 본문에 싣는다', async () => {
+    mock.onPatch('/bandspaces/space-1').reply(200, {
+      status: 'success',
+      error: null,
+      message: '합주 공간 수정 성공',
+      data: {
+        spaceId: 'space-1',
+        bandId: 'band-1',
+        name: '가을 공연',
+        description: '',
+        spaceType: 'PERFORMANCE',
+        status: 'ACTIVE',
+        startDate: '2026-09-01',
+        endDate: '2026-10-05',
+        updatedAt: '2026-08-01T00:00:00.000Z',
+      },
+    });
+
+    const result = await updateSpace('space-1', {
+      name: '가을 공연',
+      startDate: '2026-09-01',
+      bandMemberIds: ['m-1'],
+    });
+
+    expect(result.name).toBe('가을 공연');
+    expect(JSON.parse(mock.history.patch[0]?.data as string)).toEqual({
+      name: '가을 공연',
+      startDate: '2026-09-01',
+      bandMemberIds: ['m-1'],
+    });
   });
 
   it('스페이스를 bandspaces 경로로 생성한다', async () => {
