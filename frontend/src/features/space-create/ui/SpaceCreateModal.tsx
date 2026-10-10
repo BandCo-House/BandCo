@@ -262,7 +262,7 @@ export const SpaceCreateModal = ({
                 고정(h)이 아니라 최소(min-h)인 이유: 좁은 화면에서 라벨이 휠 위로 줄바꿈되면
                 내용이 232를 넘는다. */}
             <WheelFieldCard
-              className="min-h-[232px] justify-center px-2.5 py-4"
+              className="min-h-[232px] justify-center py-4 pr-2.5 pl-5"
               role="group"
               aria-label="합주 기간"
               aria-invalid={endBeforeStart || undefined}

@@ -1,5 +1,10 @@
 import { pad2, type WheelDate } from './wheel-date';
-import { WHEEL_COLUMN_DENSE_CLASS, WheelColumn } from './wheel-column';
+import {
+  WHEEL_COLUMN_DENSE_CLASS,
+  WheelColumn,
+  wheelSeparatorClass,
+} from './wheel-column';
+import { cn } from '@/shared/lib/utils';
 import { WheelRow } from './wheel-row';
 
 export type { WheelDate } from './wheel-date';
@@ -86,7 +91,9 @@ export const WheelDatePicker = ({
         onChange={(month) => commit({ ...value, month })}
         format={pad2}
       />
-      <span className="px-1 typo-base-sb text-grey-100">월</span>
+      <span className={cn(wheelSeparatorClass(dense), 'text-grey-100')}>
+        월
+      </span>
       <WheelColumn
         className={columnClass}
         label="일"
@@ -95,7 +102,9 @@ export const WheelDatePicker = ({
         onChange={(day) => commit({ ...value, day })}
         format={pad2}
       />
-      <span className="px-1 typo-base-sb text-grey-100">일</span>
+      <span className={cn(wheelSeparatorClass(dense), 'text-grey-100')}>
+        일
+      </span>
     </WheelRow>
   );
 };

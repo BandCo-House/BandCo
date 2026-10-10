@@ -1,5 +1,10 @@
 import { pad2 } from './wheel-date';
-import { WHEEL_COLUMN_DENSE_CLASS, WheelColumn } from './wheel-column';
+import {
+  WHEEL_COLUMN_DENSE_CLASS,
+  WheelColumn,
+  wheelSeparatorClass,
+} from './wheel-column';
+import { cn } from '@/shared/lib/utils';
 import { WheelRow } from './wheel-row';
 
 /** 시간 문자열 'HH:mm'(24h)을 오전/오후·12시간·분으로 분해한다. */
@@ -80,7 +85,7 @@ export const WheelTimePicker = ({
         onChange={(hour12) => commit({ hour12 })}
         format={pad2}
       />
-      <span className="px-1 typo-base-sb text-grey-50">:</span>
+      <span className={cn(wheelSeparatorClass(dense), 'text-grey-50')}>:</span>
       <WheelColumn
         className={columnClass}
         label="분"
@@ -89,6 +94,8 @@ export const WheelTimePicker = ({
         onChange={(minute) => commit({ minute })}
         format={pad2}
       />
+      {/* 날짜 줄 끝의 '일' 자리만큼 비워, 두 줄의 전체 폭과 컬럼 위치를 맞춘다. */}
+      {dense && <span aria-hidden="true" className="w-6" />}
     </WheelRow>
   );
 };

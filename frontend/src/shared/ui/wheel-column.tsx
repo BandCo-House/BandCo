@@ -6,6 +6,13 @@ export const WHEEL_ITEM_HEIGHT = 32;
 export const WHEEL_VISIBLE_COUNT = 3;
 // 두 자리 값(월·일·시·분) 컬럼을 좁힐 때 쓰는 폭. 기본(w-14)은 연도 네 자리에 맞춘 값이다.
 export const WHEEL_COLUMN_DENSE_CLASS = 'w-11';
+/**
+ * 컬럼 사이 구분 글자(월·일·:)의 스타일. dense에서는 폭을 고정한다 — 날짜 줄과 시간 줄이
+ * 위아래로 쌓였을 때 [연도|오전오후] [월|시] [일|분] 컬럼이 같은 x에 서려면, 글자 폭이
+ * 제각각인 구분자까지 같은 폭이어야 한다.
+ */
+export const wheelSeparatorClass = (dense: boolean): string =>
+  dense ? 'w-6 text-center typo-base-sb' : 'px-1 typo-base-sb';
 const PADDING = ((WHEEL_VISIBLE_COUNT - 1) / 2) * WHEEL_ITEM_HEIGHT;
 
 interface WheelColumnProps {

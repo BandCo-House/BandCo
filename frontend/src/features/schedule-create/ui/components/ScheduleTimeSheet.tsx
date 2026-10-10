@@ -13,8 +13,6 @@ interface ScheduleTimeSheetProps {
   onTimeChange: (time: string) => void;
   /** 연도를 휠로 고를지('wheel'), 추론된 값을 보여주기만 할지('readonly'). */
   yearMode: 'wheel' | 'readonly';
-  /** 연도 휠의 시작 연도. yearMode가 'wheel'일 때만 쓰인다. */
-  minYear?: number;
   /** 이 일시가 유효하지 않은지(종료가 시작보다 앞섬). 카드에 오류 상태를 알린다. */
   invalid?: boolean;
   /** invalid일 때 오류 문구의 id. */
@@ -34,7 +32,6 @@ export const ScheduleTimeSheet = ({
   time,
   onTimeChange,
   yearMode,
-  minYear,
   invalid = false,
   errorId,
 }: ScheduleTimeSheetProps) => {
@@ -56,7 +53,6 @@ export const ScheduleTimeSheet = ({
           label={`${label} 날짜`}
           labelHidden
           yearMode={yearMode}
-          minYear={minYear}
           dense
           value={date}
           onChange={onDateChange}
