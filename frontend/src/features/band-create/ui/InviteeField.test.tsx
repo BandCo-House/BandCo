@@ -8,6 +8,7 @@ import { InviteeField } from './InviteeField';
 const INVITEE: UserSearchItem = {
   id: 'user-2',
   nickname: '김지은',
+  handle: 'handle_1',
   avatarUrl: null,
   status: 'ACTIVE',
 };

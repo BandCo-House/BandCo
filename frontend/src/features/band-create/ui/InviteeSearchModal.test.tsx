@@ -27,18 +27,21 @@ vi.mock('@tanstack/react-router', () => ({
 const SELF: UserSearchItem = {
   id: 'user-001',
   nickname: '김민수',
+  handle: 'handle_1',
   avatarUrl: null,
   status: 'ACTIVE',
 };
 const ACTIVE_OTHER: UserSearchItem = {
   id: 'user-2',
   nickname: '김지은',
+  handle: 'handle_2',
   avatarUrl: null,
   status: 'ACTIVE',
 };
 const INACTIVE_OTHER: UserSearchItem = {
   id: 'user-5',
   nickname: '김도윤',
+  handle: 'handle_3',
   avatarUrl: null,
   status: 'INACTIVE',
 };
@@ -95,14 +98,16 @@ describe('InviteeSearchModal', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: ACTIVE_OTHER.nickname }),
+        screen.getByRole('button', { name: new RegExp(ACTIVE_OTHER.nickname) }),
       ).toBeInTheDocument();
     });
     expect(
-      screen.queryByRole('button', { name: SELF.nickname }),
+      screen.queryByRole('button', { name: new RegExp(SELF.nickname) }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: INACTIVE_OTHER.nickname }),
+      screen.queryByRole('button', {
+        name: new RegExp(INACTIVE_OTHER.nickname),
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -114,7 +119,7 @@ describe('InviteeSearchModal', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: ACTIVE_OTHER.nickname }),
+        screen.getByRole('button', { name: new RegExp(ACTIVE_OTHER.nickname) }),
       ).toHaveAttribute('aria-pressed', 'true');
     });
   });
@@ -126,7 +131,7 @@ describe('InviteeSearchModal', () => {
     await searchFor('김');
     await userEvent.click(
       await waitFor(() =>
-        screen.getByRole('button', { name: ACTIVE_OTHER.nickname }),
+        screen.getByRole('button', { name: new RegExp(ACTIVE_OTHER.nickname) }),
       ),
     );
 
@@ -157,7 +162,7 @@ describe('InviteeSearchModal', () => {
     await searchFor('김');
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: ACTIVE_OTHER.nickname }),
+        screen.getByRole('button', { name: new RegExp(ACTIVE_OTHER.nickname) }),
       ).toBeInTheDocument();
     });
 
@@ -167,7 +172,7 @@ describe('InviteeSearchModal', () => {
 
     expect(screen.getByText('검색 중입니다.')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: ACTIVE_OTHER.nickname }),
+      screen.queryByRole('button', { name: new RegExp(ACTIVE_OTHER.nickname) }),
     ).not.toBeInTheDocument();
   });
 

@@ -16,6 +16,8 @@ export const bandMemberListItemSchema = z.object({
   bandMemberId: z.string(),
   userId: z.string(),
   nickname: z.string(),
+  // 닉네임이 겹치는 멤버를 가르는 고유 ID. 백엔드 필드명이 확정되면 맞춘다(가정: handle).
+  handle: z.string(),
   avatarUrl: z.string().nullable().default(null),
   role: z.string().default('MEMBER'),
   joinedAt: z.string().optional(),
