@@ -31,7 +31,8 @@ export const SpaceSummaryHeader = ({
         <p className="typo-base-r text-grey-300">{description}</p>
       )}
       {(typeof memberCount === 'number' || typeof songCount === 'number') && (
-        <div className="flex items-center gap-2">
+        // 칩은 이름·설명과 성격이 다른 메타라 글줄 간격(8)보다 조금 더 띄운다.
+        <div className="mt-1 flex items-center gap-2">
           {typeof memberCount === 'number' && (
             <CountChip>{`${memberCount}명`}</CountChip>
           )}
