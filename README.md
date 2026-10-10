@@ -14,8 +14,7 @@
 <div align="center">
   <h3>공연 스페이스</h3>
   <p>공연마다 합주와 회의를 타임라인으로 정리하고<br>곡과 키, 파트별 멤버와 장비까지 담아요.</p>
-  <img src="docs/readme/demo-space.gif" alt="밴드 홈에서 공연 스페이스로 들어가 일정을 여는 화면" width="36%">
-  <img src="docs/readme/screen-schedule.webp" alt="연습할 곡과 세션 편성이 담긴 일정 상세 화면" width="36%">
+  <img src="docs/readme/pair-space.gif" alt="공연 스페이스: 밴드 홈에서 스페이스로 들어가 일정을 여는 화면과 타임라인 캘린더 화면" width="76%">
 </div>
 
 <br>
@@ -23,8 +22,7 @@
 <div align="center">
   <h3>일정 투표</h3>
   <p>되는 시간을 드래그로 고르면<br>시간대마다 가능한 인원이 바로 쌓여요.</p>
-  <img src="docs/readme/demo-poll.gif" alt="가능한 시간을 드래그로 골라 투표하는 화면" width="36%">
-  <img src="docs/readme/screen-poll.webp" alt="시간대별 가능한 인원이 표시된 투표 결과 화면" width="36%">
+  <img src="docs/readme/pair-poll.gif" alt="일정 투표: 가능한 시간을 드래그로 골라 투표하는 화면과 후보 날짜를 고르는 투표 만들기 화면" width="76%">
 </div>
 
 <br>
@@ -42,17 +40,14 @@
 <div align="center">
   <h3>AI 물어보기</h3>
   <p>“다음 합주 몇 명 와?”처럼 물으면<br>밴드 데이터에서 찾아 바로 답해요.</p>
-  <img src="docs/readme/demo-ai.gif" alt="질문을 입력하면 다음 합주 일정과 참석 인원을 찾아 답하는 화면" width="36%">
-  <img src="docs/readme/screen-ai.webp" alt="이번 달 많이 연습한 곡을 순위로 보여 주는 답변 화면" width="36%">
+  <img src="docs/readme/pair-ai.gif" alt="AI 물어보기: 질문을 입력하면 다음 합주 일정과 참석 인원을 찾아 답하는 화면과 순위 답변 화면" width="76%">
 </div>
 
 <br>
 
 ## 기술 스택
 
-- **Frontend** React 19, TypeScript, Vite, TanStack Router · Query, Tailwind CSS v4, Radix UI, MSW, Vitest
-- **Backend** NestJS 11, Prisma 6, PostgreSQL, Swagger, Jest
-- **Infra** Docker, GitHub Actions, AWS Lightsail, CloudWatch, Vercel
+<img src="docs/readme/tech.webp" alt="Frontend: React 19, TypeScript, Vite, TanStack Router, TanStack Query, Tailwind CSS v4, Radix UI, MSW, Vitest. Backend: NestJS 11, Prisma 6, PostgreSQL, Swagger, Jest. Infra: Docker, GitHub Actions, AWS Lightsail, CloudWatch, Vercel." width="100%">
 
 ## 아키텍처
 
