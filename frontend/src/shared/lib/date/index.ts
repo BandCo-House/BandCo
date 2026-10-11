@@ -124,3 +124,58 @@ export const formatClockTime = (iso: string | null): string => {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
 };
+
+/**
+ * 두 날짜가 로컬 기준 같은 날인지 비교합니다(시각은 무시).
+ */
+export const isSameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+/**
+ * 해당 월의 날짜들을 일요일 시작 주 그리드로 반환합니다. 1일 앞의 빈 칸은 null입니다.
+ * month는 0-based(Date#getMonth)입니다.
+ */
+export const getMonthDays = (year: number, month: number): (Date | null)[] => {
+  const first = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (Date | null)[] = Array.from(
+    { length: first.getDay() },
+    () => null,
+  );
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push(new Date(year, month, day));
+  }
+  return cells;
+};
+
+/**
+ * 주어진 날짜에서 months만큼 달을 옮긴 새 Date를 반환합니다.
+ * 옮긴 달에 같은 일이 없으면(1월 31일 → 2월) 그 달의 말일로 맞춥니다.
+ * setMonth만 쓰면 말일을 넘긴 만큼 다음 달로 흘러 한 달을 건너뜁니다.
+ */
+export const addMonths = (date: Date, months: number): Date => {
+  const target = new Date(date);
+  target.setDate(1);
+  target.setMonth(target.getMonth() + months);
+  const lastDay = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0,
+  ).getDate();
+  target.setDate(Math.min(date.getDate(), lastDay));
+  return target;
+};
+
+/**
+ * 그 달에서 몇 번째 주인지(1부터) 반환합니다. 주는 일요일에 시작합니다.
+ */
+export const getWeekOfMonth = (date: Date): number => {
+  const firstWeekday = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    1,
+  ).getDay();
+  return Math.ceil((date.getDate() + firstWeekday) / 7);
+};

@@ -21,8 +21,13 @@ export interface ScheduleSessionAssignment {
 export interface ScheduleFormState {
   scheduleType: ScheduleType;
   title: string;
-  date: WheelDate;
+  /**
+   * 시작과 종료는 각자 날짜를 가진다. 밤 11시에 시작해 다음 날 새벽 1시에 끝나는
+   * 합주처럼 날짜가 갈릴 수 있어, 날짜 하나로는 표현하지 못한다.
+   */
+  startDate: WheelDate;
   startTime: string; // 'HH:mm'
+  endDate: WheelDate;
   endTime: string; // 'HH:mm'
   placeId: string | null;
   /** 합주(PRACTICE) 전용. 백엔드는 배열로 받으므로 전송 시 [songId]로 감싼다. */
@@ -43,8 +48,6 @@ export interface ScheduleFormState {
   status: ScheduleStatus;
 }
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
 // 시간 휠은 15분 단위라, 수정 진입 시 분을 같은 단위로 내림 정규화해 표시값과 저장값을 일치시킨다.
 const MINUTE_STEP = 15;
 const floorMinuteToStep = (minute: number) =>
@@ -54,8 +57,9 @@ const floorMinuteToStep = (minute: number) =>
 export const createEmptyForm = (initialDate?: Date): ScheduleFormState => ({
   scheduleType: 'PRACTICE',
   title: '',
-  date: toWheelDate(initialDate ?? new Date()),
+  startDate: toWheelDate(initialDate ?? new Date()),
   startTime: '19:00',
+  endDate: toWheelDate(initialDate ?? new Date()),
   endTime: '21:00',
   placeId: null,
   songId: null,
@@ -81,14 +85,47 @@ const combineDateTime = (date: WheelDate, time: string): string => {
   ).toISOString();
 };
 
+/** 종료가 시작보다 뒤인지. 같거나 이르면 저장할 수 없다(백엔드도 400으로 거절한다). */
+export const isEndAfterStart = (form: ScheduleFormState): boolean =>
+  new Date(combineDateTime(form.endDate, form.endTime)).getTime() >
+  new Date(combineDateTime(form.startDate, form.startTime)).getTime();
+
 /**
- * 종료 시각이 시작과 같거나 이르면 다음 날로 넘어간 것으로 보고 하루를 더한다.
- * (예: 시작 오후 11시 → 종료 오전 1시면 종료를 다음 날 01:00으로 처리)
+ * 시작 날짜를 옮기면서 종료 날짜를 같은 일수만큼 함께 옮긴 패치를 만든다.
+ * 시작만 옮기면 종료가 시작보다 앞서 매번 종료 휠까지 다시 돌려야 한다.
+ * 일정의 길이(당일 종료·다음 날 종료)는 그대로 유지된다.
  */
-const resolveEndAt = (startAt: string, rawEndAt: string): string =>
-  new Date(rawEndAt).getTime() <= new Date(startAt).getTime()
-    ? new Date(new Date(rawEndAt).getTime() + ONE_DAY_MS).toISOString()
-    : rawEndAt;
+export const shiftStartDate = (
+  form: ScheduleFormState,
+  startDate: WheelDate,
+): Pick<ScheduleFormState, 'startDate' | 'endDate'> => {
+  const toDate = (d: WheelDate) => new Date(d.year, d.month - 1, d.day);
+  const shifted = toDate(form.endDate);
+  // 일수 차이는 UTC 자정끼리 빼야 서머타임 등으로 하루가 23·25시간인 날에도 정확하다.
+  const toUtcDay = (d: WheelDate) => Date.UTC(d.year, d.month - 1, d.day);
+  const movedDays = Math.round(
+    (toUtcDay(startDate) - toUtcDay(form.startDate)) / (24 * 60 * 60 * 1000),
+  );
+  shifted.setDate(shifted.getDate() + movedDays);
+  return { startDate, endDate: toWheelDate(shifted) };
+};
+
+/**
+ * 종료 휠에서 고른 월·일에 연도를 붙인다. 종료는 연도를 고르지 않으므로 시작 연도를
+ * 따르되, 종료 월이 시작 월보다 앞서면 해를 넘긴 것으로 본다(11월 시작 → 1월 종료).
+ * 추론한 연도는 종료 카드에 그대로 보여 준다.
+ *
+ * 같은 달의 앞선 날짜는 해를 넘기지 않는다. 3월 10일 시작에서 종료 휠이 실수로
+ * 3월 9일에 놓였을 때 내년으로 풀면 364일짜리 일정이 되는데, 그건 거의 항상 실수다.
+ * 같은 해로 두어 "종료는 시작보다 뒤여야 해요" 검증에 걸리게 한다.
+ */
+export const resolveEndDate = (
+  startDate: WheelDate,
+  picked: WheelDate,
+): WheelDate => {
+  const wrapsYear = picked.month < startDate.month;
+  return { ...picked, year: startDate.year + (wrapsYear ? 1 : 0) };
+};
 
 /**
  * 폼 상태 → 생성/수정 요청 페이로드. status는 폼이 보관한 원본 상태를 그대로 싣는다.
@@ -99,8 +136,8 @@ export const toScheduleRequest = (
   form: ScheduleFormState,
   referenceFiles: ScheduleReferenceFileInput[] = [],
 ): CreateScheduleRequest => {
-  const startAt = combineDateTime(form.date, form.startTime);
-  const endAt = resolveEndAt(startAt, combineDateTime(form.date, form.endTime));
+  const startAt = combineDateTime(form.startDate, form.startTime);
+  const endAt = combineDateTime(form.endDate, form.endTime);
   const memo = form.memo.trim();
   const isPractice = form.scheduleType === 'PRACTICE';
 
@@ -151,8 +188,9 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
   return {
     scheduleType: detail.scheduleType,
     title: detail.title,
-    date: toWheelDate(start),
+    startDate: toWheelDate(start),
     startTime: hhmm(start),
+    endDate: toWheelDate(end),
     endTime: hhmm(end),
     placeId: detail.place?.placeId ?? null,
     songId: detail.songs[0]?.songId ?? null,
@@ -176,10 +214,11 @@ export const detailToForm = (detail: ScheduleDetail): ScheduleFormState => {
   };
 };
 
-/** 필수 항목 충족 여부. 공통(이름·장소) + 유형별(합주=곡, 회의=참여자). */
+/** 필수 항목 충족 여부. 공통(이름·장소·시간 순서) + 유형별(합주=곡, 회의=참여자). */
 export const isFormValid = (form: ScheduleFormState): boolean => {
   if (form.title.trim().length === 0) return false;
   if (!form.placeId) return false;
+  if (!isEndAfterStart(form)) return false;
   // 합주는 곡과 세션 편성이, 회의는 참여자가 필수다.
   if (form.scheduleType === 'PRACTICE') {
     // 개수만 보면 같은 세션에 두 명이 실린 편성도 통과한다(팀 편성을 옮겨 왔거나

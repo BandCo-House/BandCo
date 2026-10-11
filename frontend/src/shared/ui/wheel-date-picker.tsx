@@ -1,6 +1,11 @@
-import { cn } from '@/shared/lib/utils';
 import { pad2, type WheelDate } from './wheel-date';
-import { WheelColumn } from './wheel-column';
+import {
+  WHEEL_COLUMN_DENSE_CLASS,
+  WheelColumn,
+  WHEEL_SEPARATOR_CLASS,
+} from './wheel-column';
+import { cn } from '@/shared/lib/utils';
+import { WheelRow } from './wheel-row';
 
 export type { WheelDate } from './wheel-date';
 
@@ -17,13 +22,19 @@ interface WheelDatePickerProps {
   /** 선택 가능한 연도 범위. 기본: 올해-10 ~ 올해+10. */
   minYear?: number;
   maxYear?: number;
-  /**
-   * 이 피커가 무엇을 고르는지 알린다(예: 시작·종료).
-   * 화면에는 그리지 않는다 — 휠 왼쪽에 7칸짜리 작은 글씨로 두니 마스크에 묻혀
-   * 읽히지도 않으면서 휠 폭만 줄였다. 대신 group의 이름으로 남겨 스크린리더는
-   * 여전히 두 피커를 구분할 수 있게 한다.
-   */
+  /** 이 피커가 무엇을 고르는지(예: 시작·종료). 휠 왼쪽에 그리고 group 이름으로도 쓴다. */
   label?: string;
+  /** 라벨을 화면에 그리지 않고 group 이름으로만 남긴다. */
+  labelHidden?: boolean;
+  /**
+   * 연도를 어떻게 다룰지.
+   * - 'wheel'(기본): 휠로 고른다.
+   * - 'readonly': 고를 수는 없고 value의 연도를 글자로 보여준다. 연도를 다른 값에서
+   *   추론하는 피커(일정 종료일)가, 추론 결과를 숨기지 않고 알리려고 쓴다.
+   */
+  yearMode?: 'wheel' | 'readonly';
+  /** 두 자리 컬럼(월·일)을 좁혀, 시간 휠과 한 줄에 나란히 놓을 수 있게 한다. */
+  dense?: boolean;
   className?: string;
 }
 
@@ -37,6 +48,9 @@ export const WheelDatePicker = ({
   minYear,
   maxYear,
   label,
+  labelHidden,
+  yearMode = 'wheel',
+  dense = false,
   className,
 }: WheelDatePickerProps) => {
   const thisYear = new Date().getFullYear();
@@ -50,45 +64,57 @@ export const WheelDatePicker = ({
     onChange({ ...next, day: Math.min(next.day, maxDay) });
   };
 
+  const columnClass = dense ? WHEEL_COLUMN_DENSE_CLASS : undefined;
+
   return (
-    <div
-      role={label ? 'group' : undefined}
-      aria-label={label}
-      className={cn('flex items-center gap-2', className)}
-    >
-      <div
-        className="flex flex-1 items-center justify-center"
-        // 가운데 선택 줄을 은은하게 강조하는 마스크(위아래 페이드).
-        style={{
-          maskImage:
-            'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
-          WebkitMaskImage:
-            'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
-        }}
-      >
+    <WheelRow label={label} labelHidden={labelHidden} className={className}>
+      {yearMode === 'wheel' ? (
         <WheelColumn
           label="년"
           items={years}
           value={value.year}
           onChange={(year) => commit({ ...value, year })}
         />
-        <WheelColumn
-          label="월"
-          items={months}
-          value={value.month}
-          onChange={(month) => commit({ ...value, month })}
-          format={pad2}
-        />
-        <span className="px-1 typo-base-sb text-grey-100">월</span>
-        <WheelColumn
-          label="일"
-          items={days}
-          value={value.day}
-          onChange={(day) => commit({ ...value, day })}
-          format={pad2}
-        />
-        <span className="px-1 typo-base-sb text-grey-100">일</span>
-      </div>
-    </div>
+      ) : (
+        // 휠 컬럼과 같은 폭을 차지해 시작 카드의 연도 휠과 세로로 줄이 맞는다.
+        // 고를 수 없는 값이라 휠의 비선택 항목과 같은 흐린 색으로 둔다.
+        <span className="w-14 text-center typo-base-sb text-grey-300">
+          <span className="sr-only">연도 </span>
+          {value.year}
+        </span>
+      )}
+      <WheelColumn
+        className={columnClass}
+        label="월"
+        items={months}
+        value={value.month}
+        onChange={(month) => commit({ ...value, month })}
+        format={pad2}
+      />
+      <span
+        className={cn(
+          WHEEL_SEPARATOR_CLASS[dense ? 'dense' : 'regular'],
+          'text-grey-100',
+        )}
+      >
+        월
+      </span>
+      <WheelColumn
+        className={columnClass}
+        label="일"
+        items={days}
+        value={value.day}
+        onChange={(day) => commit({ ...value, day })}
+        format={pad2}
+      />
+      <span
+        className={cn(
+          WHEEL_SEPARATOR_CLASS[dense ? 'dense' : 'regular'],
+          'text-grey-100',
+        )}
+      >
+        일
+      </span>
+    </WheelRow>
   );
 };

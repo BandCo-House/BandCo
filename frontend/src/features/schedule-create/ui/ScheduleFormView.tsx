@@ -10,7 +10,13 @@ import { SegmentedToggle } from '@/shared/ui/segmented-toggle';
 import { Field, fieldSurfaceClass } from '@/shared/ui/field';
 import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
 import { cn } from '@/shared/lib/utils';
-import type { ScheduleFormState, ScheduleType } from '../model/types';
+import {
+  isEndAfterStart,
+  resolveEndDate,
+  shiftStartDate,
+  type ScheduleFormState,
+  type ScheduleType,
+} from '../model/types';
 import {
   type ReferenceFileDraft,
   referenceFileDraftKey,
@@ -32,6 +38,8 @@ const TYPE_OPTIONS: { value: ScheduleType; label: string }[] = [
 ];
 
 const inputClass = 'typo-base-sb text-grey-50';
+
+const SCHEDULE_TIME_ERROR_ID = 'schedule-time-error';
 
 const Divider = () => <div aria-hidden className="h-px w-full bg-grey-50/10" />;
 
@@ -82,6 +90,7 @@ export const ScheduleFormView = ({
   bandId,
 }: ScheduleFormViewProps) => {
   const isPractice = form.scheduleType === 'PRACTICE';
+  const endBeforeStart = !isEndAfterStart(form);
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
 
@@ -234,20 +243,40 @@ export const ScheduleFormView = ({
         />
       </Field>
 
-      {/* 시작 / 종료 시간 */}
-      <Field label="시작 / 종료 시간" required>
-        {/* 휠 두 줄이 같은 모양이라 어느 쪽이 시작인지 안 보인다. 휠 안에 라벨을 넣으면
-            마스크에 묻히므로 필드 설명으로 순서를 말해준다(투표 화면과 같은 패턴). */}
-        <p className="typo-sm-r text-grey-200">
-          위가 시작, 아래가 종료 시각이에요
-        </p>
+      {/* 시작. 날짜는 캘린더에서 보던 날짜로 시작하지만 여기서 바꿀 수 있다.
+          지난 날짜도 막지 않는다 — 이미 한 합주를 뒤늦게 기록하거나 고치는 경우가 있다. */}
+      <Field label="시작" required>
         <ScheduleTimeSheet
-          date={form.date}
-          startTime={form.startTime}
-          onStartTimeChange={(startTime) => onChange({ startTime })}
-          endTime={form.endTime}
-          onEndTimeChange={(endTime) => onChange({ endTime })}
+          label="시작"
+          date={form.startDate}
+          onDateChange={(startDate) =>
+            onChange(shiftStartDate(form, startDate))
+          }
+          time={form.startTime}
+          onTimeChange={(startTime) => onChange({ startTime })}
+          yearMode="wheel"
         />
+      </Field>
+
+      {/* 종료. 연도는 고르지 않고 시작에서 추론한 값을 보여주기만 한다(resolveEndDate). */}
+      <Field label="종료" required>
+        <ScheduleTimeSheet
+          label="종료"
+          date={form.endDate}
+          onDateChange={(endDate) =>
+            onChange({ endDate: resolveEndDate(form.startDate, endDate) })
+          }
+          time={form.endTime}
+          onTimeChange={(endTime) => onChange({ endTime })}
+          yearMode="readonly"
+          invalid={endBeforeStart}
+          errorId={SCHEDULE_TIME_ERROR_ID}
+        />
+        {endBeforeStart && (
+          <p id={SCHEDULE_TIME_ERROR_ID} className="typo-sm-r text-destructive">
+            종료는 시작보다 뒤여야 해요. 다음 날 끝나면 종료 날짜를 바꿔주세요.
+          </p>
+        )}
       </Field>
 
       {/* 장소 */}
