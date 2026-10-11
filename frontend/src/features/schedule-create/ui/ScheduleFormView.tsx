@@ -12,7 +12,6 @@ import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
 import { cn } from '@/shared/lib/utils';
 import {
   isEndAfterStart,
-  resolveEndDate,
   shiftStartDate,
   type ScheduleFormState,
   type ScheduleType,
@@ -243,32 +242,20 @@ export const ScheduleFormView = ({
         />
       </Field>
 
-      {/* 시작. 날짜는 캘린더에서 보던 날짜로 시작하지만 여기서 바꿀 수 있다.
+      {/* 시작 / 종료 일시. 시작 날짜는 캘린더에서 보던 날짜로 시작하지만 여기서 바꿀 수 있다.
           지난 날짜도 막지 않는다 — 이미 한 합주를 뒤늦게 기록하거나 고치는 경우가 있다. */}
-      <Field label="시작" required>
+      <Field label="시작 / 종료 시간" required>
         <ScheduleTimeSheet
-          label="시작"
-          date={form.startDate}
-          onDateChange={(startDate) =>
+          startDate={form.startDate}
+          onStartDateChange={(startDate) =>
             onChange(shiftStartDate(form, startDate))
           }
-          time={form.startTime}
-          onTimeChange={(startTime) => onChange({ startTime })}
-          yearMode="wheel"
-        />
-      </Field>
-
-      {/* 종료. 연도는 고르지 않고 시작에서 추론한 값을 보여주기만 한다(resolveEndDate). */}
-      <Field label="종료" required>
-        <ScheduleTimeSheet
-          label="종료"
-          date={form.endDate}
-          onDateChange={(endDate) =>
-            onChange({ endDate: resolveEndDate(form.startDate, endDate) })
-          }
-          time={form.endTime}
-          onTimeChange={(endTime) => onChange({ endTime })}
-          yearMode="readonly"
+          startTime={form.startTime}
+          onStartTimeChange={(startTime) => onChange({ startTime })}
+          endDate={form.endDate}
+          onEndDateChange={(endDate) => onChange({ endDate })}
+          endTime={form.endTime}
+          onEndTimeChange={(endTime) => onChange({ endTime })}
           invalid={endBeforeStart}
           errorId={SCHEDULE_TIME_ERROR_ID}
         />

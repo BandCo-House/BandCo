@@ -111,23 +111,6 @@ export const shiftStartDate = (
 };
 
 /**
- * 종료 휠에서 고른 월·일에 연도를 붙인다. 종료는 연도를 고르지 않으므로 시작 연도를
- * 따르되, 종료 월이 시작 월보다 앞서면 해를 넘긴 것으로 본다(11월 시작 → 1월 종료).
- * 추론한 연도는 종료 카드에 그대로 보여 준다.
- *
- * 같은 달의 앞선 날짜는 해를 넘기지 않는다. 3월 10일 시작에서 종료 휠이 실수로
- * 3월 9일에 놓였을 때 내년으로 풀면 364일짜리 일정이 되는데, 그건 거의 항상 실수다.
- * 같은 해로 두어 "종료는 시작보다 뒤여야 해요" 검증에 걸리게 한다.
- */
-export const resolveEndDate = (
-  startDate: WheelDate,
-  picked: WheelDate,
-): WheelDate => {
-  const wrapsYear = picked.month < startDate.month;
-  return { ...picked, year: startDate.year + (wrapsYear ? 1 : 0) };
-};
-
-/**
  * 폼 상태 → 생성/수정 요청 페이로드. status는 폼이 보관한 원본 상태를 그대로 싣는다.
  * 참고자료는 업로드가 끝난 결과(`{ fileUrl, fileName }[]`)를 인자로 받는다 — 매핑은
  * 순수하게 두고, 파일 업로드(부수효과)는 호출부가 제출 직전에 처리한다.

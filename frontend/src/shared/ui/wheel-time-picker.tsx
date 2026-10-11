@@ -1,10 +1,5 @@
 import { pad2 } from './wheel-date';
-import {
-  WHEEL_COLUMN_DENSE_CLASS,
-  WheelColumn,
-  WHEEL_SEPARATOR_CLASS,
-} from './wheel-column';
-import { cn } from '@/shared/lib/utils';
+import { WheelColumn } from './wheel-column';
 import { WheelRow } from './wheel-row';
 
 /** 시간 문자열 'HH:mm'(24h)을 오전/오후·12시간·분으로 분해한다. */
@@ -48,8 +43,6 @@ interface WheelTimePickerProps {
   label?: string;
   /** 라벨을 화면에 그리지 않고 group 이름으로만 남긴다. */
   labelHidden?: boolean;
-  /** 두 자리 컬럼(시·분)을 좁혀, 날짜 휠과 한 줄에 나란히 놓을 수 있게 한다. */
-  dense?: boolean;
   className?: string;
 }
 
@@ -59,14 +52,12 @@ export const WheelTimePicker = ({
   onChange,
   label,
   labelHidden,
-  dense = false,
   className,
 }: WheelTimePickerProps) => {
   const parts = parseTime(value);
 
   const commit = (next: Partial<TimeParts>) =>
     onChange(toTimeString({ ...parts, ...next }));
-  const columnClass = dense ? WHEEL_COLUMN_DENSE_CLASS : undefined;
 
   return (
     <WheelRow label={label} labelHidden={labelHidden} className={className}>
@@ -78,31 +69,20 @@ export const WheelTimePicker = ({
         format={(v) => (v === 1 ? '오후' : '오전')}
       />
       <WheelColumn
-        className={columnClass}
         label="시"
         items={HOURS_12}
         value={parts.hour12}
         onChange={(hour12) => commit({ hour12 })}
         format={pad2}
       />
-      <span
-        className={cn(
-          WHEEL_SEPARATOR_CLASS[dense ? 'dense' : 'regular'],
-          'text-grey-50',
-        )}
-      >
-        :
-      </span>
+      <span className="px-1 typo-base-sb text-grey-50">:</span>
       <WheelColumn
-        className={columnClass}
         label="분"
         items={MINUTES}
         value={parts.minute}
         onChange={(minute) => commit({ minute })}
         format={pad2}
       />
-      {/* 날짜 줄 끝의 '일' 자리만큼 비워, 두 줄의 전체 폭과 컬럼 위치를 맞춘다. */}
-      {dense && <span aria-hidden="true" className="w-6" />}
     </WheelRow>
   );
 };
