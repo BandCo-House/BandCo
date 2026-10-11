@@ -32,7 +32,7 @@ export const Switch = ({
     disabled={disabled}
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full bg-surface-1 p-1 transition-colors',
+      'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full bg-surface-1/50 glass-surface p-1 transition-colors',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className,

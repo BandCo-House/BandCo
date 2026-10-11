@@ -106,6 +106,13 @@ const spaces: Space[] = [
   },
 ];
 
+// 수정(PATCH)으로 바뀐 참여자. 없으면 memberCount만큼 member-1부터 채운다.
+const memberIdsBySpace = new Map<string, string[]>();
+
+const memberIdsOf = (space: Space): string[] =>
+  memberIdsBySpace.get(space.spaceId) ??
+  Array.from({ length: space.memberCount ?? 0 }, (_, i) => `member-${i + 1}`);
+
 const parseBoolean = (value: string | null): boolean => value === 'true';
 
 export const spaceHandlers = [
@@ -142,8 +149,8 @@ export const spaceHandlers = [
       spaces.find((item) => item.spaceId === params.spaceId) ?? spaces[0];
 
     // 상세 응답은 멤버 배열과 곡 수를 함께 반환한다(헤더 요약용).
-    const members = Array.from({ length: space.memberCount ?? 0 }, (_, i) => ({
-      bandMemberId: `member-${i + 1}`,
+    const members = memberIdsOf(space).map((bandMemberId, i) => ({
+      bandMemberId,
       nickname: `멤버${i + 1}`,
       role: 'MEMBER',
       status: 'ACTIVE',
@@ -177,6 +184,39 @@ export const spaceHandlers = [
       error: null,
       message: '요청 성공',
       data: { ...spaces[0], ...body, spaceId: 'space-created' },
+    });
+  }),
+  http.patch(`${API_URL}/bandspaces/:spaceId`, async ({ params, request }) => {
+    const { bandMemberIds, ...patch } =
+      (await request.json()) as Partial<Space> & {
+        bandMemberIds?: string[];
+      };
+    const space = spaces.find((item) => item.spaceId === params.spaceId);
+
+    if (!space) {
+      return HttpResponse.json(
+        {
+          status: 'fail',
+          error: { code: 'NOT_FOUND', details: { statusCode: 404 } },
+          message: '요청한 합주 공간을 찾을 수 없습니다.',
+          data: {},
+        },
+        { status: 404 },
+      );
+    }
+
+    // 이후 목록·상세 조회에 수정 결과가 보이도록 저장소를 직접 고친다.
+    Object.assign(space, patch);
+    if (bandMemberIds) {
+      memberIdsBySpace.set(space.spaceId, bandMemberIds);
+      space.memberCount = bandMemberIds.length;
+    }
+
+    return HttpResponse.json<ApiSuccessResponse<Space>>({
+      status: 'success',
+      error: null,
+      message: '합주 공간 수정 성공',
+      data: space,
     });
   }),
 ];
