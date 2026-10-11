@@ -4,19 +4,19 @@ import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
 import { LlmService } from '../ai/llm.service';
 
-import type { AskAssistantInput } from './dto/ask-assistant.dto';
+import { type AskAssistantInput, type AssistantHistoryTurnDto, MAX_HISTORY_TURNS } from './dto/ask-assistant.dto';
 import { AssistantScopeResolver } from './execution/assistant-scope.resolver';
 import { ASSISTANT_PRESETS, type AssistantPreset, findPresetById } from './query-plan/query-plan.presets';
 import { AnswerRenderer } from './rendering/answer-renderer';
 import { mapSqlResult } from './rendering/sql-result.mapper';
 import { ASSISTANT_REPOSITORY, type AssistantRepository } from './repositories/assistant.repository';
-import type { ValidatedSqlQuery } from './sql/generated-sql.type';
+import type { SqlQueryPage, ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createCandidateQuestion, readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
-import { createSqlRepairInstruction, getSqlCountUnit } from './sql/sql-query-context';
-import type { AssistantAnswer, AssistantClarification, AssistantQueryMeta } from './types/assistant-answer.type';
+import { createSqlHistoryContext, createSqlRepairInstruction, resolveSqlCountUnit, type SqlHistoryTurn } from './sql/sql-query-context';
+import type { AssistantAnswer, AssistantClarification, AssistantQueryContext, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
 
 /** 최초 생성 이후 검증 실패 SQL을 다시 만들 수 있는 횟수 */
@@ -25,6 +25,8 @@ const MAX_SQL_REGENERATIONS = 2;
 interface GeneratedQuery {
   status: 'QUERY';
   query: ValidatedSqlQuery;
+  /** 사람 단위로 바꾸기 전의 원래 SQL. 다음 질문의 직전 턴으로 돌려준다. */
+  sourceSql: string;
   meta: AssistantQueryMeta;
   validationFailures: number;
 }
@@ -84,7 +86,9 @@ export class AssistantService {
     let generated: SqlGenerationResult;
 
     try {
-      generated = preset ? await this.createPresetQuery(preset) : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, tx);
+      generated = preset
+        ? await this.createPresetQuery(preset)
+        : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, await this.readHistory(input.history), tx);
     } catch (error) {
       if (!(error instanceof SqlGenerationExhaustedError)) throw error;
       this.logger.log(
@@ -93,6 +97,8 @@ export class AssistantService {
           userId: scope.userId,
           bandId: scope.bandId,
           question: input.question ?? null,
+          turnIndex: input.turnIndex ?? 1,
+          historyTurns: input.history?.length ?? 0,
           outcome: 'rephrase_required',
         }),
       );
@@ -103,6 +109,7 @@ export class AssistantService {
         summary: REPHRASE_SUMMARY,
         result: null,
         clarification: null,
+        context: null,
         meta: { ...error.meta, latencyMs: Date.now() - startedAt },
       };
     }
@@ -123,6 +130,7 @@ export class AssistantService {
         summary: generated.reason,
         result: null,
         clarification: generated.status === 'CLARIFICATION' ? generated.clarification : null,
+        context: null,
         meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
       };
     }
@@ -148,6 +156,7 @@ export class AssistantService {
       summary: this.answerRenderer.render(generated.query.intent, page.rows, generated.query.resultMode),
       result,
       clarification: null,
+      context: createQueryContext(generated, page),
       meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
     };
   }
@@ -173,9 +182,11 @@ export class AssistantService {
 
   /** 추천 질문은 모델을 호출하지 않고 고정 SQL을 같은 검증기로 확인해 실행한다. */
   private async createPresetQuery(preset: AssistantPreset): Promise<GeneratedQuery> {
+    const source = preset.createQuery(new Date());
     return {
       status: 'QUERY',
-      query: await this.validator.validate(preset.createQuery(new Date())),
+      query: await this.validator.validate(source),
+      sourceSql: source.sql,
       meta: { providerName: null, modelName: null, usedLlm: false, inputTokens: 0, outputTokens: 0, latencyMs: 0 },
       validationFailures: 0,
     };
@@ -185,8 +196,19 @@ export class AssistantService {
    * LLM SQL을 AST로 검증하고 형식이 잘못된 경우 실패 이유를 주어 최대 두 번 재생성한다.
    * 재생성에는 모든 시도의 위반과 직전 SQL을 함께 준다. 지원 범위 밖 질문은 같은 결과가 반복되므로 재생성하지 않는다.
    */
-  private async generateSqlFromQuestion(question: string, now: Date, bandId: string, tx?: Prisma.TransactionClient): Promise<SqlGenerationResult> {
-    const baseInstruction = createSqlGenerationSystemInstruction(now, question);
+  private async generateSqlFromQuestion(
+    question: string,
+    now: Date,
+    bandId: string,
+    history: SqlHistoryTurn[] = [],
+    tx?: Prisma.TransactionClient,
+  ): Promise<SqlGenerationResult> {
+    // 관계 맥락은 직전 질문까지 합쳐 고른다. "그중에"만 있는 후속 질문은 참석·팀 같은 단서가 앞 질문에만 있다.
+    const contextQuestion = [...history.map(turn => turn.question), question].join('\n');
+    const baseInstruction = [createSqlGenerationSystemInstruction(now, contextQuestion), createSqlHistoryContext(history)]
+      .filter(Boolean)
+      .join('\n\n');
+    const countUnit = resolveSqlCountUnit(question, history.at(-1)?.question);
     const failures: string[] = [];
     let previousSql = '';
     let inputTokens = 0;
@@ -214,7 +236,7 @@ export class AssistantService {
       };
 
       try {
-        const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
+        const query = await this.validator.validate(response.parsed, countUnit);
         const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
         if ('reason' in resolved) {
           return { status: 'CLARIFICATION', reason: resolved.reason, clarification: resolved.clarification, meta, validationFailures: attempt };
@@ -222,6 +244,7 @@ export class AssistantService {
         return {
           status: 'QUERY',
           query: resolved,
+          sourceSql: readGeneratedSql(response.parsed),
           meta,
           validationFailures: attempt,
         };
@@ -254,6 +277,31 @@ export class AssistantService {
       outputTokens,
       latencyMs: 0,
     });
+  }
+
+  /**
+   * 클라이언트가 보관한 직전 턴을 다시 검증한다. 화면이 보낸 SQL을 그대로 믿지 않고,
+   * 실행 SQL과 같은 검증을 통과한 턴만 주석을 지운 문장으로 프롬프트에 넣는다. 통과하지 못한 턴은 버린다.
+   */
+  private async readHistory(history: AssistantHistoryTurnDto[] | undefined): Promise<SqlHistoryTurn[]> {
+    const turns: SqlHistoryTurn[] = [];
+    for (const turn of (history ?? []).slice(-MAX_HISTORY_TURNS)) {
+      try {
+        const sql = await this.validator.validateHistorySql({
+          status: 'QUERY',
+          intent: turn.intent,
+          sql: turn.sql,
+          params: turn.params,
+          unsupportedReason: null,
+          resultMode: turn.resultMode,
+        });
+        turns.push({ question: turn.question, intent: turn.intent, sql, params: turn.params, rowCount: turn.rowCount, hasMore: turn.hasMore });
+      } catch (error) {
+        if (!(error instanceof InvalidSqlQueryError) && !(error instanceof UnsupportedQuestionError)) throw error;
+        this.logger.warn(`직전 대화의 SQL이 검증을 통과하지 못해 제외합니다: ${error.message}`);
+      }
+    }
+    return turns;
   }
 
   /** SQL은 보존하고 아티스트 equality의 바인딩만 실제 밴드 이름으로 확인한다. */
@@ -324,6 +372,9 @@ export class AssistantService {
         bandId: scope.bandId,
         presetId: input.presetId ?? null,
         question: input.question ?? null,
+        // 턴별 실패율을 보고 대화 턴 상한(5)을 조정하는 근거로 쓴다.
+        turnIndex: input.turnIndex ?? 1,
+        historyTurns: input.history?.length ?? 0,
         intent: generated.status === 'QUERY' ? generated.query.intent : null,
         sql: generated.status === 'QUERY' ? generated.query.sql : null,
         validationFailures: generated.validationFailures,
@@ -333,6 +384,20 @@ export class AssistantService {
       }),
     );
   }
+}
+
+/** 다음 질문에 직전 턴으로 돌려보낼 조회 구조를 만든다. 결과 행은 넣지 않고 건수만 담는다. */
+function createQueryContext(generated: GeneratedQuery, page: SqlQueryPage): AssistantQueryContext {
+  const { query, sourceSql } = generated;
+  return {
+    intent: query.intent,
+    sql: sourceSql || query.sql,
+    // 아티스트 이름 확인으로 바뀐 값까지 반영된, 실제로 실행한 값을 돌려준다.
+    params: query.parameters.map((value, index) => ({ position: index + 2, type: query.parameterTypes?.[index] ?? 'TEXT', value: String(value) })),
+    resultMode: query.resultMode ?? null,
+    rowCount: page.rows.length,
+    hasMore: page.hasMore,
+  };
 }
 
 /** 알 수 없는 실행 오류를 운영 로그에서 확인할 수 있는 문자열로 만든다. */

@@ -37,6 +37,19 @@ export interface AssistantClarification {
   hasMore: boolean;
 }
 
+/**
+ * 다음 질문에 직전 턴으로 돌려보낼 조회 구조. 화면은 표시하지 않고 대화 이력으로만 보관한다.
+ * SQL은 서버가 사람 단위로 바꾸기 전의 원래 문장이다. 밴드 데이터가 아니라 구조라 노출 부담이 작다.
+ */
+export interface AssistantQueryContext {
+  intent: string;
+  sql: string;
+  params: Array<{ position: number; type: string; value: string }>;
+  resultMode: SqlResultMode | null;
+  rowCount: number;
+  hasMore: boolean;
+}
+
 export interface AssistantAnswer {
   /**
    * 지원 범위 밖의 질문도 정상 응답으로 돌려준다.
@@ -50,5 +63,7 @@ export interface AssistantAnswer {
   result: AssistantTableResult | null;
   /** CLARIFICATION일 때만 있다. */
   clarification: AssistantClarification | null;
+  /** ANSWER일 때만 있다. 다음 질문의 직전 턴으로 쓴다. */
+  context: AssistantQueryContext | null;
   meta: AssistantQueryMeta;
 }

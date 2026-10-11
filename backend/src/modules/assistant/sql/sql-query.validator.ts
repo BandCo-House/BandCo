@@ -94,6 +94,18 @@ function combineViolations(violations: InvalidSqlQueryError[]): InvalidSqlQueryE
 @Injectable()
 export class SqlQueryValidator {
   /**
+   * 클라이언트가 돌려보낸 직전 SQL을 프롬프트에 넣기 전에 다시 검증한다.
+   * 실행 SQL과 같은 규칙을 통과해야 하고, 파싱 후 다시 만든 문장이라 주석에 숨긴 지시문이 남지 않는다.
+   *
+   * @param {unknown} raw - 직전 턴의 구조화 SQL
+   * @returns {Promise<string>} 주석이 제거된 원래 구조의 SQL
+   */
+  async validateHistorySql(raw: unknown): Promise<string> {
+    await this.validate(raw);
+    return deparse(await parseSql(parseGeneratedSql(raw).sql));
+  }
+
+  /**
    * 구조화 응답과 PostgreSQL AST를 모두 검증하고 실행 가능한 쿼리로 변환한다.
    * JSON Schema는 형태만 보장하므로 실제 테이블·컬럼·권한 범위는 여기서 다시 확인한다.
    *

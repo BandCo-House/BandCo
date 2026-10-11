@@ -30,11 +30,14 @@ interface HarnessOptions {
   executionError?: Error;
   artistCandidates?: string[];
   artistLookupError?: Error;
+  historyError?: Error;
 }
 
 function createHarness(options: HarnessOptions = {}) {
   const llmRequests: LlmStructuredRequest[] = [];
   const validationInputs: unknown[] = [];
+  const countUnits: unknown[] = [];
+  const historyInputs: unknown[] = [];
   const scopeTransactions: unknown[] = [];
   const configuredTransactions: unknown[] = [];
   const executedTransactions: unknown[] = [];
@@ -48,7 +51,7 @@ function createHarness(options: HarnessOptions = {}) {
       llmRequests.push(request);
 
       return {
-        parsed: { generated: llmRequests.length },
+        parsed: { generated: llmRequests.length, sql: `SELECT 원래 SQL ${llmRequests.length}` },
         providerName: 'gemini-primary',
         modelName: 'gemini-test',
         usage: { inputTokens: 100, outputTokens: 20 },
@@ -71,8 +74,14 @@ function createHarness(options: HarnessOptions = {}) {
 
   let validationIndex = 0;
   const validator = {
-    async validate(input: unknown) {
+    async validateHistorySql(input: unknown) {
+      historyInputs.push(input);
+      if (options.historyError) throw options.historyError;
+      return (input as { sql: string }).sql;
+    },
+    async validate(input: unknown, countUnit?: unknown) {
       validationInputs.push(input);
+      countUnits.push(countUnit);
       const result = options.validationResults?.[validationIndex] ?? VALIDATED_QUERY;
       validationIndex += 1;
 
@@ -129,6 +138,8 @@ function createHarness(options: HarnessOptions = {}) {
     service: new AssistantService(llmService, scopeResolver, repository, prisma, validator, answerRenderer),
     llmRequests,
     validationInputs,
+    countUnits,
+    historyInputs,
     scopeTransactions,
     configuredTransactions,
     executedTransactions,
@@ -229,6 +240,71 @@ describe('AssistantService', () => {
     expect(harness.configuredTransactions).toEqual([harness.internalTx]);
     expect(harness.executedTransactions).toEqual([harness.internalTx]);
     expect(harness.getTransactionCount()).toBe(1);
+  });
+
+  it('답과 함께 다음 질문에 돌려보낼 원래 SQL·실행 파라미터·결과 건수를 준다', async () => {
+    const harness = createHarness({ validationResults: [artistQuery], artistCandidates: ['아티스트 B'], rows: [{ title: '베타' }] });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, { question: '아티스트 B 곡' });
+    expect(answer.context).toEqual({
+      intent: '곡 조회',
+      sql: 'SELECT 원래 SQL 1',
+      params: [
+        { position: 2, type: 'TEXT', value: '아티스트 B' },
+        { position: 3, type: 'INTEGER', value: '3' },
+      ],
+      resultMode: 'LIST',
+      rowCount: 1,
+      hasMore: false,
+    });
+  });
+
+  it('직전 턴은 다시 검증한 SQL만 프롬프트에 넣고, 짧은 후속 질문의 인원 단위를 앞 질문으로 판별한다', async () => {
+    const harness = createHarness();
+    await harness.service.askAssistant(USER_ID, BAND_ID, {
+      question: '그중에 기타 치는 사람은 몇 명이야?',
+      history: [
+        {
+          question: '다음 합주에 참석하는 사람은 누구야?',
+          intent: '다음 합주 참석자 명단',
+          sql: 'SELECT up.nickname FROM bands b WHERE b.id = $1::uuid',
+          params: [{ position: 2, type: 'TEXT', value: 'ATTENDING' }],
+          resultMode: 'LIST' as const,
+          rowCount: 6,
+          hasMore: false,
+        },
+      ],
+      turnIndex: 2,
+    });
+    expect(harness.historyInputs).toEqual([
+      expect.objectContaining({ status: 'QUERY', sql: 'SELECT up.nickname FROM bands b WHERE b.id = $1::uuid' }),
+    ]);
+    expect(harness.llmRequests[0].systemInstruction).toContain('# 같은 대화의 직전 질문');
+    expect(harness.llmRequests[0].systemInstruction).toContain('SQL: SELECT up.nickname FROM bands b WHERE b.id = $1::uuid');
+    expect(harness.llmRequests[0].systemInstruction).toContain('결과 행 수: 6건');
+    // 관계 맥락은 앞 질문의 "참석"까지 합쳐 고른다.
+    expect(harness.llmRequests[0].systemInstruction).toContain('schedule_participants.band_member_id = band_members.id');
+    expect(harness.llmRequests[0].userMessage).toBe('그중에 기타 치는 사람은 몇 명이야?');
+    expect(harness.countUnits[0]).toBe('PEOPLE');
+  });
+
+  it('다시 검증하지 못한 직전 턴은 버리고 현재 질문만으로 생성한다', async () => {
+    const harness = createHarness({ historyError: new InvalidSqlQueryError('TABLE_NOT_ALLOWED', '허용되지 않은 테이블') });
+    const answer = await harness.service.askAssistant(USER_ID, BAND_ID, {
+      question: '그중에 기타 치는 사람은?',
+      history: [
+        {
+          question: '다음 합주에 참석하는 사람은 누구야?',
+          intent: '다음 합주 참석자 명단',
+          sql: 'SELECT up.nickname FROM bands b WHERE b.id = $1::uuid',
+          params: [{ position: 2, type: 'TEXT', value: 'ATTENDING' }],
+          resultMode: 'LIST' as const,
+          rowCount: 6,
+          hasMore: false,
+        },
+      ],
+    });
+    expect(answer.answerable).toBe(true);
+    expect(harness.llmRequests[0].systemInstruction).not.toContain('# 같은 대화의 직전 질문');
   });
 
   it('밴드 멤버가 아니면 LLM 호출 전에 차단한다', async () => {
