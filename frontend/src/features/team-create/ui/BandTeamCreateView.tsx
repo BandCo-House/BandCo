@@ -239,7 +239,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                 <span className="typo-base-r text-grey-300">
                   먼저 세션을 입력해주세요
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-surface-2/60 px-3 py-1 typo-xs-sb text-primary">
+                <span className="inline-flex items-center gap-1 rounded-full bg-surface-2/60 glass-surface px-3 py-1 typo-xs-sb text-primary">
                   선택하기
                 </span>
               </div>
@@ -265,7 +265,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                     </div>
 
                     {/* 2. 중간: 프로필 알약 칩 (아바타 + 닉네임) */}
-                    <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-surface-2 py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
+                    <div className="flex h-[44px] shrink-0 items-center gap-2 rounded-full bg-surface-2 glass-surface py-1.5 pr-3.5 pl-1.5 backdrop-blur-sm">
                       <Avatar className="size-8 rounded-full">
                         <AvatarImage src={member.avatarUrl ?? undefined} />
                         <AvatarFallback className="typo-xs-sb">
@@ -286,7 +286,7 @@ export const BandTeamCreateView = ({ bandId }: BandTeamCreateViewProps) => {
                             handleOpenEditMember(member.bandMemberId)
                           }
                           aria-label={`${member.nickname} 변경`}
-                          className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary transition-opacity hover:opacity-90 active:scale-95"
+                          className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-surface-2 glass-surface text-primary transition-opacity hover:opacity-90 active:scale-95"
                         >
                           <Search className="size-5" />
                         </button>

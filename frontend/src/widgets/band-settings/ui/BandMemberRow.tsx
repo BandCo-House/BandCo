@@ -52,7 +52,7 @@ export const BandMemberRow: React.FC<BandMemberRowProps> = ({
     <div
       className={cn(
         cardSurfaceClass,
-        'flex w-full items-center gap-2 shadow-sm backdrop-blur-md',
+        'flex w-full items-center gap-2',
         isLeaderStyle && 'bg-surface-1',
       )}
     >

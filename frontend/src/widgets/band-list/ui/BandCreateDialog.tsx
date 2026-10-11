@@ -63,7 +63,7 @@ export const BandCreateDialog = ({
               <span className="typo-lg-sb">밴드 공개 여부</span>
               <div className="h-1 w-1 rounded-full bg-destructive"></div>
             </div>
-            <div className="flex w-fit items-center gap-2 rounded-full border border-white/24 border-b-white/24 bg-grey-500/24 p-2">
+            <div className="flex w-fit items-center gap-2 rounded-full bg-grey-500/24 glass-surface p-2">
               <div className="flex gap-2">
                 {(['비공개', '공개'] as const).map((label) => {
                   const value = label === '공개';
@@ -123,7 +123,7 @@ export const BandCreateDialog = ({
                 />
               </div>
             ) : (
-              <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
+              <label className="flex cursor-pointer items-center gap-3 rounded-full bg-grey-500/24 glass-surface px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
                 <UploadIcon aria-hidden="true" className="size-6" />
                 <span className="typo-base-sb">파일을 선택하세요</span>
                 <input

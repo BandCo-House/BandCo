@@ -100,7 +100,7 @@ export const BandInviteLinkCard = ({
   if (!inviteLink) {
     return (
       // 문장이 길어 가운데 정렬하면 줄바꿈이 어중간해진다. 발급 후 카드와 같이 좌정렬한다.
-      <div className="flex flex-col gap-4 rounded-sm bg-surface-3 p-4">
+      <div className="flex flex-col gap-4 rounded-sm bg-surface-3 glass-surface p-4">
         <div className="flex flex-col gap-1.5">
           <p className="typo-base-sb text-grey-50">
             아직 발급된 초대 링크가 없어요.
@@ -131,7 +131,7 @@ export const BandInviteLinkCard = ({
   const url = buildInviteUrl(inviteLink.inviteCode);
 
   return (
-    <div className="flex flex-col gap-6 rounded-sm bg-surface-3 p-4">
+    <div className="flex flex-col gap-6 rounded-sm bg-surface-3 glass-surface p-4">
       <div className="flex flex-col gap-2">
         <p className="typo-sm-sb text-grey-50">초대 링크</p>
         <div className="flex items-start gap-2">
@@ -156,7 +156,7 @@ export const BandInviteLinkCard = ({
 
       <div className="flex flex-col gap-2">
         <p className="typo-sm-sb text-grey-100">초대 코드</p>
-        <div className="flex h-27 flex-col items-center justify-center gap-2 rounded-sm border border-grey-200 bg-surface-1 px-4">
+        <div className="flex h-27 flex-col items-center justify-center gap-2 rounded-sm bg-surface-1 glass-surface px-4">
           <div className="flex items-center gap-2.5">
             <span className="typo-lg-b text-grey-50">
               {inviteLink.inviteCode}

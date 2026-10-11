@@ -67,7 +67,7 @@ const RemovableChip = ({
   removeLabel,
   onRemove,
 }: RemovableChipProps) => (
-  <li className="flex max-w-full items-center gap-1 rounded-full border border-white/24 bg-grey-500/24 py-1 pr-1 pl-3">
+  <li className="flex max-w-full items-center gap-1 rounded-full bg-grey-500/24 glass-surface py-1 pr-1 pl-3">
     <span className="min-w-0 truncate typo-sm-sb text-grey-100">{label}</span>
     <button
       type="button"
@@ -412,7 +412,7 @@ export const SongCreateModal = ({
 
           <div className="flex flex-col gap-2">
             <FieldLabel size="lg">참고 자료</FieldLabel>
-            <label className="flex cursor-pointer items-center gap-3 rounded-full field-border border-surface-1 bg-grey-500/24 px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
+            <label className="flex cursor-pointer items-center gap-3 rounded-full bg-grey-500/24 glass-surface px-5 py-4 text-grey-300 focus-within:outline-2 focus-within:outline-primary">
               <Upload aria-hidden="true" className="size-6" />
               <span className="typo-base-sb">파일을 선택하세요</span>
               <input

@@ -60,7 +60,7 @@ const SchedulePollCard = ({
       params={{ bandId, spaceId, pollId }}
       className={cn(
         cardSurfaceClass,
-        'block w-full focus-visible:outline-2 focus-visible:outline-primary',
+        'block w-full glass-pressable focus-visible:outline-2 focus-visible:outline-primary',
       )}
     >
       <div className="flex items-start justify-between gap-2">

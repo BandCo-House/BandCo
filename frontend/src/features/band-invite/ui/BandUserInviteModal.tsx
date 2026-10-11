@@ -74,7 +74,7 @@ export const BandUserInviteModal = ({
               {selectedUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-1.5 rounded-full border border-surface-2 bg-surface-3 py-1 pr-2 pl-1 typo-xs-sb text-grey-100"
+                  className="flex items-center gap-1.5 rounded-full bg-surface-3 glass-surface py-1 pr-2 pl-1 typo-xs-sb text-grey-100"
                 >
                   <Avatar size="sm" className="size-5">
                     <AvatarImage src={user.avatarUrl ?? undefined} />

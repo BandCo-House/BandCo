@@ -111,7 +111,7 @@ export function GenreEditSection({
   return (
     <section
       aria-labelledby="profile-genre-title"
-      className="relative flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 p-4 text-grey-50"
+      className="relative flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 glass-surface p-4 text-grey-50"
     >
       <h2 id="profile-genre-title" className="typo-base-b">
         선호 장르

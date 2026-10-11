@@ -113,7 +113,7 @@ export const BandTeamSettings: React.FC<BandTeamSettingsProps> = ({
           ))}
         </div>
       ) : (
-        <div className="rounded-[16px] border border-border bg-surface-3/40 py-12 text-center typo-sm-r text-grey-300">
+        <div className="rounded-[16px] bg-surface-3/40 glass-surface py-12 text-center typo-sm-r text-grey-300">
           아직 생성된 팀이 없습니다.
         </div>
       )}

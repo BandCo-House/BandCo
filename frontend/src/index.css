@@ -185,6 +185,71 @@
   border-width: 0.5px 0.5px 1px 0.5px;
 }
 
+/* 유리 표면(프로토타입). 카드·캡슐 입력·버튼이 같은 재질을 쓰도록 클래스 하나에 모은다.
+   가상 요소를 쓰지 않는다 — input은 ::before/::after를 그리지 못해서, 림을 가상 요소로 만들면
+   입력에는 못 쓴다. 림은 inset 그림자로, 빛은 배경 그라디언트로 낸다.
+   - 림: 위쪽 밝은 선 + 아래쪽 옅은 선 + 전체 헤어라인
+   - 빛: 왼쪽 위에서 비치는 반사광. 움직이지 않는다
+   radius·padding·배경색은 쓰는 쪽이 정한다 — 입력은 비워 두고(투명), 카드는 면 색을 깐다. */
+@utility glass-surface {
+  background-image: radial-gradient(
+    85% 150% at 12% -30%,
+    rgb(255 255 255 / 0.22),
+    rgb(255 255 255 / 0) 62%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  /* 림을 box-shadow에 직접 쓰면 같은 요소의 ring-*·shadow-* 유틸과 서로 덮어쓴다(포커스 링이
+     뜨는 순간 림이 사라지거나, shadow-md가 림을 지운다). Tailwind가 그림자를 합성하는
+     변수 자리에 실어 함께 그려지게 한다. */
+  --tw-inset-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.7),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.38),
+    inset 0 0 0 0.5px var(--color-surface-1);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+
+/* primary 버튼의 그라디언트 테두리(프로토타입). 면은 불투명한 primary라 배경 두 겹으로 만든다 —
+   안쪽은 padding-box까지만, 그라디언트는 border-box까지 칠해 테두리 폭만큼만 드러난다.
+   위는 흰색에 가깝게, 아래는 어둡게 떨어져 빛을 받는 유리 가장자리처럼 보인다. */
+@utility glass-border-primary {
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(var(--color-primary), var(--color-primary)),
+    linear-gradient(
+      170deg,
+      rgb(255 255 255 / 0.95),
+      var(--color-primary) 36%,
+      color-mix(in srgb, var(--color-primary) 55%, black) 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* 누를 수 있는 유리. 눌리면 살짝 들어갔다가 튕겨 나온다(overshoot 이징).
+   눌러도 아무 일도 없는 면에는 붙이지 않는다 — 눌린 것처럼 보이면 거짓말이다. */
+@utility glass-pressable {
+  transition:
+    transform 240ms cubic-bezier(0.3, 1.6, 0.5, 1),
+    color 150ms,
+    background-color 150ms,
+    border-color 150ms;
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
+  }
+}
+
 /* 헤더 하단 글로우(공용). 라우트 PageHeader와 풀스크린 모달 헤더가 함께 쓴다. */
 @utility header-glow {
   box-shadow: 0px 8px 40px 0px rgba(221, 254, 85, 0.12);

@@ -359,7 +359,7 @@ export const ScheduleFormView = ({
           placeholder="추가 메모사항을 입력하세요"
           maxLength={500}
           className={cn(
-            'min-h-[100px] w-full resize-none rounded-md field-border border-white/24 bg-grey-500/24 px-5 py-4 typo-base-sb text-grey-50',
+            'min-h-[100px] w-full resize-none rounded-md bg-grey-500/24 glass-surface px-5 py-4 typo-base-sb text-grey-50',
             'outline-none placeholder:text-grey-300 focus-visible:border-primary',
           )}
         />

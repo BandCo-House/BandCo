@@ -1,4 +1,5 @@
 import { SlidersHorizontal } from 'lucide-react';
+import { chipSurfaceClass } from '@/shared/ui/chip-surface';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { cn } from '@/shared/lib/utils';
 import { SCHEDULE_TYPE_OPTIONS, type ScheduleTypeFilter } from '../model/types';
@@ -42,11 +43,11 @@ export const ScheduleFilterBar = ({
               aria-pressed={isSelected}
               onClick={() => onScheduleTypeChange(option.value)}
               className={cn(
-                'rounded-full px-4 py-2 typo-sm-sb transition-colors',
+                'rounded-full px-4 py-2 typo-sm-sb',
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
                 isSelected
-                  ? 'bg-primary text-gradient-top'
-                  : 'border border-grey-400 bg-grey-500/24 text-grey-100',
+                  ? chipSurfaceClass.selected
+                  : chipSurfaceClass.unselected,
               )}
             >
               {option.label}
@@ -61,11 +62,11 @@ export const ScheduleFilterBar = ({
           aria-pressed={detailFilterActive}
           onClick={onDetailFilterOpen}
           className={cn(
-            'flex h-9 items-center justify-center rounded-full px-4 transition-colors',
+            'flex h-9 items-center justify-center rounded-full px-4',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
             detailFilterActive
-              ? 'bg-primary text-gradient-top'
-              : 'border border-grey-400 bg-grey-500/24 text-grey-100',
+              ? chipSurfaceClass.selected
+              : chipSurfaceClass.unselected,
           )}
         >
           <SlidersHorizontal aria-hidden="true" className="size-4" />

@@ -30,7 +30,7 @@ export const BandGeneralMemberSection: React.FC<
             />
           ))
         ) : (
-          <div className="rounded-[16px] border border-border bg-surface-3/30 py-8 text-center typo-sm-r text-grey-300">
+          <div className="rounded-[16px] bg-surface-3/30 glass-surface py-8 text-center typo-sm-r text-grey-300">
             일반 멤버가 없습니다.
           </div>
         )}

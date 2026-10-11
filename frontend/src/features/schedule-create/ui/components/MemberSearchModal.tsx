@@ -206,7 +206,7 @@ export const MemberSearchModal = ({
                     type="button"
                     onClick={() => onSelectTeam(team.teamId)}
                     disabled={isSelectingTeam}
-                    className="flex flex-1 items-center gap-2.5 rounded-[20px] border border-surface-2 bg-surface-3 px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex flex-1 items-center gap-2.5 rounded-[20px] bg-surface-3 glass-surface px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="typo-sm-sb text-grey-50">{team.name}</span>
                     <span className="px-1.5 typo-xs-r text-grey-200">

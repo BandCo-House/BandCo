@@ -10,6 +10,7 @@ import {
   useSlidingIndicator,
 } from '@/shared/lib/use-sliding-indicator';
 import { GlassRim } from './glass-rim';
+import { chipSurfaceClass } from './chip-surface';
 import { useFieldRequired } from './field-context';
 
 export interface SegmentedOption<T extends string> {
@@ -86,8 +87,7 @@ export const SegmentedToggle = <T extends string>({
       aria-required={fieldRequired || undefined}
       className={cn(
         'flex items-center gap-2',
-        isTab &&
-          'relative w-fit rounded-full field-border border-white/24 bg-grey-500/24',
+        isTab && 'relative w-fit rounded-full bg-grey-500/24 glass-surface',
         isTab && (isIconOnly ? 'gap-0 p-1.5' : 'p-2'),
         className,
       )}
@@ -135,11 +135,8 @@ export const SegmentedToggle = <T extends string>({
                 : cn(
                     'px-4 py-2 typo-sm-sb',
                     isActive
-                      ? cn(
-                          'bg-primary text-primary-dark',
-                          option.selectedClassName,
-                        )
-                      : 'border border-grey-400 text-grey-100',
+                      ? cn(chipSurfaceClass.selected, option.selectedClassName)
+                      : chipSurfaceClass.unselected,
                   ),
             )}
           >

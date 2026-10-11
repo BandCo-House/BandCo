@@ -53,7 +53,7 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
       }}
       className={cn(
         cardSurfaceClass,
-        'group/card flex w-full cursor-pointer flex-col gap-3 shadow-sm backdrop-blur-md transition-colors hover:border-grey-200',
+        'group/card flex w-full glass-pressable cursor-pointer flex-col gap-3',
       )}
     >
       {/* 1. 상단 행: 체크박스 + 팀명 + 상세 링크 아이콘 */}

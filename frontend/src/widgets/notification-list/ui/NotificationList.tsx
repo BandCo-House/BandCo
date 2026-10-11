@@ -244,7 +244,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
             disabled={
               markAllAsReadMutation.isPending || !hasUnread || isEditMode
             }
-            className="rounded-full border border-grey-300 px-4 py-1.5 typo-sm-sb text-grey-300 transition-all hover:bg-grey-300 hover:text-grey-600 disabled:opacity-40"
+            className="glass-pressable rounded-full glass-surface px-4 py-1.5 typo-sm-sb text-grey-100 hover:bg-grey-300 hover:text-grey-600 disabled:opacity-40"
           >
             모두 읽음
           </button>

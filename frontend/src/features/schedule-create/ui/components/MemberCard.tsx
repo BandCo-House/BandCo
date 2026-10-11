@@ -39,7 +39,7 @@ export const MemberCard = ({
       <div className="flex items-center gap-1">
         <p className="typo-sm-b text-grey-50">{name}</p>
         {badge && (
-          <span className="flex h-5 items-center rounded-full bg-surface-1 px-2 text-xs leading-[1.4] font-medium text-grey-500">
+          <span className="flex h-5 items-center rounded-full bg-surface-1 glass-surface px-2 text-xs leading-[1.4] font-medium text-grey-500">
             {badge}
           </span>
         )}
