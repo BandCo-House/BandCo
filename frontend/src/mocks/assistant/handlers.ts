@@ -99,6 +99,15 @@ const answer = (
   summary,
   result,
   clarification: null,
+  // 화면은 표시하지 않고 다음 질문의 직전 턴으로만 돌려보낸다. 목에서는 구조만 흉내 낸다.
+  context: {
+    intent: result.title ?? summary,
+    sql: 'SELECT b.id FROM bands b WHERE b.id = $1::uuid AND b.deleted_at IS NULL',
+    params: [],
+    resultMode: result.resultMode === 'LEGACY' ? null : result.resultMode,
+    rowCount: result.rows.length,
+    hasMore: result.hasMore,
+  },
   meta,
 });
 
@@ -194,6 +203,7 @@ const UNSUPPORTED: AssistantAnswer = {
   summary: '밴드 데이터에 날씨 정보가 없습니다.',
   result: null,
   clarification: null,
+  context: null,
   meta: llmMeta,
 };
 
@@ -209,6 +219,7 @@ const CLARIFICATION: AssistantAnswer = {
     ],
     hasMore: false,
   },
+  context: null,
   meta: llmMeta,
 };
 

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AssistantAnswer } from '@/entities/assistant/model/types';
@@ -54,6 +54,7 @@ const tableAnswer = (
   kind: 'ANSWER',
   summary,
   clarification: null,
+  context: null,
   meta,
   result: {
     entity: 'table',
@@ -148,6 +149,7 @@ describe('AssistantPanel', () => {
     expect(askMock).toHaveBeenLastCalledWith(
       asked({
         question: '다음 합주에서 연습할 곡은 뭐야?',
+        turnIndex: 2,
       }),
     );
     const dialog = screen.getByRole('dialog');
@@ -163,6 +165,80 @@ describe('AssistantPanel', () => {
         name: '다음 합주에서 연습할 곡은 뭐야?',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('이어서 묻는 질문에는 직전 답의 조회 구조와 순서를 함께 보내고 결과 행은 보내지 않는다', async () => {
+    const context = {
+      intent: '다음 합주 참석자 명단',
+      sql: 'SELECT up.nickname FROM bands b WHERE b.id = $1::uuid',
+      params: [{ position: 2, type: 'TEXT', value: 'ATTENDING' }],
+      resultMode: 'LIST' as const,
+      rowCount: 1,
+      hasMore: false,
+    };
+    setup({ ...SCHEDULE_ANSWER, context });
+
+    await askByPreset();
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByText('정기 합주');
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+      '그중에 기타 치는 사람은?{Enter}',
+    );
+
+    expect(askMock).toHaveBeenLastCalledWith(
+      asked({
+        question: '그중에 기타 치는 사람은?',
+        history: [{ question: '다음 합주 일정이 언제야?', ...context }],
+        turnIndex: 2,
+      }),
+    );
+  });
+
+  it('질문이 다섯 개 쌓이면 입력창 대신 새 대화를 권하고 더 보내지 않는다', async () => {
+    setup();
+
+    await askByPreset();
+    const dialog = await screen.findByRole('dialog');
+    const questions = [
+      '두 번째 질문',
+      '세 번째 질문',
+      '네 번째 질문',
+      '다섯 번째 질문',
+    ];
+    for (const [index, question] of questions.entries()) {
+      // 앞 질문의 답이 도착해 입력이 풀린 뒤에 보낸다.
+      await waitFor(() =>
+        expect(within(dialog).getAllByText('정기 합주')).toHaveLength(
+          index + 1,
+        ),
+      );
+      await userEvent.type(
+        within(dialog).getByRole('textbox', {
+          name: '밴드 데이터에 대한 질문',
+        }),
+        `${question}{Enter}`,
+      );
+    }
+
+    expect(
+      await within(dialog).findByText(
+        '질문이 많이 쌓였어요. 새 대화에서 이어서 물어봐 주세요.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('textbox', {
+        name: '밴드 데이터에 대한 질문',
+      }),
+    ).not.toBeInTheDocument();
+    expect(askMock).toHaveBeenCalledTimes(5);
+
+    await userEvent.click(
+      within(dialog).getAllByRole('button', { name: '새 대화' }).at(-1)!,
+    );
+    expect(
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+    ).toBeInTheDocument();
   });
 
   it('닫아도 대화가 남아 이어서 보기 바로 다시 열 수 있다', async () => {
@@ -377,6 +453,7 @@ describe('AssistantPanel', () => {
       summary: '질문을 정확히 이해하지 못했어요.',
       result: null,
       clarification: null,
+      context: null,
       meta,
     });
 
@@ -403,6 +480,7 @@ describe('AssistantPanel', () => {
         ],
         hasMore: false,
       },
+      context: null,
       meta,
     });
 
@@ -414,6 +492,7 @@ describe('AssistantPanel', () => {
     expect(askMock).toHaveBeenLastCalledWith(
       asked({
         question: "'아티스트 A' 곡 알려줘",
+        turnIndex: 2,
       }),
     );
   });

@@ -1,8 +1,13 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useAskAssistant } from '@/entities/assistant/api/useAssistant';
-import type { AskAssistantRequest } from '@/entities/assistant/model/types';
+import type {
+  AskAssistantRequest,
+  AssistantHistoryTurn,
+} from '@/entities/assistant/model/types';
 import {
   AssistantConversationContext,
+  MAX_CONVERSATION_TURNS,
+  MAX_HISTORY_TURNS,
   type AssistantConversation,
   type AssistantTurnState,
 } from '../model/assistant-conversation';
@@ -10,6 +15,19 @@ import {
 const MIN_QUESTION_LENGTH = 2;
 /** 답하는 중 표시를 최소로 보여주는 시간(ms) */
 const MIN_REPLY_MS = 700;
+
+/**
+ * 답한 턴 중 마지막 몇 개를 다음 질문의 직전 턴으로 만든다.
+ * "그중에"가 가리키는 조건을 모델이 알 수 있게 서버가 준 조회 구조를 그대로 돌려보낸다. 결과 행과 답 문장은 보내지 않는다.
+ */
+const toHistory = (turns: AssistantTurnState[]): AssistantHistoryTurn[] =>
+  turns
+    .flatMap((turn) =>
+      turn.answer?.context
+        ? [{ question: turn.label, ...turn.answer.context }]
+        : [],
+    )
+    .slice(-MAX_HISTORY_TURNS);
 
 /**
  * 물어보기 대화를 앱 전체에서 하나만 들고 있는다.
@@ -29,6 +47,8 @@ export const AssistantConversationProvider = ({
   const nextTurnId = useRef(0);
   const { mutateAsync } = useAskAssistant();
   const pending = conversation?.turns.some((turn) => turn.pending) ?? false;
+  const limitReached =
+    (conversation?.turns.length ?? 0) >= MAX_CONVERSATION_TURNS;
 
   // 새 대화로 바뀐 뒤 늦게 온 이전 답은 id가 없어 그대로 버려진다.
   const updateTurn = (id: number, patch: Partial<AssistantTurnState>) =>
@@ -63,9 +83,21 @@ export const AssistantConversationProvider = ({
     followUps: string[],
     fresh = false,
   ) => {
+    const previousTurns =
+      !fresh && conversation?.bandId === bandId ? conversation.turns : [];
+    if (previousTurns.length >= MAX_CONVERSATION_TURNS) return;
+    const history = toHistory(previousTurns);
+    // 첫 질문의 본문은 그대로 두고, 이어서 묻는 질문에만 직전 턴과 순서를 붙인다.
+    const requestBody: AskAssistantRequest = {
+      ...body,
+      ...(history.length > 0 ? { history } : {}),
+      ...(previousTurns.length > 0
+        ? { turnIndex: previousTurns.length + 1 }
+        : {}),
+    };
     const turn: AssistantTurnState = {
       id: nextTurnId.current++,
-      body,
+      body: requestBody,
       label,
       followUps,
       pending: true,
@@ -76,7 +108,7 @@ export const AssistantConversationProvider = ({
         : { bandId, turns: [turn] },
     );
     setOpen(true);
-    run(turn.id, bandId, body);
+    run(turn.id, bandId, requestBody);
   };
 
   const submitDraft = (bandId: string, fresh = false) => {
@@ -122,6 +154,7 @@ export const AssistantConversationProvider = ({
         open,
         draft,
         pending,
+        limitReached,
         setDraft,
         ask,
         submitDraft,

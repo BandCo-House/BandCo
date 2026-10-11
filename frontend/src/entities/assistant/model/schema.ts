@@ -106,6 +106,18 @@ export const assistantAnswerKindSchema = z.enum([
   'REPHRASE',
 ]);
 
+/** 다음 질문에 직전 턴으로 돌려보낼 조회 구조. 화면에는 보이지 않고 대화 이력으로만 들고 있는다. */
+const assistantQueryContextSchema = z.object({
+  intent: z.string(),
+  sql: z.string(),
+  params: z.array(
+    z.object({ position: z.number(), type: z.string(), value: z.string() }),
+  ),
+  resultMode: z.enum(['LIST', 'TOP_N', 'AGGREGATE']).nullable(),
+  rowCount: z.number(),
+  hasMore: z.boolean(),
+});
+
 const assistantClarificationSchema = z.object({
   candidates: z.array(z.object({ name: z.string(), question: z.string() })),
   hasMore: z.boolean(),
@@ -118,6 +130,8 @@ export const assistantAnswerSchema = z
     summary: z.string(),
     result: assistantQueryResultSchema.nullable(),
     clarification: assistantClarificationSchema.nullable().optional(),
+    // 이전 서버는 보내지 않는다. 없으면 다음 질문에 직전 턴을 붙이지 않는다.
+    context: assistantQueryContextSchema.nullable().optional(),
     meta: z.object({
       providerName: z.string().nullable(),
       modelName: z.string().nullable(),
@@ -132,4 +146,5 @@ export const assistantAnswerSchema = z
     ...answer,
     kind: answer.kind ?? (answer.answerable ? 'ANSWER' : 'UNSUPPORTED'),
     clarification: answer.clarification ?? null,
+    context: answer.context ?? null,
   }));
