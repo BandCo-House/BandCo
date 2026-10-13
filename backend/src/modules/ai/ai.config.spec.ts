@@ -8,6 +8,12 @@ describe('getAiConfig', () => {
     expect(config.providerRotationEnabled).toBe(false);
   });
 
+  it('재시도 횟수는 0으로 끌 수 있고 잘못된 값은 기본값으로 둔다', () => {
+    expect(getAiConfig({ GEMINI_API_KEY: 'key', LLM_MAX_RETRIES: '0' }).maxRetriesPerProvider).toBe(0);
+    expect(getAiConfig({ GEMINI_API_KEY: 'key', LLM_MAX_RETRIES: '-1' }).maxRetriesPerProvider).toBe(2);
+    expect(getAiConfig({ GEMINI_API_KEY: 'key', LLM_MAX_RETRIES: 'abc' }).maxRetriesPerProvider).toBe(2);
+  });
+
   it('기존 단일 key와 복수 key를 입력 순서대로 합치고 중복을 제거한다', () => {
     const config = getAiConfig({
       GEMINI_API_KEY: 'primary-key',
