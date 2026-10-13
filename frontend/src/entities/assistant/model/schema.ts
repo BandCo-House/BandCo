@@ -55,19 +55,19 @@ const assistantQueryResultSchema = z.discriminatedUnion('entity', [
           format: z.enum(['plain', 'datetime']),
         }),
       ),
-      rows: z
-        .array(
-          z.record(
-            z.string(),
-            z.union([z.string(), z.number(), z.boolean(), z.null()]),
-          ),
-        )
-        .max(50),
+      rows: z.array(
+        z.record(
+          z.string(),
+          z.union([z.string(), z.number(), z.boolean(), z.null()]),
+        ),
+      ),
       hasMore: z.boolean(),
-      maxRows: z.literal(50),
+      // 서버 상한(MAX_ASSISTANT_RESULT_ROWS)이 바뀌어도 응답이 깨지지 않게 값을 고정하지 않고 행 수만 맞춰 본다.
+      maxRows: z.number().int().positive(),
       resultMode: z.enum(['LIST', 'TOP_N', 'AGGREGATE', 'LEGACY']),
       conditions: z.array(z.string()),
     })
+    .refine((result) => result.rows.length <= result.maxRows)
     .refine(
       (result) => {
         const keys = result.columns.map((column) => column.key);
