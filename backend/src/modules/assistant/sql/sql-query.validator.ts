@@ -50,13 +50,12 @@ interface ColumnReference {
 
 interface AstAnalysis {
   aliases: Map<string, string>;
-  outputAliases: Set<string>;
+  outputAliasRefs: Set<AstRecord>;
   parameterNumbers: Set<number>;
   columnNodes: AstRecord[];
   expressionNodes: AstRecord[];
   selectNodes: AstRecord[];
   joinNodes: AstRecord[];
-  bandScopeRoots: Set<string>;
   softDeleteAliases: Set<string>;
   relationEdges: Array<[string, string]>;
 }
@@ -137,9 +136,11 @@ export class SqlQueryValidator {
     };
 
     check(() => validateParameterReferences(analysis.parameterNumbers, generated.params));
-    check(() => validateColumnReferences(analysis.columnNodes, analysis.aliases, analysis.outputAliases));
+    check(() => validateColumnReferences(analysis.columnNodes, analysis.aliases, analysis.outputAliasRefs));
     check(() => validateEnumParameterComparisons(analysis.expressionNodes, analysis.aliases));
-    check(() => validateBandScope(analysis));
+    check(() => {
+      if (resultSelect) validateBandScope(resultSelect, analysis.aliases);
+    });
     check(() => validateSoftDeleteScope(analysis));
     check(() => validateRequiredRelations(analysis));
     check(() => {
@@ -383,13 +384,12 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
 
   const analysis: AstAnalysis = {
     aliases: new Map(),
-    outputAliases: new Set(),
+    outputAliasRefs: new Set(),
     parameterNumbers: new Set(),
     columnNodes: [],
     expressionNodes: [],
     selectNodes: [],
     joinNodes: [],
-    bandScopeRoots: new Set(),
     softDeleteAliases: new Set(),
     relationEdges: [],
   };
@@ -406,7 +406,6 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
     }
     if (tag === 'ColumnRef') analysis.columnNodes.push(node);
     if (tag === 'A_Expr') analysis.expressionNodes.push(node);
-    if (tag === 'ResTarget' && typeof node.name === 'string') analysis.outputAliases.add(node.name);
     if (tag === 'ParamRef') collectParameterNumber(node, analysis.parameterNumbers);
     if (tag === 'FuncCall') validateFunctionCall(node);
     if (tag === 'TypeName') validateCastType(node);
@@ -424,6 +423,7 @@ function analyzeAst(ast: AstRecord): AstAnalysis {
     throw new InvalidSqlQueryError('SELECT_ONLY', 'SELECT 문이 없습니다.');
   }
 
+  collectOutputAliasRefs(analysis);
   collectScopeAndRelations(analysis);
 
   return analysis;
@@ -509,8 +509,29 @@ function validateParameterReferences(parameterNumbers: Set<number>, parameters: 
   }
 }
 
+/**
+ * ORDER BY 항목 전체가 같은 SELECT의 출력 별칭 하나일 때만 별칭 참조로 인정한다.
+ * SELECT 목록·WHERE·GROUP BY의 맨 이름은 PostgreSQL이 실제 테이블 컬럼으로 해석하므로 허용 목록을 건너뛰게 둘 수 없다.
+ */
+function collectOutputAliasRefs(analysis: AstAnalysis): void {
+  for (const selectNode of analysis.selectNodes) {
+    const names = new Set(
+      (Array.isArray(selectNode.targetList) ? selectNode.targetList : []).flatMap(target => {
+        const name = getNestedRecord(target, ['ResTarget'])?.name;
+        return typeof name === 'string' ? [name] : [];
+      }),
+    );
+
+    for (const sortItem of Array.isArray(selectNode.sortClause) ? selectNode.sortClause : []) {
+      const column = getTaggedNode(getNestedRecord(sortItem, ['SortBy'])?.node, 'ColumnRef');
+      const fields = column === null ? [] : readColumnFields(column);
+      if (column !== null && fields.length === 1 && names.has(fields[0])) analysis.outputAliasRefs.add(column);
+    }
+  }
+}
+
 /** 모든 컬럼을 테이블 별칭과 함께 명시하고 catalog 컬럼만 사용했는지 확인한다. */
-function validateColumnReferences(columnNodes: AstRecord[], aliases: Map<string, string>, outputAliases: Set<string>): void {
+function validateColumnReferences(columnNodes: AstRecord[], aliases: Map<string, string>, outputAliasRefs: Set<AstRecord>): void {
   for (const node of columnNodes) {
     const fields = readColumnFields(node);
 
@@ -518,7 +539,7 @@ function validateColumnReferences(columnNodes: AstRecord[], aliases: Map<string,
       throw new InvalidSqlQueryError('SELECT_STAR_BLOCKED', 'SELECT *는 사용할 수 없습니다.');
     }
 
-    if (fields.length === 1 && outputAliases.has(fields[0])) {
+    if (outputAliasRefs.has(node)) {
       continue;
     }
 
@@ -625,7 +646,7 @@ function findFirstParameterNumber(value: unknown): number | null {
   return parameterNumber;
 }
 
-/** 밴드 범위와 soft-delete 조건을 찾고 허용 관계로 연결된 별칭 그래프를 만든다. */
+/** soft-delete 조건을 찾고 허용 관계로 연결된 별칭 그래프를 만든다. 밴드 범위는 validateBandScope가 SELECT마다 따로 본다. */
 function collectScopeAndRelations(analysis: AstAnalysis): void {
   for (const selectNode of analysis.selectNodes) {
     const conditions = getDirectAndConditions(selectNode.whereClause);
@@ -638,7 +659,7 @@ function collectScopeAndRelations(analysis: AstAnalysis): void {
   }
 }
 
-/** 직접 AND 조건에서 범위, 삭제, JOIN 조건을 수집한다. */
+/** 직접 AND 조건에서 삭제, JOIN 조건을 수집한다. */
 function collectConditions(conditions: unknown[], analysis: AstAnalysis): void {
   for (const condition of conditions) {
     const expression = getTaggedNode(condition, 'A_Expr');
@@ -646,11 +667,6 @@ function collectConditions(conditions: unknown[], analysis: AstAnalysis): void {
     if (expression !== null && readOperator(expression) === '=') {
       const leftColumn = readColumnReference(expression.lexpr);
       const rightColumn = readColumnReference(expression.rexpr);
-      const leftParameter = readUuidParameterNumber(expression.lexpr);
-      const rightParameter = readUuidParameterNumber(expression.rexpr);
-
-      collectBandScope(leftColumn, rightParameter, analysis);
-      collectBandScope(rightColumn, leftParameter, analysis);
 
       if (leftColumn !== null && rightColumn !== null && isAllowedJoin(leftColumn, rightColumn, analysis.aliases)) {
         analysis.relationEdges.push([leftColumn.alias, rightColumn.alias]);
@@ -669,17 +685,6 @@ function collectConditions(conditions: unknown[], analysis: AstAnalysis): void {
   }
 }
 
-/** bands.id = $1 조건을 밴드 범위 루트로 기록한다. */
-function collectBandScope(column: ColumnReference | null, parameterNumber: number | null, analysis: AstAnalysis): void {
-  if (column === null || parameterNumber !== 1 || column.column !== 'id') {
-    return;
-  }
-
-  if (analysis.aliases.get(column.alias) === 'bands') {
-    analysis.bandScopeRoots.add(column.alias);
-  }
-}
-
 /** 삭제된 밴드·사용자·공간을 제외하는 조건이 별칭마다 있는지 확인한다. */
 function validateSoftDeleteScope(analysis: AstAnalysis): void {
   const missing = [...analysis.aliases]
@@ -688,36 +693,147 @@ function validateSoftDeleteScope(analysis: AstAnalysis): void {
   if (missing.length > 0) throw combineViolations(missing);
 }
 
-/** 모든 조회 테이블이 범위가 고정된 bands 별칭에서 허용 JOIN으로 이어지는지 확인한다. */
-function validateBandScope(analysis: AstAnalysis): void {
-  if (analysis.bandScopeRoots.size === 0) {
+interface ScopeEdge {
+  left: string;
+  right: string;
+  /** 이 간선으로 범위 안에 넣을 수 있는 별칭. null이면 양쪽 모두다. */
+  targets: Set<string> | null;
+}
+
+/**
+ * SELECT마다 자기 FROM의 모든 별칭이 범위가 고정된 bands 별칭에서 허용 JOIN으로 이어지는지 확인한다.
+ * 범위 루트는 각 SELECT의 WHERE 최상위 AND 조건에서만 인정하고, 서브쿼리는 바깥에서 이미 범위 안인 별칭에만 기댈 수 있다.
+ * 서브쿼리 안의 조건이 바깥 테이블을 범위 안으로 만들거나, LEFT JOIN의 보존 쪽이 ON 조건만으로 범위 안이 되는 우회를 막는다.
+ */
+function validateBandScope(select: AstRecord, aliases: Map<string, string>, outerReachable: Set<string> = new Set(), isTopLevel = true): void {
+  const ownAliases = new Set<string>();
+  const edges: ScopeEdge[] = [];
+  const whereConditions = getDirectAndConditions(select.whereClause);
+
+  for (const item of Array.isArray(select.fromClause) ? select.fromClause : []) {
+    collectFromScope(item, aliases, ownAliases, edges);
+  }
+  collectScopeEdges(whereConditions, null, aliases, edges);
+
+  const roots = whereConditions.flatMap(condition => {
+    const expression = getTaggedNode(condition, 'A_Expr');
+    if (expression === null || readOperator(expression) !== '=') return [];
+    return [readBandScopeRoot(expression.lexpr, expression.rexpr, aliases), readBandScopeRoot(expression.rexpr, expression.lexpr, aliases)].flatMap(
+      alias => (alias !== null && ownAliases.has(alias) ? [alias] : []),
+    );
+  });
+
+  if (isTopLevel && roots.length === 0) {
     throw new InvalidSqlQueryError('BAND_SCOPE_MISSING', 'WHERE 최상위 AND 조건에 bands.id = $1::uuid가 필요합니다.');
   }
 
-  const reachable = new Set(analysis.bandScopeRoots);
+  const reachable = new Set([...outerReachable, ...roots]);
+  const canEnter = (alias: string, edge: ScopeEdge): boolean =>
+    !reachable.has(alias) && ownAliases.has(alias) && (edge.targets === null || edge.targets.has(alias));
   let changed = true;
 
   while (changed) {
     changed = false;
 
-    for (const [leftAlias, rightAlias] of analysis.relationEdges) {
-      if (reachable.has(leftAlias) && !reachable.has(rightAlias)) {
-        reachable.add(rightAlias);
+    for (const edge of edges) {
+      if (reachable.has(edge.left) && canEnter(edge.right, edge)) {
+        reachable.add(edge.right);
         changed = true;
       }
 
-      if (reachable.has(rightAlias) && !reachable.has(leftAlias)) {
-        reachable.add(leftAlias);
+      if (reachable.has(edge.right) && canEnter(edge.left, edge)) {
+        reachable.add(edge.left);
         changed = true;
       }
     }
   }
 
-  const disconnected = [...analysis.aliases.keys()].filter(alias => !reachable.has(alias));
+  const disconnected = [...ownAliases].filter(alias => !reachable.has(alias));
 
   if (disconnected.length > 0) {
     throw new InvalidSqlQueryError('TABLE_OUTSIDE_BAND_SCOPE', `밴드에서 허용 JOIN으로 연결되지 않은 별칭입니다: ${disconnected.join(', ')}`);
   }
+
+  for (const subSelect of collectSubSelects(select)) {
+    validateBandScope(subSelect, aliases, reachable, false);
+  }
+}
+
+/** FROM 항목의 별칭을 모으고, JOIN 종류에 따라 ON 조건이 범위 안에 넣을 수 있는 쪽을 정한다. */
+function collectFromScope(item: unknown, aliases: Map<string, string>, ownAliases: Set<string>, edges: ScopeEdge[]): string[] {
+  const alias = getNestedRecord(item, ['RangeVar', 'alias'])?.aliasname;
+
+  if (typeof alias === 'string') {
+    ownAliases.add(alias);
+    return [alias];
+  }
+
+  const join = getTaggedNode(item, 'JoinExpr');
+
+  if (join === null) return [];
+
+  const leftAliases = collectFromScope(join.larg, aliases, ownAliases, edges);
+  const rightAliases = collectFromScope(join.rarg, aliases, ownAliases, edges);
+  // LEFT JOIN은 오른쪽, RIGHT JOIN은 왼쪽 행만 ON 조건에 맞을 때 나타난다. 반대쪽은 조건과 무관하게 모두 남는다.
+  const targets =
+    join.jointype === 'JOIN_INNER'
+      ? null
+      : join.jointype === 'JOIN_LEFT'
+        ? new Set(rightAliases)
+        : join.jointype === 'JOIN_RIGHT'
+          ? new Set(leftAliases)
+          : new Set<string>();
+
+  collectScopeEdges(getDirectAndConditions(join.quals), targets, aliases, edges);
+
+  return [...leftAliases, ...rightAliases];
+}
+
+/** 직접 AND 조건 중 catalog에 정의된 JOIN 등식을 범위 간선으로 기록한다. */
+function collectScopeEdges(conditions: unknown[], targets: Set<string> | null, aliases: Map<string, string>, edges: ScopeEdge[]): void {
+  for (const condition of conditions) {
+    const expression = getTaggedNode(condition, 'A_Expr');
+    if (expression === null || readOperator(expression) !== '=') continue;
+
+    const left = readColumnReference(expression.lexpr);
+    const right = readColumnReference(expression.rexpr);
+
+    if (left !== null && right !== null && isAllowedJoin(left, right, aliases)) {
+      edges.push({ left: left.alias, right: right.alias, targets });
+    }
+  }
+}
+
+/** bands.id = $1::uuid 조건이면 그 bands 별칭을 돌려준다. */
+function readBandScopeRoot(columnValue: unknown, parameterValue: unknown, aliases: Map<string, string>): string | null {
+  const column = readColumnReference(columnValue);
+
+  if (column === null || column.column !== 'id' || aliases.get(column.alias) !== 'bands') return null;
+
+  return readUuidParameterNumber(parameterValue) === 1 ? column.alias : null;
+}
+
+/** 이 SELECT에 바로 속한 서브쿼리만 찾는다. 더 깊은 서브쿼리는 그 서브쿼리를 검사할 때 찾는다. */
+function collectSubSelects(value: unknown, found: AstRecord[] = []): AstRecord[] {
+  if (Array.isArray(value)) {
+    for (const item of value) collectSubSelects(item, found);
+    return found;
+  }
+
+  if (!isRecord(value)) return found;
+
+  for (const [key, child] of Object.entries(value)) {
+    const subSelect = key === 'SubLink' ? getNestedRecord(child, ['subselect', 'SelectStmt']) : null;
+
+    if (subSelect !== null) {
+      found.push(subSelect);
+      continue;
+    }
+
+    collectSubSelects(child, found);
+  }
+
+  return found;
 }
 
 /** 중간 테이블이 우회 경로가 아니라 의미상 필요한 양쪽 관계에 직접 연결됐는지 확인한다. */
