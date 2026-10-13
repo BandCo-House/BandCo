@@ -11,7 +11,7 @@ import type { AssistantRepository } from './repositories/assistant.repository';
 import type { ValidatedSqlQuery } from './sql/generated-sql.type';
 import type { SqlQueryValidator } from './sql/sql-query.validator';
 import { InvalidSqlQueryError, UnsupportedQuestionError } from './sql/sql-query.validator';
-import { AssistantService } from './assistant.service';
+import { AssistantService, maskContactInfo } from './assistant.service';
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 const BAND_ID = '22222222-2222-4222-8222-222222222222';
@@ -429,5 +429,12 @@ describe('AssistantService', () => {
     const harness = createHarness({ executionError: new Error('database error') });
 
     await expect(harness.service.askAssistant(USER_ID, BAND_ID, { question: '멤버 수 알려줘' })).rejects.toThrow(ServiceUnavailableException);
+  });
+});
+
+describe('maskContactInfo', () => {
+  it('감사 로그 질문의 이메일과 전화번호만 가리고 날짜·숫자 조건은 남긴다', () => {
+    expect(maskContactInfo('test@example.com 이랑 010-1234-5678 번호인 사람')).toBe('[이메일] 이랑 [전화번호] 번호인 사람');
+    expect(maskContactInfo('2026-10-13 합주에 BPM 120 이상 곡')).toBe('2026-10-13 합주에 BPM 120 이상 곡');
   });
 });

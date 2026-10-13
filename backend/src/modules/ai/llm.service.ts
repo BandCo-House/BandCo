@@ -101,8 +101,15 @@ export class LlmService {
    */
   private async tryProvider(provider: LlmProvider, request: LlmStructuredRequest, canRetryTruncation = true): Promise<LlmStructuredResponse | null> {
     for (let attempt = 0; attempt <= this.config.maxRetriesPerProvider; attempt += 1) {
+      const remainingMs = (request.deadlineAt ?? Number.POSITIVE_INFINITY) - Date.now();
+
+      if (remainingMs <= 0) {
+        this.logger.warn(`[${provider.name}] 요청 마감 시간이 지나 더 호출하지 않습니다.`);
+        return null;
+      }
+
       try {
-        return await provider.generateStructured(request, this.config.requestTimeoutMs);
+        return await provider.generateStructured(request, Math.min(this.config.requestTimeoutMs, remainingMs));
       } catch (error) {
         if (error instanceof LlmRateLimitError) {
           this.logger.warn(`[${provider.name}] 호출량 제한으로 다음 호출 대상으로 전환합니다.`);
@@ -123,6 +130,12 @@ export class LlmService {
 
         if (error instanceof LlmUnavailableError && attempt < this.config.maxRetriesPerProvider) {
           const delayMs = this.calculateBackoffDelay(attempt);
+
+          if (Date.now() + delayMs >= (request.deadlineAt ?? Number.POSITIVE_INFINITY)) {
+            this.logger.warn(`[${provider.name}] 일시 오류지만 재시도 전에 요청 마감 시간이 지나 중단합니다.`);
+            return null;
+          }
+
           this.logger.warn(`[${provider.name}] 일시 오류로 ${delayMs}ms 후 재시도합니다. (${attempt + 1}/${this.config.maxRetriesPerProvider})`);
           await delay(delayMs);
           continue;

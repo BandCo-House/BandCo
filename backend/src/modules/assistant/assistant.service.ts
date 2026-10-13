@@ -22,6 +22,12 @@ import type { AssistantScope } from './types/assistant-scope.type';
 /** 최초 생성 이후 검증 실패 SQL을 다시 만들 수 있는 횟수 */
 const MAX_SQL_REGENERATIONS = 2;
 
+/**
+ * SQL 생성과 재생성에 쓰는 모델 호출 전체의 시간 상한.
+ * 화면 요청은 10초(API_TIMEOUT)에 끊기므로, 그 뒤의 재생성·재시도는 비용만 쓴다. 답을 돌려줄 여유를 1초 남긴다.
+ */
+const SQL_GENERATION_DEADLINE_MS = 9_000;
+
 interface GeneratedQuery {
   status: 'QUERY';
   query: ValidatedSqlQuery;
@@ -96,7 +102,7 @@ export class AssistantService {
           event: 'assistant.text_to_sql',
           userId: scope.userId,
           bandId: scope.bandId,
-          question: input.question ?? null,
+          question: input.question === undefined ? null : maskContactInfo(input.question),
           turnIndex: input.turnIndex ?? 1,
           historyTurns: input.history?.length ?? 0,
           outcome: 'rephrase_required',
@@ -142,7 +148,7 @@ export class AssistantService {
       page = await this.executeQuery(bandId, generated.query, tx);
       result = await mapSqlResult(generated.query, page);
     } catch (error) {
-      this.logger.warn(`검증된 SQL 실행에 실패했습니다: ${toMessage(error)}`);
+      this.logger.warn(`검증된 SQL 실행에 실패했습니다: ${describeError(error)}`);
       this.logQueryAudit(scope, input, generated, 'execution_failed', 0, Date.now() - startedAt);
       throw new ServiceUnavailableException('생성한 조회를 실행하지 못했습니다. 질문을 조금 다르게 표현해 주세요.');
     }
@@ -210,17 +216,24 @@ export class AssistantService {
       .join('\n\n');
     const countUnit = resolveSqlCountUnit(question, history.at(-1)?.question);
     const failures: string[] = [];
+    const deadlineAt = Date.now() + SQL_GENERATION_DEADLINE_MS;
     let previousSql = '';
     let inputTokens = 0;
     let outputTokens = 0;
 
     for (let attempt = 0; attempt <= MAX_SQL_REGENERATIONS; attempt += 1) {
+      if (attempt > 0 && Date.now() >= deadlineAt) {
+        this.logger.warn('SQL 생성 마감 시간이 지나 재생성을 멈춥니다.');
+        break;
+      }
+
       const response = await this.llmService.generateStructured({
         systemInstruction:
           attempt === 0 ? baseInstruction : `${baseInstruction}\n\n${createSqlRepairInstruction(failures, previousSql)}\n규칙에 맞게 다시 생성한다.`,
         userMessage: question,
         responseSchema: SQL_GENERATION_RESPONSE_SCHEMA,
         maxOutputTokens: 1_500,
+        deadlineAt,
       });
 
       inputTokens += response.usage?.inputTokens ?? 0;
@@ -339,7 +352,7 @@ export class AssistantService {
         return run(client);
       });
     } catch (error) {
-      this.logger.warn(`아티스트 이름 확인에 실패했습니다: ${toMessage(error)}`);
+      this.logger.warn(`아티스트 이름 확인에 실패했습니다: ${describeError(error)}`);
       throw new ServiceUnavailableException('아티스트 이름을 확인하지 못했습니다. 잠시 후 다시 질문해 주세요.');
     }
   }
@@ -371,7 +384,7 @@ export class AssistantService {
         userId: scope.userId,
         bandId: scope.bandId,
         presetId: input.presetId ?? null,
-        question: input.question ?? null,
+        question: input.question === undefined ? null : maskContactInfo(input.question),
         // 턴별 실패율을 보고 대화 턴 상한(5)을 조정하는 근거로 쓴다.
         turnIndex: input.turnIndex ?? 1,
         historyTurns: input.history?.length ?? 0,
@@ -400,9 +413,19 @@ function createQueryContext(generated: GeneratedQuery, page: SqlQueryPage): Assi
   };
 }
 
-/** 알 수 없는 실행 오류를 운영 로그에서 확인할 수 있는 문자열로 만든다. */
-function toMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+/**
+ * 실행 오류를 운영 로그용 문자열로 만든다. DB 오류 원문에는 바인딩 값이 섞일 수 있어 오류 이름과 코드만 남긴다.
+ * 시간 초과는 PostgreSQL 코드 57014로 구분된다.
+ */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return 'UnknownError';
+  const { code, meta } = error as { code?: unknown; meta?: { code?: unknown } };
+  return [error.name, code, meta?.code].filter(value => typeof value === 'string').join(' ');
+}
+
+/** 감사 로그는 userId·bandId와 함께 남으므로 질문에 섞인 이메일·전화번호를 가린다. */
+export function maskContactInfo(question: string): string {
+  return question.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[이메일]').replace(/\d{2,3}[-.\s]?\d{3,4}[-.\s]?\d{4}/g, '[전화번호]');
 }
 
 /** 검증에 실패한 응답의 SQL을 다음 재생성의 수정 대상으로 사용한다. */
