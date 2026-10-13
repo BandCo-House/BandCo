@@ -1,5 +1,7 @@
 import { parse } from 'pgsql-parser';
 
+import { SQL_CATALOG } from './sql-catalog';
+
 type AstRecord = Record<string, unknown>;
 
 /** 참여·팀 편성의 조회 단위는 대표 행 하나이며, ID·시각도 그 대표 행의 값이다. */
@@ -45,7 +47,11 @@ export async function normalizeRelationGrain(ast: AstRecord): Promise<void> {
 }
 
 async function createRepresentativeRelation(table: string, key: string, alias: string, duplicateAlias: string): Promise<AstRecord> {
-  const sql = `SELECT * FROM ${table} AS ${TARGET_ALIAS} WHERE NOT EXISTS (SELECT 1 FROM ${table} AS ${duplicateAlias} WHERE ${duplicateAlias}.${key} = ${TARGET_ALIAS}.${key} AND ${duplicateAlias}.band_member_id = ${TARGET_ALIAS}.band_member_id AND ${duplicateAlias}.id < ${TARGET_ALIAS}.id)`;
+  // 실행 역할(assistant_reader)은 카탈로그 컬럼만 읽을 수 있어 SELECT *를 쓰면 권한 오류가 난다.
+  const columns = Object.keys(SQL_CATALOG[table].columns)
+    .map(column => `${TARGET_ALIAS}.${column}`)
+    .join(', ');
+  const sql = `SELECT ${columns} FROM ${table} AS ${TARGET_ALIAS} WHERE NOT EXISTS (SELECT 1 FROM ${table} AS ${duplicateAlias} WHERE ${duplicateAlias}.${key} = ${TARGET_ALIAS}.${key} AND ${duplicateAlias}.band_member_id = ${TARGET_ALIAS}.band_member_id AND ${duplicateAlias}.id < ${TARGET_ALIAS}.id)`;
   const wrapper = (await parse(sql)) as unknown as { stmts: { stmt: { SelectStmt: AstRecord } }[] };
   const select = wrapper.stmts[0].stmt.SelectStmt;
   // 원래 별칭은 AST에 설정해 인용된 식별자도 그대로 보존한다.

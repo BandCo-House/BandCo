@@ -39,6 +39,9 @@ docker run -d --name bandco-assistant-evaluation \
 
 export ASSISTANT_EVALUATION_DATABASE_URL='postgresql://postgres:assistant-evaluation@127.0.0.1:55432/bandco_assistant_evaluation?schema=public'
 DATABASE_URL="$ASSISTANT_EVALUATION_DATABASE_URL" pnpm exec prisma db push --skip-generate
+# db push는 마이그레이션 SQL을 실행하지 않는다. 모델 SQL은 전용 DB 역할(assistant_reader)로 실행되므로 역할·컬럼 권한·RLS를 따로 적용한다.
+docker exec -i bandco-assistant-evaluation psql -U postgres \
+  -d bandco_assistant_evaluation -v ON_ERROR_STOP=1 < prisma/migrations/20261013120000_add_assistant_reader_role/migration.sql
 docker exec -i bandco-assistant-evaluation psql -U postgres \
   -d bandco_assistant_evaluation -v ON_ERROR_STOP=1 < scripts/assistant-evaluation/seed-accuracy.sql
 export ASSISTANT_RESEARCH_DIR="$HOME/Documents/bandco-assistant-research/runs/new-run"

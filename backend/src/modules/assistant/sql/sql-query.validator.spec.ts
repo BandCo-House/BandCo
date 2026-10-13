@@ -87,7 +87,9 @@ describe('SqlQueryValidator', () => {
     );
     const sql = nested.sql.replace(/\s+/g, ' ');
     expect(sql).toContain('FROM band_spaces AS bs');
-    expect(sql).toContain('SELECT * FROM schedule_participants AS sp WHERE NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0');
+    expect(sql).toContain(
+      'SELECT sp.id, sp.schedule_id, sp.band_member_id, sp.attendance_status, sp.updated_at FROM schedule_participants AS sp WHERE NOT (EXISTS (SELECT 1 FROM schedule_participants AS grain_dup_0',
+    );
     expect(sql.match(/grain_dup_/g)?.length).toBe(4);
   });
 
