@@ -15,7 +15,10 @@ export class StorageService {
     this.region = readOptionalConfig(configService, 'AWS_REGION');
     this.bucket = readOptionalConfig(configService, 'AWS_STORAGE_BUCKET');
 
-    if (configService.get<string>('NODE_ENV') === 'production' && (this.region === null || this.bucket === null)) {
+    // NODE_ENV가 없거나 staging처럼 예상 밖의 값이면 운영으로 보고, 로컬·테스트에서만 설정 누락을 허용한다.
+    const allowsMissingStorage = ['development', 'test'].includes(configService.get<string>('NODE_ENV') ?? '');
+
+    if (!allowsMissingStorage && (this.region === null || this.bucket === null)) {
       throw new Error('운영 환경에는 AWS_REGION과 AWS_STORAGE_BUCKET이 필요합니다.');
     }
 

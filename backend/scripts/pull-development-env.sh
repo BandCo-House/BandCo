@@ -30,6 +30,15 @@ secret_json=$(aws secretsmanager get-secret-value \
   --query SecretString \
   --output text)
 
+# 필수 키 검사는 두지 않지만, secret ID를 잘못 지정해 운영 값이 개발 파일에 써지는 것은 막는다.
+if ! jq -e 'type == "object" and .NODE_ENV == "development" and all(keys[]; test("^[A-Z][A-Z0-9_]*$"))' <<EOF >/dev/null
+$secret_json
+EOF
+then
+  echo "$SECRET_ID 는 개발 환경 secret이 아닙니다. NODE_ENV=development인 객체여야 합니다." >&2
+  exit 1
+fi
+
 jq -r 'to_entries[] | "\(.key)=\(.value | tostring | @json)"' <<EOF >"$TEMP_ENV_FILE"
 $secret_json
 EOF

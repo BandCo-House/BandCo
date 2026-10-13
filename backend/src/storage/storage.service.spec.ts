@@ -42,6 +42,13 @@ describe('StorageService', () => {
     );
   });
 
+  it('NODE_ENV가 없거나 로컬·테스트가 아니면 운영처럼 AWS 설정을 요구한다', () => {
+    expect(() => new StorageService(createConfigService({}))).toThrow('운영 환경에는 AWS_REGION과 AWS_STORAGE_BUCKET이 필요합니다.');
+    expect(() => new StorageService(createConfigService({ NODE_ENV: 'staging' }))).toThrow(
+      '운영 환경에는 AWS_REGION과 AWS_STORAGE_BUCKET이 필요합니다.',
+    );
+  });
+
   describe('getPresignedUploadUrl', () => {
     it('presignedUrl과 objectUrl을 반환한다', async () => {
       (getSignedUrl as jest.Mock).mockResolvedValue('https://presigned.example.com/signed');
