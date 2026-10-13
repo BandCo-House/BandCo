@@ -15,6 +15,7 @@ export const AssistantHeaderAction = ({
       type="button"
       onClick={() => openScreen(bandId)}
       aria-label="밴드에 물어보기"
+      data-assistant-entry
       className="inline-flex size-10 items-center justify-center rounded-full text-grey-100"
     >
       <Sparkles aria-hidden="true" className="size-6" />

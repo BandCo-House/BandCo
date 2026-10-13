@@ -521,6 +521,30 @@ describe('AssistantPanel', () => {
     expect(await within(dialog).findByText('정기 합주')).toBeInTheDocument();
   });
 
+  it('대화를 끝낸 뒤 늦게 실패한 질문은 입력창에 다시 채우지 않는다', async () => {
+    setup();
+    let fail: (error: Error) => void = () => {};
+    askMock.mockReturnValueOnce(
+      new Promise<AssistantAnswer>((_, reject) => {
+        fail = reject;
+      }),
+    );
+
+    await userEvent.type(homeInput(), '다음 합주 언제야?');
+    await userEvent.click(screen.getByRole('button', { name: '질문' }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: '닫기',
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: '대화 끝내기' }));
+    fail(new Error('503'));
+    // 실패 처리(catch)가 끝날 때까지 기다린 뒤 확인한다.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(homeInput()).toHaveValue('');
+  });
+
   it('조회 중에는 입력을 막고 진행 단계를 알린다', async () => {
     setup();
     let finish: (answer: AssistantAnswer) => void = () => {};

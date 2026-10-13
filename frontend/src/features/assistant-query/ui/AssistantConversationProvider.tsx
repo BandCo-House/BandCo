@@ -1,4 +1,10 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useAskAssistant } from '@/entities/assistant/api/useAssistant';
 import type {
   AskAssistantRequest,
@@ -45,6 +51,11 @@ export const AssistantConversationProvider = ({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const nextTurnId = useRef(0);
+  // 늦게 온 실패 응답이 지금 대화에 속하는지 확인하려고 최신 대화를 들고 있는다.
+  const conversationRef = useRef(conversation);
+  useLayoutEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
   const { mutateAsync } = useAskAssistant();
   const pending = conversation?.turns.some((turn) => turn.pending) ?? false;
   const limitReached =
@@ -72,7 +83,13 @@ export const AssistantConversationProvider = ({
       .catch((error: unknown) => {
         updateTurn(id, { pending: false, error });
         // 고쳐서 다시 물을 수 있게 직접 입력한 질문을 입력창에 되돌린다.
-        if (body.question !== undefined) setDraft(body.question);
+        // 닫았거나 새 대화로 바뀐 뒤의 실패는 되돌리지 않고, 그사이 입력 중인 내용도 덮지 않는다.
+        const alive = conversationRef.current?.turns.some(
+          (turn) => turn.id === id,
+        );
+        const question = body.question;
+        if (alive && question !== undefined)
+          setDraft((current) => (current === '' ? question : current));
       });
   };
 

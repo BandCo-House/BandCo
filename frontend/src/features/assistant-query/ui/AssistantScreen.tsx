@@ -34,8 +34,20 @@ export const AssistantScreen = ({
     <SheetContent
       side="bottom"
       showCloseButton={false}
-      // 열자마자 키보드가 올라와 답을 가리지 않게 포커스를 옮기지 않는다.
-      onOpenAutoFocus={(event) => event.preventDefault()}
+      // 입력창 대신 시트 자체에 포커스를 둬 키보드는 올리지 않으면서 Tab이 시트 밖으로 나가지 않게 한다.
+      onOpenAutoFocus={(event) => {
+        event.preventDefault();
+        (event.target as HTMLElement | null)?.focus({ preventScroll: true });
+      }}
+      // 이어서 보기 바로 열면 그 바가 사라져 포커스가 body로 간다. 그때는 헤더의 물어보기 버튼으로 보낸다.
+      onCloseAutoFocus={() => {
+        requestAnimationFrame(() => {
+          if (document.activeElement === document.body)
+            document
+              .querySelector<HTMLElement>('[data-assistant-entry]')
+              ?.focus();
+        });
+      }}
       className="inset-0 z-[60] flex h-dvh w-full max-w-none flex-col gap-0 border-0 bg-gradient-to-b from-gradient-top to-gradient-bottom p-0 sm:max-w-none"
     >
       <SheetDescription className="sr-only">
