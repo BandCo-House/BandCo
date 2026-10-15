@@ -1,13 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createBand } from '../api/band-api';
+import { createBand, type BandCreateResponse } from '../api/band-api';
 import type { BandCreateFormValues } from './schema';
 import { bandKeys } from '@/entities/band/api/useBands';
 import axios, { type AxiosError } from 'axios';
 
+/** 생성된 밴드까지 돌려준다 — 초대 부분 실패(`invitations.failed`)를 호출부가 읽어야 한다. */
+export type BandCreateSubmitResult =
+  | { success: true; band: BandCreateResponse }
+  | { success: false; message: string };
+
 export interface UseBandCreateResult {
-  submit: (
-    data: BandCreateFormValues,
-  ) => Promise<{ success: boolean; message?: string }>;
+  submit: (data: BandCreateFormValues) => Promise<BandCreateSubmitResult>;
   isLoading: boolean;
   error: string | null;
   reset: () => void;
@@ -27,10 +30,10 @@ export const useBandCreate = (): UseBandCreateResult => {
 
   const submit = async (
     data: BandCreateFormValues,
-  ): Promise<{ success: boolean; message?: string }> => {
+  ): Promise<BandCreateSubmitResult> => {
     try {
-      await mutation.mutateAsync(data);
-      return { success: true };
+      const band = await mutation.mutateAsync(data);
+      return { success: true, band };
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorData = err.response?.data as

@@ -32,7 +32,7 @@ export const BandSpaceCard = ({
     <Link
       to="/band/$bandId/space/$spaceId"
       params={{ bandId, spaceId: space.spaceId }}
-      className="flex items-center gap-2 border-b border-grey-500 px-8 py-5 transition-colors outline-none hover:bg-overlay-24 focus-visible:bg-overlay-24 active:bg-overlay-24"
+      className="flex items-center gap-2 border-b border-grey-500 px-5 py-5 transition-colors outline-none hover:bg-overlay-24 focus-visible:bg-overlay-24 active:bg-overlay-24"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-1">

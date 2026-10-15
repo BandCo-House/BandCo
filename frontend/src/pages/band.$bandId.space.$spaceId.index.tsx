@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { renderSpaceTabs } from './-space-header';
 import { SpaceCalendar } from '@/widgets/space-calendar/ui/SpaceCalendar';
+import { SpaceEditAction } from '@/widgets/space-calendar/ui/SpaceEditAction';
 
 export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
   component: BandPerformanceRoutePage,
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,
       }),
+      renderRight: () => <SpaceEditAction />,
       renderBottom: renderSpaceTabs,
     },
   },

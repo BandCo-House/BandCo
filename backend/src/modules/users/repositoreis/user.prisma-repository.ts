@@ -13,13 +13,22 @@ import type { GetUserProfileResult } from '../types/user-profile.type';
 
 import type { AuthUser, DeleteUserResult, PasswordAuthUser, UsersRepository } from './user.repository';
 
-type UserListRecord = Prisma.UserGetPayload<{
-  include: {
-    profile: {
-      select: { nickname: true; avatarUrl: true };
-    };
-  };
-}>;
+// 유저 목록 조회가 끌고 오는 관계. 세션(userSkills)은 닉네임이 겹칠 때 누가 누구인지
+// 가르는 유일한 단서라, 초대 검색 화면이 이걸 보여준다.
+const userListInclude = {
+  profile: {
+    select: { nickname: true, avatarUrl: true },
+  },
+  userSkills: {
+    include: {
+      skillType: {
+        select: { name: true },
+      },
+    },
+  },
+} satisfies Prisma.UserInclude;
+
+type UserListRecord = Prisma.UserGetPayload<{ include: typeof userListInclude }>;
 
 function mapUserListItem(user: UserListRecord): UserListItem {
   return {
@@ -28,6 +37,12 @@ function mapUserListItem(user: UserListRecord): UserListItem {
     status: user.status,
     avatarUrl: user.profile?.avatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
+    skills: user.userSkills.map(skill => ({
+      skillTypeId: skill.skillTypeId,
+      skillName: skill.skillType.name,
+      skillLevel: skill.skillLevel,
+      isPrimary: skill.isPrimary,
+    })),
   };
 }
 
@@ -193,11 +208,7 @@ export class UsersPrismaRepository implements UsersRepository {
 
     const users = await client.user.findMany({
       where,
-      include: {
-        profile: {
-          select: { nickname: true, avatarUrl: true },
-        },
-      },
+      include: userListInclude,
       orderBy,
       take: take ?? query.take,
     });

@@ -22,7 +22,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       aria-required={props['aria-required'] ?? (fieldRequired || undefined)}
       className={cn(
-        'flex h-10 w-full items-center justify-between gap-2 rounded-full field-border border-grey-50/40 bg-white/16 px-4 py-2 typo-sm-sb text-grey-50 shadow-none transition-colors outline-none hover:bg-white/24 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate',
+        'flex h-10 w-full items-center justify-between gap-2 rounded-full bg-white/16 glass-surface px-4 py-2 typo-sm-sb text-grey-50 shadow-none transition-colors outline-none hover:bg-white/24 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate',
         className,
       )}
       {...props}

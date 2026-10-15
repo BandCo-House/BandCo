@@ -35,7 +35,7 @@ const mockProfile: GetUserProfileResult = {
 };
 
 const mockListResult: GetUsersResult = {
-  items: [{ id: 'user-001', nickname: 'testuser', status: 'ACTIVE', avatarUrl: null, createdAt: '2026-01-01T00:00:00.000Z' }],
+  items: [{ id: 'user-001', nickname: 'testuser', status: 'ACTIVE', avatarUrl: null, createdAt: '2026-01-01T00:00:00.000Z', skills: [] }],
   meta: { count: 1, take: 20, cursor: { createdAt: '2026-01-01T00:00:00.000Z', id: 'user-001' }, next: null },
 };
 

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse, delay } from 'msw';
 import { server } from '@/mocks/server';
+import { AuthContext } from '@/app/providers/auth-context';
 import { BandList } from './BandList';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -13,8 +14,17 @@ const renderWithClient = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // 밴드 만들기 모달의 멤버 초대 검색이 로그인 사용자를 후보에서 빼려고 auth context를 읽는다.
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    <AuthContext.Provider
+      value={{
+        user: { isLoggedIn: true, isAdmin: false, id: 'user-001' },
+        login: vi.fn(),
+        logout: vi.fn(),
+      }}
+    >
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </AuthContext.Provider>,
   );
 };
 
