@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/shared/api';
 import { Button } from '@/shared/ui/button';
@@ -31,12 +32,14 @@ interface UserReportDialogProps {
 const REPORT_SUCCESS_MESSAGE = '신고가 접수되었습니다.';
 const REPORT_FAILED_MESSAGE =
   '신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요.';
+// 서버가 사용자에게 보여줄 사유를 메시지로 주는 상태. 나머지(5xx 등)는 기본 안내로 대신한다.
+const SERVER_MESSAGE_STATUSES = new Set([400, 404, 409]);
 const DESCRIPTION_ID = 'user-report-description';
 const DESCRIPTION_COUNT_ID = 'user-report-description-count';
 
 /**
  * 유저 신고 모달. 사유(필수)를 하나 고르고 상세 내용(선택)을 적어 접수한다.
- * 409(이미 처리 대기 중인 신고)·400(본인)·404(대상 없음)는 서버 메시지를 그대로 보여준다.
+ * 409(이미 처리 대기 중인 신고)·400(본인)·404(대상 없음)는 서버 메시지를, 그 밖의 실패는 기본 안내를 보여준다.
  */
 export const UserReportDialog = ({
   open,
@@ -71,7 +74,14 @@ export const UserReportDialog = ({
           onOpenChange(false);
         },
         onError: (error) => {
-          toast.error(getApiErrorMessage(error, REPORT_FAILED_MESSAGE));
+          const status = axios.isAxiosError(error)
+            ? error.response?.status
+            : undefined;
+          toast.error(
+            status !== undefined && SERVER_MESSAGE_STATUSES.has(status)
+              ? getApiErrorMessage(error, REPORT_FAILED_MESSAGE)
+              : REPORT_FAILED_MESSAGE,
+          );
         },
       },
     );

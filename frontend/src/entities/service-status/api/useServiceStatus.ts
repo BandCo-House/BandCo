@@ -32,6 +32,7 @@ export const useServiceStatus = () =>
 
 /**
  * 배포된 최신 앱 버전을 조회한다. 현재 버전이 최소 버전보다 낮을 때만 켠다.
+ * 최소 버전을 먼저 올리고 배포가 뒤따르는 경우에도 열린 탭이 새 배포를 알아채도록 서비스 상태와 같은 간격으로 다시 확인한다.
  */
 export const useDeployedAppVersion = (enabled: boolean) =>
   useQuery({
@@ -39,4 +40,6 @@ export const useDeployedAppVersion = (enabled: boolean) =>
     queryFn: getDeployedAppVersion,
     enabled,
     staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: NORMAL_REFETCH_INTERVAL_MS,
   });

@@ -1,7 +1,7 @@
 import type { AxiosError } from 'axios';
 
 /** 점검 모드에서 백엔드가 503과 함께 돌려주는 error.code. */
-export const SERVICE_UNAVAILABLE_CODE = 'SERVICE_UNAVAILABLE';
+const SERVICE_UNAVAILABLE_CODE = 'SERVICE_UNAVAILABLE';
 
 type ServiceUnavailableListener = () => void;
 

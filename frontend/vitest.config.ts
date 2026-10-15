@@ -1,12 +1,8 @@
-import { readFileSync } from 'fs';
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 import svgr from 'vite-plugin-svgr';
-
-// vite.config.ts와 같은 값을 주입한다. 테스트는 vite.config를 읽지 않는다.
-const { version: appVersion } = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
-) as { version: string };
+// 테스트는 vite.config를 읽지 않으므로 같은 버전 값을 여기서도 주입한다.
+import { appVersion } from './app-version';
 
 export default defineConfig({
   define: {

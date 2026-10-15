@@ -151,4 +151,36 @@ describe('UserReportDialog', () => {
     );
     expect(onOpenChange).not.toHaveBeenCalled();
   });
+
+  it('서버 오류(5xx)면 서버 메시지 대신 기본 안내를 보여준다', async () => {
+    const user = userEvent.setup();
+    const errorSpy = vi.spyOn(toast, 'error');
+    server.use(
+      http.post(`${API_URL}/users/:userId/reports`, () =>
+        HttpResponse.json(
+          {
+            status: 'fail',
+            error: {
+              code: 'INTERNAL_SERVER_ERROR',
+              details: { statusCode: 500 },
+            },
+            message: 'Internal server error',
+            data: {},
+          },
+          { status: 500 },
+        ),
+      ),
+    );
+    const { onOpenChange } = renderDialog();
+
+    await user.click(screen.getByRole('radio', { name: '사기' }));
+    await user.click(screen.getByRole('button', { name: '신고하기' }));
+
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        '신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요.',
+      ),
+    );
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
 });

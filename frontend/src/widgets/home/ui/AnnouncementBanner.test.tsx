@@ -85,6 +85,29 @@ describe('AnnouncementBanner', () => {
     ).toBeInTheDocument();
   });
 
+  it('열어 둔 공지가 재조회로 목록에서 빠져도 모달은 닫을 때까지 남는다', async () => {
+    const user = userEvent.setup();
+    server.use(respondAnnouncements(ANNOUNCEMENTS));
+    const { queryClient } = renderBanner();
+
+    await user.click(
+      await screen.findByRole('button', { name: '정기 점검 안내' }),
+    );
+    await screen.findByRole('dialog', { name: '정기 점검 안내' });
+
+    server.use(respondAnnouncements([]));
+    await queryClient.refetchQueries({ queryKey: announcementKeys.active() });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: '서비스 공지' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole('dialog', { name: '정기 점검 안내' }),
+    ).toBeInTheDocument();
+  });
+
   it('닫은 공지는 숨기고 다시 렌더해도 이 브라우저에서는 보이지 않는다', async () => {
     const user = userEvent.setup();
     server.use(respondAnnouncements(ANNOUNCEMENTS));

@@ -112,6 +112,36 @@ describe('ServiceStatusGate', () => {
     expect(await screen.findByTestId('app-content')).toBeInTheDocument();
   });
 
+  it('점검 화면에서 다시 확인이 실패하면 앱을 열지 않고 점검 안내를 유지한다', async () => {
+    const user = userEvent.setup();
+    let isStatusApiDown = false;
+    server.use(
+      http.get(`${API_URL}/service-status`, () =>
+        isStatusApiDown
+          ? HttpResponse.error()
+          : respondStatus({ ...NORMAL_STATUS, maintenanceEnabled: true }),
+      ),
+    );
+
+    const queryClient = renderGate();
+    const retryButton = await screen.findByRole('button', {
+      name: '다시 확인',
+    });
+
+    isStatusApiDown = true;
+    await user.click(retryButton);
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(serviceStatusKeys.all)?.status).toBe(
+        'error',
+      ),
+    );
+    expect(
+      screen.getByRole('heading', { name: '서비스 점검 중' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('app-content')).not.toBeInTheDocument();
+  });
+
   it('현재 버전이 최소 버전보다 낮고 그 버전이 배포돼 있으면 업데이트 안내를 보여준다', async () => {
     server.use(
       http.get(`${API_URL}/service-status`, () =>

@@ -1,15 +1,10 @@
-import { readFileSync } from 'fs';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
-
-// 최소 버전 검사(서비스 상태 게이트)에 쓰는 현재 앱 버전. package.json version이 기준이다.
-const { version: appVersion } = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
-) as { version: string };
+import { appVersion } from './app-version';
 
 const appVersionFileContent = JSON.stringify({ version: appVersion });
 

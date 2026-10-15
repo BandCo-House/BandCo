@@ -28,7 +28,10 @@ export const AnnouncementBanner = () => {
     (announcement) => !dismissedIds.includes(announcement.announcementId),
   );
 
-  if (visibleAnnouncements.length === 0) return null;
+  const hasVisibleAnnouncements = visibleAnnouncements.length > 0;
+
+  // 열어 둔 공지가 재조회로 목록에서 빠져도 모달은 닫힐 때까지 남겨 둔다.
+  if (!hasVisibleAnnouncements && selected === null) return null;
 
   const openAnnouncement = (announcement: ActiveAnnouncement) => {
     setSelected(announcement);
@@ -36,37 +39,41 @@ export const AnnouncementBanner = () => {
   };
 
   return (
-    <section aria-label="서비스 공지">
-      <ul className="flex flex-col gap-2">
-        {visibleAnnouncements.map((announcement) => (
-          <li
-            key={announcement.announcementId}
-            className="flex items-center gap-1 rounded-md bg-surface-1 pr-2"
-          >
-            <button
-              type="button"
-              onClick={() => openAnnouncement(announcement)}
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-md py-3 pl-4 text-left focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <Megaphone
-                aria-hidden="true"
-                className="size-4 shrink-0 text-primary"
-              />
-              <span className="truncate typo-sm-sb text-grey-50">
-                {announcement.title}
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-label="공지 닫기"
-              onClick={() => dismiss(announcement.announcementId)}
-              className="flex size-9 shrink-0 items-center justify-center rounded-full text-grey-100 transition-colors hover:text-primary focus-visible:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-            >
-              <XIcon aria-hidden="true" className="size-4" />
-            </button>
-          </li>
-        ))}
-      </ul>
+    <>
+      {hasVisibleAnnouncements && (
+        <section aria-label="서비스 공지">
+          <ul className="flex flex-col gap-2">
+            {visibleAnnouncements.map((announcement) => (
+              <li
+                key={announcement.announcementId}
+                className="flex items-center gap-1 rounded-md bg-surface-1 pr-2"
+              >
+                <button
+                  type="button"
+                  onClick={() => openAnnouncement(announcement)}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-md py-3 pl-4 text-left focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <Megaphone
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-primary"
+                  />
+                  <span className="truncate typo-sm-sb text-grey-50">
+                    {announcement.title}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="공지 닫기"
+                  onClick={() => dismiss(announcement.announcementId)}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full text-grey-100 transition-colors hover:text-primary focus-visible:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                >
+                  <XIcon aria-hidden="true" className="size-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <AppDialogContent size="full" className="text-grey-50">
@@ -83,6 +90,6 @@ export const AnnouncementBanner = () => {
           </AppDialogBody>
         </AppDialogContent>
       </Dialog>
-    </section>
+    </>
   );
 };

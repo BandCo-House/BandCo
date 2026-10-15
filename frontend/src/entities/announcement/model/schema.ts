@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const activeAnnouncementSchema = z.object({
+const activeAnnouncementSchema = z.object({
   announcementId: z.string(),
   title: z.string(),
   content: z.string(),
