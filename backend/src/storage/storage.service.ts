@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -69,5 +69,37 @@ export class StorageService {
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn });
     return { presignedUrl };
+  }
+
+  /**
+   * 버킷의 모든 오브젝트 키와 크기를 조회한다. 어드민 대시보드의 스토리지 사용량 집계에 쓴다.
+   *
+   * ListObjectsV2는 한 번에 최대 1000개만 돌려주므로 continuation token으로 끝까지 이어서 조회한다.
+   * 서버 자격 증명에 버킷 대상 `s3:ListBucket` 권한이 없으면 403(AccessDenied)으로 실패한다.
+   *
+   * @returns 오브젝트 키와 크기(바이트) 목록
+   */
+  async listAllObjects(): Promise<{ key: string; size: number }[]> {
+    const objects: { key: string; size: number }[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const response = await this.s3.send(new ListObjectsV2Command({ Bucket: this.bucket, ContinuationToken: continuationToken }));
+
+      for (const content of response.Contents ?? []) {
+        if (content.Key === undefined) {
+          continue;
+        }
+        objects.push({ key: content.Key, size: content.Size ?? 0 });
+      }
+
+      if (response.IsTruncated === true) {
+        continuationToken = response.NextContinuationToken;
+      } else {
+        continuationToken = undefined;
+      }
+    } while (continuationToken !== undefined);
+
+    return objects;
   }
 }
