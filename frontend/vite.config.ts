@@ -1,9 +1,34 @@
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
+import { appVersion } from './app-version';
+
+const appVersionFileContent = JSON.stringify({ version: appVersion });
+
+/**
+ * 배포된 최신 앱 버전을 /version.json으로 낸다. 서비스 상태 게이트가 업데이트 화면을 띄우기 전에
+ * 새로고침하면 실제로 더 높은 버전을 받을 수 있는지 확인하는 데 쓴다.
+ */
+const appVersionFilePlugin = (): Plugin => ({
+  name: 'app-version-file',
+  configureServer(server) {
+    server.middlewares.use('/version.json', (_req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(appVersionFileContent);
+    });
+  },
+  generateBundle() {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: appVersionFileContent,
+    });
+  },
+});
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -11,6 +36,10 @@ export default defineConfig(({ mode }) => {
   const apiProxyTarget = env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+    },
+
     plugins: [
       TanStackRouterVite({
         target: 'react',
@@ -27,6 +56,7 @@ export default defineConfig(({ mode }) => {
 
       tailwindcss(),
       svgr(),
+      appVersionFilePlugin(),
     ],
 
     resolve: {

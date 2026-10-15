@@ -116,9 +116,6 @@ export const requireLogin = createUserGuard((user) => user.isLoggedIn);
 /** 비로그인 사용자만 접근 가능 (로그인/회원가입 페이지용) */
 export const requireGuest = createUserGuard((user) => !user.isLoggedIn);
 
-/** 관리자 사용자만 접근 가능 */
-export const requireAdmin = createUserGuard((user) => user.isAdmin);
-
 /**
  * 밴드 접근 권한 가드
  * TODO: bandId 기준 실제 권한 검증 로직으로 교체 필요

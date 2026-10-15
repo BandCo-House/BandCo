@@ -12,6 +12,9 @@ import axios from 'axios';
 const GOOGLE_LOGIN_FALLBACK_MESSAGE =
   'Google 로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
 
+// 403은 이용 정지 계정이다. 백엔드가 해제 예정 시각 등 사유를 메시지로 주므로 그대로 보여준다.
+const FORBIDDEN_LOGIN_FALLBACK_MESSAGE = '이용이 제한된 계정입니다.';
+
 export const Route = createFileRoute('/login')({
   beforeLoad: requireGuest,
   // 보호 라우트에서 튕겨올 때 원래 목적지를 들고 온다. 내부 경로만 허용(오픈 리다이렉트 방지).
@@ -44,10 +47,13 @@ export function LoginPage() {
       await redirectAfterLogin();
     } catch (err) {
       if (axios.isAxiosError<{ message?: string }>(err)) {
-        if (
+        if (err.response?.status === 403) {
+          toast.error(
+            getApiErrorMessage(err, FORBIDDEN_LOGIN_FALLBACK_MESSAGE),
+          );
+        } else if (
           err.response?.status === 401 ||
           err.response?.status === 400 ||
-          err.response?.status === 403 ||
           err.response?.status === 404
         ) {
           toast.error('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -79,9 +85,9 @@ export function LoginPage() {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        // 400·401은 백엔드가 사유(미인증 계정, 탈퇴한 계정 등)를 메시지로 주므로 그대로 보여준다.
+        // 400·401·403은 백엔드가 사유(미인증·탈퇴·이용 정지 계정 등)를 메시지로 주므로 그대로 보여준다.
         toast.error(
-          status === 400 || status === 401
+          status === 400 || status === 401 || status === 403
             ? getApiErrorMessage(err, GOOGLE_LOGIN_FALLBACK_MESSAGE)
             : GOOGLE_LOGIN_FALLBACK_MESSAGE,
         );
