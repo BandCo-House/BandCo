@@ -1,3 +1,4 @@
+import { type ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { ConfigService } from '@nestjs/config';
 
@@ -53,6 +54,44 @@ describe('StorageService', () => {
       await service.getPresignedUploadUrl('profiles/test.jpg', 'image/jpeg', 600);
 
       expect(getSignedUrl).toHaveBeenCalledWith(expect.anything(), expect.anything(), { expiresIn: 600 });
+    });
+  });
+
+  describe('listAllObjects', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('continuation token을 따라 모든 페이지의 오브젝트를 모은다', async () => {
+      const sendSpy = jest
+        .spyOn(S3Client.prototype, 'send')
+        .mockResolvedValueOnce({
+          Contents: [{ Key: 'users/a/profiles/1.jpeg', Size: 100 }],
+          IsTruncated: true,
+          NextContinuationToken: 'next-token',
+        } as never)
+        .mockResolvedValueOnce({
+          Contents: [{ Key: 'bands/b/cover.png', Size: 50 }],
+          IsTruncated: false,
+        } as never);
+
+      const result = await service.listAllObjects();
+
+      expect(result).toEqual([
+        { key: 'users/a/profiles/1.jpeg', size: 100 },
+        { key: 'bands/b/cover.png', size: 50 },
+      ]);
+      expect(sendSpy).toHaveBeenCalledTimes(2);
+      const secondCommand = sendSpy.mock.calls[1][0] as ListObjectsV2Command;
+      expect(secondCommand.input).toEqual({ Bucket: TEST_BUCKET, ContinuationToken: 'next-token' });
+    });
+
+    it('빈 버킷이면 빈 목록을 반환한다', async () => {
+      jest.spyOn(S3Client.prototype, 'send').mockResolvedValueOnce({ IsTruncated: false } as never);
+
+      const result = await service.listAllObjects();
+
+      expect(result).toEqual([]);
     });
   });
 });

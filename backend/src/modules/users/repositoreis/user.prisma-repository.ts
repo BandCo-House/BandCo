@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { parseToPrismaQuery } from 'src/common/query';
+import { buildActiveSuspensionWhere } from 'src/common/sanction/active-suspension.where';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
 import { type OAuthProvider, Prisma, type User } from 'src/generated/prisma';
@@ -11,7 +12,7 @@ import type { ProfileMusicTrack } from '../types/profile-music.type';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 
-import type { AuthUser, DeleteUserResult, PasswordAuthUser, UsersRepository } from './user.repository';
+import type { ActiveSuspension, AuthUser, DeleteUserResult, PasswordAuthUser, UsersRepository } from './user.repository';
 
 // 유저 목록 조회가 끌고 오는 관계. 세션(userSkills)은 닉네임이 겹칠 때 누가 누구인지
 // 가르는 유일한 단서라, 초대 검색 화면이 이걸 보여준다.
@@ -67,8 +68,9 @@ export class UsersPrismaRepository implements UsersRepository {
 
   async findAuthUserById(id: string, tx?: Prisma.TransactionClient): Promise<AuthUser | null> {
     const client = tx ?? this.prisma;
+    // 이용 정지된 유저의 기존 토큰도 다음 요청부터 바로 끊기도록 인증 조회에서 제외한다
     const user = await client.user.findFirst({
-      where: { id, deletedAt: null, status: 'ACTIVE' },
+      where: { id, deletedAt: null, status: 'ACTIVE', sanctions: { none: buildActiveSuspensionWhere(new Date()) } },
       select: { id: true, email: true },
     });
 
@@ -371,5 +373,26 @@ export class UsersPrismaRepository implements UsersRepository {
       }
       throw e;
     }
+  }
+
+  async findActiveSuspension(userId: string, now: Date, tx?: Prisma.TransactionClient): Promise<ActiveSuspension | null> {
+    const client = tx ?? this.prisma;
+    // 정지가 여러 건 겹치면 가장 늦게 끝나는 것이 실제 해제 시점이라 영구(null)를 먼저, 그다음 늦은 종료순으로 고른다
+    const suspension = await client.userSanction.findFirst({
+      where: { userId, ...buildActiveSuspensionWhere(now) },
+      orderBy: [{ endsAt: { sort: 'desc', nulls: 'first' } }],
+      select: { endsAt: true },
+    });
+
+    return suspension;
+  }
+
+  async updateLastLoginAt(userId: string, now: Date, skipIfAfter: Date, tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+    // 토큰 재발급마다 쓰기가 몰리지 않도록 최근에 갱신된 행은 건너뛴다
+    await client.user.updateMany({
+      where: { id: userId, OR: [{ lastLoginAt: null }, { lastLoginAt: { lt: skipIfAfter } }] },
+      data: { lastLoginAt: now },
+    });
   }
 }
