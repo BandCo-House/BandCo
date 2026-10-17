@@ -4,6 +4,7 @@ import { API_URL } from '../config';
 export interface MockUserListItem {
   id: string;
   nickname: string;
+  handle: string;
   avatarUrl: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   skills?: { skillName: string; isPrimary?: boolean }[];
@@ -14,6 +15,7 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-kim-001',
     nickname: '김나영',
+    handle: 'NY_03ABC',
     avatarUrl:
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
     status: 'ACTIVE',
@@ -23,6 +25,7 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-kim-002',
     nickname: '김지훈',
+    handle: 'jh_JH111',
     avatarUrl:
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
     status: 'ACTIVE',
@@ -32,6 +35,7 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-kim-003',
     nickname: '김민',
+    handle: 'kmKM123',
     avatarUrl: null,
     status: 'ACTIVE',
     skills: [{ skillName: '건반', isPrimary: true }],
@@ -40,6 +44,7 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-park-004',
     nickname: '박서준',
+    handle: 'seojun_p',
     avatarUrl: null,
     status: 'ACTIVE',
     skills: [{ skillName: '드럼', isPrimary: true }],
@@ -49,6 +54,7 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-001',
     nickname: '김민수',
+    handle: 'minsu_k',
     avatarUrl: null,
     status: 'ACTIVE',
     skills: [{ skillName: '보컬', isPrimary: true }],
@@ -58,6 +64,7 @@ export const mockUsers: MockUserListItem[] = [
   {
     id: 'user-kim-005',
     nickname: '김도윤',
+    handle: 'doyun99',
     avatarUrl: null,
     status: 'INACTIVE',
     skills: [{ skillName: '베이스', isPrimary: true }],
