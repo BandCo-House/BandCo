@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { chipSurfaceClass } from '@/shared/ui/chip-surface';
 import { RotateCcw, XIcon } from 'lucide-react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useBandSongs } from '@/entities/song/api/useBandSongs';
@@ -42,12 +43,10 @@ const FilterChip = ({
     aria-label={removable ? `${label} 제거` : undefined}
     onClick={onClick}
     className={cn(
-      'inline-flex items-center gap-1 rounded-full py-2 typo-xs-sb transition-colors',
+      'inline-flex items-center gap-1 rounded-full py-2 typo-xs-sb',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-key',
       removable ? 'pr-3 pl-4' : 'px-4',
-      selected
-        ? 'bg-primary text-gradient-top'
-        : 'border border-grey-400 bg-grey-500/24 text-grey-100',
+      selected ? chipSurfaceClass.selected : chipSurfaceClass.unselected,
     )}
   >
     {label}

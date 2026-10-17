@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apiGet, apiPost } from '@/shared/api';
+import { apiGet, apiPatch, apiPost } from '@/shared/api';
 import { bandSpaceSchema } from '../model/schema';
 import type { Space, SpaceStatus, SpaceType } from '../model/types';
 
@@ -47,17 +47,19 @@ export interface SpaceDetailView {
   space: Space;
   memberCount: number;
   songCount: number;
+  /** 공간 멤버의 bandMemberId 목록. 수정 폼의 참여자 초기값으로 쓴다. */
+  memberBandMemberIds: string[];
 }
 
-// 상세 응답 `{ space, members[], songCount, scheduleCount }`에서 헤더에 필요한 값만 추린다.
+// 상세 응답 `{ space, members[], songCount, scheduleCount }`에서 화면에 필요한 값만 추린다.
 const spaceDetailResultSchema = z.object({
   space: bandSpaceSchema,
-  members: z.array(z.unknown()).default([]),
+  members: z.array(z.object({ bandMemberId: z.string() })).default([]),
   songCount: z.number().int().nonnegative().default(0),
 });
 
 /**
- * 공간 상세를 조회해 헤더용 요약(이름/설명 + 멤버 수/곡 수)을 반환한다.
+ * 공간 상세를 조회해 헤더용 요약(이름/설명 + 멤버 수/곡 수)과 멤버 목록을 반환한다.
  * 멤버 수는 members 배열 길이, 곡 수는 응답의 songCount를 사용한다.
  */
 export const getSpaceDetail = async (
@@ -69,6 +71,7 @@ export const getSpaceDetail = async (
     space: parsed.space,
     memberCount: parsed.members.length,
     songCount: parsed.songCount,
+    memberBandMemberIds: parsed.members.map((member) => member.bandMemberId),
   };
 };
 
@@ -89,4 +92,18 @@ export const createSpace = async (
 ): Promise<Space> => {
   const created = await apiPost<unknown>(`/bands/${bandId}/bandspaces`, data);
   return bandSpaceSchema.parse(created);
+};
+
+/**
+ * 수정(PATCH /bandspaces/:id). 보낸 필드만 바뀐다.
+ * bandMemberIds는 전체 교체다 — 빠진 멤버는 공간에서 나가고, LEADER만 백엔드가 남긴다.
+ */
+export type UpdateSpaceRequest = Partial<CreateSpaceRequest>;
+
+export const updateSpace = async (
+  spaceId: string,
+  data: UpdateSpaceRequest,
+): Promise<Space> => {
+  const updated = await apiPatch<unknown>(`/bandspaces/${spaceId}`, data);
+  return bandSpaceSchema.parse(updated);
 };

@@ -7,7 +7,7 @@ import { FieldRequiredContext } from './field-context';
  * 한 곳에서 관리한다(각 사용처에서 복붙하지 않는다).
  */
 export const fieldSurfaceClass =
-  'h-[54px] rounded-full field-border border-white/24 bg-grey-500/24 px-5';
+  'glass-surface h-[54px] rounded-full bg-grey-500/24 px-5';
 
 interface FieldLabelProps {
   children: ReactNode;

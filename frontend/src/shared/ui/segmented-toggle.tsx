@@ -1,15 +1,26 @@
-import { useRef, type KeyboardEvent } from 'react';
+import {
+  useRef,
+  type ComponentType,
+  type KeyboardEvent,
+  type SVGProps,
+} from 'react';
 import { cn } from '@/shared/lib/utils';
 import {
   slidingIndicatorClass,
   useSlidingIndicator,
 } from '@/shared/lib/use-sliding-indicator';
 import { GlassRim } from './glass-rim';
+import { chipSurfaceClass } from './chip-surface';
 import { useFieldRequired } from './field-context';
 
 export interface SegmentedOption<T extends string> {
   value: T;
   label: string;
+  /**
+   * 주면 글자 대신 아이콘만 그리는 작은 칩이 된다(보기 방식 전환처럼 자리가 좁을 때).
+   * label은 화면에서 사라지고 버튼 이름(aria-label)으로 쓰인다.
+   */
+  icon?: ComponentType<SVGProps<SVGSVGElement>>;
   /** 선택됐을 때 기본 강조색(primary) 대신 쓸 채움 스타일. 밴드 공개 여부의 '비공개'처럼 중립 표현이 필요할 때. */
   selectedClassName?: string;
 }
@@ -41,6 +52,8 @@ export const SegmentedToggle = <T extends string>({
   variant = 'filter',
 }: SegmentedToggleProps<T>) => {
   const isTab = variant === 'tab';
+  // 아이콘 칩은 글자 칩보다 작아, 컨테이너 여백도 그에 맞춰 줄인다.
+  const isIconOnly = options.every((option) => option.icon);
   const fieldRequired = useFieldRequired();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { containerRef, indicatorRef } = useSlidingIndicator(value);
@@ -74,8 +87,8 @@ export const SegmentedToggle = <T extends string>({
       aria-required={fieldRequired || undefined}
       className={cn(
         'flex items-center gap-2',
-        isTab &&
-          'relative w-fit rounded-full field-border border-white/24 bg-grey-500/24 p-2',
+        isTab && 'relative w-fit rounded-full bg-grey-500/24 glass-surface',
+        isTab && (isIconOnly ? 'gap-0 p-1.5' : 'p-2'),
         className,
       )}
     >
@@ -95,6 +108,7 @@ export const SegmentedToggle = <T extends string>({
       )}
       {options.map((option, index) => {
         const isActive = option.value === value;
+        const Icon = option.icon;
         return (
           <button
             key={option.value}
@@ -102,6 +116,7 @@ export const SegmentedToggle = <T extends string>({
               buttonRefs.current[index] = el;
             }}
             type="button"
+            aria-label={Icon ? option.label : undefined}
             aria-pressed={isActive}
             data-active={isActive}
             tabIndex={isActive ? 0 : -1}
@@ -111,21 +126,25 @@ export const SegmentedToggle = <T extends string>({
               'rounded-full transition-colors',
               isTab
                 ? cn(
-                    'relative z-10 min-w-[77px] px-5 py-4 typo-sm-sb',
+                    'relative z-10 typo-sm-sb',
+                    Icon
+                      ? 'inline-flex size-8 items-center justify-center'
+                      : 'min-w-[77px] px-5 py-4',
                     isActive ? 'text-gradient-top' : 'text-grey-100',
                   )
                 : cn(
                     'px-4 py-2 typo-sm-sb',
                     isActive
-                      ? cn(
-                          'bg-primary text-primary-dark',
-                          option.selectedClassName,
-                        )
-                      : 'border border-grey-400 text-grey-100',
+                      ? cn(chipSurfaceClass.selected, option.selectedClassName)
+                      : chipSurfaceClass.unselected,
                   ),
             )}
           >
-            {option.label}
+            {Icon ? (
+              <Icon aria-hidden="true" className="size-4" />
+            ) : (
+              option.label
+            )}
           </button>
         );
       })}

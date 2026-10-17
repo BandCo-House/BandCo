@@ -25,7 +25,8 @@ export const RecentSearches = ({
         <button
           type="button"
           onClick={onClearAll}
-          className="typo-xs-r text-grey-300 underline hover:opacity-80"
+          // 알림 헤더의 "휴지통"과 같은 급의 액션이라 크기·누르는 영역을 맞춘다.
+          className="-mr-3 rounded-full px-3 py-1.5 typo-sm-sb text-grey-300 transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
         >
           전체 삭제
         </button>

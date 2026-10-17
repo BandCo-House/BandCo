@@ -15,6 +15,8 @@ export interface ScheduleListFilter {
   to?: string;
   /** 일정 유형 필터 (미지정 시 전체) */
   scheduleType?: ScheduleType;
+  /** 한 번에 받을 개수. 생략하면 백엔드 기본값(50). 최대 100. */
+  take?: number;
 }
 
 /**
@@ -28,6 +30,7 @@ const SCHEDULE_QUERY_KEYS = {
   from: 'where__start_at__greater_than_equal',
   to: 'where__start_at__less_than_equal',
   scheduleType: 'where__schedule_type',
+  take: 'take',
 } as const;
 
 const buildScheduleParams = (
@@ -38,6 +41,7 @@ const buildScheduleParams = (
   if (filter.to) params[SCHEDULE_QUERY_KEYS.to] = filter.to;
   if (filter.scheduleType)
     params[SCHEDULE_QUERY_KEYS.scheduleType] = filter.scheduleType;
+  if (filter.take) params[SCHEDULE_QUERY_KEYS.take] = String(filter.take);
   return params;
 };
 

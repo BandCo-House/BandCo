@@ -1,6 +1,6 @@
-import { cn } from '@/shared/lib/utils';
 import { pad2 } from './wheel-date';
 import { WheelColumn } from './wheel-column';
+import { WheelRow } from './wheel-row';
 
 /** 시간 문자열 'HH:mm'(24h)을 오전/오후·12시간·분으로 분해한다. */
 interface TimeParts {
@@ -39,6 +39,10 @@ interface WheelTimePickerProps {
   /** 'HH:mm' (24시간) */
   value: string;
   onChange: (value: string) => void;
+  /** 이 피커가 무엇을 고르는지(예: 시작·종료). 휠 왼쪽에 그리고 group 이름으로도 쓴다. */
+  label?: string;
+  /** 라벨을 화면에 그리지 않고 group 이름으로만 남긴다. */
+  labelHidden?: boolean;
   className?: string;
 }
 
@@ -46,6 +50,8 @@ interface WheelTimePickerProps {
 export const WheelTimePicker = ({
   value,
   onChange,
+  label,
+  labelHidden,
   className,
 }: WheelTimePickerProps) => {
   const parts = parseTime(value);
@@ -54,16 +60,7 @@ export const WheelTimePicker = ({
     onChange(toTimeString({ ...parts, ...next }));
 
   return (
-    <div
-      className={cn('flex items-center justify-center', className)}
-      // 가운데 선택 줄 강조 마스크(위아래 페이드).
-      style={{
-        maskImage:
-          'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
-        WebkitMaskImage:
-          'linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)',
-      }}
-    >
+    <WheelRow label={label} labelHidden={labelHidden} className={className}>
       <WheelColumn
         label="오전 오후"
         items={MERIDIEM}
@@ -86,6 +83,6 @@ export const WheelTimePicker = ({
         onChange={(minute) => commit({ minute })}
         format={pad2}
       />
-    </div>
+    </WheelRow>
   );
 };
