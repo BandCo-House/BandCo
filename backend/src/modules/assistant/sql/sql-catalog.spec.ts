@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { Prisma } from '../../../generated/prisma';
 
 import { SQL_CATALOG, SQL_CATALOG_JOINS, SQL_ENUM_COLUMNS, SQL_REQUIRED_RELATIONS, type SqlCatalogJoin, type SqlCatalogTable } from './sql-catalog';
@@ -94,5 +97,18 @@ describe('SQL 허용 카탈로그와 Prisma 계약', () => {
     expect(SQL_CATALOG.schedule_polls).toBeUndefined();
     expect(SQL_CATALOG.schedule_participants.columns.skill_type_id).toBeUndefined();
     expect(SQL_CATALOG.team_members.columns.skill_type_id).toBeUndefined();
+  });
+
+  it('전용 DB 역할의 컬럼 권한이 카탈로그 허용 컬럼과 같다', () => {
+    // 카탈로그에 컬럼을 추가하면 마이그레이션으로 권한도 줘야 실행 역할이 그 컬럼을 읽을 수 있다.
+    const migration = readFileSync(join(__dirname, '../../../../prisma/migrations/20261013120000_add_assistant_reader_role/migration.sql'), 'utf8');
+    const granted = Object.fromEntries(
+      [...migration.matchAll(/GRANT SELECT \(([^)]+)\) ON (\w+) TO assistant_reader/g)].map(([, columns, table]) => [
+        table,
+        columns.split(',').map(column => column.trim()),
+      ]),
+    );
+
+    expect(granted).toEqual(Object.fromEntries(Object.entries(SQL_CATALOG).map(([table, { columns }]) => [table, Object.keys(columns)])));
   });
 });

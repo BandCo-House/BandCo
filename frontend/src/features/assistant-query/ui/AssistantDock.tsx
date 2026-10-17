@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { useAssistantPresets } from '@/entities/assistant/api/useAssistant';
+import { Button } from '@/shared/ui/button';
 import { closeButtonClass } from '@/shared/ui/close-button';
 import { GlassSurface } from '@/shared/ui/glass-surface';
 import {
@@ -35,6 +36,7 @@ export const AssistantDock = ({
     draft,
     setDraft,
     pending,
+    limitReached,
     submitDraft,
     openScreen,
     closeScreen,
@@ -63,14 +65,18 @@ export const AssistantDock = ({
         scrollRef={scrollRef}
         onStartNew={turns.length > 0 ? startNew : undefined}
         footer={
-          <QuestionForm
-            inputId="assistant-screen-question"
-            draft={draft}
-            onDraftChange={setDraft}
-            onSubmit={() => submitDraft(bandId)}
-            disabled={pending}
-            alwaysShowSubmit
-          />
+          limitReached ? (
+            <TurnLimitNotice onStartNew={startNew} />
+          ) : (
+            <QuestionForm
+              inputId="assistant-screen-question"
+              draft={draft}
+              onDraftChange={setDraft}
+              onSubmit={() => submitDraft(bandId)}
+              disabled={pending}
+              alwaysShowSubmit
+            />
+          )
         }
       >
         <ConversationBody conversation={conversation} />
@@ -93,7 +99,7 @@ const ConversationBody = ({
 }: {
   conversation: AssistantConversation;
 }) => {
-  const { ask, retry } = useAssistantConversation();
+  const { ask, retry, limitReached } = useAssistantConversation();
   const { data: presets = [] } = useAssistantPresets();
   const latestTurnRef = useRef<HTMLDivElement>(null);
   const { bandId, turns } = conversation;
@@ -144,7 +150,8 @@ const ConversationBody = ({
       >
         <AssistantTurn
           turn={turn}
-          isLatest={isLatest}
+          // 상한에 닿으면 마지막 답 아래의 이어서 묻기 버튼도 숨긴다. 눌러도 보낼 수 없다.
+          isLatest={isLatest && !limitReached}
           presets={presets}
           onFollowUp={(question) =>
             ask(
@@ -162,6 +169,24 @@ const ConversationBody = ({
     );
   });
 };
+
+/** 질문이 상한만큼 쌓였을 때 입력창 자리에 새 대화를 권한다. */
+const TurnLimitNotice = ({ onStartNew }: { onStartNew: () => void }) => (
+  <div className="flex items-center gap-3">
+    <p className="min-w-0 flex-1 typo-sm-r text-grey-200">
+      질문이 많이 쌓였어요. 새 대화에서 이어서 물어봐 주세요.
+    </p>
+    <Button
+      type="button"
+      size="pill"
+      variant="accent"
+      onClick={onStartNew}
+      className="typo-base-b"
+    >
+      새 대화
+    </Button>
+  </div>
+);
 
 interface ResumeBarProps {
   label: string;

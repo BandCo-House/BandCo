@@ -84,7 +84,7 @@ const SlotPreview = ({
   const restCount = slotLabels.length - shown.length;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-sm bg-surface-3 px-4 py-3">
+    <div className="flex flex-col gap-1.5 rounded-sm bg-surface-3 glass-surface px-4 py-3">
       <p className="typo-sm-sb text-grey-100">이렇게 만들어져요</p>
       <p className="typo-sm-r text-grey-200">
         {formatDateRanges(dateKeys).join(', ')}
@@ -366,6 +366,7 @@ export const SchedulePollCreateForm = ({
               <PopoverContent className="w-80 rounded-md bg-gradient-top p-4">
                 <WheelDatePicker
                   label="마감"
+                  labelHidden
                   value={deadlineDate}
                   onChange={(date) =>
                     setCustomDeadline({ date, time: deadlineTime })

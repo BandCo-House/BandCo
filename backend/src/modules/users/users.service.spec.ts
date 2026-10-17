@@ -52,7 +52,16 @@ const mockDeezerTrack: DeezerTrackApiResponse = {
   album: { title: 'After Hours', cover: '', cover_medium: '', cover_big: '', cover_xl: '' },
 };
 
+// 접속 기록 호출을 관찰하기 위한 기록
+const lastLoginCalls: { userId: string; now: Date; skipIfAfter: Date; tx: unknown }[] = [];
+
 const repositoryStub: UsersRepository = {
+  async findActiveSuspension(userId) {
+    return userId === 'suspended-user' ? { endsAt: null } : null;
+  },
+  async updateLastLoginAt(userId, now, skipIfAfter, tx) {
+    lastLoginCalls.push({ userId, now, skipIfAfter, tx });
+  },
   async findByEmail(email) {
     return email === 'test@example.com' ? mockUser : null;
   },
@@ -130,6 +139,31 @@ describe('UsersService', () => {
     it('이메일이 없으면 null을 반환한다', async () => {
       const result = await service.getUserByEmail('none@example.com');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('getActiveSuspension', () => {
+    it('활성 정지가 있으면 정지 정보를 반환한다', async () => {
+      await expect(service.getActiveSuspension('suspended-user')).resolves.toEqual({ endsAt: null });
+    });
+
+    it('활성 정지가 없으면 null을 반환한다', async () => {
+      await expect(service.getActiveSuspension('user-001')).resolves.toBeNull();
+    });
+  });
+
+  describe('recordLastLogin', () => {
+    it('현재 시각으로 기록하고 10분 이내 갱신분은 건너뛰도록 기준 시각을 넘긴다', async () => {
+      lastLoginCalls.length = 0;
+      const tx = { transactionClient: true } as unknown as Prisma.TransactionClient;
+
+      await service.recordLastLogin('user-001', tx);
+
+      expect(lastLoginCalls).toHaveLength(1);
+      const [call] = lastLoginCalls;
+      expect(call.userId).toBe('user-001');
+      expect(call.now.getTime() - call.skipIfAfter.getTime()).toBe(10 * 60 * 1000);
+      expect(call.tx).toBe(tx);
     });
   });
 

@@ -7,8 +7,6 @@ import type {
 /** 질문 하나와 그 답. 화면에는 이 단위가 대화처럼 아래로 쌓인다. */
 export interface AssistantTurnState {
   id: number;
-  /** 서버에 보낸 대화 안의 순서. 다시 시도해도 같은 턴이므로 그대로 쓴다. */
-  turnIndex: number;
   body: AskAssistantRequest;
   label: string;
   /** 처음 누른 추천 질문에 짝지은 이어서 물어보기 중 아직 묻지 않은 것. 자유 질문이면 비어 있다. */
@@ -24,11 +22,22 @@ export interface AssistantConversation {
   turns: AssistantTurnState[];
 }
 
+/**
+ * 한 대화의 질문 상한. 서버도 같은 값으로 막는다.
+ * 턴이 길어지면 오래된 맥락이 해석을 흐리고 비용이 늘어 새 대화를 권한다.
+ */
+export const MAX_CONVERSATION_TURNS = 5;
+
+/** 다음 질문에 붙이는 직전 턴 수. */
+export const MAX_HISTORY_TURNS = 3;
+
 export interface AssistantConversationValue {
   conversation: AssistantConversation | null;
   open: boolean;
   draft: string;
   pending: boolean;
+  /** 질문이 상한만큼 쌓여 더 묻지 못하는 상태. 새 대화를 시작해야 한다. */
+  limitReached: boolean;
   setDraft: (value: string) => void;
   /**
    * 같은 밴드 대화면 아래에 이어 붙이고, 다른 밴드면 새 대화로 시작한다.

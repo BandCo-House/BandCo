@@ -8,6 +8,20 @@ import * as inviteApi from '@/features/invite-create/api/invite-api';
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
+  // 검색 결과 줄의 프로필 링크가 라우터 컨텍스트를 요구한다. 이동 자체는 여기서 보는 게 아니라 평범한 a로 둔다.
+  Link: ({
+    to,
+    children,
+    'aria-label': ariaLabel,
+  }: {
+    to: string;
+    children: React.ReactNode;
+    'aria-label'?: string;
+  }) => (
+    <a href={to} aria-label={ariaLabel}>
+      {children}
+    </a>
+  ),
 }));
 
 const createWrapper = () => {

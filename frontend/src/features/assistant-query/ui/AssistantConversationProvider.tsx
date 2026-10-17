@@ -1,8 +1,19 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useAskAssistant } from '@/entities/assistant/api/useAssistant';
-import type { AskAssistantRequest } from '@/entities/assistant/model/types';
+import type {
+  AskAssistantRequest,
+  AssistantHistoryTurn,
+} from '@/entities/assistant/model/types';
 import {
   AssistantConversationContext,
+  MAX_CONVERSATION_TURNS,
+  MAX_HISTORY_TURNS,
   type AssistantConversation,
   type AssistantTurnState,
 } from '../model/assistant-conversation';
@@ -13,13 +24,25 @@ const MIN_REPLY_MS = 700;
 
 /**
  * 측정에 쓰는 대화 키다. 화면 상태(conversation)와 달리 렌더를 기다리지 않아야 해서 ref로 둔다.
- * 질문을 연달아 누르면 setState가 아직 반영되지 않은 사이에도 턴 순서가 밀리지 않아야 한다.
+ * 새 대화이거나 다른 밴드면 새 키를 만든다. 조건은 대화 상태를 비우는 조건과 같다.
  */
 interface SessionKey {
   bandId: string;
   sessionId: string;
-  nextTurnIndex: number;
 }
+
+/**
+ * 답한 턴 중 마지막 몇 개를 다음 질문의 직전 턴으로 만든다.
+ * "그중에"가 가리키는 조건을 모델이 알 수 있게 서버가 준 조회 구조를 그대로 돌려보낸다. 결과 행과 답 문장은 보내지 않는다.
+ */
+const toHistory = (turns: AssistantTurnState[]): AssistantHistoryTurn[] =>
+  turns
+    .flatMap((turn) =>
+      turn.answer?.context
+        ? [{ question: turn.label, ...turn.answer.context }]
+        : [],
+    )
+    .slice(-MAX_HISTORY_TURNS);
 
 /**
  * 물어보기 대화를 앱 전체에서 하나만 들고 있는다.
@@ -38,8 +61,15 @@ export const AssistantConversationProvider = ({
   const [draft, setDraft] = useState('');
   const nextTurnId = useRef(0);
   const sessionKey = useRef<SessionKey | null>(null);
+  // 늦게 온 실패 응답이 지금 대화에 속하는지 확인하려고 최신 대화를 들고 있는다.
+  const conversationRef = useRef(conversation);
+  useLayoutEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
   const { mutateAsync } = useAskAssistant();
   const pending = conversation?.turns.some((turn) => turn.pending) ?? false;
+  const limitReached =
+    (conversation?.turns.length ?? 0) >= MAX_CONVERSATION_TURNS;
 
   // 새 대화로 바뀐 뒤 늦게 온 이전 답은 id가 없어 그대로 버려진다.
   const updateTurn = (id: number, patch: Partial<AssistantTurnState>) =>
@@ -53,45 +83,23 @@ export const AssistantConversationProvider = ({
         },
     );
 
-  /**
-   * 이 질문이 속한 대화 키와 턴 순서를 정한다.
-   * 새 대화이거나 다른 밴드면 새 키를 만든다. 조건은 대화 상태를 비우는 조건과 같다.
-   */
-  const beginTurn = (bandId: string, fresh: boolean) => {
-    const previous = sessionKey.current;
-    if (fresh || previous === null || previous.bandId !== bandId) {
-      sessionKey.current = {
-        bandId,
-        sessionId: crypto.randomUUID(),
-        nextTurnIndex: 0,
-      };
-    }
-    const current = sessionKey.current as SessionKey;
-    const turnIndex = current.nextTurnIndex;
-    current.nextTurnIndex += 1;
-
-    return { sessionId: current.sessionId, turnIndex };
-  };
-
-  const run = (
-    id: number,
-    bandId: string,
-    body: AskAssistantRequest,
-    session: { sessionId: string; turnIndex: number },
-  ) => {
+  const run = (id: number, bandId: string, body: AskAssistantRequest) => {
     // 추천 질문은 수십 ms 만에 와서 질문과 답이 한꺼번에 뜬다. 답하는 중임을 잠깐 보여준 뒤 답을 연다.
     const minimumReply = new Promise((resolve) =>
       setTimeout(resolve, MIN_REPLY_MS),
     );
-    void Promise.all([
-      mutateAsync({ bandId, body: { ...body, ...session } }),
-      minimumReply,
-    ])
+    void Promise.all([mutateAsync({ bandId, body }), minimumReply])
       .then(([answer]) => updateTurn(id, { pending: false, answer }))
       .catch((error: unknown) => {
         updateTurn(id, { pending: false, error });
         // 고쳐서 다시 물을 수 있게 직접 입력한 질문을 입력창에 되돌린다.
-        if (body.question !== undefined) setDraft(body.question);
+        // 닫았거나 새 대화로 바뀐 뒤의 실패는 되돌리지 않고, 그사이 입력 중인 내용도 덮지 않는다.
+        const alive = conversationRef.current?.turns.some(
+          (turn) => turn.id === id,
+        );
+        const question = body.question;
+        if (alive && question !== undefined)
+          setDraft((current) => (current === '' ? question : current));
       });
   };
 
@@ -102,11 +110,30 @@ export const AssistantConversationProvider = ({
     followUps: string[],
     fresh = false,
   ) => {
-    const session = beginTurn(bandId, fresh);
+    const previousTurns =
+      !fresh && conversation?.bandId === bandId ? conversation.turns : [];
+    if (previousTurns.length >= MAX_CONVERSATION_TURNS) return;
+    const history = toHistory(previousTurns);
+    if (
+      fresh ||
+      sessionKey.current === null ||
+      sessionKey.current.bandId !== bandId
+    ) {
+      sessionKey.current = { bandId, sessionId: crypto.randomUUID() };
+    }
+    // 이어서 묻는 질문에만 직전 턴과 순서를 붙인다. 세션 키는 측정용이라 모든 질문에 붙인다.
+    // 다시 시도는 이 본문을 그대로 보내므로 같은 세션·같은 턴으로 기록된다.
+    const requestBody: AskAssistantRequest = {
+      ...body,
+      sessionId: sessionKey.current.sessionId,
+      ...(history.length > 0 ? { history } : {}),
+      ...(previousTurns.length > 0
+        ? { turnIndex: previousTurns.length + 1 }
+        : {}),
+    };
     const turn: AssistantTurnState = {
       id: nextTurnId.current++,
-      turnIndex: session.turnIndex,
-      body,
+      body: requestBody,
       label,
       followUps,
       pending: true,
@@ -117,7 +144,7 @@ export const AssistantConversationProvider = ({
         : { bandId, turns: [turn] },
     );
     setOpen(true);
-    run(turn.id, bandId, body, session);
+    run(turn.id, bandId, requestBody);
   };
 
   const submitDraft = (bandId: string, fresh = false) => {
@@ -143,7 +170,6 @@ export const AssistantConversationProvider = ({
   const startNew = () => {
     setConversation((previous) => previous && { ...previous, turns: [] });
     setDraft('');
-    // 새 대화는 새 키를 받는다. 다음 질문에서 beginTurn이 만든다.
     sessionKey.current = null;
   };
 
@@ -153,14 +179,10 @@ export const AssistantConversationProvider = ({
     sessionKey.current = null;
   };
 
-  // 같은 질문을 다시 보내는 것이라 턴을 새로 세지 않는다. 재시도가 턴 수를 부풀리면 턴별 실패율이 왜곡된다.
   const retry = (turn: AssistantTurnState) => {
-    if (conversation === null || sessionKey.current === null) return;
+    if (conversation === null) return;
     updateTurn(turn.id, { pending: true, error: undefined });
-    run(turn.id, conversation.bandId, turn.body, {
-      sessionId: sessionKey.current.sessionId,
-      turnIndex: turn.turnIndex,
-    });
+    run(turn.id, conversation.bandId, turn.body);
   };
 
   return (
@@ -170,6 +192,7 @@ export const AssistantConversationProvider = ({
         open,
         draft,
         pending,
+        limitReached,
         setDraft,
         ask,
         submitDraft,

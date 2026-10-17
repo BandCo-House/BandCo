@@ -146,6 +146,27 @@ describe('LlmService', () => {
     expect(primary.generateStructured).toHaveBeenCalledTimes(2);
   });
 
+  it('요청 마감 시간이 지났으면 호출하지 않고, 남은 시간이 짧으면 provider 대기 시간을 그만큼 줄인다', async () => {
+    const primary = createProvider('gemini');
+    primary.generateStructured.mockResolvedValue(createResponse('gemini'));
+    const service = new LlmService([createGroup('gemini', primary)], createConfig());
+
+    await expect(service.generateStructured({ ...request, deadlineAt: Date.now() - 1 })).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(primary.generateStructured).not.toHaveBeenCalled();
+
+    await service.generateStructured({ ...request, deadlineAt: Date.now() + 2_000 });
+    expect(primary.generateStructured.mock.calls[0][1]).toBeLessThanOrEqual(2_000);
+  });
+
+  it('재시도 대기가 요청 마감 시간을 넘기면 재시도하지 않는다', async () => {
+    const primary = createProvider('gemini');
+    primary.generateStructured.mockRejectedValue(new LlmUnavailableError('gemini', '5xx'));
+    const service = new LlmService([createGroup('gemini', primary)], createConfig({ maxRetriesPerProvider: 2, retryBaseDelayMs: 1_000 }));
+
+    await expect(service.generateStructured({ ...request, deadlineAt: Date.now() + 500 })).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(primary.generateStructured).toHaveBeenCalledTimes(1);
+  });
+
   it('요청 오류도 key rotation이 켜져 있으면 다음 credential로 넘긴다', async () => {
     const firstCredential = createProvider('gemini');
     const secondCredential = createProvider('gemini');

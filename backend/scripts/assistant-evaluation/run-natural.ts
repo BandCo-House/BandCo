@@ -16,14 +16,21 @@ import { AssistantService } from '../../src/modules/assistant/assistant.service'
 import { AnswerRenderer } from '../../src/modules/assistant/rendering/answer-renderer';
 import { AssistantPrismaRepository } from '../../src/modules/assistant/repositories/assistant.prisma-repository';
 import { InvalidSqlQueryError, SqlQueryValidator } from '../../src/modules/assistant/sql/sql-query.validator';
+import type { AssistantHistoryTurnDto } from '../../src/modules/assistant/dto/ask-assistant.dto';
 import type { ValidatedSqlQuery } from '../../src/modules/assistant/sql/generated-sql.type';
+import type { SqlHistoryTurn } from '../../src/modules/assistant/sql/sql-query-context';
 
 import { FIXED_NOW, NATURAL_QUERY_CASES, type NaturalQueryCase, TARGET_BAND_ID } from './corpus';
+import { FOLLOWUP_QUERY_CASES, type FollowUpQueryCase } from './followup-corpus';
 import { HOLDOUT_QUERY_CASES } from './holdout-corpus';
 
-// dev는 수정에 사용한 50문항, holdout은 수정에 사용하지 않는 20문항이다.
-const CORPORA = { dev: { cases: NATURAL_QUERY_CASES, size: 50 }, holdout: { cases: HOLDOUT_QUERY_CASES, size: 20 } };
-const CORPUS_NAME = (process.env.EXPERIMENT_CORPUS ?? 'dev') as keyof typeof CORPORA;
+// dev는 수정에 사용한 50문항, holdout은 수정에 사용하지 않는 20문항, followup은 직전 턴을 고정한 후속 질문 7문항이다.
+const CORPORA: Record<string, { cases: NaturalQueryCase[]; size: number }> = {
+  dev: { cases: NATURAL_QUERY_CASES, size: 50 },
+  holdout: { cases: HOLDOUT_QUERY_CASES, size: 20 },
+  followup: { cases: FOLLOWUP_QUERY_CASES, size: 7 },
+};
+const CORPUS_NAME = process.env.EXPERIMENT_CORPUS ?? 'dev';
 const CASES = CORPORA[CORPUS_NAME]?.cases;
 
 interface GenerationResult {
@@ -34,13 +41,16 @@ interface GenerationResult {
 }
 
 interface EvaluationService {
-  generateSqlFromQuestion(question: string, now: Date, bandId: string): Promise<GenerationResult>;
+  generateSqlFromQuestion(question: string, now: Date, bandId: string, history?: SqlHistoryTurn[]): Promise<GenerationResult>;
+  readHistory(history: AssistantHistoryTurnDto[]): Promise<SqlHistoryTurn[]>;
 }
 
 interface CaseResult {
   id: string;
   category: string;
   question: string;
+  /** 후속 질문 문항의 고정된 직전 질문 */
+  previousQuestion?: string;
   outcome: 'correct' | 'wrong_result' | 'unsupported' | 'clarification_required' | 'generation_failed' | 'execution_failed';
   resultMatches: boolean;
   validationAttempts: number;
@@ -76,7 +86,7 @@ async function main(): Promise<void> {
   if (existsSync(outputPath)) throw new Error('기존 원시 결과는 덮어쓰지 않습니다.');
 
   if (!CASES || CASES.length !== CORPORA[CORPUS_NAME].size) {
-    throw new Error(`EXPERIMENT_CORPUS는 dev 또는 holdout이며 문항 수가 고정돼야 합니다: ${CORPUS_NAME}`);
+    throw new Error(`EXPERIMENT_CORPUS는 dev, holdout, followup 중 하나이며 문항 수가 고정돼야 합니다: ${CORPUS_NAME}`);
   }
 
   const prisma = new PrismaService();
@@ -124,6 +134,8 @@ async function main(): Promise<void> {
         [
           'scripts/assistant-evaluation/corpus.ts',
           'scripts/assistant-evaluation/holdout-corpus.ts',
+          'scripts/assistant-evaluation/followup-corpus.ts',
+          'src/modules/assistant/sql/sql-query-context.ts',
           'scripts/assistant-evaluation/evaluate-rows.ts',
           'scripts/assistant-evaluation/run-natural.ts',
           'scripts/assistant-evaluation/seed-accuracy.sql',
@@ -231,6 +243,8 @@ async function runCases(
   };
 
   for (const [index, queryCase] of CASES.entries()) {
+    // 직전 턴은 측정 대상이 아니므로 검증·호출 횟수를 세기 전에 준비한다.
+    const history = 'previous' in queryCase ? await prepareHistory(queryCase as FollowUpQueryCase) : [];
     validationAttempts = 0;
     validationFailures = [];
     llmCalls = 0;
@@ -242,7 +256,7 @@ async function runCases(
     let result: CaseResult;
 
     try {
-      const generated = await service.generateSqlFromQuestion(queryCase.question, FIXED_NOW, TARGET_BAND_ID);
+      const generated = await service.generateSqlFromQuestion(queryCase.question, FIXED_NOW, TARGET_BAND_ID, history);
 
       if (generated.status !== 'QUERY' || generated.query === undefined) {
         result = failedResult(queryCase, generated.status === 'CLARIFICATION' ? 'clarification_required' : 'unsupported', expectedRows, startedAt, {
@@ -257,6 +271,7 @@ async function runCases(
       result = failedResult(queryCase, 'generation_failed', expectedRows, startedAt, { error: errorMessage(error) });
     }
 
+    if ('previous' in queryCase) result = { ...result, previousQuestion: (queryCase as FollowUpQueryCase).previous.question };
     results.push(result);
     checkpoint(results);
     if (result.outcome === 'generation_failed' && validationFailures.length === 0) {
@@ -273,6 +288,19 @@ async function runCases(
   llmService.generateStructured = originalGenerate;
 
   return results;
+
+  /** 고정된 직전 턴을 실행해 결과 건수를 얻고, 제품과 같은 재검증을 거친 이력으로 만든다. */
+  async function prepareHistory(queryCase: FollowUpQueryCase): Promise<SqlHistoryTurn[]> {
+    const raw = { status: 'QUERY', unsupportedReason: null, ...queryCase.previous };
+    const validated = await originalValidate(raw);
+    const page = await prisma.$transaction(async tx => {
+      await repository.configureReadOnlyTransaction(tx);
+      return repository.executeGeneratedQueryPage(validated.sql, validated.parameters, TARGET_BAND_ID, tx);
+    });
+    const turns = await service.readHistory([{ ...queryCase.previous, rowCount: page.rows.length, hasMore: page.hasMore }]);
+    if (turns.length !== 1) throw new Error(`직전 턴이 재검증을 통과하지 못했습니다: ${queryCase.id}`);
+    return turns;
+  }
 
   async function executeAndCompare(
     queryCase: NaturalQueryCase,

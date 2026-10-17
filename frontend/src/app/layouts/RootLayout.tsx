@@ -1,5 +1,6 @@
 import { useLayoutEffect } from 'react';
 import { Outlet, useMatches, useRouterState } from '@tanstack/react-router';
+import { useAuth } from '@/app/providers/auth-context';
 import { cn } from '@/shared/lib/utils';
 import {
   RouteHeader,
@@ -32,6 +33,7 @@ const HEIGHT_FALLBACKS = {
 
 export const RootLayout = () => {
   const matches = useMatches();
+  const { user } = useAuth();
   const activeMatch = matches.at(-1);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const staticData = activeMatch?.staticData as RouteStaticData | undefined;
@@ -59,7 +61,8 @@ export const RootLayout = () => {
 
   return (
     // 물어보기 대화는 헤더 아이콘·밴드 홈 카드·이어서 보기 바가 함께 쓰므로 레이아웃 전체에 둔다.
-    <AssistantConversationProvider>
+    // 계정이 바뀌면 이전 사용자의 대화와 입력 중인 질문이 남지 않게 새로 만든다.
+    <AssistantConversationProvider key={user.id ?? 'guest'}>
       <div className="mx-auto flex min-h-dvh max-w-[648px] flex-col">
         {header ? <RouteHeader header={header} params={currentParams} /> : null}
 

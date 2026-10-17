@@ -48,15 +48,43 @@ describe('AssistantPrismaRepository', () => {
     expect(result).toEqual(['아티스트 B']);
   });
 
+  it('모델 SQL은 밴드 범위를 설정한 전용 DB 역할로 실행하고 끝나면 역할을 되돌린다', async () => {
+    const calls: string[] = [];
+    const tx = {
+      $queryRawUnsafe: jest.fn(async (sql: string) => {
+        calls.push(sql);
+        return [];
+      }),
+      $executeRawUnsafe: jest.fn(async (sql: string) => {
+        calls.push(sql);
+        return 0;
+      }),
+    };
+    const repository = new AssistantPrismaRepository(createPrismaMock() as unknown as PrismaService);
+
+    await repository.executeGeneratedQueryPage('SELECT b.name FROM bands b', [], 'band-1', tx as never);
+
+    expect(calls).toEqual([
+      "SELECT set_config('app.band_id', $1, true)",
+      'SET LOCAL ROLE assistant_reader',
+      'SELECT * FROM (SELECT b.name FROM bands b) AS assistant_result LIMIT 51',
+      'RESET ROLE',
+    ]);
+    expect(tx.$queryRawUnsafe).toHaveBeenNthCalledWith(1, "SELECT set_config('app.band_id', $1, true)", 'band-1');
+  });
+
   it('서버 bandId를 $1에 바인딩하고 외부 LIMIT을 적용한다', async () => {
     const prisma = createPrismaMock();
     const repository = new AssistantPrismaRepository(prisma as unknown as PrismaService);
-    const queryRawUnsafe = jest.fn().mockResolvedValue([{ member_count: 3 }]);
-    const tx = { $queryRawUnsafe: queryRawUnsafe };
+    const queryRawUnsafe = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ member_count: 3 }]);
+    const tx = { $queryRawUnsafe: queryRawUnsafe, $executeRawUnsafe: jest.fn().mockResolvedValue(0) };
 
     const result = await repository.executeGeneratedQuery('SELECT COUNT(bm.id)::int AS member_count FROM bands b', ['기타'], 'band-1', tx as never);
 
-    expect(queryRawUnsafe).toHaveBeenCalledWith(
+    expect(queryRawUnsafe).toHaveBeenLastCalledWith(
       'SELECT * FROM (SELECT COUNT(bm.id)::int AS member_count FROM bands b) AS assistant_result LIMIT 51',
       'band-1',
       '기타',
@@ -66,11 +94,14 @@ describe('AssistantPrismaRepository', () => {
 
   it.each([0, 20, 21, 50, 51])('%i행에서 추가 결과 여부와 표시 행 수를 구분한다', async count => {
     const rows = Array.from({ length: count }, (_, index) => ({ nickname: `멤버${index}` }));
-    const queryRawUnsafe = jest.fn().mockResolvedValue(rows);
+    const queryRawUnsafe = jest.fn().mockResolvedValueOnce([]).mockResolvedValue(rows);
     const repository = new AssistantPrismaRepository(createPrismaMock() as unknown as PrismaService);
-    const page = await repository.executeGeneratedQueryPage('SELECT b.name FROM bands b', [], 'band-1', { $queryRawUnsafe: queryRawUnsafe } as never);
+    const page = await repository.executeGeneratedQueryPage('SELECT b.name FROM bands b', [], 'band-1', {
+      $queryRawUnsafe: queryRawUnsafe,
+      $executeRawUnsafe: jest.fn().mockResolvedValue(0),
+    } as never);
     expect(page.rows).toHaveLength(Math.min(count, 50));
     expect(page.hasMore).toBe(count > 50);
-    expect(queryRawUnsafe.mock.calls[0][0]).toContain('LIMIT 51');
+    expect(queryRawUnsafe.mock.calls[1][0]).toContain('LIMIT 51');
   });
 });

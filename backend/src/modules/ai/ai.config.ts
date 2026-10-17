@@ -18,9 +18,11 @@ export interface LlmProviderGroupConfig {
 }
 
 export interface AiConfig {
-  /** 선언 순서가 곧 provider fallback 우선순위다. */
+  /** 선언 순서가 곧 provider 우선순위다. 다음 provider로 넘기는 것은 providerRotationEnabled가 켜졌을 때만이다. */
   providerGroups: LlmProviderGroupConfig[];
+  /** 켜면 요청마다 시작 credential을 순환하고 실패 시 같은 provider의 다음 credential로 넘긴다. 끄면 첫 credential만 쓴다. */
   keyRotationEnabled: boolean;
+  /** 켜면 요청마다 시작 provider를 순환하고 실패 시 다음 provider로 넘긴다. 끄면 첫 provider만 쓴다. */
   providerRotationEnabled: boolean;
   requestTimeoutMs: number;
   /** provider 하나당 일시 오류 재시도 횟수 (최초 호출 제외) */
@@ -59,7 +61,7 @@ export function getAiConfig(environment: NodeJS.ProcessEnv = process.env): AiCon
     keyRotationEnabled: parseBoolean(environment.LLM_KEY_ROTATION_ENABLED),
     providerRotationEnabled: parseBoolean(environment.LLM_PROVIDER_ROTATION_ENABLED),
     requestTimeoutMs: parsePositiveInteger(environment.LLM_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
-    maxRetriesPerProvider: parsePositiveInteger(environment.LLM_MAX_RETRIES, DEFAULT_MAX_RETRIES),
+    maxRetriesPerProvider: parseNonNegativeInteger(environment.LLM_MAX_RETRIES, DEFAULT_MAX_RETRIES),
     retryBaseDelayMs: parsePositiveInteger(environment.LLM_RETRY_BASE_DELAY_MS, DEFAULT_RETRY_BASE_DELAY_MS),
   };
 }
@@ -146,4 +148,19 @@ function parsePositiveInteger(value: string | undefined, fallback: number): numb
   const parsed = Number.parseInt(value, 10);
 
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
+ * 재시도 횟수처럼 0이 "끄기"를 뜻하는 숫자 환경 변수를 읽는다.
+ *
+ * @param {string | undefined} value - 환경 변수 원본 값
+ * @param {number} fallback - 파싱 실패 시 사용할 기본값
+ * @returns {number} 0 이상의 정수
+ */
+function parseNonNegativeInteger(value: string | undefined, fallback: number): number {
+  if (value === undefined || !/^\s*\d+\s*$/.test(value)) {
+    return fallback;
+  }
+
+  return Number.parseInt(value, 10);
 }

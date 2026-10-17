@@ -4,29 +4,37 @@ import { PrismaService } from '../../database/prisma';
 import type { Prisma } from '../../generated/prisma';
 import { LlmService } from '../ai/llm.service';
 
-import { type AskAssistantInput, MAX_TURN_INDEX } from './dto/ask-assistant.dto';
+import { type AskAssistantInput, type AssistantHistoryTurnDto, MAX_HISTORY_TURNS } from './dto/ask-assistant.dto';
 import { AssistantScopeResolver } from './execution/assistant-scope.resolver';
 import { ASSISTANT_PRESETS, type AssistantPreset, findPresetById } from './query-plan/query-plan.presets';
 import { AnswerRenderer } from './rendering/answer-renderer';
 import { mapSqlResult } from './rendering/sql-result.mapper';
 import { ASSISTANT_REPOSITORY, type AssistantRepository } from './repositories/assistant.repository';
-import type { ValidatedSqlQuery } from './sql/generated-sql.type';
+import type { SqlQueryPage, ValidatedSqlQuery } from './sql/generated-sql.type';
 import { createCandidateQuestion, readArtistNameBindings, resolveArtistName } from './sql/sql-artist-name';
 import { createSqlGenerationSystemInstruction } from './sql/sql-generation.prompt';
 import { SQL_GENERATION_RESPONSE_SCHEMA } from './sql/sql-generation.schema';
 import { InvalidSqlQueryError, SqlQueryValidator, UnsupportedQuestionError } from './sql/sql-query.validator';
-import { createSqlRepairInstruction, getSqlCountUnit } from './sql/sql-query-context';
+import { createSqlHistoryContext, createSqlRepairInstruction, resolveSqlCountUnit, type SqlHistoryTurn } from './sql/sql-query-context';
 import type { AssistantQueryLogEntry } from './telemetry/assistant-query-log.type';
 import { type AssistantQueryBucketName, type AssistantQuerySignal, detectSignals, resolveExecutedBucket } from './telemetry/assistant-query-signal';
-import type { AssistantAnswer, AssistantClarification, AssistantQueryMeta } from './types/assistant-answer.type';
+import type { AssistantAnswer, AssistantClarification, AssistantQueryContext, AssistantQueryMeta } from './types/assistant-answer.type';
 import type { AssistantScope } from './types/assistant-scope.type';
 
 /** 최초 생성 이후 검증 실패 SQL을 다시 만들 수 있는 횟수 */
 const MAX_SQL_REGENERATIONS = 2;
 
+/**
+ * SQL 생성과 재생성에 쓰는 모델 호출 전체의 시간 상한.
+ * 화면 요청은 10초(API_TIMEOUT)에 끊기므로, 그 뒤의 재생성·재시도는 비용만 쓴다. 답을 돌려줄 여유를 1초 남긴다.
+ */
+const SQL_GENERATION_DEADLINE_MS = 9_000;
+
 interface GeneratedQuery {
   status: 'QUERY';
   query: ValidatedSqlQuery;
+  /** 사람 단위로 바꾸기 전의 원래 SQL. 다음 질문의 직전 턴으로 돌려준다. */
+  sourceSql: string;
   meta: AssistantQueryMeta;
   validationFailures: number;
   /** 허용 목록 밖을 건드린 위반 코드. 의미 위반과 섞이면 질문이 경계를 시험했는지 볼 수 없다. */
@@ -109,7 +117,9 @@ export class AssistantService {
     let generated: SqlGenerationResult;
 
     try {
-      generated = preset ? await this.createPresetQuery(preset) : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, tx);
+      generated = preset
+        ? await this.createPresetQuery(preset)
+        : await this.generateSqlFromQuestion(input.question ?? '', new Date(), bandId, await this.readHistory(input.history), tx);
     } catch (error) {
       if (error instanceof SqlGenerationFailedError) {
         // 장애도 실패율 분모에 들어가야 하고, 이미 쓴 토큰이 비용 집계에서 빠지면 안 된다.
@@ -147,6 +157,7 @@ export class AssistantService {
         summary: REPHRASE_SUMMARY,
         result: null,
         clarification: null,
+        context: null,
         meta: { ...error.meta, latencyMs: Date.now() - startedAt },
       };
     }
@@ -170,6 +181,7 @@ export class AssistantService {
         summary: generated.reason,
         result: null,
         clarification: generated.status === 'CLARIFICATION' ? generated.clarification : null,
+        context: null,
         meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
       };
     }
@@ -181,7 +193,7 @@ export class AssistantService {
       page = await this.executeQuery(bandId, generated.query, tx);
       result = await mapSqlResult(generated.query, page);
     } catch (error) {
-      this.logger.warn(`검증된 SQL 실행에 실패했습니다: ${toMessage(error)}`);
+      this.logger.warn(`검증된 SQL 실행에 실패했습니다: ${describeError(error)}`);
       await this.recordQuery({
         scope,
         input,
@@ -231,6 +243,7 @@ export class AssistantService {
       summary: this.answerRenderer.render(generated.query.intent, page.rows, generated.query.resultMode),
       result,
       clarification: null,
+      context: createQueryContext(generated, page),
       meta: { ...generated.meta, latencyMs: Date.now() - startedAt },
     };
   }
@@ -256,9 +269,11 @@ export class AssistantService {
 
   /** 추천 질문은 모델을 호출하지 않고 고정 SQL을 같은 검증기로 확인해 실행한다. */
   private async createPresetQuery(preset: AssistantPreset): Promise<GeneratedQuery> {
+    const source = preset.createQuery(new Date());
     return {
       status: 'QUERY',
-      query: await this.validator.validate(preset.createQuery(new Date())),
+      query: await this.validator.validate(source),
+      sourceSql: source.sql,
       meta: { providerName: null, modelName: null, usedLlm: false, inputTokens: 0, outputTokens: 0, latencyMs: 0 },
       validationFailures: 0,
       policyViolations: [],
@@ -269,9 +284,21 @@ export class AssistantService {
    * LLM SQL을 AST로 검증하고 형식이 잘못된 경우 실패 이유를 주어 최대 두 번 재생성한다.
    * 재생성에는 모든 시도의 위반과 직전 SQL을 함께 준다. 지원 범위 밖 질문은 같은 결과가 반복되므로 재생성하지 않는다.
    */
-  private async generateSqlFromQuestion(question: string, now: Date, bandId: string, tx?: Prisma.TransactionClient): Promise<SqlGenerationResult> {
-    const baseInstruction = createSqlGenerationSystemInstruction(now, question);
+  private async generateSqlFromQuestion(
+    question: string,
+    now: Date,
+    bandId: string,
+    history: SqlHistoryTurn[] = [],
+    tx?: Prisma.TransactionClient,
+  ): Promise<SqlGenerationResult> {
+    // 관계 맥락은 직전 질문까지 합쳐 고른다. "그중에"만 있는 후속 질문은 참석·팀 같은 단서가 앞 질문에만 있다.
+    const contextQuestion = [...history.map(turn => turn.question), question].join('\n');
+    const baseInstruction = [createSqlGenerationSystemInstruction(now, contextQuestion), createSqlHistoryContext(history)]
+      .filter(Boolean)
+      .join('\n\n');
+    const countUnit = resolveSqlCountUnit(question, history.at(-1)?.question);
     const failures: string[] = [];
+    const deadlineAt = Date.now() + SQL_GENERATION_DEADLINE_MS;
     // 허용 목록 밖을 건드린 코드만 따로 모은다. 재생성 횟수 하나에 합치면 나중에 구분할 수 없다.
     const policyViolations: string[] = [];
     let previousSql = '';
@@ -282,6 +309,11 @@ export class AssistantService {
 
     try {
       for (let attempt = 0; attempt <= MAX_SQL_REGENERATIONS; attempt += 1) {
+        if (attempt > 0 && Date.now() >= deadlineAt) {
+          this.logger.warn('SQL 생성 마감 시간이 지나 재생성을 멈춥니다.');
+          break;
+        }
+
         attemptsUsed = attempt;
         const response = await this.llmService.generateStructured({
           systemInstruction:
@@ -291,6 +323,7 @@ export class AssistantService {
           userMessage: question,
           responseSchema: SQL_GENERATION_RESPONSE_SCHEMA,
           maxOutputTokens: 1_500,
+          deadlineAt,
         });
 
         inputTokens += response.usage?.inputTokens ?? 0;
@@ -306,7 +339,7 @@ export class AssistantService {
         };
 
         try {
-          const query = await this.validator.validate(response.parsed, getSqlCountUnit(question));
+          const query = await this.validator.validate(response.parsed, countUnit);
           const resolved = await this.resolveQueryArtistNames(query, question, bandId, tx);
           if ('reason' in resolved) {
             return {
@@ -321,6 +354,7 @@ export class AssistantService {
           return {
             status: 'QUERY',
             query: resolved,
+            sourceSql: readGeneratedSql(response.parsed),
             meta,
             validationFailures: attempt,
             policyViolations,
@@ -367,9 +401,34 @@ export class AssistantService {
         outputTokens,
         latencyMs: 0,
       },
-      MAX_SQL_REGENERATIONS + 1,
+      failures.length,
       policyViolations,
     );
+  }
+
+  /**
+   * 클라이언트가 보관한 직전 턴을 다시 검증한다. 화면이 보낸 SQL을 그대로 믿지 않고,
+   * 실행 SQL과 같은 검증을 통과한 턴만 주석을 지운 문장으로 프롬프트에 넣는다. 통과하지 못한 턴은 버린다.
+   */
+  private async readHistory(history: AssistantHistoryTurnDto[] | undefined): Promise<SqlHistoryTurn[]> {
+    const turns: SqlHistoryTurn[] = [];
+    for (const turn of (history ?? []).slice(-MAX_HISTORY_TURNS)) {
+      try {
+        const sql = await this.validator.validateHistorySql({
+          status: 'QUERY',
+          intent: turn.intent,
+          sql: turn.sql,
+          params: turn.params,
+          unsupportedReason: null,
+          resultMode: turn.resultMode,
+        });
+        turns.push({ question: turn.question, intent: turn.intent, sql, params: turn.params, rowCount: turn.rowCount, hasMore: turn.hasMore });
+      } catch (error) {
+        if (!(error instanceof InvalidSqlQueryError) && !(error instanceof UnsupportedQuestionError)) throw error;
+        this.logger.warn(`직전 대화의 SQL이 검증을 통과하지 못해 제외합니다: ${error.message}`);
+      }
+    }
+    return turns;
   }
 
   /** SQL은 보존하고 아티스트 equality의 바인딩만 실제 밴드 이름으로 확인한다. */
@@ -407,7 +466,7 @@ export class AssistantService {
         return run(client);
       });
     } catch (error) {
-      this.logger.warn(`아티스트 이름 확인에 실패했습니다: ${toMessage(error)}`);
+      this.logger.warn(`아티스트 이름 확인에 실패했습니다: ${describeError(error)}`);
       throw new ServiceUnavailableException('아티스트 이름을 확인하지 못했습니다. 잠시 후 다시 질문해 주세요.');
     }
   }
@@ -440,9 +499,11 @@ export class AssistantService {
         userId: record.scope.userId,
         bandId: record.scope.bandId,
         sessionId: record.input.sessionId ?? null,
-        turnIndex: record.input.turnIndex ?? null,
+        // 턴별 실패율을 보고 대화 턴 상한(5)을 조정하는 근거로 쓴다.
+        turnIndex: record.input.turnIndex ?? 1,
+        historyTurns: record.input.history?.length ?? 0,
         presetId: record.input.presetId ?? null,
-        question: record.input.question ?? null,
+        question: record.input.question === undefined ? null : maskContactInfo(record.input.question),
         intent: record.query?.intent ?? null,
         sql: record.query?.sql ?? null,
         validationFailures: record.validationFailures,
@@ -462,9 +523,9 @@ export class AssistantService {
       bandId: record.scope.bandId,
       userId: record.scope.userId,
       sessionId: record.input.sessionId ?? null,
-      turnIndex: clampTurnIndex(record.input.turnIndex),
+      turnIndex: record.input.turnIndex ?? 1,
       presetId: record.input.presetId ?? null,
-      question: record.input.question ?? null,
+      question: record.input.question === undefined ? null : maskContactInfo(record.input.question),
       intent: record.query?.intent ?? null,
       generatedSql: record.query?.sql ?? null,
       resultMode: record.query?.resultMode ?? null,
@@ -488,7 +549,7 @@ export class AssistantService {
     try {
       await this.repository.recordQueryLog(entry);
     } catch (error) {
-      this.logger.warn(`질의 측정 기록에 실패했습니다: ${toMessage(error)}`);
+      this.logger.warn(`질의 측정 기록에 실패했습니다: ${describeError(error)}`);
     }
   }
 }
@@ -518,14 +579,33 @@ function isQueryLogEnabled(): boolean {
   return process.env.ASSISTANT_QUERY_LOG_ENABLED !== 'false';
 }
 
-/** 긴 대화의 턴 순서를 상한으로 깎는다. 측정 필드 때문에 조회를 거절하지 않는다. */
-function clampTurnIndex(turnIndex: number | undefined): number | null {
-  return turnIndex === undefined ? null : Math.min(turnIndex, MAX_TURN_INDEX);
+/** 다음 질문에 직전 턴으로 돌려보낼 조회 구조를 만든다. 결과 행은 넣지 않고 건수만 담는다. */
+function createQueryContext(generated: GeneratedQuery, page: SqlQueryPage): AssistantQueryContext {
+  const { query, sourceSql } = generated;
+  return {
+    intent: query.intent,
+    sql: sourceSql || query.sql,
+    // 아티스트 이름 확인으로 바뀐 값까지 반영된, 실제로 실행한 값을 돌려준다.
+    params: query.parameters.map((value, index) => ({ position: index + 2, type: query.parameterTypes?.[index] ?? 'TEXT', value: String(value) })),
+    resultMode: query.resultMode ?? null,
+    rowCount: page.rows.length,
+    hasMore: page.hasMore,
+  };
 }
 
-/** 알 수 없는 실행 오류를 운영 로그에서 확인할 수 있는 문자열로 만든다. */
-function toMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+/**
+ * 실행 오류를 운영 로그용 문자열로 만든다. DB 오류 원문에는 바인딩 값이 섞일 수 있어 오류 이름과 코드만 남긴다.
+ * 시간 초과는 PostgreSQL 코드 57014로 구분된다.
+ */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return 'UnknownError';
+  const { code, meta } = error as { code?: unknown; meta?: { code?: unknown } };
+  return [error.name, code, meta?.code].filter(value => typeof value === 'string').join(' ');
+}
+
+/** 감사 로그와 측정 기록은 userId·bandId와 함께 남으므로 질문에 섞인 이메일·전화번호를 가린다. */
+export function maskContactInfo(question: string): string {
+  return question.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[이메일]').replace(/\d{2,3}[-.\s]?\d{3,4}[-.\s]?\d{4}/g, '[전화번호]');
 }
 
 /** 검증에 실패한 응답의 SQL을 다음 재생성의 수정 대상으로 사용한다. */

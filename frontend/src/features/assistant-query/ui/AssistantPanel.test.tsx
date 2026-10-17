@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AssistantAnswer } from '@/entities/assistant/model/types';
@@ -54,6 +54,7 @@ const tableAnswer = (
   kind: 'ANSWER',
   summary,
   clarification: null,
+  context: null,
   meta,
   result: {
     entity: 'table',
@@ -83,14 +84,13 @@ const setup = (answer: AssistantAnswer = SCHEDULE_ANSWER) => {
   );
 };
 
-/** 서버에 보낸 질문 본문. bandId는 늘 지금 밴드여야 한다. */
 /**
- * 요청 본문에는 측정용 세션 키가 함께 실린다.
- * 값은 매번 새로 만들어지므로 모양만 확인하고, 세션 동작은 아래 describe에서 따로 본다.
+ * 서버에 보낸 질문 본문. bandId는 늘 지금 밴드여야 한다.
+ * 측정용 세션 키는 매번 새로 만들어지므로 모양만 확인하고, 세션 동작은 아래 describe에서 따로 본다.
  */
-const asked = (body: object, turnIndex = 0) => ({
+const asked = (body: object) => ({
   bandId: 'band-1',
-  body: { ...body, sessionId: expect.any(String), turnIndex },
+  body: { ...body, sessionId: expect.any(String) },
 });
 
 const homeInput = () =>
@@ -153,12 +153,10 @@ describe('AssistantPanel', () => {
     );
 
     expect(askMock).toHaveBeenLastCalledWith(
-      asked(
-        {
-          question: '다음 합주에서 연습할 곡은 뭐야?',
-        },
-        1,
-      ),
+      asked({
+        question: '다음 합주에서 연습할 곡은 뭐야?',
+        turnIndex: 2,
+      }),
     );
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getAllByRole('article')).toHaveLength(2);
@@ -173,6 +171,80 @@ describe('AssistantPanel', () => {
         name: '다음 합주에서 연습할 곡은 뭐야?',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('이어서 묻는 질문에는 직전 답의 조회 구조와 순서를 함께 보내고 결과 행은 보내지 않는다', async () => {
+    const context = {
+      intent: '다음 합주 참석자 명단',
+      sql: 'SELECT up.nickname FROM bands b WHERE b.id = $1::uuid',
+      params: [{ position: 2, type: 'TEXT', value: 'ATTENDING' }],
+      resultMode: 'LIST' as const,
+      rowCount: 1,
+      hasMore: false,
+    };
+    setup({ ...SCHEDULE_ANSWER, context });
+
+    await askByPreset();
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByText('정기 합주');
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+      '그중에 기타 치는 사람은?{Enter}',
+    );
+
+    expect(askMock).toHaveBeenLastCalledWith(
+      asked({
+        question: '그중에 기타 치는 사람은?',
+        history: [{ question: '다음 합주 일정이 언제야?', ...context }],
+        turnIndex: 2,
+      }),
+    );
+  });
+
+  it('질문이 다섯 개 쌓이면 입력창 대신 새 대화를 권하고 더 보내지 않는다', async () => {
+    setup();
+
+    await askByPreset();
+    const dialog = await screen.findByRole('dialog');
+    const questions = [
+      '두 번째 질문',
+      '세 번째 질문',
+      '네 번째 질문',
+      '다섯 번째 질문',
+    ];
+    for (const [index, question] of questions.entries()) {
+      // 앞 질문의 답이 도착해 입력이 풀린 뒤에 보낸다.
+      await waitFor(() =>
+        expect(within(dialog).getAllByText('정기 합주')).toHaveLength(
+          index + 1,
+        ),
+      );
+      await userEvent.type(
+        within(dialog).getByRole('textbox', {
+          name: '밴드 데이터에 대한 질문',
+        }),
+        `${question}{Enter}`,
+      );
+    }
+
+    expect(
+      await within(dialog).findByText(
+        '질문이 많이 쌓였어요. 새 대화에서 이어서 물어봐 주세요.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('textbox', {
+        name: '밴드 데이터에 대한 질문',
+      }),
+    ).not.toBeInTheDocument();
+    expect(askMock).toHaveBeenCalledTimes(5);
+
+    await userEvent.click(
+      within(dialog).getAllByRole('button', { name: '새 대화' }).at(-1)!,
+    );
+    expect(
+      within(dialog).getByRole('textbox', { name: '밴드 데이터에 대한 질문' }),
+    ).toBeInTheDocument();
   });
 
   it('닫아도 대화가 남아 이어서 보기 바로 다시 열 수 있다', async () => {
@@ -387,6 +459,7 @@ describe('AssistantPanel', () => {
       summary: '질문을 정확히 이해하지 못했어요.',
       result: null,
       clarification: null,
+      context: null,
       meta,
     });
 
@@ -413,6 +486,7 @@ describe('AssistantPanel', () => {
         ],
         hasMore: false,
       },
+      context: null,
       meta,
     });
 
@@ -422,12 +496,10 @@ describe('AssistantPanel', () => {
     );
 
     expect(askMock).toHaveBeenLastCalledWith(
-      asked(
-        {
-          question: "'아티스트 A' 곡 알려줘",
-        },
-        1,
-      ),
+      asked({
+        question: "'아티스트 A' 곡 알려줘",
+        turnIndex: 2,
+      }),
     );
   });
 
@@ -453,6 +525,30 @@ describe('AssistantPanel', () => {
       asked({ question: '다음 합주 언제야?' }),
     );
     expect(await within(dialog).findByText('정기 합주')).toBeInTheDocument();
+  });
+
+  it('대화를 끝낸 뒤 늦게 실패한 질문은 입력창에 다시 채우지 않는다', async () => {
+    setup();
+    let fail: (error: Error) => void = () => {};
+    askMock.mockReturnValueOnce(
+      new Promise<AssistantAnswer>((_, reject) => {
+        fail = reject;
+      }),
+    );
+
+    await userEvent.type(homeInput(), '다음 합주 언제야?');
+    await userEvent.click(screen.getByRole('button', { name: '질문' }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: '닫기',
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: '대화 끝내기' }));
+    fail(new Error('503'));
+    // 실패 처리(catch)가 끝날 때까지 기다린 뒤 확인한다.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(homeInput()).toHaveValue('');
   });
 
   it('조회 중에는 입력을 막고 진행 단계를 알린다', async () => {
@@ -486,7 +582,7 @@ describe('AssistantPanel', () => {
     const sentBody = (call: number) =>
       askMock.mock.calls[call][0].body as {
         sessionId: string;
-        turnIndex: number;
+        turnIndex?: number;
       };
 
     it('같은 대화에서 이어 물으면 세션은 그대로 두고 턴만 올린다', async () => {
@@ -500,23 +596,25 @@ describe('AssistantPanel', () => {
       );
 
       expect(sentBody(0).sessionId).toBe(sentBody(1).sessionId);
-      expect(sentBody(0).turnIndex).toBe(0);
-      expect(sentBody(1).turnIndex).toBe(1);
+      expect(sentBody(0).turnIndex).toBeUndefined();
+      expect(sentBody(1).turnIndex).toBe(2);
     });
 
-    it('새 대화로 시작하면 세션 키가 바뀌고 턴이 0부터 다시 센다', async () => {
+    it('새 대화로 시작하면 세션 키가 바뀌고 첫 질문으로 다시 센다', async () => {
       setup();
 
       await askByPreset();
-      await userEvent.click(screen.getByRole('button', { name: '새 대화' }));
+      await userEvent.click(
+        await screen.findByRole('button', { name: '새 대화' }),
+      );
       await askByPreset();
 
       expect(sentBody(1).sessionId).not.toBe(sentBody(0).sessionId);
-      expect(sentBody(1).turnIndex).toBe(0);
+      expect(sentBody(1).turnIndex).toBeUndefined();
     });
 
     // 재시도가 턴을 새로 세면 턴별 실패율이 왜곡된다.
-    it('다시 시도는 같은 턴으로 보낸다', async () => {
+    it('다시 시도는 같은 세션·같은 턴으로 보낸다', async () => {
       setup();
       askMock.mockRejectedValueOnce(new Error('network'));
 

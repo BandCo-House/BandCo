@@ -62,7 +62,7 @@ export const InviteeField = ({
         <ul className="flex flex-wrap gap-2">
           {selected.map((user) => (
             <li key={user.id}>
-              <span className="flex items-center gap-2 rounded-full border border-primary bg-surface-3 py-1 pr-2 pl-1 typo-sm-sb text-grey-50">
+              <span className="flex items-center gap-2 rounded-full border border-primary bg-surface-3 glass-surface py-1 pr-2 pl-1 typo-sm-sb text-grey-50">
                 <Avatar size="sm" aria-hidden="true">
                   <AvatarImage src={user.avatarUrl ?? undefined} />
                   <AvatarFallback>{user.nickname.slice(0, 1)}</AvatarFallback>

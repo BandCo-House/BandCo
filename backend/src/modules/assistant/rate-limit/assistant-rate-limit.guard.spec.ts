@@ -21,6 +21,10 @@ describe('isPresetRequest', () => {
   it('자유 질문과 본문이 없는 요청은 횟수 제한을 적용한다', () => {
     expect(isPresetRequest({ body: { question: '다음 합주 언제야?' } })).toBe(false);
     expect(isPresetRequest({ body: { presetId: undefined, question: '질문' } })).toBe(false);
+    // DTO가 빈 문자열을 undefined로 바꿔 자유 질문으로 처리하므로 제한에서 빼면 안 된다.
+    expect(isPresetRequest({ body: { presetId: '', question: '다음 합주 언제야?' } })).toBe(false);
+    expect(isPresetRequest({ body: { presetId: '   ', question: '다음 합주 언제야?' } })).toBe(false);
+    expect(isPresetRequest({ body: { presetId: 'unknown-preset', question: '다음 합주 언제야?' } })).toBe(false);
     expect(isPresetRequest({})).toBe(false);
   });
 });

@@ -12,4 +12,6 @@ export interface LlmStructuredRequest {
   responseSchema: JsonSchema;
   /** 출력 토큰 상한. provider 기본값보다 우선한다. */
   maxOutputTokens?: number;
+  /** 이 시각(epoch ms)을 넘기면 재시도·다음 호출 대상 전환을 멈춘다. 요청 하나의 전체 호출 시간을 묶는다. */
+  deadlineAt?: number;
 }

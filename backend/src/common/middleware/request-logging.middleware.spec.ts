@@ -40,15 +40,15 @@ describe('requestLoggingMiddleware', () => {
     });
   });
 
-  it('라우트가 없는 요청은 입력한 경로와 쿼리를 기록하지 않는다', () => {
+  it('라우트가 없는 요청은 쿼리를 제외한 탐색 경로를 기록한다', () => {
     const log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
-    const request = { method: 'GET', baseUrl: '', originalUrl: '/secret?token=private' } as LoggedRequest;
+    const request = { method: 'GET', baseUrl: '', path: '/.env', originalUrl: '/.env?token=private' } as LoggedRequest;
     const response = Object.assign(new EventEmitter(), { statusCode: 404 });
     const next = jest.fn();
 
     requestLoggingMiddleware(request, response, next);
     response.emit('finish');
 
-    expect(log).toHaveBeenCalledWith(expect.objectContaining({ path: '<unmatched>', statusCode: 404, userId: null }));
+    expect(log).toHaveBeenCalledWith(expect.objectContaining({ path: '/.env', statusCode: 404, userId: null }));
   });
 });

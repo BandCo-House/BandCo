@@ -87,6 +87,7 @@ jobs:
             type == "object" and
             has("DATABASE_URL") and
             has("JWT_SECRET") and
+            has("ADMIN_JWT_SECRET") and
             has("BCRYPT_SALT_ROUNDS") and
             has("AWS_REGION") and
             has("AWS_STORAGE_BUCKET") and

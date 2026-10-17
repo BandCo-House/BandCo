@@ -2,6 +2,8 @@
 
 `corpus.ts`의 50문항(dev)은 개발·회귀용 합성 질문이다. `holdout-corpus.ts`의 20문항(holdout)은 구조 수정 전에 고정했고 제품 수정에 사용하지 않는다. 실패 문항을 보고 프롬프트·규칙을 고치면 holdout은 오염된 것으로 보고 새 문항으로 교체한다. 평가 규칙을 먼저 고정하고 제품 수정 전후에 같은 조건으로 실행한다. 실제 사용성·권한 전체의 안전성을 이 점수로 주장하지 않는다.
 
+`followup-corpus.ts`의 7문항(followup)은 후속 질문 평가다. 직전 턴을 정답 SQL로 고정해 첫 질문의 정답 여부와 무관하게 "그중에"·"8월은?" 같은 지시어 해석만 본다. 직전 턴은 제품과 같은 재검증을 거쳐 이력으로 들어가며, 결과 건수는 직전 SQL을 실제로 실행해 얻는다. 조건 이어받기 4, 생략된 대상 이어받기 2, 이력을 무시해야 하는 대조 1문항이다. 실행은 `EXPERIMENT_CORPUS=followup`이다.
+
 v3 fixture는 최신 dev 데이터처럼 합주 참여·팀 편성을 세션 단위로 저장한다. 겸업 멤버(5의 배수, 기타+보컬)는 같은 합주·팀에 행이 둘이라 행 수와 사람 수가 다르다. v2까지는 1인 1행이라 중복 집계·중복 명단이 정답으로 채점됐다.
 
 ## 비교 계약
@@ -37,6 +39,9 @@ docker run -d --name bandco-assistant-evaluation \
 
 export ASSISTANT_EVALUATION_DATABASE_URL='postgresql://postgres:assistant-evaluation@127.0.0.1:55432/bandco_assistant_evaluation?schema=public'
 DATABASE_URL="$ASSISTANT_EVALUATION_DATABASE_URL" pnpm exec prisma db push --skip-generate
+# db push는 마이그레이션 SQL을 실행하지 않는다. 모델 SQL은 전용 DB 역할(assistant_reader)로 실행되므로 역할·컬럼 권한·RLS를 따로 적용한다.
+docker exec -i bandco-assistant-evaluation psql -U postgres \
+  -d bandco_assistant_evaluation -v ON_ERROR_STOP=1 < prisma/migrations/20261013120000_add_assistant_reader_role/migration.sql
 docker exec -i bandco-assistant-evaluation psql -U postgres \
   -d bandco_assistant_evaluation -v ON_ERROR_STOP=1 < scripts/assistant-evaluation/seed-accuracy.sql
 export ASSISTANT_RESEARCH_DIR="$HOME/Documents/bandco-assistant-research/runs/new-run"

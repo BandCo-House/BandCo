@@ -9,6 +9,9 @@ import type { AssistantRepository } from './assistant.repository';
 
 const STATEMENT_TIMEOUT_MS = 3_000;
 
+/** 모델 SQL 전용 DB 역할. 카탈로그 컬럼만 읽을 수 있고 RLS로 app.band_id 밴드의 행만 보인다(마이그레이션 20261013120000). */
+const ASSISTANT_DB_ROLE = 'assistant_reader';
+
 @Injectable()
 export class AssistantPrismaRepository implements AssistantRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -70,7 +73,12 @@ export class AssistantPrismaRepository implements AssistantRepository {
     tx: Prisma.TransactionClient,
   ): Promise<SqlQueryPage> {
     const boundedSql = `SELECT * FROM (${sql}) AS assistant_result LIMIT ${MAX_ASSISTANT_RESULT_ROWS + 1}`;
+    // 검증기에 구멍이 있어도 DB가 한 번 더 막는다. 범위 밴드와 역할은 이 트랜잭션 안에서만 유지된다.
+    await tx.$queryRawUnsafe(`SELECT set_config('app.band_id', $1, true)`, bandId);
+    await tx.$executeRawUnsafe(`SET LOCAL ROLE ${ASSISTANT_DB_ROLE}`);
     const rows = await tx.$queryRawUnsafe<SqlQueryRow[]>(boundedSql, bandId, ...parameters);
+    // 호출자가 넘긴 트랜잭션의 이후 조회가 이 역할로 이어지지 않게 되돌린다. 조회가 실패하면 트랜잭션이 중단되므로 되돌릴 일이 없다.
+    await tx.$executeRawUnsafe('RESET ROLE');
     return { rows: rows.slice(0, MAX_ASSISTANT_RESULT_ROWS), hasMore: rows.length > MAX_ASSISTANT_RESULT_ROWS };
   }
 

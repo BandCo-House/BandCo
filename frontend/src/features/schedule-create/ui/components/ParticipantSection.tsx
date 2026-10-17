@@ -130,7 +130,7 @@ export const ParticipantSection = ({
       {specialMembers.map((member) => (
         <label
           key={member.bandMemberId}
-          className="flex cursor-pointer items-center gap-2 rounded-2xl border border-surface-3 bg-white/24 px-4 py-3"
+          className="flex cursor-pointer items-center gap-2 rounded-2xl bg-white/24 glass-surface px-4 py-3"
         >
           <Checkbox
             className="size-5"
@@ -139,7 +139,7 @@ export const ParticipantSection = ({
           />
           <span className="typo-sm-b text-grey-50">{member.nickname}</span>
           {badgeFor(member.role) && (
-            <span className="flex h-5 items-center rounded-full bg-surface-1 px-2 text-xs leading-[1.4] font-medium text-grey-500">
+            <span className="flex h-5 items-center rounded-full bg-surface-1 glass-surface px-2 text-xs leading-[1.4] font-medium text-grey-500">
               {badgeFor(member.role)}
             </span>
           )}

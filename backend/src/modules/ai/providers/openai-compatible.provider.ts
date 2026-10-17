@@ -10,7 +10,7 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 1024;
 const RESPONSE_SCHEMA_NAME = 'query_plan';
 
 interface ChatCompletionResponse {
-  choices?: { message?: { content?: string }; finish_reason?: string }[];
+  choices?: { message?: { content?: string | null; refusal?: string | null }; finish_reason?: string }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 }
 
@@ -58,8 +58,13 @@ export class OpenAiCompatibleProvider implements LlmProvider {
 
     const content = choice?.message?.content;
 
-    if (content === undefined || content.trim() === '') {
-      throw new LlmInvalidOutputError(this.name, `${this.name} 응답 본문이 비어 있습니다.`);
+    // 거절·도구 호출 응답은 content가 null이라 문자열인지부터 확인해야 로그에 실제 원인이 남는다.
+    if (typeof content !== 'string' || content.trim() === '') {
+      const refusal = choice?.message?.refusal;
+      throw new LlmInvalidOutputError(
+        this.name,
+        refusal ? `${this.name}이 응답을 거절했습니다: ${refusal}` : `${this.name} 응답 본문이 비어 있습니다.`,
+      );
     }
 
     return {

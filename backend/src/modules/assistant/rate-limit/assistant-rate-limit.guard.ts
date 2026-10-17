@@ -1,6 +1,8 @@
 import { type ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
+import { findPresetById } from '../query-plan/query-plan.presets';
+
 interface RateLimitRequest {
   user?: {
     id?: unknown;
@@ -39,8 +41,10 @@ export function resolveAuthenticatedUserId(request: RateLimitRequest): string | 
 
 /**
  * 서비스와 같은 기준으로 추천 질문 요청을 판별한다. presetId가 있으면 질문 문장이 함께 와도 고정 SQL로 처리된다.
+ * Guard는 DTO 변환 전 원본 body를 보므로, DTO가 undefined로 바꾸는 빈 문자열·공백 presetId는 추천 질문으로 보지 않는다.
  */
 export function isPresetRequest(request: QueryRequest): boolean {
   const body = request.body;
-  return typeof body === 'object' && body !== null && 'presetId' in body && body.presetId !== undefined;
+  const presetId = typeof body === 'object' && body !== null && 'presetId' in body && typeof body.presetId === 'string' ? body.presetId.trim() : '';
+  return presetId !== '' && findPresetById(presetId) !== undefined;
 }
