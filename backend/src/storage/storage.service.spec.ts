@@ -1,5 +1,6 @@
 import { type ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { ServiceUnavailableException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 
 import { StorageService } from './storage.service';
@@ -9,23 +10,44 @@ jest.mock('@aws-sdk/s3-request-presigner');
 const TEST_REGION = 'ap-northeast-2';
 const TEST_BUCKET = 'test-bucket';
 
-const mockConfigService = {
-  getOrThrow: jest.fn((key: string) => {
-    const config: Record<string, string> = {
-      AWS_REGION: TEST_REGION,
-      AWS_STORAGE_BUCKET: TEST_BUCKET,
-    };
-    if (key in config) return config[key];
-    throw new Error(`Unknown config key: ${key}`);
-  }),
-};
+const createConfigService = (config: Record<string, string | undefined>): ConfigService =>
+  ({
+    get(key: string) {
+      return config[key];
+    },
+  }) as ConfigService;
 
 describe('StorageService', () => {
   let service: StorageService;
 
   beforeEach(() => {
-    service = new StorageService(mockConfigService as unknown as ConfigService);
+    service = new StorageService(
+      createConfigService({
+        NODE_ENV: 'development',
+        AWS_REGION: TEST_REGION,
+        AWS_STORAGE_BUCKET: TEST_BUCKET,
+      }),
+    );
     jest.clearAllMocks();
+  });
+
+  it('로컬 환경은 AWS 설정 없이도 서비스를 초기화한다', async () => {
+    const localService = new StorageService(createConfigService({ NODE_ENV: 'development' }));
+
+    await expect(localService.getPresignedUploadUrl('profiles/test.jpg', 'image/jpeg')).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('운영 환경은 AWS 설정이 없으면 초기화에 실패한다', () => {
+    expect(() => new StorageService(createConfigService({ NODE_ENV: 'production' }))).toThrow(
+      '운영 환경에는 AWS_REGION과 AWS_STORAGE_BUCKET이 필요합니다.',
+    );
+  });
+
+  it('NODE_ENV가 없거나 로컬·테스트가 아니면 운영처럼 AWS 설정을 요구한다', () => {
+    expect(() => new StorageService(createConfigService({}))).toThrow('운영 환경에는 AWS_REGION과 AWS_STORAGE_BUCKET이 필요합니다.');
+    expect(() => new StorageService(createConfigService({ NODE_ENV: 'staging' }))).toThrow(
+      '운영 환경에는 AWS_REGION과 AWS_STORAGE_BUCKET이 필요합니다.',
+    );
   });
 
   describe('getPresignedUploadUrl', () => {
