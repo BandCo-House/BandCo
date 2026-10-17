@@ -15,6 +15,11 @@ export interface AssistantHistoryTurn extends AssistantQueryContext {
 export interface AskAssistantRequest {
   question?: string;
   presetId?: string;
+  /**
+   * 한 대화를 묶는 키. 품질 측정에만 쓰이고 조회 범위에는 영향이 없다.
+   * 밴드 범위는 서버가 멤버십을 확인한 bandId로 정한다.
+   */
+  sessionId?: string;
   /** 같은 대화의 직전 턴(최대 3개). 첫 질문에는 보내지 않는다. */
   history?: AssistantHistoryTurn[];
   /** 대화에서 몇 번째 질문인지. 첫 질문에는 보내지 않는다. */

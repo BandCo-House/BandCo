@@ -23,6 +23,15 @@ const MIN_QUESTION_LENGTH = 2;
 const MIN_REPLY_MS = 700;
 
 /**
+ * 측정에 쓰는 대화 키다. 화면 상태(conversation)와 달리 렌더를 기다리지 않아야 해서 ref로 둔다.
+ * 새 대화이거나 다른 밴드면 새 키를 만든다. 조건은 대화 상태를 비우는 조건과 같다.
+ */
+interface SessionKey {
+  bandId: string;
+  sessionId: string;
+}
+
+/**
  * 답한 턴 중 마지막 몇 개를 다음 질문의 직전 턴으로 만든다.
  * "그중에"가 가리키는 조건을 모델이 알 수 있게 서버가 준 조회 구조를 그대로 돌려보낸다. 결과 행과 답 문장은 보내지 않는다.
  */
@@ -51,6 +60,7 @@ export const AssistantConversationProvider = ({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const nextTurnId = useRef(0);
+  const sessionKey = useRef<SessionKey | null>(null);
   // 늦게 온 실패 응답이 지금 대화에 속하는지 확인하려고 최신 대화를 들고 있는다.
   const conversationRef = useRef(conversation);
   useLayoutEffect(() => {
@@ -104,9 +114,18 @@ export const AssistantConversationProvider = ({
       !fresh && conversation?.bandId === bandId ? conversation.turns : [];
     if (previousTurns.length >= MAX_CONVERSATION_TURNS) return;
     const history = toHistory(previousTurns);
-    // 첫 질문의 본문은 그대로 두고, 이어서 묻는 질문에만 직전 턴과 순서를 붙인다.
+    if (
+      fresh ||
+      sessionKey.current === null ||
+      sessionKey.current.bandId !== bandId
+    ) {
+      sessionKey.current = { bandId, sessionId: crypto.randomUUID() };
+    }
+    // 이어서 묻는 질문에만 직전 턴과 순서를 붙인다. 세션 키는 측정용이라 모든 질문에 붙인다.
+    // 다시 시도는 이 본문을 그대로 보내므로 같은 세션·같은 턴으로 기록된다.
     const requestBody: AskAssistantRequest = {
       ...body,
+      sessionId: sessionKey.current.sessionId,
       ...(history.length > 0 ? { history } : {}),
       ...(previousTurns.length > 0
         ? { turnIndex: previousTurns.length + 1 }
@@ -151,11 +170,13 @@ export const AssistantConversationProvider = ({
   const startNew = () => {
     setConversation((previous) => previous && { ...previous, turns: [] });
     setDraft('');
+    sessionKey.current = null;
   };
 
   const end = () => {
     setConversation(null);
     setDraft('');
+    sessionKey.current = null;
   };
 
   const retry = (turn: AssistantTurnState) => {

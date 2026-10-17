@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma';
 import type { Prisma } from '../../../generated/prisma';
 import { MAX_ASSISTANT_RESULT_ROWS, type SqlQueryPage, type SqlQueryRow } from '../sql/generated-sql.type';
+import type { AssistantQueryLogEntry } from '../telemetry/assistant-query-log.type';
 
 import type { AssistantRepository } from './assistant.repository';
 
@@ -79,5 +80,13 @@ export class AssistantPrismaRepository implements AssistantRepository {
     // 호출자가 넘긴 트랜잭션의 이후 조회가 이 역할로 이어지지 않게 되돌린다. 조회가 실패하면 트랜잭션이 중단되므로 되돌릴 일이 없다.
     await tx.$executeRawUnsafe('RESET ROLE');
     return { rows: rows.slice(0, MAX_ASSISTANT_RESULT_ROWS), hasMore: rows.length > MAX_ASSISTANT_RESULT_ROWS };
+  }
+
+  /**
+   * 측정 기록을 남긴다. 조회와 같은 트랜잭션에 넣지 않는다.
+   * 읽기 전용 트랜잭션에서는 쓸 수 없고, 기록 실패가 조회 결과를 되돌려서도 안 된다.
+   */
+  async recordQueryLog(entry: AssistantQueryLogEntry): Promise<void> {
+    await this.prisma.assistantQueryLog.create({ data: entry });
   }
 }
