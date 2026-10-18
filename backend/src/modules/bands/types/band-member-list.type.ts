@@ -11,6 +11,7 @@ export interface BandMemberListItem {
   bandMemberId: string;
   userId: string;
   nickname: string;
+  handle: string | null;
   avatarUrl: string | null;
   role: BandMemberRole;
   joinedAt: string;

@@ -14,6 +14,7 @@ export type AdminUserListItem = {
   userId: string;
   email: string | null;
   nickname: string | null;
+  handle: string | null;
   avatarUrl: string | null;
   status: UserStatus;
   isDeleted: boolean;

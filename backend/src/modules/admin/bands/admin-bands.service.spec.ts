@@ -42,7 +42,7 @@ const DETAIL_RECORD: AdminBandDetailRecord = {
   updatedAt: '2026-09-02T00:00:00.000Z',
   deletedAt: null,
   genres: [],
-  bandMaster: { userId: MASTER_USER_ID, nickname: '밴드장', email: 'bm@bandco.kr' },
+  bandMaster: { userId: MASTER_USER_ID, nickname: '밴드장', handle: null, email: 'bm@bandco.kr' },
   members: [],
   bandSpaces: [],
   pendingJoinRequests: [],

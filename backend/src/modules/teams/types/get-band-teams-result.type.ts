@@ -1,6 +1,7 @@
 export interface TeamLeaderInfo {
   userId: string;
   nickname: string;
+  handle: string | null;
 }
 
 export interface BandTeamListItem {

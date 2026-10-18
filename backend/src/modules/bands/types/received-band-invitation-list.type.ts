@@ -10,6 +10,7 @@ export interface ReceivedBandInvitationListItem {
   inviter: {
     userId: string;
     nickname: string;
+    handle: string | null;
   };
   message: string | null;
   invitationStatus: BandInvitationStatus;

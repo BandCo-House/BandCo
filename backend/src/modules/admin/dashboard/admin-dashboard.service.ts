@@ -167,6 +167,7 @@ export class AdminDashboardService {
     const topUsers = topUsages.map(usage => ({
       userId: usage.userId,
       nickname: identityByUserId.get(usage.userId)?.nickname ?? null,
+      handle: identityByUserId.get(usage.userId)?.handle ?? null,
       email: identityByUserId.get(usage.userId)?.email ?? null,
       bytes: usage.bytes,
       objectCount: usage.objectCount,
