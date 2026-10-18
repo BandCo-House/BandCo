@@ -335,6 +335,21 @@ describe('AuthService', () => {
       expect(mockUsersService.createUserWithGoogle).toHaveBeenCalledWith(expect.objectContaining({ nickname: 'g' }), mockTransactionClient);
     });
 
+    it('Google 이름이 20자를 넘으면 앞 20자만 닉네임으로 쓴다', async () => {
+      const longName = '가나다라마바사아자차카타파하가나다라마바사아자';
+      mockGoogleAuthClient.verifyIdToken.mockResolvedValue({ ...googlePayload, name: longName });
+      mockUsersService.getUserByOAuth.mockResolvedValue(null);
+      mockUsersService.getUserForOAuthLink.mockResolvedValue(null);
+      mockUsersService.createUserWithGoogle.mockResolvedValue({ id: 'new-uid', email: 'g@u.com' });
+
+      await service.loginWithGoogle('id-token');
+
+      expect(mockUsersService.createUserWithGoogle).toHaveBeenCalledWith(
+        expect.objectContaining({ nickname: longName.slice(0, 20) }),
+        mockTransactionClient,
+      );
+    });
+
     it('유효하지 않은 ID 토큰이면 UnauthorizedException을 던진다', async () => {
       mockGoogleAuthClient.verifyIdToken.mockRejectedValue(new UnauthorizedException('유효하지 않은 Google 토큰입니다.'));
 
