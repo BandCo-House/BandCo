@@ -9,6 +9,7 @@ import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
 import type { CreateOAuthUserInput, OAuthLinkUser } from '../types/oauth-user.type';
 import type { ProfileMusicTrack } from '../types/profile-music.type';
+import type { HandleState, UpdateHandleInput } from '../types/user-handle.type';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
 import type { GetUserProfileResult } from '../types/user-profile.type';
 
@@ -361,9 +362,10 @@ export class UsersPrismaRepository implements UsersRepository {
   async softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null> {
     const client = tx ?? this.prisma;
     try {
+      // 탈퇴 계정은 복구하지 않으므로 고유 ID를 같은 문장에서 풀어 다른 사람이 바로 쓸 수 있게 한다
       const user = await client.user.update({
         where: { id: userId, deletedAt: null },
-        data: { deletedAt: new Date(), status: 'INACTIVE' },
+        data: { deletedAt: new Date(), status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
         select: { id: true, deletedAt: true },
       });
       return { userId: user.id, deletedAt: user.deletedAt!.toISOString() };
@@ -394,5 +396,39 @@ export class UsersPrismaRepository implements UsersRepository {
       where: { id: userId, OR: [{ lastLoginAt: null }, { lastLoginAt: { lt: skipIfAfter } }] },
       data: { lastLoginAt: now },
     });
+  }
+
+  async findUserIdByHandle(handle: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
+    const client = tx ?? this.prisma;
+    // DB 유니크 인덱스는 대소문자를 구분하지만, devjun과 DevJun은 같은 ID로 취급해 하나만 쓰게 한다
+    const profile = await client.userProfile.findFirst({
+      where: { handle: { equals: handle, mode: 'insensitive' } },
+      select: { userId: true },
+    });
+
+    if (!profile) {
+      return null;
+    }
+
+    return { id: profile.userId };
+  }
+
+  async findHandleState(userId: string, tx?: Prisma.TransactionClient): Promise<HandleState | null> {
+    const client = tx ?? this.prisma;
+    return client.userProfile.findFirst({
+      where: { userId, user: { deletedAt: null } },
+      select: { handle: true, handleChangedAt: true },
+    });
+  }
+
+  async updateHandle(userId: string, input: UpdateHandleInput, tx?: Prisma.TransactionClient): Promise<boolean> {
+    const client = tx ?? this.prisma;
+    // 모든 변경은 handle 문자열을 바꾸므로, handle이 읽은 값 그대로일 때만 저장하면 동시 변경 두 건이 모두 통과하지 못한다
+    const result = await client.userProfile.updateMany({
+      where: { userId, handle: input.currentHandle, user: { deletedAt: null } },
+      data: { handle: input.newHandle, handleChangedAt: input.changedAt },
+    });
+
+    return result.count === 1;
   }
 }

@@ -10,7 +10,7 @@ import { UsersPrismaRepository } from './user.prisma-repository';
 const mockPrisma = {
   user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
   userSanction: { findFirst: jest.fn() },
-  userProfile: { create: jest.fn(), update: jest.fn() },
+  userProfile: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },
   profileMusic: { findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
   userSkill: { deleteMany: jest.fn(), createMany: jest.fn() },
   favoriteGenre: { deleteMany: jest.fn(), createMany: jest.fn() },
@@ -374,13 +374,13 @@ describe('UsersPrismaRepository', () => {
   });
 
   describe('softDeleteUser', () => {
-    it('deletedAt과 status를 업데이트하고 결과를 반환한다', async () => {
+    it('deletedAt과 status를 업데이트하고 고유 ID를 풀어 결과를 반환한다', async () => {
       const now = new Date();
       mockPrisma.user.update.mockResolvedValue({ id: 'user-001', deletedAt: now });
       const result = await repository.softDeleteUser('user-001');
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-001', deletedAt: null },
-        data: { deletedAt: expect.any(Date), status: 'INACTIVE' },
+        data: { deletedAt: expect.any(Date), status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
         select: { id: true, deletedAt: true },
       });
       expect(result?.userId).toBe('user-001');
@@ -572,6 +572,72 @@ describe('UsersPrismaRepository', () => {
       const result = await repository.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
       expect(result.user.id).toBe('user-001');
       expect(result.profile?.nickname).toBe('testuser');
+    });
+  });
+
+  describe('findUserIdByHandle', () => {
+    it('대소문자를 무시하고 같은 고유 ID를 가진 유저 id를 돌려준다', async () => {
+      mockPrisma.userProfile.findFirst.mockResolvedValue({ userId: 'user-002' });
+
+      const result = await repository.findUserIdByHandle('DevJun');
+
+      expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
+        where: { handle: { equals: 'DevJun', mode: 'insensitive' } },
+        select: { userId: true },
+      });
+      expect(result).toEqual({ id: 'user-002' });
+    });
+
+    it('쓰는 유저가 없으면 null을 돌려준다', async () => {
+      mockPrisma.userProfile.findFirst.mockResolvedValue(null);
+
+      expect(await repository.findUserIdByHandle('devjun')).toBeNull();
+    });
+  });
+
+  describe('findHandleState', () => {
+    it('탈퇴하지 않은 유저의 고유 ID와 쿨다운 기준 시각만 조회한다', async () => {
+      const changedAt = new Date('2026-10-19T06:00:00.000Z');
+      mockPrisma.userProfile.findFirst.mockResolvedValue({ handle: 'devjun', handleChangedAt: changedAt });
+
+      const result = await repository.findHandleState('user-001');
+
+      expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
+        where: { userId: 'user-001', user: { deletedAt: null } },
+        select: { handle: true, handleChangedAt: true },
+      });
+      expect(result).toEqual({ handle: 'devjun', handleChangedAt: changedAt });
+    });
+  });
+
+  describe('updateHandle', () => {
+    const input = { currentHandle: 'devjnu', newHandle: 'devjun', changedAt: new Date('2026-10-19T06:00:00.000Z') };
+
+    it('현재 고유 ID가 읽은 값과 같을 때만 저장한다', async () => {
+      mockPrisma.userProfile.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await repository.updateHandle('user-001', input);
+
+      expect(mockPrisma.userProfile.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-001', handle: 'devjnu', user: { deletedAt: null } },
+        data: { handle: 'devjun', handleChangedAt: input.changedAt },
+      });
+      expect(result).toBe(true);
+    });
+
+    it('다른 요청이 먼저 바꿔 갱신된 행이 없으면 false를 돌려준다', async () => {
+      mockPrisma.userProfile.updateMany.mockResolvedValue({ count: 0 });
+
+      expect(await repository.updateHandle('user-001', input)).toBe(false);
+    });
+
+    it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
+      const txClient = { userProfile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) } };
+
+      await repository.updateHandle('user-001', input, txClient as unknown as Prisma.TransactionClient);
+
+      expect(txClient.userProfile.updateMany).toHaveBeenCalled();
+      expect(mockPrisma.userProfile.updateMany).not.toHaveBeenCalled();
     });
   });
 });

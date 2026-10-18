@@ -9,9 +9,25 @@ import { PROFILE_MUSIC_REPOSITORY, ProfileMusicRepository } from './repositoreis
 import { type ActiveSuspension, USERS_REPOSITORY, UsersRepository } from './repositoreis/user.repository';
 import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
+import type { ChangeHandleResult, HandleAvailabilityResult } from './types/user-handle.type';
+import { getHandleChangeableAt } from './util/handle-cooldown';
 
 /** 마지막 접속 시각을 이 간격 안에서는 다시 쓰지 않는다. DAU 집계에는 충분하고 쓰기 부하는 줄인다. */
 const LAST_LOGIN_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
+
+const HANDLE_TAKEN_MESSAGE = '이미 사용 중인 고유 ID입니다.';
+// 다음 변경 가능 시각은 프론트가 응답 필드로 포맷해 보여주므로 메시지에는 넣지 않는다
+const HANDLE_COOLDOWN_MESSAGE = '고유 ID는 7일에 한 번만 변경할 수 있습니다.';
+
+function toChangeHandleResult(userId: string, handle: string, handleChangedAt: Date | null, now: Date): ChangeHandleResult {
+  const changeableAt = getHandleChangeableAt(handleChangedAt, now);
+  return {
+    userId,
+    handle,
+    handleChangedAt: handleChangedAt?.toISOString() ?? null,
+    handleChangeableAt: changeableAt?.toISOString() ?? null,
+  };
+}
 
 function toDeezerProfileMusicTrack(track: DeezerTrackApiResponse): ProfileMusicTrack {
   return {
@@ -173,6 +189,77 @@ export class UsersService {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
     return result;
+  }
+
+  /**
+   * 마이페이지에서 고유 ID를 저장하기 전에 쓸 수 있는 값인지 확인한다.
+   * 지금 본인이 쓰고 있는 값(대소문자만 다른 경우 포함)은 그대로 저장해도 되므로 사용 가능으로 본다.
+   *
+   * @param {string} handle - 형식 검증을 통과한 고유 ID
+   * @param {string} viewerUserId - 확인을 요청한 인증 사용자 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<HandleAvailabilityResult>} 사용 가능 여부
+   */
+  async checkHandleAvailability(handle: string, viewerUserId: string, tx?: Prisma.TransactionClient): Promise<HandleAvailabilityResult> {
+    const owner = await this.usersRepository.findUserIdByHandle(handle, tx);
+    const isTakenByOther = owner !== null && owner.id !== viewerUserId;
+
+    return { handle, available: !isTakenByOther };
+  }
+
+  /**
+   * 고유 ID를 바꾼다. 한 번 바꾸면 7일간 다시 바꿀 수 없고, 비어 있던 ID를 처음 정하는 것은 쿨다운에 세지 않는다.
+   *
+   * 중복 검사와 저장 사이에 다른 유저가 같은 값을 먼저 가져가면 유니크 제약 위반(P2002)으로,
+   * 같은 유저의 동시 변경은 저장 조건(현재 handle 일치)으로 막는다.
+   *
+   * @param {string} userId - 고유 ID를 바꿀 유저 ID
+   * @param {string} handle - 형식 검증을 통과한 새 고유 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<ChangeHandleResult>} 변경 후 고유 ID와 쿨다운 정보
+   */
+  async changeHandle(userId: string, handle: string, tx?: Prisma.TransactionClient): Promise<ChangeHandleResult> {
+    const now = new Date();
+    const state = await this.usersRepository.findHandleState(userId, tx);
+    if (!state) {
+      throw new NotFoundException('존재하지 않는 유저입니다.');
+    }
+
+    // 지금 값과 똑같이 저장하면 아무것도 바꾸지 않으므로 쿨다운도 소모하지 않는다
+    if (state.handle === handle) {
+      return toChangeHandleResult(userId, handle, state.handleChangedAt, now);
+    }
+
+    const changeableAt = getHandleChangeableAt(state.handleChangedAt, now);
+    if (changeableAt !== null) {
+      throw new BadRequestException(HANDLE_COOLDOWN_MESSAGE);
+    }
+
+    const owner = await this.usersRepository.findUserIdByHandle(handle, tx);
+    const isTakenByOther = owner !== null && owner.id !== userId;
+    if (isTakenByOther) {
+      throw new BadRequestException(HANDLE_TAKEN_MESSAGE);
+    }
+
+    // 처음 설정은 쿨다운에 세지 않아 직후 한 번은 바로 고칠 수 있다(오타 구제)
+    const isFirstSet = state.handle === null;
+    const changedAt = isFirstSet ? null : now;
+
+    let isUpdated: boolean;
+    try {
+      isUpdated = await this.usersRepository.updateHandle(userId, { currentHandle: state.handle, newHandle: handle, changedAt }, tx);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException(HANDLE_TAKEN_MESSAGE);
+      }
+      throw error;
+    }
+
+    if (!isUpdated) {
+      throw new BadRequestException('고유 ID가 방금 다른 요청으로 변경되었습니다. 다시 시도해 주세요.');
+    }
+
+    return toChangeHandleResult(userId, handle, changedAt, now);
   }
 
   /**
