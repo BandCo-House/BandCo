@@ -527,6 +527,21 @@ export const scheduleHandlers = [
   }),
 
   // 일정 수정 (PATCH /schedules/:scheduleId)
+  // 일정 삭제 mock (DELETE /schedules/:scheduleId)
+  http.delete(`${API_URL}/schedules/:scheduleId`, ({ params }) => {
+    const { scheduleId } = params as { scheduleId: string };
+    scheduleStore.delete(scheduleId);
+
+    return HttpResponse.json<
+      ApiSuccessResponse<{ scheduleId: string; deletedAt: string }>
+    >({
+      status: 'success',
+      error: null,
+      message: '합주 일정 삭제 성공',
+      data: { scheduleId, deletedAt: new Date().toISOString() },
+    });
+  }),
+
   http.patch(
     `${API_URL}/schedules/:scheduleId`,
     async ({ params, request }) => {

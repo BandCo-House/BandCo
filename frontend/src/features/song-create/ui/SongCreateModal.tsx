@@ -54,7 +54,6 @@ const VIDEO_LINK_HINT_ID = 'song-video-link-hint';
 const VIDEO_LINK_ERROR_ID = 'song-video-link-error';
 
 /** 디자인의 `곡 검색`·`＋링크` 버튼 크기. */
-const ACCENT_BUTTON_CLASS = 'h-[46px] gap-1 px-4 typo-base-b';
 
 interface RemovableChipProps {
   label: string;
@@ -322,7 +321,7 @@ export const SongCreateModal = ({
                 <Button
                   type="button"
                   variant="accent"
-                  className={ACCENT_BUTTON_CLASS}
+                  size="inline"
                   disabled={!canLoadVideo}
                   onClick={() => void handleLoadVideo()}
                 >
@@ -366,7 +365,7 @@ export const SongCreateModal = ({
               <Button
                 type="button"
                 variant="accent"
-                className={ACCENT_BUTTON_CLASS}
+                size="inline"
                 onClick={() => setIsSearchOpen(true)}
               >
                 <Search aria-hidden="true" className="size-[18px]" />곡 검색
@@ -465,7 +464,7 @@ export const SongCreateModal = ({
               <Button
                 type="button"
                 variant="accent"
-                className={ACCENT_BUTTON_CLASS}
+                size="inline"
                 disabled={!canAddLink}
                 onClick={handleAddLink}
               >

@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsOptional } from 'class-validator';
 
@@ -8,6 +9,7 @@ import { booleanValidationMessage } from '../../../common/validation-message/boo
  * 장소 상세 조회 쿼리를 검증한다.
  */
 export class GetPlaceDetailQueryDto {
+  @ApiPropertyOptional({ description: '활성 여부 필터', example: true })
   @Transform(parseOptionalBooleanValue)
   @IsOptional()
   @IsBoolean({ message: booleanValidationMessage })

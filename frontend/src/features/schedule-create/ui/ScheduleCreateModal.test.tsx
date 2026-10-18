@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import * as scheduleApi from '@/entities/schedule/api';
 import { ScheduleCreateModal } from './ScheduleCreateModal';
 
 const renderModal = () => {
@@ -61,5 +62,48 @@ describe('ScheduleCreateModal', () => {
     await user.type(screen.getByLabelText('합주 이름'), '합주 A');
 
     expect(screen.getByRole('button', { name: '추가' })).toBeDisabled();
+  });
+
+  it('추가 폼에는 삭제 액션이 없다', () => {
+    renderModal();
+
+    expect(
+      screen.queryByRole('button', { name: '일정 삭제' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('기존 일정은 확인을 거쳐 삭제하고 닫는다', async () => {
+    const deleteSchedule = vi
+      .spyOn(scheduleApi, 'deleteSchedule')
+      .mockResolvedValue({ scheduleId: 'schedule-1', deletedAt: '' });
+    const onClose = vi.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const modal = (isOpen: boolean) => (
+      <QueryClientProvider client={queryClient}>
+        <ScheduleCreateModal
+          isOpen={isOpen}
+          onClose={onClose}
+          spaceId="space-1"
+          bandId="band-1"
+          initialScheduleId="schedule-1"
+        />
+      </QueryClientProvider>
+    );
+    // 모달은 닫힌 채 마운트돼 있다가 열릴 때 initialScheduleId를 읽는다.
+    const { rerender } = render(modal(false));
+    rerender(modal(true));
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: '일정 삭제' }));
+    expect(deleteSchedule).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    await waitFor(() =>
+      expect(deleteSchedule).toHaveBeenCalledWith('schedule-1'),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });
