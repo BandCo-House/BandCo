@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apiGet, apiPost } from '@/shared/api';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/shared/api';
 import {
   createdSongSchema,
   songListItemSchema,
@@ -10,6 +10,7 @@ import type {
   CreatedSong,
   SongListItem,
   SongPreview,
+  UpdateSongRequest,
 } from '../model/types';
 
 export interface GetBandSongsParams {
@@ -68,3 +69,18 @@ export const createSong = async (
   const data = await apiPost<unknown>(`/bands/${bandId}/songs`, body);
   return createdSongSchema.parse(data);
 };
+
+/** 합주곡을 수정한다. */
+export const updateSong = async (
+  songId: string,
+  body: UpdateSongRequest,
+): Promise<void> => {
+  await apiPatch(`/songs/${songId}`, body);
+};
+
+/** 합주곡을 삭제한다. */
+export const deleteSong = async (songId: string): Promise<void> => {
+  await apiDelete(`/songs/${songId}`);
+};
+
+
