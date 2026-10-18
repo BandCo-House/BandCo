@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { useKakaoLoader } from 'react-kakao-maps-sdk';
 import { Search } from 'lucide-react';
 import { KAKAO_MAP_APP_KEY } from '@/shared/api/config';
+import { useKakaoMapLoader } from '@/shared/lib/use-kakao-map-loader';
 import {
   Dialog,
   AppDialogBody,
@@ -23,6 +23,9 @@ export interface AddressSelection {
   address: string;
   /** 사용자가 입력한 상세주소. 비어 있으면 빈 문자열. */
   detailAddress: string;
+  /** 핀 위치. 검색 결과를 고르거나 지도를 터치해 옮긴 좌표. */
+  latitude: number;
+  longitude: number;
 }
 
 interface AddressSearchModalProps {
@@ -78,10 +81,7 @@ interface AddressSearchBodyProps {
 
 /** 키가 있을 때만 마운트되어 SDK를 로드한다(모달이 닫히면 언마운트되어 상태도 초기화). */
 const AddressSearchBody = ({ onCancel, onConfirm }: AddressSearchBodyProps) => {
-  const [isSdkLoading, sdkError] = useKakaoLoader({
-    appkey: KAKAO_MAP_APP_KEY,
-    libraries: ['services'],
-  });
+  const [isSdkLoading, sdkError] = useKakaoMapLoader();
   const { results, status, search } = useKakaoPlaceSearch();
   const {
     mapCenter,
@@ -89,6 +89,7 @@ const AddressSearchBody = ({ onCancel, onConfirm }: AddressSearchBodyProps) => {
     selectedResultId,
     selectedPlaceInfo,
     isResolvingAddress,
+    isInitializingLocation,
     canConfirm,
     selectResult,
     movePin,
@@ -153,20 +154,27 @@ const AddressSearchBody = ({ onCancel, onConfirm }: AddressSearchBodyProps) => {
         <section aria-label="지도 및 상세 정보" className="flex flex-col gap-3">
           <span className="typo-sm-sb text-grey-200">위치 확인</span>
 
-          <KakaoMap
-            center={mapCenter}
-            className="h-[180px] w-full"
-            marker={
-              markerPosition
-                ? {
-                    position: markerPosition,
-                    draggable: true,
-                    onDragEnd: (pos) => void movePin(pos.lat, pos.lng),
-                  }
-                : null
-            }
-            onMapClick={(pos) => void movePin(pos.lat, pos.lng)}
-          />
+          {isInitializingLocation ? (
+            <div className="flex h-[180px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-surface-2/60 backdrop-blur-sm">
+              <div className="size-5 animate-spin rounded-full border-2 border-grey-400 border-t-transparent" />
+              <p className="typo-xs-r text-grey-400">현재 위치를 확인하고 있어요...</p>
+            </div>
+          ) : (
+            <KakaoMap
+              center={mapCenter}
+              className="h-[180px] w-full"
+              marker={
+                markerPosition
+                  ? {
+                      position: markerPosition,
+                      draggable: true,
+                      onDragEnd: (pos) => void movePin(pos.lat, pos.lng),
+                    }
+                  : null
+              }
+              onMapClick={(pos) => void movePin(pos.lat, pos.lng)}
+            />
+          )}
 
           {selectedPlaceInfo ? (
             <div className="flex flex-col gap-3 pt-1">
@@ -215,10 +223,12 @@ const AddressSearchBody = ({ onCancel, onConfirm }: AddressSearchBodyProps) => {
           size="lg"
           disabled={!canConfirm}
           onClick={() => {
-            if (!canConfirm || !selectedPlaceInfo) return;
+            if (!canConfirm || !selectedPlaceInfo || !markerPosition) return;
             onConfirm({
               address: selectedPlaceInfo.address,
               detailAddress: detailAddress.trim(),
+              latitude: markerPosition.lat,
+              longitude: markerPosition.lng,
             });
           }}
         >

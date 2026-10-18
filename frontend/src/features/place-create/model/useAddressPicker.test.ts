@@ -30,6 +30,7 @@ describe('useAddressPicker', () => {
     expect(hookResult.current.selectedResultId).toBeNull();
     expect(hookResult.current.selectedPlaceInfo).toBeNull();
     expect(hookResult.current.mapCenter).toEqual({ lat: 37.56, lng: 126.97 });
+    expect(hookResult.current.isInitializingLocation).toBe(false);
   });
 
   it('selectResult 호출 시 마커와 지도 중심 및 선택 정보가 설정된다', async () => {

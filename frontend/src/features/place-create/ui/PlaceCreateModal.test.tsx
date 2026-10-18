@@ -35,6 +35,8 @@ vi.mock('./AddressSearchModal', async () => {
                 onSelect({
                   address: '서울 마포구 신촌로 12다길 20',
                   detailAddress: '201호',
+                  latitude: 37.5551,
+                  longitude: 126.9368,
                 });
                 onOpenChange(false);
               }}
@@ -65,7 +67,7 @@ describe('PlaceCreateModal', () => {
     ).toBeInTheDocument();
   });
 
-  it('검색 모달에서 고른 주소를 보여주고 상세주소와 분리해 전송한다', async () => {
+  it('검색 모달에서 고른 주소를 보여주고 상세주소·좌표와 함께 전송한다', async () => {
     const user = userEvent.setup();
     render(<PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />);
 
@@ -83,6 +85,8 @@ describe('PlaceCreateModal', () => {
       {
         name: '연습실 A',
         address: '서울 마포구 신촌로 12다길 20',
+        latitude: 37.5551,
+        longitude: 126.9368,
         detailAddress: '201호',
         imageUrl: undefined,
       },

@@ -156,6 +156,8 @@ describe('AddressSearchModal', () => {
     expect(onSelect).toHaveBeenCalledWith({
       address: '서울 마포구 신촌로 12다길 20',
       detailAddress: '201호',
+      latitude: 37.55,
+      longitude: 126.93,
     });
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -167,7 +169,8 @@ describe('AddressSearchModal', () => {
       <AddressSearchModal open onOpenChange={vi.fn()} onSelect={onSelect} />,
     );
 
-    await user.click(screen.getByTestId('kakao-map'));
+    const map = await screen.findByTestId('kakao-map');
+    await user.click(map);
 
     expect(await screen.findByText('선택한 위치')).toBeInTheDocument();
     expect(await screen.findByText('변환된 주소 (37.55, 126.93)')).toBeInTheDocument();
@@ -180,6 +183,8 @@ describe('AddressSearchModal', () => {
     expect(onSelect).toHaveBeenCalledWith({
       address: '변환된 주소 (37.55, 126.93)',
       detailAddress: '',
+      latitude: 37.551,
+      longitude: 126.931,
     });
   });
 
@@ -208,7 +213,7 @@ describe('AddressSearchModal', () => {
       <AddressSearchModal open onOpenChange={vi.fn()} onSelect={vi.fn()} />,
     );
 
-    const zoomInBtn = screen.getByRole('button', { name: '지도 확대' });
+    const zoomInBtn = await screen.findByRole('button', { name: '지도 확대' });
     const zoomOutBtn = screen.getByRole('button', { name: '지도 축소' });
 
     expect(zoomInBtn).toBeInTheDocument();

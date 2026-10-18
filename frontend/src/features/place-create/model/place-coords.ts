@@ -17,7 +17,19 @@ export const getCurrentLocation = (): Promise<{ lat: number; lng: number } | nul
         });
       },
       () => {
-        resolve(null);
+        // HighAccuracy 실패 시 일반 모드로 재시도 (PC 크롬/엣지에서 흔한 타임아웃 방지)
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          () => {
+            resolve(null);
+          },
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 },
+        );
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 },
     );

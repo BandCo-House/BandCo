@@ -45,6 +45,10 @@ export const PlaceCreateModal = ({
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
+  const [coordinates, setCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -59,6 +63,7 @@ export const PlaceCreateModal = ({
       setName('');
       setAddress('');
       setDetailAddress('');
+      setCoordinates(null);
       setIsAddressSearchOpen(false);
       setCoverFile(null);
       setCoverPreview(null);
@@ -81,6 +86,10 @@ export const PlaceCreateModal = ({
   const applyAddress = (selection: AddressSelection) => {
     setAddress(selection.address);
     setDetailAddress(selection.detailAddress);
+    setCoordinates({
+      latitude: selection.latitude,
+      longitude: selection.longitude,
+    });
   };
 
   const displayAddress = [address, detailAddress].filter(Boolean).join(' ');
@@ -125,6 +134,8 @@ export const PlaceCreateModal = ({
       {
         name: name.trim(),
         address: address.trim(),
+        // 좌표는 백엔드 규칙대로 주소와 함께, 위도·경도를 쌍으로만 보낸다.
+        ...coordinates,
         detailAddress: detailAddress.trim() || undefined,
         imageUrl,
       },

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Map, MapMarker } from 'react-kakao-maps-sdk';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
@@ -38,6 +38,13 @@ export const KakaoMap = ({
   children,
 }: KakaoMapProps) => {
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
+
+  // center prop이 변경되면 카카오 지도 인스턴스의 중심을 실제로 이동시킨다.
+  useEffect(() => {
+    if (!map || !window.kakao?.maps?.LatLng) return;
+    const newCenter = new window.kakao.maps.LatLng(center.lat, center.lng);
+    map.panTo(newCenter);
+  }, [map, center.lat, center.lng]);
 
   const handleZoomIn = () => {
     if (!map) return;

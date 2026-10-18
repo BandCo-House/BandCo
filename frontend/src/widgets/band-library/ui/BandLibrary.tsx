@@ -156,7 +156,6 @@ export const BandLibrary = () => {
       <PlaceDetailModal
         open={isPlaceDetailOpen}
         onOpenChange={setIsPlaceDetailOpen}
-        bandId={bandId}
         place={detailPlace}
         canDelete={canDeletePlace}
       />

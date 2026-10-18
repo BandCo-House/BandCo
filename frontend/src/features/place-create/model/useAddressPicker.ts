@@ -22,14 +22,17 @@ export const useAddressPicker = () => {
   const [selectedPlaceInfo, setSelectedPlaceInfo] =
     useState<SelectedPlaceInfo | null>(null);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+  const [isInitializingLocation, setIsInitializingLocation] = useState(true);
 
-  // 마운트 시 사용자 현재 위치를 기본 중심으로 설정 (마커는 찍지 않음)
+  // 마운트 시 사용자 현재 위치를 확인하여 초기 중심 설정 후 지도 활성화
   useEffect(() => {
     let isMounted = true;
     void getCurrentLocation().then((loc) => {
-      if (isMounted && loc) {
-        setMapCenter(loc);
+      if (!isMounted) return;
+      if (loc) {
+        setMapCenter({ ...loc });
       }
+      setIsInitializingLocation(false);
     });
     return () => {
       isMounted = false;
@@ -72,6 +75,7 @@ export const useAddressPicker = () => {
     selectedResultId,
     selectedPlaceInfo,
     isResolvingAddress,
+    isInitializingLocation,
     canConfirm,
     selectResult,
     movePin,
