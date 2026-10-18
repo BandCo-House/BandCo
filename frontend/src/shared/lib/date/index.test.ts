@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   getStartOfWeek,
   getWeekDays,
+  getMonthDays,
+  getWeekOfMonth,
   addDays,
+  addMonths,
   formatWeekRange,
   formatDotDate,
   formatClockTime,
@@ -140,5 +143,50 @@ describe('formatClockTime', () => {
   });
   it('값이 없으면 빈 문자열을 반환한다', () => {
     expect(formatClockTime(null)).toBe('');
+  });
+
+  describe('getMonthDays', () => {
+    it('1일 앞을 그 요일만큼 빈 칸으로 채우고 말일까지 반환해야 합니다', () => {
+      // 2026-10-01은 목요일입니다(일요일 시작이면 앞에 빈 칸 4개).
+      const days = getMonthDays(2026, 9);
+
+      expect(days.slice(0, 4)).toEqual([null, null, null, null]);
+      expect(days[4]?.getDate()).toBe(1);
+      expect(days.at(-1)?.getDate()).toBe(31);
+      expect(days).toHaveLength(35);
+    });
+  });
+
+  describe('addMonths', () => {
+    it('같은 일이 있는 달로는 날짜를 유지한 채 옮겨야 합니다', () => {
+      const next = addMonths(new Date(2026, 9, 11), 1);
+
+      expect(next.getMonth()).toBe(10);
+      expect(next.getDate()).toBe(11);
+    });
+
+    it('같은 일이 없는 달로 옮기면 한 달을 건너뛰지 않고 말일로 맞춰야 합니다', () => {
+      const next = addMonths(new Date(2026, 0, 31), 1);
+
+      expect(next.getMonth()).toBe(1);
+      expect(next.getDate()).toBe(28);
+    });
+
+    it('해를 넘겨 이전 달로 옮길 수 있어야 합니다', () => {
+      const prev = addMonths(new Date(2026, 0, 15), -1);
+
+      expect(prev.getFullYear()).toBe(2025);
+      expect(prev.getMonth()).toBe(11);
+    });
+  });
+
+  describe('getWeekOfMonth', () => {
+    it('일요일 시작 기준으로 그 달의 몇 번째 주인지 반환해야 합니다', () => {
+      // 2026-10: 1~3일이 1주차, 4~10일이 2주차, 11~17일이 3주차.
+      expect(getWeekOfMonth(new Date(2026, 9, 3))).toBe(1);
+      expect(getWeekOfMonth(new Date(2026, 9, 4))).toBe(2);
+      expect(getWeekOfMonth(new Date(2026, 9, 11))).toBe(3);
+      expect(getWeekOfMonth(new Date(2026, 9, 31))).toBe(5);
+    });
   });
 });

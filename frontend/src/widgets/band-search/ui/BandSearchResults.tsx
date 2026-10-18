@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { SearchBandItem } from '@/entities/band/model/types';
+import { useDebouncedValue } from '@/shared/lib/use-debounced-value';
 import { EmptyState } from '@/shared/ui/empty-state';
+
+// 이보다 빨리 끝나는 조회에는 스켈레톤을 띄우지 않는다. 응답이 0.1초 만에 와도 스켈레톤이
+// 한 번 번쩍이고 사라져, 기다리게 한 것보다 더 거슬린다.
+const SKELETON_DELAY_MS = 300;
 
 interface BandSearchResultsProps {
   bands: SearchBandItem[];
@@ -39,11 +44,16 @@ export const BandSearchResults = ({
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, onFetchNextPage]);
 
+  const isSkeletonDue = useDebouncedValue(isLoading, SKELETON_DELAY_MS);
+
   const handleImageError = (id: string) => {
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
   if (isLoading) {
+    // 지연 시간 안에는 아무것도 그리지 않는다 — 빈 결과 안내를 내면 그것도 번쩍인다.
+    if (!isSkeletonDue) return null;
+
     return (
       <div className="flex flex-col gap-4 px-5 py-4">
         {Array.from({ length: 4 }).map((_, idx) => (
@@ -93,7 +103,7 @@ export const BandSearchResults = ({
             className="group flex w-full items-start gap-2 transition-opacity hover:opacity-90 active:scale-[0.99]"
           >
             {/* Left: Poster Card (Figma Node 1604:15779) */}
-            <div className="flex w-[120.9px] shrink-0 flex-col items-center gap-2 rounded-[10.6px] border border-[rgba(220,226,249,0.4)] bg-white p-[4px] pb-3 shadow-sm">
+            <div className="flex w-[120.9px] shrink-0 flex-col items-center gap-2 rounded-[10.6px] border border-surface-1 bg-white p-[4px] pb-3 shadow-sm">
               <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[10.6px] bg-grey-200 typo-base-b text-[#1b1b32]">
                 {hasValidImage ? (
                   <img

@@ -75,7 +75,7 @@ export function BandInviteModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-md border-border bg-surface-1 text-grey-50">
+      <DialogContent className="max-w-sm rounded-md bg-surface-1 glass-surface text-grey-50">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="size-5 text-primary" />
@@ -95,7 +95,7 @@ export function BandInviteModal({
               <select
                 value={selectedBandId}
                 onChange={(e) => setSelectedBandId(e.target.value)}
-                className="w-full rounded-md border border-border bg-surface-2 p-3 typo-sm-r text-grey-100 focus:border-primary focus:outline-none"
+                className="w-full rounded-md border border-transparent bg-surface-2 glass-surface p-3 typo-sm-r text-grey-100 focus:border-primary focus:outline-none"
               >
                 {availableBands.map((b) => (
                   <option key={b.id} value={b.id}>

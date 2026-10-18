@@ -2,6 +2,10 @@ import * as React from 'react';
 import { XIcon } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 
+import {
+  useVerticalScrollEdges,
+  verticalFadeMask,
+} from '@/shared/lib/scroll-fade';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { CloseButtonContent, closeButtonClass } from '@/shared/ui/close-button';
@@ -129,20 +133,22 @@ const RIM_COLOR = 'color-mix(in srgb, var(--surface-1) 40%, transparent)';
  *
  * 판단 기준은 하나다 — **내용이 늘어나 스크롤이 생길 수 있는가.**
  *
- * - `full`: 스크롤이 생길 수 있는 모달(폼·목록·검색). 좌우 여백 없이 앱 셸 폭
- *   (648)을 채우고, 내용이 길면 화면 높이까지 쓴다.
- *   밴드 만들기 · 합주 공간 만들기 · 곡 검색 · 멤버 검색 · 프로필 곡 검색
+ * - `full`: 스크롤이 생길 수 있는 모달(폼·목록·검색). 앱 셸 폭(648)까지 넓어지고,
+ *   내용이 길면 화면 높이까지 쓴다. 사방에 16px은 남긴다 — 가장자리까지 채우면
+ *   모달과 뒤 화면의 경계가 사라져 "떠 있는 창"이 아니라 화면이 통째로 바뀐 것처럼
+ *   읽히고, 유리 테두리·글로우도 화면 끝에 잘린다.
+ *   밴드 만들기 · 합주 공간 만들기·수정 · 곡 검색 · 멤버 검색 · 프로필 곡 검색
  *
- * - `compact`: 한 화면에 다 들어가고 앞으로도 늘어날 일이 없는 모달. 양옆 16px을
- *   남겨 "화면 위에 뜬 작은 창"으로 읽히게 한다.
+ * - `compact`: 한 화면에 다 들어가고 앞으로도 늘어날 일이 없는 모달. 높이를 화면의
+ *   85%로 묶어 "화면 위에 뜬 작은 창"으로 읽히게 한다. 양옆 여백은 full과 같다.
  *   확인창(ConfirmDialog) · 편집 나가기 · 초대코드 입력
  *
- * **헷갈리면 full이다.** compact인데 내용이 늘면 좁은 폰에서 스크롤이 생기는 데다
- * 양옆 여백까지 더해져 두 번 조인다. 반대 실수(full인데 짧은 모달)는 폭만 넓어질
- * 뿐 내용이 짧으면 높이도 짧게 서서 손해가 적다.
+ * **헷갈리면 full이다.** compact인데 내용이 늘면 낮은 화면에서 85%에 걸려 스크롤
+ * 영역이 한 번 더 줄어든다. 반대 실수(full인데 짧은 모달)는 내용이 짧으면 높이도
+ * 짧게 서서 손해가 없다.
  *
- * 그런데도 기본값이 compact인 건 "빠뜨렸을 때" 기준이 다르기 때문이다. 폼이 16px
- * 좁아지는 것보다 확인창이 화면을 꽉 채우는 쪽이 훨씬 눈에 띄게 깨진다.
+ * 그런데도 기본값이 compact인 건 "빠뜨렸을 때" 기준이 다르기 때문이다. 확인창이
+ * 화면 높이를 다 쓰는 쪽이 훨씬 눈에 띄게 깨진다.
  * 고를 때는 full 쪽으로 기울고, 안 고르면 안전한 쪽으로 떨어지게 둔다.
  */
 type AppDialogSize = 'compact' | 'full';
@@ -174,11 +180,11 @@ function AppDialogContent({
         // 하단을 32로 키우지 않는 이유: 푸터 간격은 AppDialogFooter의 mt-8이 맡는다.
         'flex flex-col overflow-hidden rounded-md border-0 bg-white/24 p-5 text-grey-100 shadow-none backdrop-blur-md',
         size === 'full'
-          ? // 앱 셸(max-w-[648px])과 같은 폭. shadcn 기본값 max-w-[calc(100%-2rem)]는
-            // 작은 화면에서 양옆 16px을 남겨 가뜩이나 좁은 폰에서 내용을 한 번 더
-            // 조이고, 시트(max-w-[648px])와도 폭이 어긋났다.
-            'max-h-dvh w-full max-w-[648px] sm:max-w-[648px]'
-          : // 확인창은 양옆 여백이 있어야 "화면 위에 뜬 작은 창"으로 읽힌다.
+          ? // 앱 셸(648)까지 넓어지되 사방 16px(2rem의 절반씩)은 항상 남긴다.
+            // 좌우는 DialogContent 기본값 max-w-[calc(100%-2rem)]가 이미 남기고,
+            // sm 이상에서만 min()으로 같은 여백을 지킨다(640~680px 구간).
+            'max-h-[calc(100dvh-2rem)] sm:max-w-[min(648px,calc(100%-2rem))]'
+          : // 확인창은 높이를 묶어 "화면 위에 뜬 작은 창"으로 읽히게 한다.
             'max-h-[85dvh]',
         className,
       )}
@@ -245,14 +251,29 @@ function AppDialogHeader({
   );
 }
 
-function AppDialogBody({ className, ...props }: React.ComponentProps<'div'>) {
+function AppDialogBody({
+  className,
+  style,
+  ...props
+}: React.ComponentProps<'div'>) {
+  const { ref, atEnd } = useVerticalScrollEdges<HTMLDivElement>();
+
   return (
     <div
+      ref={ref}
       className={cn(
         // min-h-0가 있어야 flex 자식이 실제로 줄어들며 스크롤이 생긴다.
         'relative z-10 flex min-h-0 scrollbar-glass flex-1 flex-col gap-9 overflow-y-auto text-grey-100',
         className,
       )}
+      style={{
+        // 아래로 더 내릴 내용이 있으면 본문 끝(푸터 바로 위)을 흐리게 지워 알린다.
+        // 유리 배경이라 색 그라데이션을 덮을 수 없어, 내용 자체를 투명하게 만든다.
+        // 끝에 닿아도 마스크는 걷지 않고 불투명으로만 바꾼다 — mask 유무가 바뀌면
+        // 안쪽 backdrop-blur의 기준이 달라져 유리 카드 색이 그 순간 튄다.
+        ...verticalFadeMask(false, !atEnd),
+        ...style,
+      }}
       {...props}
     />
   );

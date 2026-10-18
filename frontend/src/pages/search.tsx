@@ -82,7 +82,7 @@ function SearchPage() {
             className="size-6 rotate-180"
           />
         </button>
-        <div className="relative flex h-11 flex-1 items-center rounded-full bg-surface-1 focus-within:ring-2 focus-within:ring-primary">
+        <div className="relative flex h-11 flex-1 items-center rounded-full bg-surface-1/50 glass-surface focus-within:ring-2 focus-within:ring-primary">
           <SearchIcon
             size={16}
             className="pointer-events-none absolute left-[14px] text-grey-200"

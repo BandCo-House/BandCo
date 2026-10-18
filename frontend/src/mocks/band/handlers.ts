@@ -250,8 +250,13 @@ export const bandHandlers = [
       error: null,
       message: '내 밴드 목록 조회 성공',
       data: {
-        totalCount: mockBands.length,
         items: mockBands,
+        meta: {
+          count: mockBands.length,
+          take: 20,
+          cursor: null,
+          next: null,
+        },
       },
     });
   }),
@@ -263,8 +268,13 @@ export const bandHandlers = [
       error: null,
       message: '내 가입 밴드 목록 조회 성공',
       data: {
-        totalCount: mockBands.length,
         items: mockBands,
+        meta: {
+          count: mockBands.length,
+          take: 20,
+          cursor: null,
+          next: null,
+        },
       },
     });
   }),

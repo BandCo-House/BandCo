@@ -38,6 +38,8 @@ async function bootstrap(): Promise<void> {
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: '액세스 토큰' }, 'access-token')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: '리프레시 토큰' }, 'refresh-token')
     .addBasicAuth({ type: 'http', scheme: 'basic', description: '이메일:비밀번호 Base64 인코딩' })
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: '어드민 액세스 토큰' }, 'admin-access-token')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: '어드민 리프레시 토큰' }, 'admin-refresh-token')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

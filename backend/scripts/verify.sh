@@ -18,3 +18,4 @@ run_step "lint" pnpm run lint
 run_step "format:check" pnpm run format:check
 run_step "build" pnpm run build
 run_step "test" pnpm run test
+run_step "assistant-evaluation" pnpm run test:assistant-evaluation

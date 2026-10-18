@@ -8,13 +8,21 @@ import type { GetUsersQuery } from '../dto/get-users-query.dto';
 import { UsersPrismaRepository } from './user.prisma-repository';
 
 const mockPrisma = {
-  user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+  user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+  userSanction: { findFirst: jest.fn() },
   userProfile: { create: jest.fn(), update: jest.fn() },
   profileMusic: { findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
   userSkill: { deleteMany: jest.fn(), createMany: jest.fn() },
   favoriteGenre: { deleteMany: jest.fn(), createMany: jest.fn() },
   userOAuthAccount: { findUnique: jest.fn(), create: jest.fn() },
   $transaction: jest.fn().mockImplementation(fn => fn(mockPrisma)),
+};
+
+// 시각과 무관하게 비교하려고 endsAt 조건은 아무 Date나 허용한다
+const ACTIVE_SUSPENSION_WHERE = {
+  type: 'SUSPENSION',
+  revokedAt: null,
+  OR: [{ endsAt: null }, { endsAt: { gt: expect.any(Date) } }],
 };
 
 const defaultQuery: GetUsersQuery = { order__created_at: 'desc', order__id: 'desc', take: 20 };
@@ -152,7 +160,7 @@ describe('UsersPrismaRepository', () => {
       mockPrisma.user.findFirst.mockResolvedValue(userRecord);
       const result = await repository.findAuthUserById('user-001');
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
-        where: { id: 'user-001', deletedAt: null, status: 'ACTIVE' },
+        where: { id: 'user-001', deletedAt: null, status: 'ACTIVE', sanctions: { none: ACTIVE_SUSPENSION_WHERE } },
         select: { id: true, email: true },
       });
       expect(result).toEqual({ id: 'user-001', email: 'test@example.com' });
@@ -167,11 +175,42 @@ describe('UsersPrismaRepository', () => {
       const txClient = { user: { findFirst: jest.fn().mockResolvedValue(userRecord) } };
       const result = await repository.findAuthUserById('user-001', txClient as unknown as Prisma.TransactionClient);
       expect(txClient.user.findFirst).toHaveBeenCalledWith({
-        where: { id: 'user-001', deletedAt: null, status: 'ACTIVE' },
+        where: { id: 'user-001', deletedAt: null, status: 'ACTIVE', sanctions: { none: ACTIVE_SUSPENSION_WHERE } },
         select: { id: true, email: true },
       });
       expect(mockPrisma.user.findFirst).not.toHaveBeenCalled();
       expect(result).toEqual({ id: 'user-001', email: 'test@example.com' });
+    });
+  });
+
+  describe('findActiveSuspension', () => {
+    it('활성 정지 중 영구 정지를 먼저, 그다음 늦게 끝나는 정지를 고른다', async () => {
+      const now = new Date('2026-10-05T00:00:00.000Z');
+      mockPrisma.userSanction.findFirst.mockResolvedValue({ endsAt: null });
+
+      const result = await repository.findActiveSuspension('user-001', now);
+
+      expect(mockPrisma.userSanction.findFirst).toHaveBeenCalledWith({
+        where: { userId: 'user-001', type: 'SUSPENSION', revokedAt: null, OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        orderBy: [{ endsAt: { sort: 'desc', nulls: 'first' } }],
+        select: { endsAt: true },
+      });
+      expect(result).toEqual({ endsAt: null });
+    });
+  });
+
+  describe('updateLastLoginAt', () => {
+    it('기록이 없거나 기준 시각보다 오래된 경우에만 갱신한다', async () => {
+      const now = new Date('2026-10-05T00:10:00.000Z');
+      const skipIfAfter = new Date('2026-10-05T00:00:00.000Z');
+      mockPrisma.user.updateMany.mockResolvedValue({ count: 1 });
+
+      await repository.updateLastLoginAt('user-001', now, skipIfAfter);
+
+      expect(mockPrisma.user.updateMany).toHaveBeenCalledWith({
+        where: { id: 'user-001', OR: [{ lastLoginAt: null }, { lastLoginAt: { lt: skipIfAfter } }] },
+        data: { lastLoginAt: now },
+      });
     });
   });
 
