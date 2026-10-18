@@ -160,6 +160,7 @@
         "requester": {
           "userId": "uuid",
           "nickname": "Jun",
+          "handle": null,
           "avatarUrl": "https://..."
         },
         "message": "보컬로 참여하고 싶습니다.",

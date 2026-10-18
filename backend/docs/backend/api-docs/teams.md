@@ -106,7 +106,8 @@
         "memberCount": 3,
         "teamLeader": {
           "userId": "uuid",
-          "nickname": "Jun"
+          "nickname": "Jun",
+          "handle": null
         },
         "createdAt": "2026-05-01T12:00:00Z"
       }
@@ -169,7 +170,8 @@
         "memberCount": 3,
         "teamLeader": {
           "userId": "uuid",
-          "nickname": "Jun"
+          "nickname": "Jun",
+          "handle": null
         },
         "joinedAt": "2026-05-01T12:00:00Z",
         "createdAt": "2026-05-01T12:00:00Z"
@@ -223,7 +225,8 @@
     "teamCoverUrl": "https://example.com/team-cover.png",
     "teamLeader": {
       "userId": "uuid",
-      "nickname": "Jun"
+      "nickname": "Jun",
+      "handle": null
     },
     "memberCount": 3,
     "createdAt": "2026-05-01T12:00:00Z",
@@ -289,7 +292,8 @@
     "teamCoverUrl": "https://example.com/new-cover.png",
     "teamLeader": {
       "userId": "uuid",
-      "nickname": "Jun"
+      "nickname": "Jun",
+      "handle": null
     },
     "memberCount": 3,
     "updatedAt": "2026-05-01T12:30:00Z"
@@ -345,6 +349,7 @@
         "user": {
           "userId": "uuid",
           "nickname": "Jun",
+          "handle": null,
           "profileImageUrl": "https://example.com/profile.png"
         },
         "teamRole": "LEADER",
@@ -356,6 +361,7 @@
         "user": {
           "userId": "uuid",
           "nickname": "Min",
+          "handle": null,
           "profileImageUrl": "https://example.com/profile2.png"
         },
         "teamRole": "MEMBER",
@@ -419,7 +425,8 @@
     "teamId": "uuid",
     "teamLeader": {
       "userId": "uuid",
-      "nickname": "NewLeader"
+      "nickname": "NewLeader",
+      "handle": null
     }
   },
   "success": true
@@ -512,6 +519,7 @@
     "user": {
       "userId": "uuid",
       "nickname": "Jun",
+      "handle": null,
       "profileImageUrl": "https://example.com/profile.png"
     },
     "teamRole": "MEMBER",
@@ -598,6 +606,7 @@
     "user": {
       "userId": "user-uuid",
       "nickname": "김민수",
+      "handle": null,
       "profileImageUrl": null
     },
     "teamRole": "MEMBER",
@@ -672,7 +681,7 @@
       {
         "teamMemberId": "team-member-uuid",
         "bandMemberId": "band-member-uuid",
-        "user": { "userId": "user-uuid", "nickname": "김민수", "profileImageUrl": null },
+        "user": { "userId": "user-uuid", "nickname": "김민수", "handle": null, "profileImageUrl": null },
         "teamRole": "LEADER",
         "joinedAt": "2026-05-01T12:00:00.000Z",
         "skillType": { "skillTypeId": "skill-type-uuid", "name": "보컬" },

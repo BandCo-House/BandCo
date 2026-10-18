@@ -20,6 +20,7 @@ API 엔드포인트, 요청 DTO, 응답 DTO, 응답 예시를 작성하거나 �
 - `error.code`는 HTTP 상태 이름(`BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `INTERNAL_SERVER_ERROR`)이다.
 - 인증 토큰이 만료되면 401 `만료된 토큰입니다.`, 서명·형식이 잘못되면 401 `유효하지 않은 토큰입니다.`로 응답한다. 클라이언트는 401에서만 토큰 재발급을 시도한다.
 - 각 문서의 응답 예시 중 `"success": true`로 적힌 것은 옛 형식이다(정정 백로그: `docs/IMPROVEMENTS.md`). 실제 응답은 위 형식이다.
+- 유저 닉네임(`nickname`)을 내려주는 모든 응답에는 2026-10-19부터 고유 ID(`handle`)가 함께 담긴다. 유저가 아직 정하지 않았으면 `null`이다. 어드민 밴드 상세의 대기 초대는 `inviteeNickname` 옆에 `inviteeHandle`로 담긴다. 규칙은 [유저 API 명세](./users.md)의 `#71`·`#72` 참고. 자연어 조회(assistant)는 대상이 아니다.
 
 ## 문서 목록
 
