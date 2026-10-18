@@ -11,7 +11,7 @@ import type { CreateOAuthUserInput, OAuthLinkUser } from '../types/oauth-user.ty
 import type { ProfileMusicTrack } from '../types/profile-music.type';
 import type { HandleState, UpdateHandleInput } from '../types/user-handle.type';
 import type { GetUsersResult, UserListItem } from '../types/user-list.type';
-import type { GetUserProfileResult } from '../types/user-profile.type';
+import type { UserProfileRecord } from '../types/user-profile.type';
 
 import type { ActiveSuspension, AuthUser, DeleteUserResult, PasswordAuthUser, UsersRepository } from './user.repository';
 
@@ -19,7 +19,7 @@ import type { ActiveSuspension, AuthUser, DeleteUserResult, PasswordAuthUser, Us
 // 가르는 유일한 단서라, 초대 검색 화면이 이걸 보여준다.
 const userListInclude = {
   profile: {
-    select: { nickname: true, avatarUrl: true },
+    select: { nickname: true, handle: true, avatarUrl: true },
   },
   userSkills: {
     include: {
@@ -35,6 +35,7 @@ type UserListRecord = Prisma.UserGetPayload<{ include: typeof userListInclude }>
 function mapUserListItem(user: UserListRecord): UserListItem {
   return {
     id: user.id,
+    handle: user.profile?.handle ?? null,
     nickname: user.profile?.nickname ?? '',
     status: user.status,
     avatarUrl: user.profile?.avatarUrl ?? null,
@@ -199,6 +200,18 @@ export class UsersPrismaRepository implements UsersRepository {
       delete where.nickname;
     }
 
+    // 통합 검색어는 닉네임·고유 ID 부분 일치와 이메일 완전 일치를 OR로 묶는다.
+    // 이메일까지 부분 일치로 찾으면 검색어로 이메일 존재를 유추할 수 있어, 전체 주소가 같을 때만 찾는다(#212 후속)
+    const keyword = query.where__keyword__contain;
+    if (keyword) {
+      delete where.keyword;
+      where.OR = [
+        { profile: { nickname: { contains: keyword, mode: 'insensitive' } } },
+        { profile: { handle: { contains: keyword, mode: 'insensitive' } } },
+        { email: { equals: keyword, mode: 'insensitive' } },
+      ];
+    }
+
     // cursor__created_at + cursor__id 두 필드를 복합 keyset 조건으로 변환한다.
     // Prisma cursor + skip 방식은 cursor 레코드 위치를 내부적으로 조회하므로
     // soft-delete된 레코드가 커서가 될 경우 WHERE 필터와 충돌할 수 있다.
@@ -230,13 +243,14 @@ export class UsersPrismaRepository implements UsersRepository {
             order__created_at: query.order__created_at,
             order__id: query.order__id,
             where__nickname__contain: query.where__nickname__contain,
+            where__keyword__contain: query.where__keyword__contain,
           })
         : null;
 
     return { items, meta: { count, take: resolvedTake, cursor: cursorMeta, next } };
   }
 
-  async findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null> {
+  async findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<UserProfileRecord | null> {
     const client = tx ?? this.prisma;
 
     const user = await client.user.findUnique({
@@ -265,6 +279,8 @@ export class UsersPrismaRepository implements UsersRepository {
       profile: user.profile
         ? {
             nickname: user.profile.nickname,
+            handle: user.profile.handle,
+            handleChangedAt: user.profile.handleChangedAt,
             selfDescription: user.profile.selfDescription,
             avatarUrl: user.profile.avatarUrl,
             // 수정 요청(profile.profileMusic)과 같은 위치로 응답한다
@@ -284,7 +300,7 @@ export class UsersPrismaRepository implements UsersRepository {
     };
   }
 
-  async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult> {
+  async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<UserProfileRecord> {
     const run = async (client: Prisma.TransactionClient) => {
       if (data.profile) {
         const { profileMusic, ...profileFields } = data.profile;

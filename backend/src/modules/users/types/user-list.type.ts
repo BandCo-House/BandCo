@@ -9,6 +9,8 @@ export interface UserSkillItem {
 
 export interface UserListItem {
   id: string;
+  /** 고유 ID(@handle). 아직 정하지 않았으면 null */
+  handle: string | null;
   nickname: string;
   status: UserStatus;
   avatarUrl: string | null;

@@ -11,7 +11,7 @@ import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { HandleState, UpdateHandleInput } from './types/user-handle.type';
 import type { GetUsersResult } from './types/user-list.type';
-import type { GetUserProfileResult } from './types/user-profile.type';
+import type { UserProfileRecord } from './types/user-profile.type';
 import { UsersService } from './users.service';
 
 const mockUser = { id: 'user-001', email: 'test@example.com' };
@@ -28,15 +28,24 @@ const mockProfileMusic: ProfileMusicTrack = {
   sourceUrl: 'https://www.deezer.com/track/12345',
 };
 
-const mockProfile: GetUserProfileResult = {
+const mockProfile: UserProfileRecord = {
   user: { id: 'user-001', email: 'test@example.com', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00.000Z' },
-  profile: { nickname: 'testuser', selfDescription: null, avatarUrl: null, profileMusic: null },
+  profile: {
+    nickname: 'testuser',
+    handle: 'devjun',
+    handleChangedAt: new Date('2026-01-01T00:00:00.000Z'),
+    selfDescription: null,
+    avatarUrl: null,
+    profileMusic: null,
+  },
   skills: [],
   favoriteGenres: [],
 };
 
 const mockListResult: GetUsersResult = {
-  items: [{ id: 'user-001', nickname: 'testuser', status: 'ACTIVE', avatarUrl: null, createdAt: '2026-01-01T00:00:00.000Z', skills: [] }],
+  items: [
+    { id: 'user-001', handle: 'devjun', nickname: 'testuser', status: 'ACTIVE', avatarUrl: null, createdAt: '2026-01-01T00:00:00.000Z', skills: [] },
+  ],
   meta: { count: 1, take: 20, cursor: { createdAt: '2026-01-01T00:00:00.000Z', id: 'user-001' }, next: null },
 };
 
@@ -419,12 +428,67 @@ describe('UsersService', () => {
     it('유저가 존재하지 않으면 NotFoundException을 던진다', async () => {
       await expect(service.getUserProfile('unknown-id')).rejects.toThrow(NotFoundException);
     });
+
+    describe('고유 ID', () => {
+      const NOW = new Date('2026-10-19T06:00:00.000Z');
+      const changedAt = new Date('2026-10-18T06:00:00.000Z');
+
+      function createServiceWithProfile(record: UserProfileRecord) {
+        const stub: UsersRepository = {
+          ...repositoryStub,
+          async findUserProfileById() {
+            return record;
+          },
+        };
+        return new UsersService(stub, profileMusicRepositoryStub, deezerTrackClientStub as unknown as DeezerTrackClient);
+      }
+
+      const coolingDownRecord: UserProfileRecord = { ...mockProfile, profile: { ...mockProfile.profile!, handleChangedAt: changedAt } };
+
+      beforeEach(() => {
+        jest.useFakeTimers({ now: NOW });
+      });
+
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
+      it('본인이 쿨다운 중에 조회하면 다음 변경 가능 시각을 담는다', async () => {
+        const result = await createServiceWithProfile(coolingDownRecord).getUserProfile('user-001', 'user-001');
+
+        expect(result.profile?.handle).toBe('devjun');
+        expect(result.profile?.handleChangeableAt).toBe('2026-10-25T06:00:00.000Z');
+        expect(result.profile).not.toHaveProperty('handleChangedAt');
+      });
+
+      it('다른 사용자가 조회하면 고유 ID는 담고 다음 변경 가능 시각은 null이다', async () => {
+        const result = await createServiceWithProfile(coolingDownRecord).getUserProfile('user-001', 'user-002');
+
+        expect(result.profile?.handle).toBe('devjun');
+        expect(result.profile?.handleChangeableAt).toBeNull();
+      });
+
+      it('본인이라도 쿨다운이 끝났으면 다음 변경 가능 시각은 null이다', async () => {
+        const result = await createServiceWithProfile(mockProfile).getUserProfile('user-001', 'user-001');
+
+        expect(result.profile?.handleChangeableAt).toBeNull();
+      });
+
+      it('프로필이 없으면 profile은 null이다', async () => {
+        const result = await createServiceWithProfile({ ...mockProfile, profile: null }).getUserProfile('user-001', 'user-001');
+
+        expect(result.profile).toBeNull();
+      });
+    });
   });
 
   describe('updateUserProfile', () => {
-    it('repository 결과를 그대로 반환한다', async () => {
+    it('repository 결과를 본인 응답 형태로 반환한다', async () => {
       const result = await service.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
       expect(result.user.id).toBe('user-001');
+      expect(result.user.email).toBe('test@example.com');
+      expect(result.profile).toMatchObject({ handle: 'devjun', handleChangeableAt: null });
+      expect(result.profile).not.toHaveProperty('handleChangedAt');
     });
   });
 

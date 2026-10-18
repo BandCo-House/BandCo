@@ -5,7 +5,7 @@ import type { UpdateUserProfileData } from '../dto/update-user-profile.dto';
 import type { CreateOAuthUserInput, OAuthLinkUser } from '../types/oauth-user.type';
 import type { HandleState, UpdateHandleInput } from '../types/user-handle.type';
 import type { GetUsersResult } from '../types/user-list.type';
-import type { GetUserProfileResult } from '../types/user-profile.type';
+import type { UserProfileRecord } from '../types/user-profile.type';
 
 export const USERS_REPOSITORY = Symbol('USERS_REPOSITORY');
 
@@ -38,8 +38,8 @@ export interface UsersRepository {
   createOAuthAccount(userId: string, provider: OAuthProvider, providerUserId: string, email: string, tx?: Prisma.TransactionClient): Promise<void>;
   createUserWithOAuth(input: CreateOAuthUserInput, tx?: Prisma.TransactionClient): Promise<User>;
   findUsers(query: GetUsersQuery, tx?: Prisma.TransactionClient): Promise<GetUsersResult>;
-  findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult | null>;
-  updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult>;
+  findUserProfileById(userId: string, tx?: Prisma.TransactionClient): Promise<UserProfileRecord | null>;
+  updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<UserProfileRecord>;
   softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null>;
   findActiveSuspension(userId: string, now: Date, tx?: Prisma.TransactionClient): Promise<ActiveSuspension | null>;
   updateLastLoginAt(userId: string, now: Date, skipIfAfter: Date, tx?: Prisma.TransactionClient): Promise<void>;

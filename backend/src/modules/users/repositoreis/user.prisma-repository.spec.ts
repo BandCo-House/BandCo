@@ -32,7 +32,7 @@ const userRecord = {
   email: 'test@example.com',
   status: 'ACTIVE',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  profile: { nickname: 'testuser', selfDescription: '안녕', avatarUrl: null },
+  profile: { nickname: 'testuser', handle: 'devjun', handleChangedAt: null, selfDescription: '안녕', avatarUrl: null },
   profileMusic: null,
   userSkills: [{ skillTypeId: 'skill-001', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: 'GUITAR' } }],
   favoriteGenres: [{ genreId: 'genre-001', genre: { name: 'ROCK' } }],
@@ -285,9 +285,71 @@ describe('UsersPrismaRepository', () => {
       email: 'test@example.com',
       status: 'ACTIVE',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      profile: { nickname: 'testuser', avatarUrl: null },
+      profile: { nickname: 'testuser', handle: 'devjun', avatarUrl: null },
       userSkills: [],
     };
+
+    it('목록 항목에 고유 ID를 담고, 정하지 않은 유저는 null이다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([
+        listRecord,
+        { ...listRecord, id: 'user-002', profile: { nickname: 'other', handle: null, avatarUrl: null } },
+      ]);
+
+      const result = await repository.findUsers(defaultQuery);
+
+      expect(result.items.map(item => item.handle)).toEqual(['devjun', null]);
+    });
+
+    it('where__keyword__contain이 있으면 닉네임·고유 ID 부분 일치와 이메일 완전 일치를 OR로 묶는다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({ ...defaultQuery, where__keyword__contain: 'devjun' });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where).toEqual({
+        deletedAt: null,
+        OR: [
+          { profile: { nickname: { contains: 'devjun', mode: 'insensitive' } } },
+          { profile: { handle: { contains: 'devjun', mode: 'insensitive' } } },
+          { email: { equals: 'devjun', mode: 'insensitive' } },
+        ],
+      });
+    });
+
+    it('where__keyword__contain과 where__nickname__contain이 함께 오면 두 조건을 모두 만족해야 한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({ ...defaultQuery, where__nickname__contain: 'nick', where__keyword__contain: 'devjun' });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where.profile).toEqual({ nickname: { contains: 'nick', mode: 'insensitive' } });
+      expect(callArgs.where.OR).toHaveLength(3);
+      expect(callArgs.where).not.toHaveProperty('keyword');
+    });
+
+    it('where__keyword__contain과 커서가 함께 오면 커서 조건은 AND, 검색 조건은 OR로 공존한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({
+        ...defaultQuery,
+        where__keyword__contain: 'devjun',
+        cursor__id: 'cursor-uuid',
+        cursor__created_at: '2026-01-01T00:00:00.000Z',
+      });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where.AND[0].OR).toHaveLength(2);
+      expect(callArgs.where.OR).toHaveLength(3);
+    });
+
+    it('다음 페이지 URL에 where__keyword__contain을 이어 붙인다', async () => {
+      const second = { ...listRecord, id: 'user-002', createdAt: new Date('2025-12-01T00:00:00.000Z') };
+      mockPrisma.user.findMany.mockResolvedValue([listRecord, second]);
+
+      const result = await repository.findUsers({ ...defaultQuery, take: 2, where__keyword__contain: 'devjun' });
+
+      expect(result.meta.next).toContain('where__keyword__contain=devjun');
+    });
 
     it('유저에게 세션이 있을 때, 목록 항목은 세션 이름과 대표 여부를 함께 담아야 한다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([
@@ -420,6 +482,8 @@ describe('UsersPrismaRepository', () => {
       expect(result?.user.id).toBe('user-001');
       expect(result?.user.createdAt).toBe('2026-01-01T00:00:00.000Z');
       expect(result?.profile?.nickname).toBe('testuser');
+      expect(result?.profile?.handle).toBe('devjun');
+      expect(result?.profile?.handleChangedAt).toBeNull();
       expect(result?.profile?.profileMusic).toBeNull();
       expect(result).not.toHaveProperty('profileMusic');
       expect(result?.skills[0]).toEqual({ skillTypeId: 'skill-001', skillName: 'GUITAR', level: 'ADVANCED', isPrimary: true });

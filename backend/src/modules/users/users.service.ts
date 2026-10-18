@@ -10,6 +10,7 @@ import { type ActiveSuspension, USERS_REPOSITORY, UsersRepository } from './repo
 import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { ChangeHandleResult, HandleAvailabilityResult } from './types/user-handle.type';
+import type { GetUserProfileResult, UserProfileRecord } from './types/user-profile.type';
 import { getHandleChangeableAt } from './util/handle-cooldown';
 
 /** 마지막 접속 시각을 이 간격 안에서는 다시 쓰지 않는다. DAU 집계에는 충분하고 쓰기 부하는 줄인다. */
@@ -18,6 +19,24 @@ const LAST_LOGIN_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 const HANDLE_TAKEN_MESSAGE = '이미 사용 중인 고유 ID입니다.';
 // 다음 변경 가능 시각은 프론트가 응답 필드로 포맷해 보여주므로 메시지에는 넣지 않는다
 const HANDLE_COOLDOWN_MESSAGE = '고유 ID는 7일에 한 번만 변경할 수 있습니다.';
+
+/**
+ * Repository 원본을 응답 형태로 바꾼다.
+ * 이메일은 본인 조회에서만 담고(#212 B-4), 고유 ID 다음 변경 가능 시각도 본인에게만 보여준다.
+ * 고유 ID 자체는 공개 식별자라 다른 사람이 조회해도 담는다.
+ */
+function toUserProfileResult(record: UserProfileRecord, isSelf: boolean, now: Date): GetUserProfileResult {
+  const user = isSelf ? record.user : { ...record.user, email: null };
+  if (!record.profile) {
+    return { ...record, user, profile: null };
+  }
+
+  const { handleChangedAt, ...profileFields } = record.profile;
+  const changeableAt = isSelf ? getHandleChangeableAt(handleChangedAt, now) : null;
+  const profile = { ...profileFields, handleChangeableAt: changeableAt?.toISOString() ?? null };
+
+  return { ...record, user, profile };
+}
 
 function toChangeHandleResult(userId: string, handle: string, handleChangedAt: Date | null, now: Date): ChangeHandleResult {
   const changeableAt = getHandleChangeableAt(handleChangedAt, now);
@@ -163,24 +182,27 @@ export class UsersService {
    *
    * 이메일은 본인이 조회할 때만 담는다 — 다른 사용자의 프로필에서 이메일이 그대로
    * 나가던 문제를 막는다(#212 B-4). 프론트 스키마는 `email`을 nullable로 받는다.
+   * 고유 ID 다음 변경 가능 시각도 마이페이지에서만 쓰므로 본인 조회에만 담는다.
    *
    * @param {string} userId - 조회할 유저 ID
    * @param {string | undefined} viewerUserId - 조회를 요청한 인증 사용자 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    */
-  async getUserProfile(userId: string, viewerUserId?: string, tx?: Prisma.TransactionClient) {
-    const result = await this.usersRepository.findUserProfileById(userId, tx);
-    if (!result) {
+  async getUserProfile(userId: string, viewerUserId?: string, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult> {
+    const record = await this.usersRepository.findUserProfileById(userId, tx);
+    if (!record) {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
-    if (viewerUserId !== userId) {
-      return { ...result, user: { ...result.user, email: null } };
-    }
-    return result;
+    const isSelf = viewerUserId === userId;
+    return toUserProfileResult(record, isSelf, new Date());
   }
 
-  async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient) {
-    return this.usersRepository.updateUserProfile(userId, data, tx);
+  /**
+   * 본인 프로필을 수정한다. 수정 결과는 본인에게 돌려주므로 이메일과 고유 ID 쿨다운 정보를 그대로 담는다.
+   */
+  async updateUserProfile(userId: string, data: UpdateUserProfileData, tx?: Prisma.TransactionClient): Promise<GetUserProfileResult> {
+    const record = await this.usersRepository.updateUserProfile(userId, data, tx);
+    return toUserProfileResult(record, true, new Date());
   }
 
   async deleteUser(userId: string, tx?: Prisma.TransactionClient) {
