@@ -33,6 +33,27 @@ describe('useAddressPicker', () => {
     expect(hookResult.current.isInitializingLocation).toBe(false);
   });
 
+  it('initialLocation이 주어지면 해당 위치로 초기 중심과 마커가 즉시 설정된다', () => {
+    const initialLocation = {
+      lat: 37.5496,
+      lng: 126.9139,
+      address: '서울 마포구 양화로 45',
+      name: '합정 사운드룸',
+    };
+
+    const { result } = renderHook(() =>
+      useAddressPicker({ initialLocation }),
+    );
+
+    expect(result.current.mapCenter).toEqual({ lat: 37.5496, lng: 126.9139 });
+    expect(result.current.markerPosition).toEqual({ lat: 37.5496, lng: 126.9139 });
+    expect(result.current.selectedPlaceInfo).toEqual({
+      name: '합정 사운드룸',
+      address: '서울 마포구 양화로 45',
+    });
+    expect(result.current.isInitializingLocation).toBe(false);
+  });
+
   it('selectResult 호출 시 마커와 지도 중심 및 선택 정보가 설정된다', async () => {
     let hookResult!: { current: ReturnType<typeof useAddressPicker> };
     await act(async () => {

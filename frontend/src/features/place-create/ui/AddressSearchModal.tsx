@@ -16,7 +16,10 @@ import { Button } from '@/shared/ui/button';
 import { Field } from '@/shared/ui/field';
 import { KakaoMap } from '@/shared/ui/kakao-map';
 import { useKakaoPlaceSearch } from '../model/useKakaoPlaceSearch';
-import { useAddressPicker } from '../model/useAddressPicker';
+import {
+  useAddressPicker,
+  type InitialLocation,
+} from '../model/useAddressPicker';
 import { AddressSearchResults } from './AddressSearchResults';
 
 export interface AddressSelection {
@@ -32,6 +35,8 @@ interface AddressSearchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (selection: AddressSelection) => void;
+  /** 기존에 저장된 장소 위치가 있는 경우 (수정 시) 전달 */
+  initialLocation?: InitialLocation | null;
 }
 
 const StatusMessage = ({ children }: { children: string }) => (
@@ -46,6 +51,7 @@ export const AddressSearchModal = ({
   open,
   onOpenChange,
   onSelect,
+  initialLocation,
 }: AddressSearchModalProps) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <AppDialogContent size="full" className="h-dvh gap-6 text-grey-50">
@@ -59,6 +65,7 @@ export const AddressSearchModal = ({
 
       {KAKAO_MAP_APP_KEY ? (
         <AddressSearchBody
+          initialLocation={initialLocation}
           onCancel={() => onOpenChange(false)}
           onConfirm={(selection) => {
             onSelect(selection);
@@ -75,12 +82,17 @@ export const AddressSearchModal = ({
 );
 
 interface AddressSearchBodyProps {
+  initialLocation?: InitialLocation | null;
   onCancel: () => void;
   onConfirm: (selection: AddressSelection) => void;
 }
 
 /** 키가 있을 때만 마운트되어 SDK를 로드한다(모달이 닫히면 언마운트되어 상태도 초기화). */
-const AddressSearchBody = ({ onCancel, onConfirm }: AddressSearchBodyProps) => {
+const AddressSearchBody = ({
+  initialLocation,
+  onCancel,
+  onConfirm,
+}: AddressSearchBodyProps) => {
   const [isSdkLoading, sdkError] = useKakaoMapLoader();
   const { results, status, search } = useKakaoPlaceSearch();
   const {
@@ -93,7 +105,7 @@ const AddressSearchBody = ({ onCancel, onConfirm }: AddressSearchBodyProps) => {
     canConfirm,
     selectResult,
     movePin,
-  } = useAddressPicker();
+  } = useAddressPicker({ initialLocation });
 
   const [keyword, setKeyword] = useState('');
   const [detailAddress, setDetailAddress] = useState('');

@@ -180,17 +180,18 @@ export const PlaceFormView = ({ place, onCancel, onSaved }: PlaceFormViewProps) 
           />
         </Field>
 
-        <div className="flex flex-col gap-2">
-          <FieldLabel size="lg">위치</FieldLabel>
-          {location ? (
-            <div className="flex items-center gap-3 rounded-md bg-surface-3 px-4 py-4">
-              <MapPin
-                aria-hidden="true"
-                className="size-6 shrink-0 text-grey-200"
-              />
-              <p className="min-w-0 flex-1 truncate typo-base-sb text-grey-50">
-                {location.address}
-              </p>
+        <Field label="주소" labelSize="lg" htmlFor="place-address">
+          <div className="flex items-center gap-1">
+            <Input
+              id="place-address"
+              variant="underline"
+              className="min-w-0 flex-1 cursor-pointer truncate"
+              value={location?.address ?? ''}
+              readOnly
+              onClick={() => setIsSearchOpen(true)}
+              placeholder="주소를 검색해주세요"
+            />
+            {location && (
               <button
                 type="button"
                 aria-label="위치 지우기"
@@ -199,20 +200,18 @@ export const PlaceFormView = ({ place, onCancel, onSaved }: PlaceFormViewProps) 
               >
                 <X aria-hidden="true" className="size-5" />
               </button>
-            </div>
-          ) : (
+            )}
             <Button
               type="button"
               variant="accent"
-              size="inline"
-              className="self-start"
+              className="h-[46px] gap-1 px-4 typo-base-b"
               onClick={() => setIsSearchOpen(true)}
             >
               <MapPin aria-hidden="true" className="size-[18px]" />
-              지도에서 찾기
+              검색
             </Button>
-          )}
-        </div>
+          </div>
+        </Field>
 
         <Field label="상세 위치" labelSize="lg" htmlFor="place-detail">
           <Input
@@ -276,6 +275,16 @@ export const PlaceFormView = ({ place, onCancel, onSaved }: PlaceFormViewProps) 
         open={isSearchOpen}
         onOpenChange={setIsSearchOpen}
         onSelect={applyLocation}
+        initialLocation={
+          location && location.latitude !== null && location.longitude !== null
+            ? {
+                lat: location.latitude,
+                lng: location.longitude,
+                address: location.address,
+                name,
+              }
+            : null
+        }
       />
 
       <ImageCropDialog

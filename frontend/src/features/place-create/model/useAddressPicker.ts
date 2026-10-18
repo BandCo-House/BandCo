@@ -9,23 +9,55 @@ export interface SelectedPlaceInfo {
   address: string;
 }
 
+export interface InitialLocation {
+  lat: number;
+  lng: number;
+  address?: string;
+  name?: string;
+}
+
+interface UseAddressPickerOptions {
+  initialLocation?: InitialLocation | null;
+}
+
 /**
  * 주소 검색 모달에서 지도 중심, 핀 위치, 검색 결과 선택 및 역지오코딩을 관리하는 훅.
  */
-export const useAddressPicker = () => {
-  const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
+export const useAddressPicker = (options: UseAddressPickerOptions = {}) => {
+  const { initialLocation } = options;
+
+  const [mapCenter, setMapCenter] = useState(() =>
+    initialLocation
+      ? { lat: initialLocation.lat, lng: initialLocation.lng }
+      : DEFAULT_MAP_CENTER,
+  );
   const [markerPosition, setMarkerPosition] = useState<{
     lat: number;
     lng: number;
-  } | null>(null);
+  } | null>(() =>
+    initialLocation
+      ? { lat: initialLocation.lat, lng: initialLocation.lng }
+      : null,
+  );
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [selectedPlaceInfo, setSelectedPlaceInfo] =
-    useState<SelectedPlaceInfo | null>(null);
+    useState<SelectedPlaceInfo | null>(() =>
+      initialLocation && initialLocation.address
+        ? {
+            name: initialLocation.name || '선택한 위치',
+            address: initialLocation.address,
+          }
+        : null,
+    );
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
-  const [isInitializingLocation, setIsInitializingLocation] = useState(true);
+  const [isInitializingLocation, setIsInitializingLocation] = useState(
+    !initialLocation,
+  );
 
-  // 마운트 시 사용자 현재 위치를 확인하여 초기 중심 설정 후 지도 활성화
+  // 초기 위치가 없을 때만 사용자 현재 위치를 확인하여 중심 설정
   useEffect(() => {
+    if (initialLocation) return;
+
     let isMounted = true;
     void getCurrentLocation().then((loc) => {
       if (!isMounted) return;
@@ -37,7 +69,7 @@ export const useAddressPicker = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialLocation]);
 
   const selectResult = (place: PlaceSearchResult) => {
     setSelectedResultId(place.id);
