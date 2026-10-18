@@ -105,6 +105,7 @@ export const InviteeSearchModal = ({
               variant="search"
               selected={isSelected}
               nickname={user.nickname}
+              handle={user.handle}
               avatarUrl={user.avatarUrl}
               sessionName={calcPrimarySkillName(user.skills)}
             />

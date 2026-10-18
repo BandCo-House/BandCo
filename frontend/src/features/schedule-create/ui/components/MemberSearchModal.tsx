@@ -178,6 +178,7 @@ export const MemberSearchModal = ({
                       variant="search"
                       selected={selected.has(member.bandMemberId)}
                       nickname={member.nickname}
+                      handle={member.handle}
                       avatarUrl={member.avatarUrl}
                       sessionName={calcPrimarySkillName(member.skills)}
                     />
