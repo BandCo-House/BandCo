@@ -4,6 +4,7 @@ import type { UserReportReason, UserReportStatus } from 'src/generated/prisma';
 export type AdminReportUser = {
   userId: string;
   nickname: string | null;
+  handle: string | null;
   email: string | null;
 };
 

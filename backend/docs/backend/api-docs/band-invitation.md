@@ -212,7 +212,8 @@
         },
         "inviter": {
           "userId": "uuid",
-          "nickname": "Jun"
+          "nickname": "Jun",
+          "handle": null
         },
         "message": "같이 밴드 하실래요?",
         "invitationStatus": "PENDING",
@@ -277,6 +278,7 @@
         "invitee": {
           "userId": "u123...",
           "nickname": "Choi",
+          "handle": null,
           "avatarUrl": "https://..."
         },
         "invitationStatus": "PENDING",
@@ -335,7 +337,8 @@
     },
     "inviter": {
       "userId": "uuid",
-      "nickname": "Jun"
+      "nickname": "Jun",
+      "handle": null
     },
     "message": "같이 밴드 하실래요?",
     "invitationStatus": "PENDING",

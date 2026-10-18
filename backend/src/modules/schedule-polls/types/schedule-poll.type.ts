@@ -2,6 +2,7 @@ export interface SchedulePollVoter {
   bandMemberId: string;
   userId: string;
   nickname: string;
+  handle: string | null;
   avatarUrl: string | null;
 }
 

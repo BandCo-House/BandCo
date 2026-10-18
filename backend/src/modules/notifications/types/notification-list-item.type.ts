@@ -3,6 +3,7 @@ import type { NotificationReferenceType, NotificationType } from '../../../gener
 export interface NotificationSender {
   userId: string;
   nickname: string;
+  handle: string | null;
   avatarUrl: string | null;
 }
 

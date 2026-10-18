@@ -219,6 +219,7 @@ export class SchedulePollsPrismaRepository implements SchedulePollsRepository {
           bandMemberId: vote.bandMemberId,
           userId: vote.bandMember.userId,
           nickname: vote.bandMember.user.profile?.nickname ?? '',
+          handle: vote.bandMember.user.profile?.handle ?? null,
           avatarUrl: vote.bandMember.user.profile?.avatarUrl ?? null,
         })),
       }),

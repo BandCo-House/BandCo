@@ -56,8 +56,8 @@ const bandSpaceDetailResult: GetBandSpaceDetailResult = {
     updatedAt: '2026-02-20T12:00:00.000Z',
   },
   members: [
-    { bandMemberId: REQUESTER_MEMBER_ID, nickname: '김민준', role: 'LEADER', status: 'ACTIVE', joinedAt: '2026-02-18T10:21:00.000Z' },
-    { bandMemberId: TARGET_BAND_MEMBER_ID, nickname: '이서연', role: 'MEMBER', status: 'ACTIVE', joinedAt: '2026-02-18T10:22:00.000Z' },
+    { bandMemberId: REQUESTER_MEMBER_ID, nickname: '김민준', handle: null, role: 'LEADER', status: 'ACTIVE', joinedAt: '2026-02-18T10:21:00.000Z' },
+    { bandMemberId: TARGET_BAND_MEMBER_ID, nickname: '이서연', handle: null, role: 'MEMBER', status: 'ACTIVE', joinedAt: '2026-02-18T10:22:00.000Z' },
   ],
   songCount: 3,
   scheduleCount: 2,

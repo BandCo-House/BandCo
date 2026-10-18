@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/database/prisma/prisma.service';
 import type { Prisma } from 'src/generated/prisma';
+import { NICKNAME_MAX_LENGTH } from 'src/modules/users/constants/user-profile.constant';
 import { UsersService } from 'src/modules/users/users.service';
 
 import { GoogleUserPayload, JwtPayload } from './types/auth.types';
@@ -95,8 +96,10 @@ export class AuthService {
         return { id: emailUser.id, email: emailUser.email };
       }
 
-      // 3) 신규 유저를 생성한다. 닉네임은 Google 이름, 없으면 이메일 앞부분을 쓴다
-      const nickname = googleUser.name ?? googleUser.email.split('@')[0];
+      // 3) 신규 유저를 생성한다. 닉네임은 Google 이름, 없으면 이메일 앞부분을 쓴다.
+      //    닉네임 컬럼이 20자 제한이라 긴 이름은 잘라야 가입이 DB 오류로 실패하지 않는다
+      const nicknameSource = googleUser.name ?? googleUser.email.split('@')[0];
+      const nickname = nicknameSource.slice(0, NICKNAME_MAX_LENGTH);
       const newUser = await this.usersService.createUserWithGoogle(
         { provider: 'GOOGLE', providerUserId: googleUser.sub, email: googleUser.email, nickname },
         client,

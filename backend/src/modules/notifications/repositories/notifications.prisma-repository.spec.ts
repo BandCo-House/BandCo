@@ -95,7 +95,7 @@ describe('NotificationsPrismaRepository', () => {
         {
           id: 'inv-001',
           status: 'PENDING',
-          inviterBandMember: { user: { id: 'user-inviter', profile: { nickname: '준혁', avatarUrl: null } } },
+          inviterBandMember: { user: { id: 'user-inviter', profile: { nickname: '준혁', handle: null, avatarUrl: null } } },
         },
       ]);
 
@@ -105,7 +105,7 @@ describe('NotificationsPrismaRepository', () => {
         type: 'BAND_INVITATION',
         id: 'inv-001',
         status: 'PENDING',
-        sender: { userId: 'user-inviter', nickname: '준혁', avatarUrl: null },
+        sender: { userId: 'user-inviter', nickname: '준혁', handle: null, avatarUrl: null },
       });
     });
 

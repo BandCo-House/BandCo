@@ -3,6 +3,7 @@ import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validato
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { lengthValidationMessage } from 'src/common/validation-message/length-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { NICKNAME_MAX_LENGTH } from 'src/modules/users/constants/user-profile.constant';
 
 export class RegisterEmailDto {
   @ApiProperty({ description: '이메일 주소', example: 'user@example.com' })
@@ -22,9 +23,9 @@ export class RegisterEmailDto {
   })
   password: string;
 
-  @ApiProperty({ description: '닉네임 (프로필 닉네임으로 저장된다)', example: '홍길동' })
+  @ApiProperty({ description: '닉네임 (2~20자, 프로필 닉네임으로 저장된다)', example: '홍길동' })
   @IsString({ message: stringValidationMessage })
   @MinLength(2, { message: lengthValidationMessage })
-  @MaxLength(255, { message: lengthValidationMessage })
+  @MaxLength(NICKNAME_MAX_LENGTH, { message: lengthValidationMessage })
   nickname: string;
 }

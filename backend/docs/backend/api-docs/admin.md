@@ -70,7 +70,7 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 - GET `/funnel?from=YYYY-MM-DD&to=YYYY-MM-DD` (KST, 기본 최근 30일, to 포함) →
   `{ from, to, steps: [{ key: 'SIGNED_UP'|'PROFILE_COMPLETED'|'JOINED_BAND'|'CREATED_SCHEDULE', label, count }] }`
   - 대상은 기간 내 가입한 유저 코호트. PROFILE_COMPLETED=세션(user_skills) 1개 이상, JOINED_BAND=밴드 멤버십 1개 이상, CREATED_SCHEDULE=본인 멤버십으로 만든 일정 1개 이상.
-- GET `/storage` → `{ totalBytes, objectCount, topUsers: [{ userId, nickname|null, email|null, bytes, objectCount }], otherBytes, scannedAt }`
+- GET `/storage` → `{ totalBytes, objectCount, topUsers: [{ userId, nickname|null, handle|null, email|null, bytes, objectCount }], otherBytes, scannedAt }`
   - S3 버킷 전체를 ListObjectsV2로 훑는다. `users/{userId}/...` 키는 유저별로 합산(상위 10명), 나머지는 otherBytes.
 
 ## 회원 `/admin/users`
@@ -90,9 +90,9 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 | POST | /admin/notifications/:notificationId/resend | - | `{ notificationId }` (새 알림, NOTICE만) |
 | POST | /admin/notifications/broadcast (SUPER) | `{ title, description?, targetPath? }` | `{ sentCount }` (탈퇴·비활성·이용 정지 회원 제외) |
 
-- keyword: 이메일 부분일치 · 닉네임 부분일치 · UUID면 ID 일치(OR).
+- keyword: 이메일 부분일치 · 닉네임 부분일치 · 고유 ID(handle) 부분일치 · UUID면 ID 일치(OR). 어드민 전용이라 이메일 부분일치를 허용한다.
 - status 필터: `ACTIVE`(탈퇴X·ACTIVE·정지X) | `INACTIVE`(탈퇴X·INACTIVE) | `SUSPENDED`(탈퇴X·활성 정지 있음) | `DELETED`(탈퇴). 없으면 전체.
-- `AdminUserListItem = { userId, email|null, nickname|null, avatarUrl|null, status: 'ACTIVE'|'INACTIVE', isDeleted, isSuspended, providers: string[], hasPassword, bandCount, createdAt, lastLoginAt|null, deletedAt|null }`
+- `AdminUserListItem = { userId, email|null, nickname|null, handle|null, avatarUrl|null, status: 'ACTIVE'|'INACTIVE', isDeleted, isSuspended, providers: string[], hasPassword, bandCount, createdAt, lastLoginAt|null, deletedAt|null }`
 - `AdminUserDetail = AdminUserListItem & { selfDescription|null, oauthAccounts: [{ provider, email|null, createdAt }], bands: [{ bandId, name, role, joinedAt, isDeleted }], activeSuspension: { sanctionId, reason, endsAt|null, createdAt } | null, reportCounts: { received, made } }`
 - `AdminNotification = { notificationId, type, title, description|null, targetPath|null, isRead, createdAt }`
 - `Sanction = { sanctionId, userId, type: 'WARNING'|'SUSPENSION', reason, endsAt|null, isActive, createdAt, createdBy: { adminId, name }, revokedAt|null, revokedBy: { adminId, name }|null }`
@@ -114,8 +114,8 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 | POST | /admin/bands/:bandId/restore | - | `{ bandId, deletedAt: null }` |
 
 - keyword: 밴드명 부분일치 또는 UUID면 ID 일치.
-- `AdminBandListItem = { bandId, name, visibility, coverImgUrl|null, bandMaster: { userId, nickname|null, email|null }, memberCount, createdAt, deletedAt|null }`
-- `AdminBandDetail = { bandId, name, description|null, visibility, coverImgUrl|null, createdAt, updatedAt, deletedAt|null, genres: [{ genreId, name }], bandMaster: {...}, members: [{ bandMemberId, userId, nickname|null, email|null, role, joinedAt }], bandSpaces: [{ bandSpaceId, name, spaceType|null, status, memberCount, createdAt, deletedAt|null }], pendingJoinRequests: [{ requestId, userId, nickname|null, createdAt }], pendingInvitations: [{ invitationId, inviteeUserId, inviteeNickname|null, createdAt }], inviteLink: { hasActiveLink, expiredAt|null }, counts: { songs, schedules, teams, places } }`
+- `AdminBandListItem = { bandId, name, visibility, coverImgUrl|null, bandMaster: { userId, nickname|null, handle|null, email|null }, memberCount, createdAt, deletedAt|null }`
+- `AdminBandDetail = { bandId, name, description|null, visibility, coverImgUrl|null, createdAt, updatedAt, deletedAt|null, genres: [{ genreId, name }], bandMaster: {...}, members: [{ bandMemberId, userId, nickname|null, handle|null, email|null, role, joinedAt }], bandSpaces: [{ bandSpaceId, name, spaceType|null, status, memberCount, createdAt, deletedAt|null }], pendingJoinRequests: [{ requestId, userId, nickname|null, handle|null, createdAt }], pendingInvitations: [{ invitationId, inviteeUserId, inviteeNickname|null, inviteeHandle|null, createdAt }], inviteLink: { hasActiveLink, expiredAt|null }, counts: { songs, schedules, teams, places } }`
 - 밴드장 이전: 삭제된 밴드 404, 대상이 멤버가 아니면 400, 이미 밴드장이면 400. 대상 멤버 role=BM, 기존 밴드장 멤버 role=ADMIN(멤버로 남아 있을 때), `bands.bm_id` 변경.
 - 초대 링크 만료: 활성 링크가 없으면 400, 있으면 expiredAt=now.
 - 삭제/복구: 이미 삭제됨/삭제 안 됨이면 400.
@@ -142,7 +142,7 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
 - 어드민 `GET /admin/reports?status&page&size` → items: `Report` (최신순)
 - `GET /admin/reports/:reportId` → `Report`
 - `PATCH /admin/reports/:reportId` `{ status: 'RESOLVED'|'DISMISSED', resolutionNote? }` → `Report` (PENDING이 아니면 400)
-- `Report = { reportId, reason, description|null, status, reporter: { userId, nickname|null, email|null }, reported: { userId, nickname|null, email|null, isSuspended }, createdAt, resolvedAt|null, resolutionNote|null, resolvedBy: { adminId, name }|null }`
+- `Report = { reportId, reason, description|null, status, reporter: { userId, nickname|null, handle|null, email|null }, reported: { userId, nickname|null, handle|null, email|null, isSuspended }, createdAt, resolvedAt|null, resolutionNote|null, resolvedBy: { adminId, name }|null }`
 
 ## 공지 `/admin/announcements`
 

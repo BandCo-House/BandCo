@@ -58,6 +58,7 @@ describe('BandsPrismaRepository', () => {
           inviteeUser: {
             profile: {
               nickname: 'Choi',
+              handle: null,
               avatarUrl: 'https://cdn.example.com/avatar.png',
             },
           },
@@ -100,6 +101,7 @@ describe('BandsPrismaRepository', () => {
               profile: {
                 select: {
                   nickname: true,
+                  handle: true,
                   avatarUrl: true,
                 },
               },
@@ -121,6 +123,7 @@ describe('BandsPrismaRepository', () => {
           invitee: {
             userId: 'user-002',
             nickname: 'Choi',
+            handle: null,
             avatarUrl: 'https://cdn.example.com/avatar.png',
           },
           invitationStatus: 'PENDING',
@@ -355,6 +358,7 @@ describe('BandsPrismaRepository', () => {
           user: {
             profile: {
               nickname: 'Choi',
+              handle: null,
               avatarUrl: 'https://cdn.example.com/avatar.png',
             },
           },
@@ -386,6 +390,7 @@ describe('BandsPrismaRepository', () => {
               profile: {
                 select: {
                   nickname: true,
+                  handle: true,
                   avatarUrl: true,
                 },
               },
@@ -401,6 +406,7 @@ describe('BandsPrismaRepository', () => {
           requester: {
             userId: 'user-002',
             nickname: 'Choi',
+            handle: null,
             avatarUrl: 'https://cdn.example.com/avatar.png',
           },
           joinRequestStatus: 'PENDING',
@@ -489,6 +495,7 @@ describe('BandsPrismaRepository', () => {
             user: {
               profile: {
                 nickname: 'Jun',
+                handle: null,
               },
             },
           },
@@ -531,6 +538,7 @@ describe('BandsPrismaRepository', () => {
                   profile: {
                     select: {
                       nickname: true,
+                      handle: true,
                     },
                   },
                 },
@@ -552,6 +560,7 @@ describe('BandsPrismaRepository', () => {
           inviter: {
             userId: 'user-001',
             nickname: 'Jun',
+            handle: null,
           },
           message: '같이 밴드 하실래요?',
           invitationStatus: 'PENDING',
@@ -664,6 +673,7 @@ describe('BandsPrismaRepository', () => {
           user: {
             profile: {
               nickname: 'Jun',
+              handle: null,
             },
           },
         },
@@ -694,6 +704,7 @@ describe('BandsPrismaRepository', () => {
                   profile: {
                     select: {
                       nickname: true,
+                      handle: true,
                     },
                   },
                 },
@@ -712,6 +723,7 @@ describe('BandsPrismaRepository', () => {
         inviter: {
           userId: 'user-001',
           nickname: 'Jun',
+          handle: null,
         },
         message: '같이 밴드 하실래요?',
         invitationStatus: 'PENDING',
@@ -1438,7 +1450,7 @@ describe('BandsPrismaRepository', () => {
       role: 'MEMBER',
       joinedAt,
       user: {
-        profile: { nickname: `Nick-${id}`, avatarUrl: null },
+        profile: { nickname: `Nick-${id}`, handle: null, avatarUrl: null },
         userSkills: [],
       },
     });
@@ -1504,7 +1516,7 @@ describe('BandsPrismaRepository', () => {
       visibility: true,
       createdAt,
       bandMasterUserId: 'user-bm',
-      bandMasterUser: { profile: { nickname: 'BM' } },
+      bandMasterUser: { profile: { nickname: 'BM', handle: null } },
       _count: { members: 3 },
     });
 
