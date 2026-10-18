@@ -6,9 +6,12 @@ import type { DeezerTrackApiResponse } from 'src/modules/songs/types/deezer-trac
 import type { GetUsersQuery } from './dto/get-users-query.dto';
 import type { UpdateUserProfileData } from './dto/update-user-profile.dto';
 import { PROFILE_MUSIC_REPOSITORY, ProfileMusicRepository } from './repositoreis/profile-music.repository';
-import { USERS_REPOSITORY, UsersRepository } from './repositoreis/user.repository';
+import { type ActiveSuspension, USERS_REPOSITORY, UsersRepository } from './repositoreis/user.repository';
 import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
+
+/** 마지막 접속 시각을 이 간격 안에서는 다시 쓰지 않는다. DAU 집계에는 충분하고 쓰기 부하는 줄인다. */
+const LAST_LOGIN_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 
 function toDeezerProfileMusicTrack(track: DeezerTrackApiResponse): ProfileMusicTrack {
   return {
@@ -45,6 +48,30 @@ export class UsersService {
 
   async getUserForPasswordAuth(email: string, tx?: Prisma.TransactionClient) {
     return this.usersRepository.findUserForPasswordAuth(email, tx);
+  }
+
+  /**
+   * 지금 효력이 있는 이용 정지를 조회한다. 로그인 단계에서 정지 안내 문구를 만들 때 쓴다.
+   *
+   * @param {string} userId - 유저 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<ActiveSuspension | null>} 활성 정지 또는 null
+   */
+  async getActiveSuspension(userId: string, tx?: Prisma.TransactionClient): Promise<ActiveSuspension | null> {
+    return this.usersRepository.findActiveSuspension(userId, new Date(), tx);
+  }
+
+  /**
+   * 로그인·토큰 재발급 시 마지막 접속 시각을 남긴다. 어드민 대시보드의 DAU/WAU/MAU 근거가 된다.
+   *
+   * @param {string} userId - 유저 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<void>} 갱신 완료
+   */
+  async recordLastLogin(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const now = new Date();
+    const skipIfAfter = new Date(now.getTime() - LAST_LOGIN_UPDATE_INTERVAL_MS);
+    await this.usersRepository.updateLastLoginAt(userId, now, skipIfAfter, tx);
   }
 
   /**

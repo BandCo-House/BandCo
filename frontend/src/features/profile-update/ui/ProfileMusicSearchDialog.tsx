@@ -100,7 +100,7 @@ export function ProfileMusicSearchDialog({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="제목, 가수로 곡을 검색하세요"
-              className="h-16 w-full rounded-full border border-grey-50/20 bg-white/24 pr-16 pl-18 typo-lg-sb text-grey-50 transition-colors outline-none placeholder:text-grey-200 focus:border-primary"
+              className="h-16 w-full rounded-full border border-transparent bg-white/24 glass-surface pr-16 pl-18 typo-lg-sb text-grey-50 transition-colors outline-none placeholder:text-grey-200 focus:border-primary"
             />
             {hasQuery && (
               <button

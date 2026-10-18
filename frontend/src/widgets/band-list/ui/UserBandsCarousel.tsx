@@ -46,7 +46,7 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
   return (
     <section
       aria-labelledby="profile-bands-title"
-      className="flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 p-4 text-grey-50"
+      className="flex flex-col items-start gap-2.5 self-stretch rounded-md bg-surface-3 glass-surface p-4 text-grey-50"
     >
       <h2 id="profile-bands-title" className="typo-base-b">
         소속 밴드
@@ -72,7 +72,7 @@ export function UserBandsCarousel({ bands }: UserBandsCarouselProps) {
                   to="/band/$bandId"
                   params={{ bandId: band.id }}
                   key={band.id}
-                  className="flex-none rounded-md bg-surface-1/40 px-1 pt-1 pb-5 shadow-[0_2px_3px_1px_rgba(0,0,0,0.10)] outline-[0.5px] -outline-offset-1 outline-grey-50"
+                  className="flex-none rounded-md bg-surface-1/40 glass-surface px-1 pt-1 pb-5 shadow-[0_2px_3px_1px_rgba(0,0,0,0.10)] outline-[0.5px] -outline-offset-1 outline-grey-50"
                 >
                   <div className="flex size-32 items-center justify-center overflow-hidden rounded-md bg-grey-200">
                     <img

@@ -14,7 +14,7 @@ export const HomeMain = () => (
       <Link
         key={shortcut.to}
         to={shortcut.to}
-        className="relative flex h-[120px] overflow-hidden rounded-md bg-surface-1 p-5 focus-visible:outline-2 focus-visible:outline-primary"
+        className="relative flex h-[120px] overflow-hidden rounded-md bg-surface-1 glass-surface p-5 focus-visible:outline-2 focus-visible:outline-primary"
       >
         <span className="typo-lg-sb text-grey-50">{shortcut.label}</span>
         <ArrowRightIcon

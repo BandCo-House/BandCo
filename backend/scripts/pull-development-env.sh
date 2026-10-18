@@ -30,24 +30,14 @@ secret_json=$(aws secretsmanager get-secret-value \
   --query SecretString \
   --output text)
 
-jq -e '
-  def nonempty($key): has($key) and ((.[$key] | tostring | length) > 0);
-
-  type == "object" and
-  .NODE_ENV == "development" and
-  nonempty("BACKEND_PORT") and
-  nonempty("DATABASE_URL") and
-  nonempty("JWT_SECRET") and
-  nonempty("BCRYPT_SALT_ROUNDS") and
-  nonempty("AWS_REGION") and
-  nonempty("AWS_STORAGE_BUCKET") and
-  nonempty("AWS_ACCESS_KEY_ID") and
-  nonempty("AWS_SECRET_ACCESS_KEY") and
-  nonempty("GOOGLE_CLIENT_ID") and
-  all(keys[]; test("^[A-Z][A-Z0-9_]*$"))
-' <<EOF >/dev/null
+# 필수 키 검사는 두지 않지만, secret ID를 잘못 지정해 운영 값이 개발 파일에 써지는 것은 막는다.
+if ! jq -e 'type == "object" and .NODE_ENV == "development" and all(keys[]; test("^[A-Z][A-Z0-9_]*$"))' <<EOF >/dev/null
 $secret_json
 EOF
+then
+  echo "$SECRET_ID 는 개발 환경 secret이 아닙니다. NODE_ENV=development인 객체여야 합니다." >&2
+  exit 1
+fi
 
 jq -r 'to_entries[] | "\(.key)=\(.value | tostring | @json)"' <<EOF >"$TEMP_ENV_FILE"
 $secret_json

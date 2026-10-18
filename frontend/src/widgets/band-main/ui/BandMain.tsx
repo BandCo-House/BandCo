@@ -10,6 +10,7 @@ import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
 import { useBandSpaces } from '@/entities/space/api/useBandSpaces';
 import { BandSpaceCard } from '@/entities/space/ui/BandSpaceCard';
 import { SpaceCreateModal } from '@/features/space-create/ui/SpaceCreateModal';
+import { AssistantPanel } from '@/features/assistant-query';
 import { BandNoticeSection } from './BandNoticeSection';
 
 type SpaceFilter = 'mine' | 'inProgress';
@@ -56,8 +57,9 @@ export const BandMain = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-6 px-8">
+      <div className="flex flex-col gap-6 px-5">
         <BandNoticeSection bandId={bandId} />
+        <AssistantPanel bandId={bandId} />
         <WeekDatePicker value={selectedDate} onChange={setSelectedDate} />
         <SegmentedToggle
           label="공연 필터"
@@ -71,7 +73,7 @@ export const BandMain = () => {
         className={cn('flex flex-col', hasSpaces && 'border-t border-grey-500')}
       >
         {isLoading ? (
-          <p className="px-8 py-10 text-center typo-sm-r text-grey-300">
+          <p className="px-5 py-10 text-center typo-sm-r text-grey-300">
             불러오는 중...
           </p>
         ) : hasSpaces ? (
@@ -84,7 +86,7 @@ export const BandMain = () => {
             />
           ))
         ) : (
-          <p className="px-8 py-10 text-center typo-sm-r text-grey-300">
+          <p className="px-5 py-10 text-center typo-sm-r text-grey-300">
             표시할 공연이 없어요.
           </p>
         )}

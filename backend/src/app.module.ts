@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './database/prisma';
+import { AdminModule } from './modules/admin/admin.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { BandsModule } from './modules/bands/bands.module';
 import { BandSpacesModule } from './modules/bandspaces/bandspaces.module';
 import { CommonModule } from './modules/common/common.module';
@@ -11,8 +13,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PlacesModule } from './modules/places/places.module';
 import { SchedulePollsModule } from './modules/schedule-polls/schedule-polls.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
+import { ServiceStatusModule } from './modules/service-status/service-status.module';
 import { SongsModule } from './modules/songs/songs.module';
 import { TeamsModule } from './modules/teams/teams.module';
+import { UserReportsModule } from './modules/user-reports/user-reports.module';
 import { UsersModule } from './modules/users/users.module';
 import { StorageModule } from './storage/storage.module';
 
@@ -36,6 +40,10 @@ import { StorageModule } from './storage/storage.module';
     LinkPreviewsModule,
     PlacesModule,
     TeamsModule,
+    AssistantModule,
+    AdminModule,
+    UserReportsModule,
+    ServiceStatusModule,
   ],
 })
 export class AppModule {}

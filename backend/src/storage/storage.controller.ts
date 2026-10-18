@@ -30,6 +30,7 @@ export class StorageController {
   @ApiResponse({ status: 201, description: 'Presigned URL 발급 성공' })
   @ApiResponse({ status: 400, description: '잘못된 입력' })
   @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 503, description: '스토리지 환경변수 미설정' })
   async getPresignedUrl(
     @Req() request: AuthenticatedRequest,
     @Body() dto: GetPresignedUrlDto,
@@ -50,6 +51,7 @@ export class StorageController {
   @ApiOperation({ summary: '다운로드 Presigned URL 발급' })
   @ApiResponse({ status: 200, description: '다운로드 Presigned URL 발급 성공' })
   @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 503, description: '스토리지 환경변수 미설정' })
   async getDownloadUrl(@Query('key') key: string): Promise<ApiSuccessResponse<{ presignedUrl: string }>> {
     const result = await this.storageService.generateDownloadUrl(key);
     return createSuccessResponse('다운로드 Presigned URL 발급 성공', result);
