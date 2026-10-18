@@ -9,8 +9,12 @@ export const placeSchema = z.object({
   placeId: z.string(),
   bandId: z.string().optional(),
   name: z.string(),
-  address: z.string(),
+  // 이름만으로 충분한 장소("동방 1호")는 주소가 없다.
+  address: z.string().nullable().default(null),
   detailAddress: z.string().nullable().default(null),
+  // 지도 검색으로 고른 장소에만 있다. 지도 링크 노출 여부를 가른다.
+  latitude: z.number().nullable().default(null),
+  longitude: z.number().nullable().default(null),
   imageUrl: z.string().nullable().default(null),
   isActive: z.boolean().default(true),
   createdAt: z.string().optional(),

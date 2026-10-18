@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
+import { useAuth } from '@/app/providers/auth-context';
+import { useBandMembers } from '@/entities/member/api/useBandMembers';
 import {
   horizontalFadeMask,
   useHorizontalScrollEdges,
@@ -9,8 +11,11 @@ import { SongLibraryItem } from '@/entities/song/ui/SongLibraryItem';
 import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { PlaceCard } from '@/entities/place/ui/PlaceCard';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
+import { PlaceDetailModal } from '@/features/place-create/ui/PlaceDetailModal';
 import { SongCreateModal } from '@/features/song-create';
 import { LibrarySectionHeader } from './LibrarySectionHeader';
+
+const PLACE_DELETABLE_ROLES = ['BM', 'ADMIN'];
 
 const STATE_MESSAGE_CLASS = 'py-6 text-center typo-sm-r text-grey-300';
 
@@ -42,13 +47,27 @@ const SectionState = ({
 export const BandLibrary = () => {
   const { bandId } = useParams({ from: '/band/$bandId' });
   const songsQuery = useBandSongs(bandId);
-  const placesQuery = useBandPlaces(bandId);
+  // 삭제는 소프트 삭제(isActive=false)라, 걸러서 받지 않으면 지운 장소가 그대로 남아 보인다.
+  const placesQuery = useBandPlaces(bandId, { where__is_active: true });
 
   const songs = songsQuery.data ?? [];
   const places = placesQuery.data ?? [];
 
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
+  // 객체가 아니라 ID를 들고 목록에서 다시 찾는다. 수정 후 목록이 갱신되면
+  // 열려 있는 상세도 새 값으로 바뀌어야 한다.
+  const [detailPlaceId, setDetailPlaceId] = useState<string | null>(null);
+  // 닫을 때 ID는 남긴다. 같이 비우면 시트가 내려가는 동안 내용이 먼저 사라진다.
+  const [isPlaceDetailOpen, setIsPlaceDetailOpen] = useState(false);
+  // 장소 삭제는 리더·부리더만 된다(백엔드 규칙). 권한 없는 멤버에게는 액션을 숨긴다.
+  const { user } = useAuth();
+  const { data: members = [] } = useBandMembers(bandId);
+  const myRole = members.find((member) => member.userId === user.id)?.role;
+  const canDeletePlace =
+    myRole !== undefined && PLACE_DELETABLE_ROLES.includes(myRole);
+  const detailPlace =
+    places.find((place) => place.placeId === detailPlaceId) ?? null;
 
   // 합주곡 가로 스크롤: 스크롤바를 숨기고 스크롤 가능한 끝만 mask로 페이드한다.
   const {
@@ -107,7 +126,13 @@ export const BandLibrary = () => {
           <ul className="grid grid-cols-2 gap-2">
             {places.map((place) => (
               <li key={place.placeId}>
-                <PlaceCard place={place} />
+                <PlaceCard
+                  place={place}
+                  onClick={() => {
+                    setDetailPlaceId(place.placeId);
+                    setIsPlaceDetailOpen(true);
+                  }}
+                />
               </li>
             ))}
           </ul>
@@ -126,6 +151,14 @@ export const BandLibrary = () => {
         open={isSongModalOpen}
         onOpenChange={setIsSongModalOpen}
         bandId={bandId}
+      />
+
+      <PlaceDetailModal
+        open={isPlaceDetailOpen}
+        onOpenChange={setIsPlaceDetailOpen}
+        bandId={bandId}
+        place={detailPlace}
+        canDelete={canDeletePlace}
       />
 
       <PlaceCreateModal
