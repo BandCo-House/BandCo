@@ -146,11 +146,12 @@ export class AdminDashboardPrismaRepository implements AdminDashboardRepository 
     const client = tx ?? this.prisma;
     const users = await client.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, email: true, profile: { select: { nickname: true } } },
+      select: { id: true, email: true, profile: { select: { nickname: true, handle: true } } },
     });
     return users.map(user => ({
       userId: user.id,
       nickname: user.profile?.nickname ?? null,
+      handle: user.profile?.handle ?? null,
       email: user.email,
     }));
   }

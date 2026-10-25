@@ -20,6 +20,7 @@ export interface SpaceScheduleListItem {
 export interface ScheduleParticipantPreview {
   bandMemberId: string;
   nickname: string;
+  handle: string | null;
   profileImageUrl: string | null;
 }
 

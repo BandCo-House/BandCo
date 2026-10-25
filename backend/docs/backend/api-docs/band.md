@@ -321,6 +321,7 @@
         "bandMemberId": "uuid",
         "userId": "uuid",
         "nickname": "Jun",
+        "handle": null,
         "avatarUrl": "https://...",
         "role": "ADMIN",
         "joinedAt": "2026-04-10T00:00:00.000Z",
@@ -337,6 +338,7 @@
         "bandMemberId": "uuid",
         "userId": "uuid",
         "nickname": "Choi",
+        "handle": null,
         "avatarUrl": null,
         "role": "MEMBER",
         "joinedAt": "2026-04-09T00:00:00.000Z",
@@ -402,7 +404,8 @@
         "memberCount": 5,
         "bandMaster": {
           "userId": "b6d0f0b1-7c7d-4e23-9c7b-0c0d9f6a2a21",
-          "nickname": "Jun"
+          "nickname": "Jun",
+          "handle": null
         },
         "createdAt": "2026-04-10T00:00:00.000Z"
       }

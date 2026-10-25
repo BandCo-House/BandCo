@@ -23,7 +23,7 @@ function buildUserListSelect(now: Date) {
     createdAt: true,
     lastLoginAt: true,
     deletedAt: true,
-    profile: { select: { nickname: true, avatarUrl: true } },
+    profile: { select: { nickname: true, handle: true, avatarUrl: true } },
     oauthAccounts: { select: { provider: true } },
     // 삭제된 밴드는 회원이 실제로 활동하는 밴드가 아니라서 밴드 수에서 뺀다
     _count: { select: { bandMemberships: { where: { band: { deletedAt: null } } } } },
@@ -34,12 +34,13 @@ function buildUserListSelect(now: Date) {
 type UserListRow = Prisma.UserGetPayload<{ select: ReturnType<typeof buildUserListSelect> }>;
 
 /**
- * 키워드는 이메일·닉네임 부분일치, UUID 형식이면 ID 일치까지 OR로 묶는다.
+ * 키워드는 이메일·닉네임·고유 ID 부분일치, UUID 형식이면 ID 일치까지 OR로 묶는다.
  */
 function buildKeywordWhere(keyword: string): Prisma.UserWhereInput {
   const conditions: Prisma.UserWhereInput[] = [
     { email: { contains: keyword, mode: 'insensitive' } },
     { profile: { nickname: { contains: keyword, mode: 'insensitive' } } },
+    { profile: { handle: { contains: keyword, mode: 'insensitive' } } },
   ];
 
   if (isUUID(keyword)) {
@@ -75,6 +76,7 @@ function toAdminUserListItem(row: UserListRow): AdminUserListItem {
     userId: row.id,
     email: row.email,
     nickname: row.profile?.nickname ?? null,
+    handle: row.profile?.handle ?? null,
     avatarUrl: row.profile?.avatarUrl ?? null,
     status: row.status,
     isDeleted: row.deletedAt !== null,
@@ -127,7 +129,7 @@ export class AdminManagedUsersPrismaRepository implements AdminManagedUsersRepos
       where: { id: userId },
       select: {
         ...buildUserListSelect(now),
-        profile: { select: { nickname: true, avatarUrl: true, selfDescription: true } },
+        profile: { select: { nickname: true, handle: true, avatarUrl: true, selfDescription: true } },
         oauthAccounts: { select: { provider: true, email: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
         // 같은 정지가 여러 건 겹치면 가장 최근에 내린 정지를 보여준다
         sanctions: {
@@ -205,7 +207,11 @@ export class AdminManagedUsersPrismaRepository implements AdminManagedUsersRepos
 
   async softDeleteUser(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<void> {
     const client = tx ?? this.prisma;
-    await client.user.update({ where: { id: userId }, data: { deletedAt, status: 'INACTIVE' } });
+    // 본인 탈퇴와 같이 고유 ID를 풀어 다른 사람이 쓸 수 있게 한다. 복구해도 되돌리지 않아 유저가 다시 정해야 한다
+    await client.user.update({
+      where: { id: userId },
+      data: { deletedAt, status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
+    });
   }
 
   async findStatusBeforeAdminWithdrawal(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<UserStatus | null> {

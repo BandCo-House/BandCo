@@ -18,6 +18,12 @@ export class GetUsersQueryDto {
   @IsString({ message: stringValidationMessage })
   where__nickname__contain?: string;
 
+  @ApiPropertyOptional({ description: '통합 검색어. 닉네임·고유 ID 부분 일치 또는 이메일 전체 주소 일치(모두 대소문자 무시)', example: 'devjun' })
+  @Transform(normalizeOptionalStringValue)
+  @IsOptional()
+  @IsString({ message: stringValidationMessage })
+  where__keyword__contain?: string;
+
   @ApiPropertyOptional({ enum: ['asc', 'desc'], description: '생성일 정렬 방향', default: 'desc' })
   @IsOptional()
   @IsEnum(ORDER_DIRECTIONS, { message: enumValidationMessage })

@@ -1,18 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEmail, IsEnum, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsEnum, IsOptional, IsString, IsUUID, Matches, ValidateNested } from 'class-validator';
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { enumValidationMessage } from 'src/common/validation-message/enum-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 import { uuidValidationMessage } from 'src/common/validation-message/uuid-validation.message';
 import { SkillLevelType } from 'src/generated/prisma';
 
+import { NICKNAME_MAX_LENGTH, nicknameLengthPattern } from '../constants/user-profile.constant';
+
 import { ProfileMusicTrackDto } from './profile-music-track.dto';
 
 class UpdateProfileDto {
-  @ApiPropertyOptional({ description: '닉네임', example: '홍길동' })
+  @ApiPropertyOptional({ description: '닉네임 (최대 20자)', example: '홍길동' })
   @IsOptional()
   @IsString({ message: stringValidationMessage })
+  @Matches(nicknameLengthPattern(0), { message: `nickname은(는) ${NICKNAME_MAX_LENGTH}자 이하로 입력해주세요` })
   nickname?: string;
 
   @ApiPropertyOptional({ description: '자기 소개', example: '기타를 사랑하는 밴드맨입니다.' })
