@@ -1,6 +1,25 @@
+import { useEffect, useState, type ChangeEvent } from 'react';
+import { MapPin, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { Sheet, SheetContent, SheetDescription } from '@/shared/ui/sheet';
-import { PlaceFormView } from './PlaceFormView';
+import { uploadFile } from '@/shared/api';
+import { useCreatePlace } from '@/entities/place/api/useCreatePlace';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '@/shared/ui/sheet';
+import { CROP_ASPECT, ImageCropDialog } from '@/shared/ui/image-crop-dialog';
+import { useImageCrop } from '@/shared/lib/use-image-crop';
+import { Input } from '@/shared/ui/input';
+import { Button } from '@/shared/ui/button';
+import { Field, FieldLabel } from '@/shared/ui/field';
+import { ThumbnailRemoveButton } from '@/shared/ui/thumbnail-remove-button';
+import {
+  AddressSearchModal,
+  type AddressSelection,
+} from './AddressSearchModal';
 
 interface PlaceCreateModalProps {
   open: boolean;
@@ -10,38 +29,120 @@ interface PlaceCreateModalProps {
   onCreated?: (placeId: string) => void;
 }
 
-/** 연습 장소 추가(풀스크린). 폼 자체는 PlaceFormView가 맡는다. */
+/**
+ * 연습 장소 추가(풀스크린). 이름·주소(필수)와 커버 이미지(선택)를 입력한다.
+ * 주소는 직접 타이핑하지 않고 카카오맵 검색 모달에서 고른다(상세주소는 선택).
+ * 커버는 presigned 업로드로 objectUrl을 받아 imageUrl로 전송한다.
+ */
 export const PlaceCreateModal = ({
   open,
   onOpenChange,
   bandId,
   onCreated,
-}: PlaceCreateModalProps) => (
-  <Sheet open={open} onOpenChange={onOpenChange}>
-    <SheetContent
-      showCloseButton={false}
-      className="inset-0 mx-auto flex h-full w-full max-w-[648px] flex-col gap-0 border-0 bg-gradient-to-b from-gradient-top to-gradient-bottom p-0 sm:max-w-[648px]"
-    >
-      <SheetDescription className="sr-only">
-        연습 장소의 이름·위치·커버를 입력해 추가합니다.
-      </SheetDescription>
+}: PlaceCreateModalProps) => {
+  const { mutate, isPending } = useCreatePlace(bandId);
 
-      <header className="flex items-center bg-gradient-top/65 py-3 pr-5 pl-2.5 header-glow backdrop-blur-sm">
-        <button
-          type="button"
-          aria-label="뒤로 가기"
-          onClick={() => onOpenChange(false)}
-          className="inline-flex size-10 items-center justify-center rounded-full text-grey-50 focus-visible:outline-2 focus-visible:outline-key"
-        >
-          <ArrowRightIcon aria-hidden="true" className="size-6 rotate-180" />
-        </button>
-      </header>
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [detailAddress, setDetailAddress] = useState('');
+  const [coordinates, setCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const { selectFile, cropDialogProps } = useImageCrop();
 
-      <PlaceFormView
-        bandId={bandId}
-        onCancel={() => onOpenChange(false)}
-        onSaved={(placeId) => {
-          onCreated?.(placeId);
+  // 열릴 때 폼을 초기화한다(effect 대신 렌더 중 파생).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setName('');
+      setAddress('');
+      setDetailAddress('');
+      setCoordinates(null);
+      setIsAddressSearchOpen(false);
+      setCoverFile(null);
+      setCoverPreview(null);
+      setIsUploading(false);
+    }
+  }
+
+  // 미리보기 blob URL은 값이 바뀌거나 언마운트될 때 revoke한다.
+  // (재오픈 초기화·재선택·취소 모두 여기서 한 번에 해제)
+  useEffect(() => {
+    if (!coverPreview) return;
+    return () => URL.revokeObjectURL(coverPreview);
+  }, [coverPreview]);
+
+  const clearCover = () => {
+    setCoverFile(null);
+    setCoverPreview(null);
+  };
+
+  const applyAddress = (selection: AddressSelection) => {
+    setAddress(selection.address);
+    setDetailAddress(selection.detailAddress);
+    setCoordinates({
+      latitude: selection.latitude,
+      longitude: selection.longitude,
+    });
+  };
+
+  const displayAddress = [address, detailAddress].filter(Boolean).join(' ');
+
+  const handleCoverSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    selectFile(event.target.files?.[0]);
+    // 같은 파일을 다시 골라도 change가 발생하도록 값을 비운다(크롭을 취소한 뒤 재시도).
+    event.target.value = '';
+  };
+
+  /** 크롭 모달이 돌려준 파일만 폼에 들어간다. 원본은 여기까지 오지 않는다. */
+  const applyCroppedCover = (file: File) => {
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  };
+
+  const canSubmit =
+    name.trim().length > 0 &&
+    address.trim().length > 0 &&
+    !isPending &&
+    !isUploading;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    let imageUrl: string | undefined;
+    if (coverFile) {
+      setIsUploading(true);
+      try {
+        imageUrl = await uploadFile(coverFile, 'places');
+      } catch {
+        toast.error(
+          '커버 이미지를 업로드하지 못했어요. 잠시 후 다시 시도해주세요.',
+        );
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
+    mutate(
+      {
+        name: name.trim(),
+        address: address.trim(),
+        // 좌표는 백엔드 규칙대로 주소와 함께, 위도·경도를 쌍으로만 보낸다.
+        ...coordinates,
+        detailAddress: detailAddress.trim() || undefined,
+        imageUrl,
+      },
+      {
+        onSuccess: (created) => {
+          toast.success('연습 장소를 추가했어요.');
+          onCreated?.(created.placeId);
           onOpenChange(false);
         },
         onError: () => {
@@ -97,15 +198,28 @@ export const PlaceCreateModal = ({
           </Field>
 
           <Field label="주소" required labelSize="lg" htmlFor="place-address">
-            <Input
-              id="place-address"
-              variant="underline"
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="주소를 입력해주세요(상세주소 포함)"
-              maxLength={255}
-              aria-required
-            />
+            <div className="flex items-center gap-1">
+              {/* 직접 타이핑 대신 검색 모달로만 채운다. 칸을 눌러도 모달이 열린다. */}
+              <Input
+                id="place-address"
+                variant="underline"
+                className="min-w-0 flex-1 cursor-pointer truncate"
+                value={displayAddress}
+                readOnly
+                onClick={() => setIsAddressSearchOpen(true)}
+                placeholder="주소를 검색해주세요"
+                aria-required
+              />
+              <Button
+                type="button"
+                variant="accent"
+                className="h-[46px] gap-1 px-4 typo-base-b"
+                onClick={() => setIsAddressSearchOpen(true)}
+              >
+                <MapPin aria-hidden="true" className="size-[18px]" />
+                검색
+              </Button>
+            </div>
           </Field>
 
           <div className="flex flex-col gap-2">
@@ -162,6 +276,12 @@ export const PlaceCreateModal = ({
         title="장소 커버 자르기"
         onCropped={applyCroppedCover}
       />
-    </SheetContent>
-  </Sheet>
-);
+
+      <AddressSearchModal
+        open={isAddressSearchOpen}
+        onOpenChange={setIsAddressSearchOpen}
+        onSelect={applyAddress}
+      />
+    </Sheet>
+  );
+};
