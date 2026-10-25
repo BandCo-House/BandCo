@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { parseToPrismaQuery } from 'src/common/query';
+import { escapeLikePattern, parseToPrismaQuery } from 'src/common/query';
 import { buildActiveSuspensionWhere } from 'src/common/sanction/active-suspension.where';
 import { buildNextPath } from 'src/common/url';
 import { PrismaService } from 'src/database/prisma/prisma.service';
@@ -205,10 +205,12 @@ export class UsersPrismaRepository implements UsersRepository {
     const keyword = query.where__keyword__contain;
     if (keyword) {
       delete where.keyword;
+      // %·_가 와일드카드로 동작하면 이메일 완전 일치가 패턴 검색이 되므로 글자 그대로 비교되게 이스케이프한다
+      const literal = escapeLikePattern(keyword);
       where.OR = [
-        { profile: { nickname: { contains: keyword, mode: 'insensitive' } } },
-        { profile: { handle: { contains: keyword, mode: 'insensitive' } } },
-        { email: { equals: keyword, mode: 'insensitive' } },
+        { profile: { nickname: { contains: literal, mode: 'insensitive' } } },
+        { profile: { handle: { contains: literal, mode: 'insensitive' } } },
+        { email: { equals: literal, mode: 'insensitive' } },
       ];
     }
 
@@ -416,9 +418,10 @@ export class UsersPrismaRepository implements UsersRepository {
 
   async findUserIdByHandle(handle: string, tx?: Prisma.TransactionClient): Promise<{ id: string } | null> {
     const client = tx ?? this.prisma;
-    // DB 유니크 인덱스는 대소문자를 구분하지만, devjun과 DevJun은 같은 ID로 취급해 하나만 쓰게 한다
+    // DB 유니크 인덱스는 대소문자를 구분하지만, devjun과 DevJun은 같은 ID로 취급해 하나만 쓰게 한다.
+    // insensitive equals는 ILIKE라 handle에 허용된 `_`가 아무 글자와 일치하지 않도록 이스케이프한다
     const profile = await client.userProfile.findFirst({
-      where: { handle: { equals: handle, mode: 'insensitive' } },
+      where: { handle: { equals: escapeLikePattern(handle), mode: 'insensitive' } },
       select: { userId: true },
     });
 

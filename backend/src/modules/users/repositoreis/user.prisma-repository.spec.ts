@@ -316,6 +316,19 @@ describe('UsersPrismaRepository', () => {
       });
     });
 
+    it('검색어의 %·_를 이스케이프해 와일드카드로 쓰이지 않게 한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({ ...defaultQuery, where__keyword__contain: 'a%_b@gmail.com' });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where.OR).toEqual([
+        { profile: { nickname: { contains: 'a\\%\\_b@gmail.com', mode: 'insensitive' } } },
+        { profile: { handle: { contains: 'a\\%\\_b@gmail.com', mode: 'insensitive' } } },
+        { email: { equals: 'a\\%\\_b@gmail.com', mode: 'insensitive' } },
+      ]);
+    });
+
     it('where__keyword__contain과 where__nickname__contain이 함께 오면 두 조건을 모두 만족해야 한다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([]);
 
@@ -656,6 +669,17 @@ describe('UsersPrismaRepository', () => {
       mockPrisma.userProfile.findFirst.mockResolvedValue(null);
 
       expect(await repository.findUserIdByHandle('devjun')).toBeNull();
+    });
+
+    it('밑줄이 아무 글자와 일치하지 않도록 이스케이프해서 조회한다', async () => {
+      mockPrisma.userProfile.findFirst.mockResolvedValue(null);
+
+      await repository.findUserIdByHandle('dev_');
+
+      expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
+        where: { handle: { equals: 'dev\\_', mode: 'insensitive' } },
+        select: { userId: true },
+      });
     });
   });
 

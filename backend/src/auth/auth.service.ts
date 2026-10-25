@@ -99,7 +99,8 @@ export class AuthService {
       // 3) 신규 유저를 생성한다. 닉네임은 Google 이름, 없으면 이메일 앞부분을 쓴다.
       //    닉네임 컬럼이 20자 제한이라 긴 이름은 잘라야 가입이 DB 오류로 실패하지 않는다
       const nicknameSource = googleUser.name ?? googleUser.email.split('@')[0];
-      const nickname = nicknameSource.slice(0, NICKNAME_MAX_LENGTH);
+      // DB VARCHAR는 코드 포인트 수로 세므로 같은 단위로 잘라 이모지 서로게이트 쌍이 갈라지지 않게 한다
+      const nickname = Array.from(nicknameSource).slice(0, NICKNAME_MAX_LENGTH).join('');
       const newUser = await this.usersService.createUserWithGoogle(
         { provider: 'GOOGLE', providerUserId: googleUser.sub, email: googleUser.email, nickname },
         client,

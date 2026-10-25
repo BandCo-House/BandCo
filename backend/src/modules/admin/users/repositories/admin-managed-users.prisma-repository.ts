@@ -207,7 +207,11 @@ export class AdminManagedUsersPrismaRepository implements AdminManagedUsersRepos
 
   async softDeleteUser(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<void> {
     const client = tx ?? this.prisma;
-    await client.user.update({ where: { id: userId }, data: { deletedAt, status: 'INACTIVE' } });
+    // 본인 탈퇴와 같이 고유 ID를 풀어 다른 사람이 쓸 수 있게 한다. 복구해도 되돌리지 않아 유저가 다시 정해야 한다
+    await client.user.update({
+      where: { id: userId },
+      data: { deletedAt, status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
+    });
   }
 
   async findStatusBeforeAdminWithdrawal(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<UserStatus | null> {

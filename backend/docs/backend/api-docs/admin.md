@@ -99,7 +99,7 @@ targetType 목록: `ADMIN, USER, NOTIFICATION, SANCTION, BAND, GENRE, SKILL_TYPE
   - isActive: SUSPENSION이고 revokedAt 없음이고 (endsAt 없음 또는 미래). WARNING은 항상 false.
   - 생성 규칙: WARNING에 endsAt 주면 400, SUSPENSION endsAt은 미래여야 함, 이미 활성 정지가 있으면 409(회원 행을 잠근 뒤 확인해 동시 요청도 하나만 성공). WARNING은 유저에게 NOTICE 알림("운영 정책 위반 경고")을 함께 보낸다.
   - 철회: 이미 철회됐거나 WARNING이면 400.
-- 탈퇴 처리: 이미 탈퇴면 400, 복구: 탈퇴 아니면 400. 탈퇴는 유저 탈퇴 API(softDeleteUser)와 같이 `deletedAt=now`, `status=INACTIVE`로 바꾸고, 탈퇴 직전 상태를 감사 로그 detail(`previousStatus`)에 남긴다. 복구는 `deletedAt=null`로 되돌리고 상태는 그 탈퇴 건(detail의 `deletedAt`이 현재 값과 같은 USER_WITHDRAW)의 `previousStatus`로, 기록이 없으면(유저가 직접 탈퇴) `ACTIVE`로 한다.
+- 탈퇴 처리: 이미 탈퇴면 400, 복구: 탈퇴 아니면 400. 탈퇴는 유저 탈퇴 API(softDeleteUser)와 같이 `deletedAt=now`, `status=INACTIVE`로 바꾸고 고유 ID(`handle`·`handleChangedAt`)도 비우며(2026-10-25), 탈퇴 직전 상태를 감사 로그 detail(`previousStatus`)에 남긴다. 복구는 `deletedAt=null`로 되돌리고 상태는 그 탈퇴 건(detail의 `deletedAt`이 현재 값과 같은 USER_WITHDRAW)의 `previousStatus`로, 기록이 없으면(유저가 직접 탈퇴) `ACTIVE`로 한다. 비운 고유 ID는 복구해도 되돌리지 않으므로 복구된 유저가 다시 정해야 한다.
 - 관리자 발송 알림은 type `NOTICE`.
 
 ## 밴드 `/admin/bands`

@@ -100,7 +100,7 @@ model UserProfile {
   nickname        String    @db.VarChar(20)   // 255 → 20
   /// 유저가 직접 정하는 고유 ID(@handle). 영문 대소문자·숫자·밑줄 4~8자. 기존 유저는 null로 시작한다.
   handle          String?   @unique @db.VarChar(8)
-  /// 고유 ID를 마지막으로 바꾼 시각. 이 시각 + 7일 전에는 다시 바꿀 수 없다. 처음 설정도 변경으로 센다.
+  /// 고유 ID 쿨다운 기준 시각. 이 시각 + 7일 전에는 다시 바꿀 수 없다. 처음 설정은 기록하지 않는다(결정 6).
   handleChangedAt DateTime? @map("handle_changed_at") @db.Timestamptz(6)
   selfDescription String?   @map("self_description")
   avatarUrl       String?   @map("avatar_url")
@@ -451,7 +451,7 @@ Controller는 테스트하지 않는다. 최종 `sh ./scripts/verify.sh` 통과.
 
 1. **대소문자: 같은 ID로 보고 앱에서 막는다.** DB는 `@unique`(대소문자 구분)로 두고, 중복 확인·변경 검사는 `mode: 'insensitive'`로 한다. `devjun`이 있으면 `DevJun`은 "사용 중"으로 거절되고, 표시는 입력한 대로 남는다. 검사와 저장 사이 수 ms 경쟁에서만 대소문자만 다른 두 값이 공존할 수 있으며 이는 감수한다. citext·소문자 정규화 저장은 채택하지 않았다.
 2. **이메일 검색: 전체 주소 완전 일치만.** 2026-09-26(#212 후속)의 이메일 부분 검색 제거 결정을 유지한다. 닉네임·고유 ID만 부분 일치다.
-3. **탈퇴 시 handle 해제.** `softDeleteUser`에서 `handle`, `handleChangedAt`을 null로 비워 다른 사람이 바로 쓸 수 있게 한다. 탈퇴 계정 복구 기능이 없으므로 보존할 이유가 없다. 탈퇴 직후 다른 사람이 그 ID를 가져갈 수 있는 점은 감수한다.
+3. **탈퇴 시 handle 해제.** `softDeleteUser`에서 `handle`, `handleChangedAt`을 null로 비워 다른 사람이 바로 쓸 수 있게 한다. 탈퇴 직후 다른 사람이 그 ID를 가져갈 수 있는 점은 감수한다. (2026-10-25 리뷰 반영) 어드민 탈퇴(`AdminManagedUsersPrismaRepository.softDeleteUser`)도 같이 비운다. 어드민 복구는 고유 ID를 되돌리지 않으므로 복구된 유저가 다시 정해야 한다(그 사이 다른 사람이 가져갔을 수 있다).
 4. **20자 초과 기존 닉네임: 사전 확인 없이 앞 20자로 자른다.** 마이그레이션의 `UPDATE ... left(nickname, 20)`이 처리한다. 해당 유저에게 별도 안내는 하지 않는다.
 5. **쿨다운 문구: 메시지는 짧게, 시각은 프론트가 표시.** 에러 메시지는 "고유 ID는 7일에 한 번만 변경할 수 있습니다."로 고정한다. 다음 변경 가능 시각은 프로필 조회 응답의 `profile.handleChangeableAt`과 #72 성공 응답으로 프론트가 포맷해 보여주고, 저장 버튼을 미리 비활성화한다.
 6. **처음 설정은 쿨다운에 세지 않는다.** null에서 처음 정할 때는 `handleChangedAt`을 기록하지 않아 직후 한 번 바로 고칠 수 있다. 그 변경부터 7일 제한이 걸린다. 5절의 흐름 예시 참고.
@@ -469,7 +469,9 @@ Controller는 테스트하지 않는다. 최종 `sh ./scripts/verify.sh` 통과.
 
 - **상수 위치.** `HANDLE_PATTERN`·`HANDLE_PATTERN_MESSAGE`·`NICKNAME_MAX_LENGTH`를 `src/modules/users/constants/user-profile.constant.ts`에 모았다. DTO 두 개(#71·#72)와 auth의 회원가입 DTO·Google 가입이 함께 쓰기 때문이다. 쿨다운 상수와 계산은 설계대로 `util/handle-cooldown.ts`.
 - **타입.** `HandleState`, `UpdateHandleInput`을 `types/user-handle.type.ts`에 두었다. 프로필 조회는 Repository가 `UserProfileRecord`(쿨다운 기준 시각 `handleChangedAt: Date | null` 포함)를 돌려주고, Service의 `toUserProfileResult`가 이메일 마스킹과 `handleChangeableAt` 계산을 함께 한다. `updateUserProfile`도 같은 변환을 거쳐 본인 응답으로 돌려준다.
-- **탈퇴 해제.** `softDeleteUser`가 `handle`과 함께 `handleChangedAt`도 비운다(결정 3).
+- **탈퇴 해제.** `softDeleteUser`가 `handle`과 함께 `handleChangedAt`도 비운다(결정 3). 어드민 탈퇴도 같다.
+- **LIKE 이스케이프 (2026-10-25 리뷰 반영).** Prisma는 PostgreSQL에서 `contains`와 insensitive `equals`를 이스케이프 없는 (I)LIKE로 보낸다. 통합 검색어와 `findUserIdByHandle`은 `escapeLikePattern`(`src/common/query`)으로 `\`·`%`·`_`를 이스케이프해, `%`로 이메일을 추측하거나 `dev_`가 `devj`와 충돌하는 일을 막는다.
+- **닉네임 길이 (2026-10-25 리뷰 반영).** class-validator `MaxLength`는 서로게이트 쌍·변형 선택자를 빼고 세서 DB `VARCHAR(20)`(코드 포인트)와 어긋난다. DTO는 `nicknameLengthPattern`(`u` 플래그 정규식)으로 검사하고, Google 가입 닉네임은 `Array.from`으로 코드 포인트 단위로 자른다.
 - **어드민 밴드 상세.** 대기 초대는 필드명이 `inviteeNickname`이라 같은 규칙으로 `inviteeHandle`을 추가했다. 대기 가입 요청은 `handle`.
 - **어드민 대시보드 저장소 상위 유저**에도 `handle`을 담았다(`AdminDashboardUserIdentity`).
 - **마이그레이션 이름.** `20261019120000_add_user_handle_and_nickname_limit`.
