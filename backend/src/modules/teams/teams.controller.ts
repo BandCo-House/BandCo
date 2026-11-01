@@ -11,6 +11,7 @@ import { CreateTeamBodyDto } from './dto/create-team.dto';
 import { GetBandTeamsQueryDto } from './dto/get-band-teams-query.dto';
 import { GetMyTeamsQueryDto } from './dto/get-my-teams-query.dto';
 import { GetTeamMembersQueryDto } from './dto/get-team-members-query.dto';
+import { GetTeamParamsDto } from './dto/get-team-params.dto';
 import { ReplaceTeamMembersBodyDto } from './dto/replace-team-members.dto';
 import { UpdateTeamBodyDto } from './dto/update-team.dto';
 import { UpdateTeamMemberSessionBodyDto } from './dto/update-team-member-session.dto';
@@ -87,9 +88,10 @@ export class TeamsController {
   @ApiOperation({ summary: '#60 팀 상세 조회' })
   @ApiParam({ name: 'teamId', description: '팀 ID (UUID)', type: String })
   @ApiResponse({ status: 200, description: '팀 상세 조회 성공' })
+  @ApiResponse({ status: 400, description: 'teamId가 UUID 형식이 아님' })
   @ApiResponse({ status: 404, description: '팀을 찾을 수 없음' })
-  async getTeam(@Param('teamId') teamId: string): Promise<ApiSuccessResponse<GetTeamResult>> {
-    const result = await this.teamsService.getTeam(teamId);
+  async getTeam(@Param() params: GetTeamParamsDto): Promise<ApiSuccessResponse<GetTeamResult>> {
+    const result = await this.teamsService.getTeam(params.teamId);
     return createSuccessResponse('팀 상세 조회 성공', result);
   }
 
