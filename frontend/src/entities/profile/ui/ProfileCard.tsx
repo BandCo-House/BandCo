@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
 import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
@@ -25,6 +25,8 @@ export interface ProfileCardProps {
   onSave: () => void;
   onAvatarFileSelect: (file: File) => void;
   onOpenMusicSearch: () => void;
+  /** 편집 모드에서 닉네임 아래 그릴 고유 ID 입력 행. 카드의 2열 그리드(라벨·입력)에 들어간다. */
+  handleEditor?: ReactNode;
 }
 
 export function ProfileCard({
@@ -40,8 +42,10 @@ export function ProfileCard({
   onSave,
   onAvatarFileSelect,
   onOpenMusicSearch,
+  handleEditor,
 }: ProfileCardProps) {
   const profileName = profile.profile?.nickname || '익명의 아티스트';
+  const handle = profile.profile?.handle ?? null;
   const avatarUrl = editForm.avatarUrl || profile.profile?.avatarUrl;
   const selfDescription = profile.profile?.selfDescription;
   const profileMusic = isEditing
@@ -189,10 +193,23 @@ export function ProfileCard({
                     />
                   </>
                 ) : (
-                  <h2 className="col-span-2 typo-3xl-b leading-tight tracking-tight text-white">
-                    {profileName}
-                  </h2>
+                  <div className="col-span-2 flex flex-col gap-1">
+                    <h2 className="typo-3xl-b leading-tight tracking-tight text-white">
+                      {profileName}
+                    </h2>
+                    {handle ? (
+                      <p className="typo-base-sb text-grey-50">@{handle}</p>
+                    ) : (
+                      isMe && (
+                        <p className="typo-sm-r text-grey-50">
+                          고유 ID를 아직 정하지 않았어요.
+                        </p>
+                      )
+                    )}
+                  </div>
                 )}
+
+                {isEditing && handleEditor}
 
                 {isEditing ? (
                   <>
