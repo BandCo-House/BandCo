@@ -39,8 +39,8 @@ type ProfileChipProps = {
    * `basic`에서는 그리지 않는다.
    */
   sessionName?: string;
-  /** 닉네임이 겹칠 때 사람을 가르는 고유 ID. `search`에서만 그린다. */
-  handle?: string;
+  /** 닉네임이 겹칠 때 사람을 가르는 고유 ID. `search`에서만 그린다. 미설정 유저는 null. */
+  handle?: string | null;
   className?: string;
 } & VariantProps<typeof profileChipVariants>;
 

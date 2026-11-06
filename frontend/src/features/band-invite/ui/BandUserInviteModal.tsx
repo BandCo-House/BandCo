@@ -103,7 +103,7 @@ export const BandUserInviteModal = ({
           variant="roundedFull"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="이름으로 검색하세요"
+          placeholder="이름, ID로 검색하세요"
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
         />
 
@@ -141,6 +141,7 @@ export const BandUserInviteModal = ({
                       variant="search"
                       selected={selected}
                       nickname={user.nickname}
+                      handle={user.handle}
                       avatarUrl={user.avatarUrl}
                       sessionName={calcPrimarySkillName(user.skills)}
                     />

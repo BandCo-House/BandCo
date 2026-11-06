@@ -57,7 +57,7 @@ describe('BandUserInviteModal', () => {
       screen.getByRole('heading', { name: '사용자 검색' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('이름으로 검색하세요'),
+      screen.getByPlaceholderText('이름, ID로 검색하세요'),
     ).toBeInTheDocument();
   });
 

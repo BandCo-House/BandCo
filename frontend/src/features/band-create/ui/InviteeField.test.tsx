@@ -8,6 +8,7 @@ import { InviteeField } from './InviteeField';
 const INVITEE: UserSearchItem = {
   id: 'user-2',
   nickname: '김지은',
+  handle: 'handle_1',
   avatarUrl: null,
   status: 'ACTIVE',
 };
@@ -38,7 +39,7 @@ describe('InviteeField', () => {
     renderField();
 
     expect(
-      screen.getByRole('button', { name: '이름으로 검색하세요' }),
+      screen.getByRole('button', { name: '이름, ID로 검색하세요' }),
     ).toBeInTheDocument();
   });
 
@@ -46,7 +47,7 @@ describe('InviteeField', () => {
     renderField();
 
     await userEvent.click(
-      screen.getByRole('button', { name: '이름으로 검색하세요' }),
+      screen.getByRole('button', { name: '이름, ID로 검색하세요' }),
     );
 
     expect(screen.getByRole('dialog', { name: '멤버 초대' })).toBeVisible();

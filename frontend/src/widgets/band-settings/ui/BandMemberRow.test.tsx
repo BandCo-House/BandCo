@@ -16,6 +16,7 @@ const memberWith = (
   bandMemberId: 'member-1',
   userId: 'user-1',
   nickname: '김민수',
+  handle: 'minsu_k',
   avatarUrl: null,
   role: 'MEMBER',
   skills,

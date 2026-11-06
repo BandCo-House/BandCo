@@ -54,7 +54,7 @@ export const InviteeField = ({
         <span>
           {selected.length > 0
             ? `${selected.length}명을 초대해요`
-            : '이름으로 검색하세요'}
+            : '이름, ID로 검색하세요'}
         </span>
       </button>
 
