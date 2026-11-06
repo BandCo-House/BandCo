@@ -1,6 +1,6 @@
 import { apiPost } from '@/shared/api/client';
 import { type TokenResponse } from '@/shared/api/types';
-import { type SignupReq } from '../model/auth.schema';
+import { type RegisterEmailReq } from '../model/auth.schema';
 
 export type EmailDuplicateCheckResponse = {
   duplicated: boolean;
@@ -12,7 +12,7 @@ export type EmailDuplicateCheckResponse = {
  * @returns accessToken, refreshToken
  */
 export const registerEmail = async (
-  data: SignupReq,
+  data: RegisterEmailReq,
 ): Promise<TokenResponse> => {
   return apiPost<TokenResponse>('/auth/register/email', data);
 };
