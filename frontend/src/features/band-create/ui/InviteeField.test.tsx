@@ -66,9 +66,26 @@ describe('InviteeField', () => {
     const { onRemove } = renderField([INVITEE]);
 
     await userEvent.click(
-      screen.getByRole('button', { name: `${INVITEE.nickname} 초대 취소` }),
+      screen.getByRole('button', { name: '김지은(handle_1) 초대 취소' }),
     );
 
     expect(onRemove).toHaveBeenCalledWith(INVITEE.id);
+  });
+
+  it('이름이 같은 두 사람을 골랐을 때, 칩과 취소 버튼은 고유 ID로 갈려야 한다', () => {
+    renderField([
+      INVITEE,
+      { ...INVITEE, id: 'user-3', handle: 'handle_2' },
+      { ...INVITEE, id: 'user-4', handle: null },
+    ]);
+
+    expect(screen.getByText('handle_2')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '김지은(handle_2) 초대 취소' }),
+    ).toBeInTheDocument();
+    // 고유 ID가 없는 유저는 닉네임만 쓴다.
+    expect(
+      screen.getByRole('button', { name: '김지은 초대 취소' }),
+    ).toBeInTheDocument();
   });
 });

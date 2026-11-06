@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import { calcPrimarySkillName } from '@/entities/skill';
-import { ProfileChip, ProfileLink } from '@/entities/user';
+import { formatUserLabel, ProfileChip, ProfileLink } from '@/entities/user';
 import {
   Dialog,
   AppDialogContent,
@@ -83,9 +83,14 @@ export const BandUserInviteModal = ({
                     </AvatarFallback>
                   </Avatar>
                   <span>{user.nickname}</span>
+                  {user.handle && (
+                    <span className="typo-xs-r text-grey-200">
+                      {user.handle}
+                    </span>
+                  )}
                   <button
                     type="button"
-                    aria-label={`${user.nickname} 선택 해제`}
+                    aria-label={`${formatUserLabel(user.nickname, user.handle)} 선택 해제`}
                     onClick={() => removeUser(user.id)}
                     className="ml-1 rounded-full p-0.5 text-grey-300 transition-colors hover:bg-surface-1 hover:text-grey-50"
                   >

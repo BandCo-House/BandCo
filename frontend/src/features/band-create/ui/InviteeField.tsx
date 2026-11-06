@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, X } from 'lucide-react';
-import type { UserSearchItem } from '@/entities/user';
+import { formatUserLabel, type UserSearchItem } from '@/entities/user';
 import { cn } from '@/shared/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { fieldSurfaceClass } from '@/shared/ui/field';
@@ -68,9 +68,12 @@ export const InviteeField = ({
                   <AvatarFallback>{user.nickname.slice(0, 1)}</AvatarFallback>
                 </Avatar>
                 {user.nickname}
+                {user.handle && (
+                  <span className="typo-xs-r text-grey-200">{user.handle}</span>
+                )}
                 <button
                   type="button"
-                  aria-label={`${user.nickname} 초대 취소`}
+                  aria-label={`${formatUserLabel(user.nickname, user.handle)} 초대 취소`}
                   onClick={() => onRemove(user.id)}
                   className="text-grey-200 transition-colors hover:text-grey-50 focus-visible:text-grey-50 focus-visible:outline-2 focus-visible:outline-primary"
                 >

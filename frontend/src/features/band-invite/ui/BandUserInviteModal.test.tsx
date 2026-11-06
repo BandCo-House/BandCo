@@ -106,7 +106,9 @@ describe('BandUserInviteModal', () => {
     expect(addButton).not.toBeDisabled();
 
     // 칩의 X 버튼 클릭하여 선택 해제
-    const removeBtn = screen.getByRole('button', { name: '김나영 선택 해제' });
+    const removeBtn = screen.getByRole('button', {
+      name: '김나영(NY_03ABC) 선택 해제',
+    });
     await user.click(removeBtn);
 
     expect(screen.queryByText('총 1명')).not.toBeInTheDocument();
