@@ -219,7 +219,7 @@ const PasswordConfirmAction = ({
 };
 
 /**
- * 이름, 이메일, 비밀번호를 입력받아 회원가입 요청을 제출하는 폼을 렌더링한다.
+ * 이름, 고유 ID, 이메일, 비밀번호를 입력받아 회원가입 요청을 제출하는 폼을 렌더링한다.
  */
 export const SignupForm = ({
   onSubmit,
@@ -229,6 +229,7 @@ export const SignupForm = ({
     email: '',
     password: '',
     nickname: '',
+    handle: '',
   });
   const [errors, setErrors] = useState<SignupFormErrors>({});
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -246,6 +247,7 @@ export const SignupForm = ({
   const isRequiredTermsChecked = terms.service && terms.privacy;
   const isRequiredFieldsFilled =
     formData.nickname.length > 0 &&
+    formData.handle.length > 0 &&
     formData.email.length > 0 &&
     formData.password.length > 0 &&
     passwordConfirm.length > 0;
@@ -380,6 +382,15 @@ export const SignupForm = ({
           onChange={handleChange}
           placeholder="이름을 입력하세요."
           errorMessage={errors.nickname}
+        />
+        <SignupInput
+          id="handle"
+          value={formData.handle}
+          label="고유 ID"
+          onChange={handleChange}
+          placeholder="고유 ID를 입력하세요."
+          helperText="영문·숫자·밑줄(_)로 4~8자"
+          errorMessage={errors.handle}
         />
         <SignupInput
           id="email"

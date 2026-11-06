@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
 import { type TokenResponse } from '@/shared/api/types';
-import type { SignupReq } from '@/features/auth/model/auth.schema';
+import type { RegisterEmailReq } from '@/features/auth/model/auth.schema';
 
 // payload: {"id":"user-001","email":"member@example.com","type":"access"}
 // AuthProvider.getUserIdFromToken이 이 토큰에서 'user-001'을 파싱할 수 있어야 함
@@ -85,7 +85,7 @@ const extractBearerToken = (request: Request) => {
 export const authHandlers = [
   // 이메일 회원가입
   http.post('*/auth/register/email', async ({ request }) => {
-    const body = (await request.json()) as SignupReq;
+    const body = (await request.json()) as RegisterEmailReq;
 
     // 특정 이메일로 실패 케이스 테스트 가능
     if (body.email === 'error@test.com') {

@@ -106,6 +106,7 @@ describe('authSchema', () => {
         email: 'test@test.com',
         password: 'pass123!',
         nickname: '홍길동',
+        handle: 'gildong',
       };
       const result = signupSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -116,8 +117,38 @@ describe('authSchema', () => {
         email: 't@t.com',
         password: 'pass123!',
         nickname: '김',
+        handle: 'gildong',
       });
       expect(result.success).toBe(false);
     });
+
+    it('이름은 코드 포인트 기준 20자까지 받는다', () => {
+      const base = {
+        email: 't@t.com',
+        password: 'pass123!',
+        handle: 'gildong',
+      };
+      // 이모지는 string.length로 2지만 백엔드는 1자로 센다.
+      expect(
+        signupSchema.safeParse({ ...base, nickname: '🎸'.repeat(20) }).success,
+      ).toBe(true);
+      expect(
+        signupSchema.safeParse({ ...base, nickname: '가'.repeat(21) }).success,
+      ).toBe(false);
+    });
+
+    it.each(['abc', 'abcdefghi', '한글아이디', 'dev-jun'])(
+      '고유 ID "%s"는 형식 오류다',
+      (handle) => {
+        expect(
+          signupSchema.safeParse({
+            email: 't@t.com',
+            password: 'pass123!',
+            nickname: '홍길동',
+            handle,
+          }).success,
+        ).toBe(false);
+      },
+    );
   });
 });
