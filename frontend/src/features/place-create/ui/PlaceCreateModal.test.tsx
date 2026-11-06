@@ -1,132 +1,105 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as placeApi from '@/entities/place/api/place-api';
-import * as placeSearchApi from '@/entities/place/api/place-search-api';
-import type { Place } from '@/entities/place/model/types';
+import type { AddressSelection } from './AddressSearchModal';
 import { PlaceCreateModal } from './PlaceCreateModal';
 
-// 키가 없으면 위치 검색 진입점이 숨겨지므로, 테스트에서는 켜 둔다.
-vi.mock('@/shared/lib/kakao-maps', () => ({
-  isKakaoMapsAvailable: true,
-  loadKakaoMaps: vi.fn(),
+const mocks = vi.hoisted(() => ({ mutate: vi.fn() }));
+
+vi.mock('@/entities/place/api/useCreatePlace', () => ({
+  useCreatePlace: () => ({ mutate: mocks.mutate, isPending: false }),
 }));
 
-const CREATED: Place = {
-  placeId: 'place-new',
-  name: '동방 1호',
-  address: null,
-  detailAddress: null,
-  latitude: null,
-  longitude: null,
-  imageUrl: null,
-  isActive: true,
-};
+vi.mock('@/shared/api', () => ({ uploadFile: vi.fn() }));
 
-const FOUND = {
-  id: '1234',
-  name: '합정 사운드룸',
-  address: '서울 마포구 양화로 45',
-  latitude: 37.5496,
-  longitude: 126.9139,
-};
-
-const renderModal = () =>
-  render(
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
-      <PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />
-    </QueryClientProvider>,
-  );
-
-const pickLocation = async () => {
-  fireEvent.click(screen.getByRole('button', { name: '지도에서 찾기' }));
-  fireEvent.change(
-    screen.getByPlaceholderText('합주실 이름, 주소로 검색하세요'),
-    { target: { value: '합정' } },
-  );
-  fireEvent.click(await screen.findByText('서울 마포구 양화로 45'));
-};
+// 카카오 SDK 없이 "모달에서 주소를 골랐다"는 계약만 흉내 낸다.
+// 실제 Dialog처럼 body로 포털해야 Sheet의 aria-hidden·pointer-events 잠금을 벗어난다.
+vi.mock('./AddressSearchModal', async () => {
+  const { createPortal } = await import('react-dom');
+  return {
+    AddressSearchModal: ({
+      open,
+      onSelect,
+      onOpenChange,
+    }: {
+      open: boolean;
+      onSelect: (selection: AddressSelection) => void;
+      onOpenChange: (open: boolean) => void;
+    }) =>
+      open
+        ? createPortal(
+            <button
+              type="button"
+              style={{ pointerEvents: 'auto' }}
+              onClick={() => {
+                onSelect({
+                  address: '서울 마포구 신촌로 12다길 20',
+                  detailAddress: '201호',
+                  latitude: 37.5551,
+                  longitude: 126.9368,
+                });
+                onOpenChange(false);
+              }}
+            >
+              주소 고르기
+            </button>,
+            document.body,
+          )
+        : null,
+  };
+});
 
 describe('PlaceCreateModal', () => {
-  let createPlace: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
-    vi.restoreAllMocks();
-    createPlace = vi.spyOn(placeApi, 'createPlace').mockResolvedValue(CREATED);
-    vi.spyOn(placeSearchApi, 'searchPlaces').mockResolvedValue([FOUND]);
+    mocks.mutate.mockClear();
   });
 
-  it('이름만 입력해도 장소를 추가할 수 있다', async () => {
-    renderModal();
+  it('주소 칸은 직접 입력할 수 없고 검색 버튼으로 모달을 연다', async () => {
+    const user = userEvent.setup();
+    render(<PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />);
 
-    const submit = screen.getByRole('button', { name: '추가' });
-    expect(submit).toBeDisabled();
+    const addressInput = screen.getByLabelText(/주소/);
+    expect(addressInput).toHaveAttribute('readonly');
 
-    fireEvent.change(screen.getByLabelText('장소 이름'), {
-      target: { value: '동방 1호' },
-    });
-    fireEvent.click(submit);
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    expect(
+      screen.getByRole('button', { name: '주소 고르기' }),
+    ).toBeInTheDocument();
+  });
 
-    await waitFor(() =>
-      expect(createPlace).toHaveBeenCalledWith('band-1', {
-        name: '동방 1호',
-        address: undefined,
-        latitude: undefined,
-        longitude: undefined,
-        detailAddress: undefined,
+  it('검색 모달에서 고른 주소를 보여주고 상세주소·좌표와 함께 전송한다', async () => {
+    const user = userEvent.setup();
+    render(<PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />);
+
+    await user.type(screen.getByLabelText(/장소 이름/), '연습실 A');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.click(screen.getByRole('button', { name: '주소 고르기' }));
+
+    expect(screen.getByLabelText(/주소/)).toHaveValue(
+      '서울 마포구 신촌로 12다길 20 201호',
+    );
+
+    await user.click(screen.getByRole('button', { name: '추가' }));
+
+    expect(mocks.mutate).toHaveBeenCalledWith(
+      {
+        name: '연습실 A',
+        address: '서울 마포구 신촌로 12다길 20',
+        latitude: 37.5551,
+        longitude: 126.9368,
+        detailAddress: '201호',
         imageUrl: undefined,
-      }),
+      },
+      expect.any(Object),
     );
   });
 
-  it('지도에서 고른 위치의 주소·좌표와 상세 위치를 함께 보낸다', async () => {
-    renderModal();
+  it('주소를 고르기 전에는 추가 버튼이 비활성화된다', async () => {
+    const user = userEvent.setup();
+    render(<PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />);
 
-    fireEvent.change(screen.getByLabelText('장소 이름'), {
-      target: { value: '우리 합주실' },
-    });
-    await pickLocation();
-    fireEvent.change(screen.getByLabelText('상세 위치'), {
-      target: { value: ' 지하 1층 B룸 ' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '추가' }));
+    await user.type(screen.getByLabelText(/장소 이름/), '연습실 A');
 
-    await waitFor(() =>
-      expect(createPlace).toHaveBeenCalledWith('band-1', {
-        // 이미 적은 이름은 상호명으로 덮지 않는다.
-        name: '우리 합주실',
-        address: '서울 마포구 양화로 45',
-        latitude: 37.5496,
-        longitude: 126.9139,
-        detailAddress: '지하 1층 B룸',
-        imageUrl: undefined,
-      }),
-    );
-  });
-
-  it('이름이 비어 있으면 고른 장소의 상호명으로 채운다', async () => {
-    renderModal();
-
-    await pickLocation();
-
-    expect(screen.getByLabelText('장소 이름')).toHaveValue('합정 사운드룸');
-  });
-
-  it('위치를 지우면 주소·좌표를 보내지 않는다', async () => {
-    renderModal();
-
-    await pickLocation();
-    fireEvent.click(screen.getByRole('button', { name: '위치 지우기' }));
-    fireEvent.click(screen.getByRole('button', { name: '추가' }));
-
-    await waitFor(() =>
-      expect(createPlace).toHaveBeenCalledWith('band-1', {
-        name: '합정 사운드룸',
-      }),
-    );
+    expect(screen.getByRole('button', { name: '추가' })).toBeDisabled();
   });
 });

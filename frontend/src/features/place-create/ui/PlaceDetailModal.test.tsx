@@ -5,10 +5,13 @@ import * as placeApi from '@/entities/place/api/place-api';
 import type { Place } from '@/entities/place/model/types';
 import { PlaceDetailModal } from './PlaceDetailModal';
 
-// 키가 없으면 위치 칸이 숨겨지므로 켜 둔다. 지도 로딩은 이 테스트의 관심사가 아니다.
-vi.mock('@/shared/lib/kakao-maps', () => ({
-  isKakaoMapsAvailable: true,
-  loadKakaoMaps: vi.fn(() => new Promise(() => {})),
+// 지도 로딩은 이 테스트의 관심사가 아니라 계속 로딩 중으로 둔다.
+vi.mock('@/shared/api/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/api/config')>()),
+  KAKAO_MAP_APP_KEY: 'test-key',
+}));
+vi.mock('@/shared/lib/use-kakao-map-loader', () => ({
+  useKakaoMapLoader: () => [true, undefined],
 }));
 
 const SAVED: Place = {
@@ -33,7 +36,6 @@ const renderModal = ({ canDelete = true } = {}) => {
       <PlaceDetailModal
         open
         onOpenChange={onOpenChange}
-        bandId="band-1"
         place={SAVED}
         canDelete={canDelete}
       />

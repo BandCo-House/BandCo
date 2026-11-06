@@ -2,25 +2,87 @@ import { http, HttpResponse } from 'msw';
 import type { ApiSuccessResponse } from '@/shared/api';
 import type {
   CreateSongRequest,
+  SongKey,
   SongListItem,
   SongPreview,
+  UpdateSongRequest,
 } from '@/entities/song/model/types';
 import { API_URL } from '../config';
 
 // 밴드 라이브러리 합주곡 목록 mock (GET /bands/:bandId/songs)
-// id/title은 스케줄 mock(schedule/handlers.ts)의 songs와 일치시켜 필터가 동작하게 둔다.
 const SONG_FIXTURES: {
   title: string;
   artistName: string;
+  key?: SongKey | null;
+  bpm?: number;
+  songLength?: number;
   hasCover?: boolean;
+  externalLinks?: string[];
+  referenceFiles?: { id: string; fileUrl: string; fileName: string; createdAt: string }[];
 }[] = [
-  { title: '좋은 날', artistName: '아이유' },
-  { title: '봄날', artistName: '방탄소년단' },
-  { title: 'Dynamite', artistName: '방탄소년단' },
-  { title: '밤편지', artistName: '아이유' },
-  { title: '건널목', artistName: 'Whiteusedsocks' },
+  {
+    title: '좋은 날',
+    artistName: '아이유',
+    key: 'C',
+    bpm: 128,
+    songLength: 233,
+    externalLinks: ['https://www.youtube.com/watch?v=jeqdYqsrsA0'],
+    referenceFiles: [
+      {
+        id: 'ref-1',
+        fileUrl: 'https://example.com/files/good_day_score.pdf',
+        fileName: 'good_day_score.pdf',
+        createdAt: '2026-05-01T00:00:00+09:00',
+      },
+    ],
+  },
+  {
+    title: '봄날',
+    artistName: '방탄소년단',
+    key: 'FS',
+    bpm: 108,
+    songLength: 274,
+    externalLinks: ['https://www.youtube.com/watch?v=xEeFrLSkMm8'],
+  },
+  {
+    title: 'Dynamite',
+    artistName: '방탄소년단',
+    key: 'CSM',
+    bpm: 114,
+    songLength: 199,
+  },
+  {
+    title: '밤편지',
+    artistName: '아이유',
+    key: 'EM',
+    bpm: 72,
+    songLength: 253,
+  },
+  {
+    title: '건널목',
+    artistName: 'Whiteusedsocks',
+    key: 'D',
+    bpm: 120,
+    songLength: 202,
+    externalLinks: ['https://www.youtube.com/watch?v=bx1Bh8ZvH84'],
+    referenceFiles: [
+      {
+        id: 'ref-5-1',
+        fileUrl: 'https://example.com/files/image_70.png',
+        fileName: 'image_70.png',
+        createdAt: '2026-05-01T00:00:00+09:00',
+      },
+    ],
+  },
   // 커버 이미지가 없는 곡. 라이브러리에서 빈 커버 표시를 확인한다.
-  { title: 'Attention', artistName: '뉴진스', hasCover: false },
+  {
+    title: 'Attention',
+    artistName: '뉴진스',
+    hasCover: false,
+    key: 'AM',
+    bpm: 105,
+    songLength: 180,
+  },
 ];
 
 const bandSongs: SongListItem[] = SONG_FIXTURES.map((fixture, i) => ({
@@ -28,25 +90,24 @@ const bandSongs: SongListItem[] = SONG_FIXTURES.map((fixture, i) => ({
   bandId: 'band-1',
   title: fixture.title,
   artistName: fixture.artistName,
-  key: null,
-  bpm: 128,
+  key: fixture.key ?? null,
+  bpm: fixture.bpm ?? 128,
   difficultyLevel: 2,
   sourceUrl: `https://www.deezer.com/track/${i + 1}`,
   sourceType: 'DEEZER',
-  // 미리듣기는 목록에 없고 이 ID로 트랙을 따로 조회해 재생한다.
   externalTrackId: `track-${i + 1}`,
   songCoverUrl:
     fixture.hasCover === false
       ? null
       : `https://picsum.photos/seed/band-song-${i + 1}/200`,
-  songLength: 202,
-  externalLinks: [],
-  referenceFiles: [],
+  songLength: fixture.songLength ?? 202,
+  externalLinks: fixture.externalLinks ?? [],
+  referenceFiles: fixture.referenceFiles ?? [],
   createdAt: '2026-05-01T00:00:00+09:00',
   skills: [],
 }));
 
-// 외부 음원 검색 mock. '없는곡'으로 검색하면 빈 결과 → 직접 입력 경로를 확인할 수 있다.
+// 외부 음원 검색 mock.
 const buildTrackResults = (query: string): SongPreview[] =>
   Array.from({ length: 3 }, (_, i) => ({
     externalTrackId: `track-${i + 1}`,
@@ -87,7 +148,7 @@ export const songHandlers = [
     });
   }),
 
-  // 외부 트랙 단건 조회. 라이브러리에서 재생을 누른 곡만 이 경로로 미리듣기 URL을 받아간다.
+  // 외부 트랙 단건 조회 (미리듣기 음원 제공)
   http.get(`${API_URL}/songs/tracks/:trackId`, ({ params }) => {
     const trackId = String(params.trackId);
 
@@ -111,6 +172,7 @@ export const songHandlers = [
     });
   }),
 
+  // 곡 생성 (POST /bands/:bandId/songs)
   http.post(`${API_URL}/bands/:bandId/songs`, async ({ request, params }) => {
     const body = (await request.json()) as CreateSongRequest;
     const created: SongListItem = {
@@ -147,5 +209,56 @@ export const songHandlers = [
       },
       { status: 201 },
     );
+  }),
+
+  // 곡 수정 (PATCH /songs/:songId)
+  http.patch(`${API_URL}/songs/:songId`, async ({ request, params }) => {
+    const { songId } = params as { songId: string };
+    const body = (await request.json()) as UpdateSongRequest;
+    const target = bandSongs.find((s) => s.id === songId);
+
+    if (target) {
+      if (body.title !== undefined) target.title = body.title;
+      if (body.artistName !== undefined) target.artistName = body.artistName;
+      if (body.key !== undefined) target.key = body.key;
+      if (body.bpm !== undefined) target.bpm = body.bpm;
+      if (body.songLength !== undefined) target.songLength = body.songLength;
+      if (body.songCoverUrl !== undefined) target.songCoverUrl = body.songCoverUrl;
+      if (body.sourceUrl !== undefined) target.sourceUrl = body.sourceUrl;
+      if (body.sourceType !== undefined) target.sourceType = body.sourceType;
+      if (body.externalLinks !== undefined) target.externalLinks = body.externalLinks;
+      if (body.referenceFiles !== undefined) {
+        target.referenceFiles = body.referenceFiles.map((file, idx) => ({
+          id: `ref-${songId}-${idx + 1}`,
+          fileUrl: file.fileUrl,
+          fileName: file.fileName,
+          createdAt: new Date().toISOString(),
+        }));
+      }
+    }
+
+    return HttpResponse.json<ApiSuccessResponse<{ song: SongListItem | undefined }>>({
+      status: 'success',
+      error: null,
+      message: '곡이 수정되었습니다.',
+      data: { song: target },
+    });
+  }),
+
+  // 곡 삭제 (DELETE /songs/:songId)
+  http.delete(`${API_URL}/songs/:songId`, ({ params }) => {
+    const { songId } = params as { songId: string };
+    const index = bandSongs.findIndex((s) => s.id === songId);
+
+    if (index !== -1) {
+      bandSongs.splice(index, 1);
+    }
+
+    return HttpResponse.json<ApiSuccessResponse<{ success: boolean }>>({
+      status: 'success',
+      error: null,
+      message: '곡이 삭제되었습니다.',
+      data: { success: true },
+    });
   }),
 ];

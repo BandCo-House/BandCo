@@ -32,6 +32,11 @@ const SONG_KEY_LABELS: Record<SongKey, string> = {
   BM: 'B Minor',
 };
 
+export const getSongKeyLabel = (key: SongKey | null | undefined): string => {
+  if (!key) return '';
+  return SONG_KEY_LABELS[key] ?? key;
+};
+
 export const SONG_KEY_OPTIONS = SONG_KEYS.map((value) => ({
   value,
   label: SONG_KEY_LABELS[value],

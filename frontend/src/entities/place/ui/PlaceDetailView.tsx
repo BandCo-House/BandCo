@@ -1,4 +1,4 @@
-import { isKakaoMapsAvailable } from '@/shared/lib/kakao-maps';
+import { KAKAO_MAP_APP_KEY } from '@/shared/api/config';
 import type { Place } from '../model/types';
 import { PlaceStaticMap } from './PlaceStaticMap';
 
@@ -13,7 +13,7 @@ interface PlaceDetailViewProps {
 export const PlaceDetailView = ({ place }: PlaceDetailViewProps) => {
   // 좌표가 없는 장소("동방 1호")는 그릴 지도가 없어 섹션째로 뺀다.
   const coordinates =
-    isKakaoMapsAvailable && place.latitude !== null && place.longitude !== null
+    KAKAO_MAP_APP_KEY && place.latitude !== null && place.longitude !== null
       ? { latitude: place.latitude, longitude: place.longitude }
       : null;
 

@@ -1,13 +1,33 @@
 import { render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as kakaoMaps from '@/shared/lib/kakao-maps';
-import type { KakaoMaps } from '@/shared/lib/kakao-maps';
 import type { Place } from '../model/types';
 import { PlaceDetailView } from './PlaceDetailView';
 
-vi.mock('@/shared/lib/kakao-maps', () => ({
-  isKakaoMapsAvailable: true,
-  loadKakaoMaps: vi.fn(),
+const mocks = vi.hoisted(() => ({
+  loader: [false, undefined] as [boolean, ErrorEvent | undefined],
+  staticMapRendered: vi.fn(),
+}));
+
+vi.mock('@/shared/api/config', () => ({ KAKAO_MAP_APP_KEY: 'test-key' }));
+
+vi.mock('@/shared/lib/use-kakao-map-loader', () => ({
+  useKakaoMapLoader: () => mocks.loader,
+}));
+
+// 실제 SDK처럼 컨테이너에 이름 없는 링크와 이미지를 그린 뒤 onCreate를 부른다.
+vi.mock('react-kakao-maps-sdk', () => ({
+  StaticMap: ({ onCreate }: { onCreate?: () => void }) => {
+    mocks.staticMapRendered();
+    useEffect(() => {
+      onCreate?.();
+    }, [onCreate]);
+    return (
+      <a target="_blank" href="https://map.kakao.com?mapJson=x">
+        <img src="map.png" />
+      </a>
+    );
+  },
 }));
 
 const place: Place = {
@@ -21,27 +41,13 @@ const place: Place = {
   isActive: true,
 };
 
-/** 실제 SDK처럼 컨테이너에 이름 없는 링크와 이미지를 그려 넣는다. */
-const mockSdk = () => {
-  const maps = {
-    LatLng: class {},
-    StaticMap: class {
-      constructor(container: HTMLElement) {
-        container.innerHTML =
-          '<a target="_blank" href="https://map.kakao.com?mapJson=x"><img src="map.png"></a>';
-      }
-    },
-  } as unknown as KakaoMaps;
-  vi.mocked(kakaoMaps.loadKakaoMaps).mockResolvedValue(maps);
-};
-
 describe('PlaceDetailView', () => {
   beforeEach(() => {
-    vi.mocked(kakaoMaps.loadKakaoMaps).mockReset();
+    mocks.loader = [false, undefined];
+    mocks.staticMapRendered.mockClear();
   });
 
   it('이름과 위치를 보여주고, 지도는 장소명이 붙은 카카오맵 링크가 된다', async () => {
-    mockSdk();
     render(<PlaceDetailView place={place} />);
 
     expect(
@@ -66,15 +72,13 @@ describe('PlaceDetailView', () => {
     expect(
       screen.queryByRole('heading', { name: '위치' }),
     ).not.toBeInTheDocument();
-    expect(kakaoMaps.loadKakaoMaps).not.toHaveBeenCalled();
+    expect(mocks.staticMapRendered).not.toHaveBeenCalled();
   });
 
-  it('지도를 못 불러오면 빈 칸 대신 안내 문구를 보여준다', async () => {
-    vi.mocked(kakaoMaps.loadKakaoMaps).mockRejectedValue(new Error('blocked'));
+  it('지도를 못 불러오면 빈 칸 대신 안내 문구를 보여준다', () => {
+    mocks.loader = [false, new ErrorEvent('error')];
     render(<PlaceDetailView place={place} />);
 
-    expect(
-      await screen.findByText('지도를 불러오지 못했어요.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('지도를 불러오지 못했어요.')).toBeInTheDocument();
   });
 });

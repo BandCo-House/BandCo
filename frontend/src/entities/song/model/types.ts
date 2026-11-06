@@ -28,3 +28,19 @@ export interface CreateSongRequest {
   externalLinks?: string[];
   referenceFiles?: { fileUrl: string; fileName: string }[];
 }
+
+/** 곡 수정 요청 본문(`PATCH /songs/:songId`). */
+export interface UpdateSongRequest {
+  title?: string;
+  artistName?: string;
+  sourceUrl?: string | null;
+  sourceType?: SongSourceType | null;
+  key?: SongKey | null;
+  bpm?: number | null;
+  memo?: string | null;
+  songCoverUrl?: string | null;
+  songLength?: number | null;
+  externalLinks?: string[];
+  referenceFiles?: { fileUrl: string; fileName: string }[];
+}
+
