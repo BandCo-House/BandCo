@@ -19,7 +19,7 @@ export const SpaceEditAction = () => {
     <>
       <button
         type="button"
-        aria-label="합주 공간 수정"
+        aria-label="합주 수정"
         onClick={() => setIsOpen(true)}
         className="inline-flex size-10 items-center justify-center rounded-full text-grey-100 focus-visible:outline-2 focus-visible:outline-key"
       >

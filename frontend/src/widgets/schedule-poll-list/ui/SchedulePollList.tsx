@@ -104,7 +104,7 @@ export const SchedulePollList = ({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 같은 스페이스 탭인 합주공간 소개(SpaceSummaryHeader)·라이브러리와 같은 급의 제목이다.
+      {/* 라이브러리 같은 다른 탭 본문과 같은 급의 제목이다.
           여기만 한 단계씩 작아(18/14) 탭을 옮길 때 글자 크기가 튀었다. */}
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-2">
