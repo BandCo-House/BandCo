@@ -8,10 +8,11 @@ import {
   formatDateRanges,
 } from '@/entities/schedule-poll/lib/poll-grid';
 import { formatClockTime, formatDotDate } from '@/shared/lib/date';
-import { Button } from '@/shared/ui/button';
+import { buttonVariants } from '@/shared/ui/button';
 import { cardSurfaceClass } from '@/shared/ui/card-surface';
 import { cn } from '@/shared/lib/utils';
 import { EmptyState } from '@/shared/ui/empty-state';
+import { SVGIcon } from '@/shared/ui/icon';
 
 interface SchedulePollListProps {
   bandId: string;
@@ -105,11 +106,25 @@ export const SchedulePollList = ({
     <div className="flex flex-col gap-6">
       {/* 같은 스페이스 탭인 합주공간 소개(SpaceSummaryHeader)·라이브러리와 같은 급의 제목이다.
           여기만 한 단계씩 작아(18/14) 탭을 옮길 때 글자 크기가 튀었다. */}
-      <header className="flex flex-col gap-2">
-        <h1 className="typo-xl-sb text-grey-50">일정 투표 목록</h1>
-        <p className="typo-base-r text-grey-300">
-          참여 가능한 멤버를 확인해보세요
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-2">
+          <h1 className="typo-xl-sb text-grey-50">일정 투표 목록</h1>
+          <p className="typo-base-r text-grey-300">
+            참여 가능한 멤버를 확인해보세요
+          </p>
+        </div>
+        {/* 만들기가 탭이 아니라 목록의 행동이 됐다. 메뉴 없이 글자로 바로 보이게 둔다. */}
+        {/* Button asChild는 스타일을 안쪽 span에 입혀 아이콘이 줄바꿈된다. Link에 직접 입힌다. */}
+        <Link
+          to="/band/$bandId/space/$spaceId/polls/new"
+          params={{ bandId, spaceId }}
+          className={cn(
+            buttonVariants({ variant: 'accent' }),
+            'h-9 gap-1 px-3 typo-sm-sb',
+          )}
+        >
+          <SVGIcon icon="Add" size="sm" />새 투표
+        </Link>
       </header>
 
       {isError ? (
@@ -121,21 +136,11 @@ export const SchedulePollList = ({
         />
       ) : items.length === 0 ? (
         !isPending && (
-          <div className="flex flex-col items-center gap-2">
-            <EmptyState
-              title="일정 투표가 없습니다"
-              description="일정 투표 탭에서 만들 수 있어요"
-              className="py-4"
-            />
-            <Button asChild variant="shining" className="typo-sm-sb">
-              <Link
-                to="/band/$bandId/space/$spaceId/polls/new"
-                params={{ bandId, spaceId }}
-              >
-                투표 만들기
-              </Link>
-            </Button>
-          </div>
+          <EmptyState
+            title="일정 투표가 없습니다"
+            description="새 투표로 멤버들이 되는 시간을 모아보세요"
+            className="py-4"
+          />
         )
       ) : (
         <ul className="flex flex-col gap-3">
