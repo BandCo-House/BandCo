@@ -2,7 +2,7 @@ import { useParams, useRouterState } from '@tanstack/react-router';
 import { RouteTabs } from '@/widgets/page-header';
 
 const TABS = [
-  { key: 'home', label: '합주', to: '/band/$bandId' },
+  { key: 'home', label: '홈', to: '/band/$bandId' },
   { key: 'archive', label: '아카이브', to: '/band/$bandId/archive' },
   { key: 'library', label: '라이브러리', to: '/band/$bandId/library' },
 ] as const;

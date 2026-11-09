@@ -311,7 +311,7 @@ describe('앱 라우터', () => {
       'aria-current',
       'page',
     );
-    expect(tabs.getByRole('link', { name: '합주' })).not.toHaveAttribute(
+    expect(tabs.getByRole('link', { name: '홈' })).not.toHaveAttribute(
       'aria-current',
     );
   });
