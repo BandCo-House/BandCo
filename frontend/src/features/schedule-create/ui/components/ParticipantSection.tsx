@@ -18,6 +18,10 @@ interface ParticipantSectionProps {
   /** 선택된 참여자 bandMemberId 목록(추가 순서 유지). */
   value: string[];
   onChange: (ids: string[]) => void;
+  /** 참여자 인풋 버튼의 id. 폼이 빠진 칸으로 포커스를 옮길 때 쓴다. */
+  triggerId?: string;
+  /** 칸 아래에 붙는 경고. 있으면 그룹을 aria-invalid로 표시한다. */
+  error?: { id: string; message: string };
 }
 
 /** 리더=BM / 부리더=ADMIN. 체크박스 행으로 노출되며 카드에 뱃지가 붙고 X가 없다. */
@@ -36,6 +40,8 @@ export const ParticipantSection = ({
   bandId,
   value,
   onChange,
+  triggerId,
+  error,
 }: ParticipantSectionProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   // 팀 조회가 끝나기 전에 다른 팀을 또 고르면, 두 호출이 같은 렌더의 value를
@@ -101,6 +107,8 @@ export const ParticipantSection = ({
       role="group"
       aria-label="참여자"
       aria-required
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error?.id}
     >
       <div className="flex items-center justify-between">
         <FieldLabel required>참여자</FieldLabel>
@@ -115,6 +123,7 @@ export const ParticipantSection = ({
 
       {/* 참여자 인풋(드롭다운형) → 검색 모달 */}
       <button
+        id={triggerId}
         type="button"
         onClick={() => setIsModalOpen(true)}
         className={cn(
@@ -125,6 +134,11 @@ export const ParticipantSection = ({
         <span>참여자를 선택하세요</span>
         <ChevronDown aria-hidden="true" className="size-6 text-grey-100" />
       </button>
+      {error && (
+        <p id={error.id} className="typo-sm-r text-destructive">
+          {error.message}
+        </p>
+      )}
 
       {/* 리더/부리더 체크박스 행 */}
       {specialMembers.map((member) => (
