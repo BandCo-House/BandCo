@@ -57,7 +57,7 @@ describe('BandUserInviteModal', () => {
       screen.getByRole('heading', { name: '사용자 검색' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('이름으로 검색하세요'),
+      screen.getByPlaceholderText('이름, ID로 검색하세요'),
     ).toBeInTheDocument();
   });
 
@@ -106,7 +106,9 @@ describe('BandUserInviteModal', () => {
     expect(addButton).not.toBeDisabled();
 
     // 칩의 X 버튼 클릭하여 선택 해제
-    const removeBtn = screen.getByRole('button', { name: '김나영 선택 해제' });
+    const removeBtn = screen.getByRole('button', {
+      name: '김나영(NY_03ABC) 선택 해제',
+    });
     await user.click(removeBtn);
 
     expect(screen.queryByText('총 1명')).not.toBeInTheDocument();

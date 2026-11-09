@@ -105,6 +105,7 @@ export const InviteeSearchModal = ({
               variant="search"
               selected={isSelected}
               nickname={user.nickname}
+              handle={user.handle}
               avatarUrl={user.avatarUrl}
               sessionName={calcPrimarySkillName(user.skills)}
             />
@@ -126,7 +127,7 @@ export const InviteeSearchModal = ({
           <AppDialogClose aria-label="멤버 초대 닫기" />
         </div>
         <DialogDescription className="sr-only">
-          이름으로 유저를 검색해 새 밴드에 초대할 멤버를 고릅니다.
+          이름이나 고유 ID로 유저를 검색해 새 밴드에 초대할 멤버를 고릅니다.
         </DialogDescription>
 
         <Input
@@ -134,7 +135,7 @@ export const InviteeSearchModal = ({
           variant="roundedFull"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="이름으로 검색하세요"
+          placeholder="이름, ID로 검색하세요"
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
         />
 

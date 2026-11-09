@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  handleSchema,
+  isNicknameWithinMaxLength,
+  NICKNAME_MAX_LENGTH,
+} from '@/entities/user/model/schema';
 
 const passwordAllowedCharactersRegex = /^[a-z\d!@#$%^&*()]+$/i;
 const passwordLetterRegex = /[a-z]/i;
@@ -23,8 +28,17 @@ export const loginSchema = z.object({
 });
 
 export const signupSchema = loginSchema.extend({
-  nickname: z.string().min(2, '이름은 2자 이상이어야 합니다.'),
+  nickname: z
+    .string()
+    .min(2, '이름은 2자 이상이어야 합니다.')
+    .refine(
+      isNicknameWithinMaxLength,
+      `이름은 최대 ${NICKNAME_MAX_LENGTH}자 이내여야 합니다.`,
+    ),
+  handle: handleSchema,
 });
 
 export type LoginReq = z.infer<typeof loginSchema>;
+/** 가입 폼 값. `handle`은 가입 API가 받지 않아 가입 직후 #72로 따로 저장한다. */
 export type SignupReq = z.infer<typeof signupSchema>;
+export type RegisterEmailReq = Omit<SignupReq, 'handle'>;

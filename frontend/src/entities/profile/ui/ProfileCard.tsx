@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { Profile, ProfileMusic } from '../model/types';
 import { Input } from '@/shared/ui/input';
 import { Play, Pause, Edit, CheckIcon, ChevronLeft } from 'lucide-react';
@@ -25,6 +25,10 @@ export interface ProfileCardProps {
   onSave: () => void;
   onAvatarFileSelect: (file: File) => void;
   onOpenMusicSearch: () => void;
+  /** 편집 모드에서 닉네임 아래 그릴 고유 ID 입력 행. 카드의 2열 그리드(라벨·입력)에 들어간다. */
+  handleEditor?: ReactNode;
+  /** 본인인데 고유 ID가 없을 때 보여주는 "고유 ID 정하기"를 눌렀을 때 */
+  onStartHandleSetup?: () => void;
 }
 
 export function ProfileCard({
@@ -40,8 +44,11 @@ export function ProfileCard({
   onSave,
   onAvatarFileSelect,
   onOpenMusicSearch,
+  handleEditor,
+  onStartHandleSetup,
 }: ProfileCardProps) {
   const profileName = profile.profile?.nickname || '익명의 아티스트';
+  const handle = profile.profile?.handle ?? null;
   const avatarUrl = editForm.avatarUrl || profile.profile?.avatarUrl;
   const selfDescription = profile.profile?.selfDescription;
   const profileMusic = isEditing
@@ -189,10 +196,28 @@ export function ProfileCard({
                     />
                   </>
                 ) : (
-                  <h2 className="col-span-2 typo-3xl-b leading-tight tracking-tight text-white">
-                    {profileName}
-                  </h2>
+                  <div className="col-span-2 flex flex-col gap-1">
+                    <h2 className="typo-3xl-b leading-tight tracking-tight text-white">
+                      {profileName}
+                    </h2>
+                    {handle ? (
+                      <p className="typo-base-sb text-grey-50">@{handle}</p>
+                    ) : (
+                      isMe &&
+                      onStartHandleSetup && (
+                        <button
+                          type="button"
+                          onClick={onStartHandleSetup}
+                          className="self-start typo-sm-sb text-grey-50 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+                        >
+                          고유 ID 정하기
+                        </button>
+                      )
+                    )}
+                  </div>
                 )}
+
+                {isEditing && handleEditor}
 
                 {isEditing ? (
                   <>
