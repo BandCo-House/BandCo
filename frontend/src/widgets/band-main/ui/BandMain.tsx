@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { useParams } from '@tanstack/react-router';
 import { cn } from '@/shared/lib/utils';
 import {
   SegmentedToggle,
   type SegmentedOption,
 } from '@/shared/ui/segmented-toggle';
 import { WeekDatePicker } from '@/shared/ui/week-date-picker';
-import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
+import { ActionFab } from '@/shared/ui/action-fab';
 import { useBandSpaces } from '@/entities/space/api/useBandSpaces';
 import { BandSpaceCard } from '@/entities/space/ui/BandSpaceCard';
 import { SpaceCreateModal } from '@/features/space-create/ui/SpaceCreateModal';
@@ -30,7 +30,6 @@ const FILTER_PARAMS: Record<
 
 export const BandMain = () => {
   const { bandId } = useParams({ from: '/band/$bandId/' });
-  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [filter, setFilter] = useState<SpaceFilter>('mine');
   const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
@@ -38,20 +37,6 @@ export const BandMain = () => {
     bandId,
     FILTER_PARAMS[filter],
   );
-
-  // 멤버 초대는 전용 모달 대신 초대 UI가 이미 있는 밴드 설정으로 보낸다.
-  const fabActions: SpeedDialAction[] = [
-    {
-      label: '멤버 초대',
-      onClick: () =>
-        navigate({
-          to: '/band/$bandId/settings',
-          params: { bandId },
-          search: { tab: 'basic' },
-        }),
-    },
-    { label: '새 합주', onClick: () => setIsSpaceModalOpen(true) },
-  ];
 
   const hasSpaces = !!spaces && spaces.length > 0;
 
@@ -92,9 +77,11 @@ export const BandMain = () => {
         )}
       </div>
 
-      <SpeedDialFab
+      {/* 멤버 초대는 FAB에서 빼고 헤더 설정(초대 카드가 있는 곳)으로만 들어간다. */}
+      <ActionFab
         className="bottom-24"
-        actions={fabActions}
+        label="새 합주"
+        onClick={() => setIsSpaceModalOpen(true)}
         hidden={isSpaceModalOpen}
       />
 

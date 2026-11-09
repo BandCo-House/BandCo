@@ -19,7 +19,7 @@ import {
 import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreateModal';
 import { MonthDatePicker } from '@/shared/ui/month-date-picker';
 import { WeekDateStrip } from '@/shared/ui/week-date-picker';
-import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
+import { ActionFab } from '@/shared/ui/action-fab';
 import { CalendarNav, type CalendarView } from './CalendarNav';
 import { DayTimeline } from './DayTimeline';
 
@@ -93,15 +93,10 @@ export const SpaceCalendar = () => {
     { enabled: calendarView === 'month' },
   );
 
-  const fabActions: SpeedDialAction[] = [
-    {
-      label: '새 일정',
-      onClick: () => {
-        setDetailScheduleId(null);
-        setIsModalOpen(true);
-      },
-    },
-  ];
+  const openCreateModal = () => {
+    setDetailScheduleId(null);
+    setIsModalOpen(true);
+  };
 
   const handleScheduleClick = (scheduleId: string) => {
     setDetailScheduleId(scheduleId);
@@ -202,9 +197,10 @@ export const SpaceCalendar = () => {
         onScheduleClick={handleScheduleClick}
       />
 
-      <SpeedDialFab
+      <ActionFab
         className="bottom-24"
-        actions={fabActions}
+        label="새 일정"
+        onClick={openCreateModal}
         hidden={isModalOpen || isFilterSheetOpen}
       />
 
