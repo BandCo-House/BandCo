@@ -7,6 +7,7 @@ interface HandleEditFieldProps {
   field: HandleField;
   /** 다음 변경 가능 시각. 값이 있으면 7일 제한 중이라 입력을 잠근다. */
   changeableAt: string | null;
+  autoFocus?: boolean;
 }
 
 const STATUS_ID = 'handle-input-status';
@@ -47,6 +48,7 @@ const getChangeRule = (
 export const HandleEditField = ({
   field,
   changeableAt,
+  autoFocus = false,
 }: HandleEditFieldProps) => {
   const isLocked = changeableAt !== null;
   const statusMessage = isLocked
@@ -67,6 +69,7 @@ export const HandleEditField = ({
           value={field.value}
           onChange={(e) => field.change(e.target.value)}
           disabled={isLocked}
+          autoFocus={autoFocus}
           placeholder="영문·숫자·_ 4~8자"
           aria-invalid={!!field.error}
           aria-describedby={cn(statusMessage && STATUS_ID, RULES_ID)}

@@ -120,6 +120,8 @@ function ProfileRoutePage() {
   const avatarPreviewUrlRef = useRef<string | null>(null);
   const { selectFile, cropDialogProps } = useImageCrop();
   const handleField = useHandleField(profile?.profile?.handle ?? null);
+  // "고유 ID 정하기"로 들어왔으면 편집 화면에서 ID 칸부터 잡아 준다.
+  const [shouldFocusHandle, setShouldFocusHandle] = useState(false);
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -245,8 +247,9 @@ function ProfileRoutePage() {
     setAvatarFile(null);
   };
 
-  const enterEditMode = () => {
+  const enterEditMode = (focusHandle = false) => {
     resetEditForm();
+    setShouldFocusHandle(focusHandle);
     setIsEditing(true);
   };
 
@@ -313,11 +316,13 @@ function ProfileRoutePage() {
           onSave={handleSave}
           onAvatarFileSelect={selectFile}
           onOpenMusicSearch={() => setIsMusicSearchOpen(true)}
+          onStartHandleSetup={() => enterEditMode(true)}
           handleEditor={
             isMe ? (
               <HandleEditField
                 field={handleField}
                 changeableAt={profile.profile?.handleChangeableAt ?? null}
+                autoFocus={shouldFocusHandle}
               />
             ) : null
           }

@@ -27,6 +27,8 @@ export interface ProfileCardProps {
   onOpenMusicSearch: () => void;
   /** 편집 모드에서 닉네임 아래 그릴 고유 ID 입력 행. 카드의 2열 그리드(라벨·입력)에 들어간다. */
   handleEditor?: ReactNode;
+  /** 본인인데 고유 ID가 없을 때 보여주는 "고유 ID 정하기"를 눌렀을 때 */
+  onStartHandleSetup?: () => void;
 }
 
 export function ProfileCard({
@@ -43,6 +45,7 @@ export function ProfileCard({
   onAvatarFileSelect,
   onOpenMusicSearch,
   handleEditor,
+  onStartHandleSetup,
 }: ProfileCardProps) {
   const profileName = profile.profile?.nickname || '익명의 아티스트';
   const handle = profile.profile?.handle ?? null;
@@ -200,10 +203,15 @@ export function ProfileCard({
                     {handle ? (
                       <p className="typo-base-sb text-grey-50">@{handle}</p>
                     ) : (
-                      isMe && (
-                        <p className="typo-sm-r text-grey-50">
-                          고유 ID를 아직 정하지 않았어요.
-                        </p>
+                      isMe &&
+                      onStartHandleSetup && (
+                        <button
+                          type="button"
+                          onClick={onStartHandleSetup}
+                          className="self-start typo-sm-sb text-grey-50 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+                        >
+                          고유 ID 정하기
+                        </button>
                       )
                     )}
                   </div>

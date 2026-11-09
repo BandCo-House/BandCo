@@ -36,10 +36,9 @@ const saveHandleAfterSignup = async (accessToken: string, handle: string) => {
   try {
     if (!userId) throw new Error('가입 토큰에서 유저 ID를 읽지 못했습니다.');
     await changeHandle(userId, handle);
-  } catch (err) {
-    toast.error(
-      `${getApiErrorMessage(err, '고유 ID를 저장하지 못했어요.')} 프로필에서 다시 정해 주세요.`,
-    );
+  } catch {
+    // 서버 문구를 붙이면 문장이 두 개 겹쳐 길어진다. 다음 행동만 알린다.
+    toast.error('고유 ID를 저장하지 못했어요. 프로필에서 다시 정해 주세요.');
   }
 };
 
