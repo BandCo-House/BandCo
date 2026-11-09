@@ -69,7 +69,7 @@ export const WeekDateStrip = ({
                 className={cn(
                   'flex size-9 items-center justify-center rounded-full typo-xs-sb transition-colors',
                   isSelected
-                    ? 'bg-primary text-primary-dark'
+                    ? 'bg-grey-50 text-gradient-top'
                     : 'text-grey-50 group-hover:bg-overlay-24 group-focus-visible:bg-overlay-24 group-active:bg-overlay-24',
                 )}
               >

@@ -219,6 +219,7 @@ export const ScheduleFormView = ({
       <Field label="일정 유형" labelSize="lg" required>
         <SegmentedToggle
           variant="tab"
+          tone="input"
           label="일정 유형"
           options={TYPE_OPTIONS}
           value={form.scheduleType}

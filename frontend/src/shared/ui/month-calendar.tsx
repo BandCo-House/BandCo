@@ -67,6 +67,8 @@ export const MonthCalendarShell = ({
         month={viewMonth.getMonth()}
         onSelect={onSelect}
         getDay={getDay}
+        // 이 셸을 쓰는 곳(투표 후보 날짜, 일정 날짜)은 모두 저장될 날짜를 고른다.
+        tone="input"
       />
     </div>
   );
