@@ -19,7 +19,8 @@ interface AssistantScreenProps {
 }
 
 /**
- * 질문과 답을 대화처럼 쌓아 보여주는 전체 화면. 아래에서 올라오며 하단 탭바와 고정 헤더를 모두 덮는다.
+ * 질문과 답을 대화처럼 쌓아 보여주는 전체 화면. 하단 탭바와 고정 헤더를 모두 덮는다.
+ * 다른 전체 화면 시트(일정·장소·곡 추가)처럼 오른쪽에서 들어온다. 아래에서 올라오는 건 일부만 덮는 바텀시트의 몫이다.
  * 입력창은 하단에 고정해 답이 길어져도 밀리지 않는다. 닫아도 대화는 남는다.
  */
 export const AssistantScreen = ({
@@ -32,7 +33,6 @@ export const AssistantScreen = ({
 }: AssistantScreenProps) => (
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent
-      side="bottom"
       showCloseButton={false}
       // 입력창 대신 시트 자체에 포커스를 둬 키보드는 올리지 않으면서 Tab이 시트 밖으로 나가지 않게 한다.
       onOpenAutoFocus={(event) => {
