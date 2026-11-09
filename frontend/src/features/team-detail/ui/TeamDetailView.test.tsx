@@ -85,12 +85,12 @@ describe('TeamDetailView', () => {
     handleToggleMember: vi.fn(),
   };
 
-  it('팀원 목록, 합주 공간 섹션을 올바르게 렌더링한다', () => {
+  it('팀원 목록, 합주 섹션을 올바르게 렌더링한다', () => {
     renderWithQuery(<TeamDetailView {...defaultProps} />);
 
     expect(screen.getByText('듀얼 기타 편성')).toBeInTheDocument();
     expect(screen.getByText('팀원 목록')).toBeInTheDocument();
-    expect(screen.getByText('참여중인 합주 공간')).toBeInTheDocument();
+    expect(screen.getByText('참여 중인 합주')).toBeInTheDocument();
 
     expect(screen.getByText('기타:')).toBeInTheDocument();
     expect(screen.getByText('김기타')).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('TeamDetailView', () => {
     expect(handleToggleEdit).toHaveBeenCalledTimes(1);
   });
 
-  it('isEditing이 true일 때 팀원 추가 버튼 및 세션 검색 돋보기 버튼만 노출되고 합주 공간/곡/파일 섹션은 숨겨진다', () => {
+  it('isEditing이 true일 때 팀원 추가 버튼 및 세션 검색 돋보기 버튼만 노출되고 합주/곡/파일 섹션은 숨겨진다', () => {
     renderWithQuery(<TeamDetailView {...defaultProps} isEditing={true} />);
 
     expect(
@@ -122,6 +122,6 @@ describe('TeamDetailView', () => {
       screen.getByRole('button', { name: '베이스 멤버 변경' }),
     ).toBeInTheDocument();
 
-    expect(screen.queryByText('참여중인 합주 공간')).not.toBeInTheDocument();
+    expect(screen.queryByText('참여 중인 합주')).not.toBeInTheDocument();
   });
 });

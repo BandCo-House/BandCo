@@ -17,7 +17,7 @@ export const SpaceTabs = () => {
 
   return (
     <RouteTabs
-      ariaLabel="합주 공간 탭"
+      ariaLabel="합주 탭"
       variant="underline"
       activeKey={resolveActiveKey(pathname)}
       tabs={TABS.map((tab) => ({ ...tab, params: { bandId, spaceId } }))}

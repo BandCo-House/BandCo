@@ -3,12 +3,10 @@ import { useParams } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { WEEKDAY_LABELS, addDays } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
-import { useSpace } from '@/entities/space/api/useSpace';
 import {
   useDaySchedules,
   useMonthScheduleCounts,
 } from '@/entities/schedule/model/queries';
-import { SpaceSummaryHeader } from '@/entities/space/ui/SpaceSummaryHeader';
 import { ScheduleFilterBar } from '@/features/schedule-filter/ui/ScheduleFilterBar';
 import { ScheduleFilterSheet } from '@/features/schedule-filter/ui/ScheduleFilterSheet';
 import {
@@ -74,7 +72,6 @@ export const SpaceCalendar = () => {
     return () => observer.disconnect();
   }, [headerPx]);
 
-  const { data: spaceDetail } = useSpace(spaceId ?? '');
   const scheduleFilter = {
     scheduleType,
     onlyMine,
@@ -110,17 +107,9 @@ export const SpaceCalendar = () => {
 
   return (
     <div className="flex w-full flex-col pb-[calc(5rem_+_env(safe-area-inset-bottom))]">
-      {/* 묶음(요약 · 캘린더 · 필터) 사이는 32, 필터 바 자체 여백(py-3) 앞에 8을 더해
+      {/* 묶음(캘린더 · 필터) 사이는 32, 필터 바 자체 여백(py-3) 앞에 8을 더해
           캘린더–필터도 다른 묶음과 비슷하게 벌린다. */}
       <div className="flex flex-col gap-8 px-5 pb-2">
-        {spaceDetail && (
-          <SpaceSummaryHeader
-            name={spaceDetail.space.name}
-            description={spaceDetail.space.description}
-            memberCount={spaceDetail.memberCount}
-            songCount={spaceDetail.songCount}
-          />
-        )}
         <section className="flex flex-col gap-5">
           <CalendarNav
             view={calendarView}
