@@ -45,6 +45,7 @@ export const MonthDatePicker = ({
     year={value.getFullYear()}
     month={value.getMonth()}
     showMarkers
+    tone="view"
     onSelect={onChange}
     getDay={(date) => {
       const count = markers?.get(formatLocalDate(date)) ?? 0;

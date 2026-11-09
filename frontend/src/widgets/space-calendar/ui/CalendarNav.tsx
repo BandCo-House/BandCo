@@ -61,6 +61,7 @@ export const CalendarNav = ({
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <SegmentedToggle
+        tone="view"
         variant="tab"
         label="캘린더 보기 방식"
         className="shrink-0"

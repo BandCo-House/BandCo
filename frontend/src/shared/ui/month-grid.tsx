@@ -26,6 +26,8 @@ interface MonthGridProps {
    * 같으면 위 날짜 것인지 아래 날짜 것인지 헷갈린다.
    */
   showMarkers?: boolean;
+  /** 선택 색 규칙. 'view'(보는 날짜 이동)는 흰 원, 'input'(저장될 날짜 고르기)은 노란 원. */
+  tone: 'view' | 'input';
   className?: string;
 }
 
@@ -40,6 +42,7 @@ export const MonthGrid = ({
   getDay,
   onSelect,
   showMarkers = false,
+  tone,
   className,
 }: MonthGridProps) => (
   <div className={cn('flex flex-col', className)}>
@@ -88,7 +91,12 @@ export const MonthGrid = ({
                 'group-focus-visible:outline-2 group-focus-visible:outline-primary',
                 // typo-* 는 tailwind-merge가 같은 그룹으로 못 묶어 둘 다 남는다. 하나만 조건부로 붙인다.
                 isSelected
-                  ? 'bg-primary typo-sm-sb text-primary-dark'
+                  ? cn(
+                      'typo-sm-sb',
+                      tone === 'view'
+                        ? 'bg-grey-50 text-gradient-top'
+                        : 'bg-primary text-primary-dark',
+                    )
                   : 'typo-sm-r',
                 !isSelected && (isDisabled ? 'text-grey-400' : 'text-grey-300'),
                 !isSelected &&

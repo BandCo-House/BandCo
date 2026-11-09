@@ -237,6 +237,7 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
       <Field label="밴드 공개 여부" labelSize="lg">
         <SegmentedToggle
           variant="tab"
+          tone="input"
           label="밴드 공개 여부"
           options={VISIBILITY_OPTIONS}
           value={visibility}
