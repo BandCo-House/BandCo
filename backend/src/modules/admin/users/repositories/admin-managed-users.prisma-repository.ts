@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { isUUID } from 'class-validator';
 import type { PaginationParams } from 'src/common/pagination';
+import { escapeLikePattern } from 'src/common/query';
 import { buildActiveSuspensionWhere } from 'src/common/sanction/active-suspension.where';
 import { PrismaService } from 'src/database/prisma';
 import type { Prisma, UserStatus } from 'src/generated/prisma';
@@ -205,13 +206,27 @@ export class AdminManagedUsersPrismaRepository implements AdminManagedUsersRepos
     await client.user.update({ where: { id: userId }, data: { status } });
   }
 
-  async softDeleteUser(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<void> {
+  async softDeleteUser(userId: string, deletedAt: Date, replacementHandle: string, tx?: Prisma.TransactionClient): Promise<void> {
     const client = tx ?? this.prisma;
-    // 본인 탈퇴와 같이 고유 ID를 풀어 다른 사람이 쓸 수 있게 한다. 복구해도 되돌리지 않아 유저가 다시 정해야 한다
+    // 본인 탈퇴와 같이 원래 고유 ID를 랜덤 값으로 바꿔 다른 사람이 쓸 수 있게 한다. 복구하면 랜덤 ID를 그대로 갖는다
     await client.user.update({
       where: { id: userId },
-      data: { deletedAt, status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
+      data: {
+        deletedAt,
+        status: 'INACTIVE',
+        profile: { update: { handle: replacementHandle, handleGenerated: true, handleChangedAt: null } },
+      },
     });
+  }
+
+  async isHandleTaken(handle: string, tx?: Prisma.TransactionClient): Promise<boolean> {
+    const client = tx ?? this.prisma;
+    // insensitive equals는 ILIKE라 handle에 허용된 `_`가 와일드카드로 동작하지 않게 이스케이프한다
+    const profile = await client.userProfile.findFirst({
+      where: { handle: { equals: escapeLikePattern(handle), mode: 'insensitive' } },
+      select: { userId: true },
+    });
+    return profile !== null;
   }
 
   async findStatusBeforeAdminWithdrawal(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<UserStatus | null> {

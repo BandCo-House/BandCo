@@ -13,6 +13,7 @@ Notion "유저 api" 데이터베이스는 `src/auth`(인증)와 `src/modules/use
 > - [설계자 보완 2026-09-01] `#70 Google 로그인` 신규 추가 (기존 최대 #69 + 1). Notion "유저 api" DB에는 아직 미등록 — 수동 등록 필요.
 > - [설계자 보완 2026-10-19] 유저 고유 ID(@handle) 도입. `#71 고유 ID 중복 확인`, `#72 고유 ID 변경` 신규 추가(기존 최대 #70 + 1). `#4`에 통합 검색어 `where__keyword__contain`과 응답 `handle`, `#3`·`#5` 응답에 `profile.handle`·`profile.handleChangeableAt` 추가. 닉네임 최대 20자. Notion 미등록 — 수동 등록 필요.
 > - [설계자 보완 2026-10-19] `#1` 요청 필드명을 실제 DTO에 맞춰 `name` → `nickname`으로 정정.
+> - [설계자 보완 2026-11-10] 고유 ID 자동 부여. 가입 시 서버가 랜덤 고유 ID(소문자·숫자 8자)를 주고, 기존 null 유저도 마이그레이션으로 채운다. `#3`·`#5` 응답에 `profile.handleGenerated` 추가. `#72`의 "처음 설정"은 "랜덤 ID에서의 첫 변경"을 뜻한다. 탈퇴하면 원래 ID 대신 랜덤 ID가 들어간다.
 
 ## API 목록
 
@@ -170,7 +171,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 
 > `where__keyword__contain`은 2026-10-19 추가했다. 이메일은 전체 주소가 같을 때만 찾고 부분 검색은 하지 않는다(아래 #212 후속 결정 유지). `where__nickname__contain`과 함께 보내면 두 조건을 모두 만족하는 유저만 나온다. 프론트가 통합 검색어로 옮기면 `where__nickname__contain` 제거를 검토한다.
 
-> `handle`은 2026-10-19 추가했다. 유저가 직접 정하는 고유 ID(@handle)이고, 아직 정하지 않은 유저는 `null`이다.
+> `handle`은 2026-10-19 추가했다. 고유 ID(@handle)이고, 정하지 않은 유저는 서버가 준 랜덤 값(소문자·숫자 8자)이다(2026-11-10). 타입은 NOT NULL 전환 전까지 `string | null`로 둔다.
 
 > `skills`는 2026-10-06 추가했다. 닉네임이 중복을 허용해 초대 검색에서 동명이인이 갈리지 않아, 대표 세션을 구분 단서로 내려준다(밴드 멤버 목록의 `skills`와 같은 형태). 세션이 없는 유저는 빈 배열이다.
 
@@ -425,7 +426,8 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 - Path: `/users/:userId/profiles`
 - 인증: AccessToken (2026-09-26 변경: 비로그인에 이메일이 노출돼 인증 필수로 전환 — #212 B-4)
 - `user.email`은 본인 프로필을 조회할 때만 담기고, 다른 사용자의 프로필에서는 `null`이다
-- `profile.handle`(고유 ID)은 누구에게나 담긴다. 아직 정하지 않았으면 `null`이다
+- `profile.handle`(고유 ID)은 누구에게나 담긴다. 정하지 않은 유저는 서버가 준 랜덤 값이다
+- `profile.handleGenerated`는 서버가 준 랜덤 고유 ID인지다(2026-11-10). 누구에게나 담긴다. 유저가 `#72`로 바꾸면 `false`가 된다
 - `profile.handleChangeableAt`은 고유 ID를 다시 바꿀 수 있는 시각이다. 본인 조회이면서 7일 쿨다운 중일 때만 값이 있고, 그 외에는 `null`이다. 마이페이지는 이 값이 있으면 고유 ID 저장 버튼을 비활성화하고 "○월 ○일 이후 변경 가능"을 보여준다
 
 ### Path Parameters
@@ -450,6 +452,7 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
     "profile": {
       "nickname": "홍길동",
       "handle": "devjun",
+      "handleGenerated": false,
       "handleChangeableAt": "2026-10-26T06:00:00.000Z",
       "selfDescription": "기타를 사랑합니다.",
       "avatarUrl": "https://example.com/avatar.jpg",
@@ -603,14 +606,14 @@ Body 없음. `Authorization` 헤더에 `email:password`를 base64로 인코딩�
 규칙:
 
 - 한 번 바꾸면 7일간 다시 바꿀 수 없다.
-- 비어 있던 고유 ID를 처음 정하는 것은 7일 제한에 세지 않는다. 처음 정한 직후 한 번은 바로 고칠 수 있고, 그 변경부터 7일 제한이 걸린다.
+- 서버가 준 랜덤 고유 ID(`handleGenerated: true`)에서 처음 바꾸는 것은 7일 제한에 세지 않는다. 처음 정한 직후 한 번은 바로 고칠 수 있고, 그 변경부터 7일 제한이 걸린다.
 - 지금 값과 똑같이 보내면 아무것도 바꾸지 않고 현재 상태를 돌려준다(쿨다운 소모 없음).
 - 다른 유저가 대소문자만 다른 값을 쓰고 있어도 사용 중으로 거절한다. 본인 값을 대소문자만 바꾸는 것은 변경으로 처리한다.
-- 탈퇴하면 고유 ID가 해제되어 다른 사람이 쓸 수 있다.
+- 탈퇴하면 고유 ID가 랜덤 값으로 바뀌어 원래 ID를 다른 사람이 쓸 수 있다.
 
 | 시점 | 요청 | 결과 |
 |------|------|------|
-| 10/19 | 비어 있음 → `devjnu` (첫 설정) | 성공, `handleChangedAt: null` |
+| 10/19 | 랜덤 `k3x9q2mz` → `devjnu` (첫 설정) | 성공, `handleChangedAt: null` |
 | 10/19 | `devjnu` → `devjun` (오타 수정) | 성공, 이때부터 7일 제한 |
 | 10/21 | `devjun` → `junny` | 400 쿨다운 |
 | 10/26 | `devjun` → `junny` | 성공 |
