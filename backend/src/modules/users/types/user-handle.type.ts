@@ -17,6 +17,8 @@ export interface ChangeHandleResult {
 /** 쿨다운 판정에 필요한 현재 고유 ID 상태 */
 export interface HandleState {
   handle: string | null;
+  /** 서버가 준 랜덤 고유 ID인지. true이면 다음 변경을 처음 설정으로 본다 */
+  handleGenerated: boolean;
   handleChangedAt: Date | null;
 }
 
@@ -24,6 +26,6 @@ export interface HandleState {
 export interface UpdateHandleInput {
   currentHandle: string | null;
   newHandle: string;
-  /** 처음 설정이면 null(쿨다운에 세지 않음), 그 외에는 변경 시각 */
+  /** 처음 설정(랜덤 ID에서의 첫 변경)이면 null(쿨다운에 세지 않음), 그 외에는 변경 시각 */
   changedAt: Date | null;
 }

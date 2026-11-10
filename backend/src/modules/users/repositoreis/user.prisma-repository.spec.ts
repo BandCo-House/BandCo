@@ -32,7 +32,7 @@ const userRecord = {
   email: 'test@example.com',
   status: 'ACTIVE',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  profile: { nickname: 'testuser', handle: 'devjun', handleChangedAt: null, selfDescription: '안녕', avatarUrl: null },
+  profile: { nickname: 'testuser', handle: 'devjun', handleGenerated: false, handleChangedAt: null, selfDescription: '안녕', avatarUrl: null },
   profileMusic: null,
   userSkills: [{ skillTypeId: 'skill-001', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: 'GUITAR' } }],
   favoriteGenres: [{ genreId: 'genre-001', genre: { name: 'ROCK' } }],
@@ -127,16 +127,21 @@ describe('UsersPrismaRepository', () => {
     it('유저·프로필·OAuth 계정을 같은 transaction에서 생성한다', async () => {
       mockPrisma.user.create.mockResolvedValue({ id: 'user-002', email: 'new@example.com' });
 
-      const result = await repository.createUserWithOAuth({
-        provider: 'GOOGLE',
-        providerUserId: 'google-sub-002',
-        email: 'new@example.com',
-        nickname: '구글유저',
-      });
+      const result = await repository.createUserWithOAuth(
+        {
+          provider: 'GOOGLE',
+          providerUserId: 'google-sub-002',
+          email: 'new@example.com',
+          nickname: '구글유저',
+        },
+        'ab12cd34',
+      );
 
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(mockPrisma.user.create).toHaveBeenCalledWith({ data: { email: 'new@example.com' } });
-      expect(mockPrisma.userProfile.create).toHaveBeenCalledWith({ data: { userId: 'user-002', nickname: '구글유저' } });
+      expect(mockPrisma.userProfile.create).toHaveBeenCalledWith({
+        data: { userId: 'user-002', nickname: '구글유저', handle: 'ab12cd34', handleGenerated: true },
+      });
       expect(mockPrisma.userOAuthAccount.create).toHaveBeenCalledWith({
         data: { userId: 'user-002', provider: 'GOOGLE', providerUserId: 'google-sub-002', email: 'new@example.com' },
       });
@@ -148,6 +153,7 @@ describe('UsersPrismaRepository', () => {
 
       await repository.createUserWithOAuth(
         { provider: 'GOOGLE', providerUserId: 'google-sub-002', email: 'new@example.com', nickname: '구글유저' },
+        'ab12cd34',
         mockPrisma as unknown as Prisma.TransactionClient,
       );
 
@@ -249,7 +255,7 @@ describe('UsersPrismaRepository', () => {
       mockPrisma.user.create.mockResolvedValue({ id: 'new-uid', email: 'new@example.com' });
       mockPrisma.userProfile.create.mockResolvedValue({});
 
-      const result = await repository.createUserWithEmail('new@example.com', 'hashed', '홍길동');
+      const result = await repository.createUserWithEmail('new@example.com', 'hashed', '홍길동', 'ab12cd34');
 
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(mockPrisma.user.create).toHaveBeenCalledWith({ data: { email: 'new@example.com', passwordHash: 'hashed' } });
@@ -263,19 +269,21 @@ describe('UsersPrismaRepository', () => {
         userProfile: { create: jest.fn().mockResolvedValue({}) },
       };
 
-      await repository.createUserWithEmail('tx@example.com', 'hashed', '홍길동', txClient as unknown as Prisma.TransactionClient);
+      await repository.createUserWithEmail('tx@example.com', 'hashed', '홍길동', 'ab12cd34', txClient as unknown as Prisma.TransactionClient);
 
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
       expect(txClient.user.create).toHaveBeenCalled();
     });
 
-    it('nickname을 프로필 닉네임으로 저장한다', async () => {
+    it('nickname과 랜덤 고유 ID를 프로필에 저장하고 랜덤 ID로 표시한다', async () => {
       mockPrisma.user.create.mockResolvedValue({ id: 'new-uid', email: 'new@example.com' });
       mockPrisma.userProfile.create.mockResolvedValue({});
 
-      await repository.createUserWithEmail('new@example.com', 'hashed', '홍길동');
+      await repository.createUserWithEmail('new@example.com', 'hashed', '홍길동', 'ab12cd34');
 
-      expect(mockPrisma.userProfile.create).toHaveBeenCalledWith({ data: { userId: 'new-uid', nickname: '홍길동' } });
+      expect(mockPrisma.userProfile.create).toHaveBeenCalledWith({
+        data: { userId: 'new-uid', nickname: '홍길동', handle: 'ab12cd34', handleGenerated: true },
+      });
     });
   });
 
@@ -449,13 +457,17 @@ describe('UsersPrismaRepository', () => {
   });
 
   describe('softDeleteUser', () => {
-    it('deletedAt과 status를 업데이트하고 고유 ID를 풀어 결과를 반환한다', async () => {
+    it('deletedAt과 status를 업데이트하고 고유 ID를 랜덤 값으로 바꿔 결과를 반환한다', async () => {
       const now = new Date();
       mockPrisma.user.update.mockResolvedValue({ id: 'user-001', deletedAt: now });
-      const result = await repository.softDeleteUser('user-001');
+      const result = await repository.softDeleteUser('user-001', 'zz99yy88');
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-001', deletedAt: null },
-        data: { deletedAt: expect.any(Date), status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
+        data: {
+          deletedAt: expect.any(Date),
+          status: 'INACTIVE',
+          profile: { update: { handle: 'zz99yy88', handleGenerated: true, handleChangedAt: null } },
+        },
         select: { id: true, deletedAt: true },
       });
       expect(result?.userId).toBe('user-001');
@@ -465,7 +477,7 @@ describe('UsersPrismaRepository', () => {
     it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
       const now = new Date();
       const txClient = { user: { update: jest.fn().mockResolvedValue({ id: 'user-001', deletedAt: now }) } };
-      await repository.softDeleteUser('user-001', txClient as unknown as Prisma.TransactionClient);
+      await repository.softDeleteUser('user-001', 'zz99yy88', txClient as unknown as Prisma.TransactionClient);
       expect(txClient.user.update).toHaveBeenCalled();
       expect(mockPrisma.user.update).not.toHaveBeenCalled();
     });
@@ -473,13 +485,13 @@ describe('UsersPrismaRepository', () => {
     it('존재하지 않거나 이미 삭제된 유저면 null을 반환한다 (P2025)', async () => {
       const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '0' });
       mockPrisma.user.update.mockRejectedValue(p2025);
-      const result = await repository.softDeleteUser('unknown-id');
+      const result = await repository.softDeleteUser('unknown-id', 'zz99yy88');
       expect(result).toBeNull();
     });
 
     it('P2025 외 에러는 그대로 전파한다', async () => {
       mockPrisma.user.update.mockRejectedValue(new Error('db connection error'));
-      await expect(repository.softDeleteUser('user-001')).rejects.toThrow('db connection error');
+      await expect(repository.softDeleteUser('user-001', 'zz99yy88')).rejects.toThrow('db connection error');
     });
   });
 
@@ -496,6 +508,7 @@ describe('UsersPrismaRepository', () => {
       expect(result?.user.createdAt).toBe('2026-01-01T00:00:00.000Z');
       expect(result?.profile?.nickname).toBe('testuser');
       expect(result?.profile?.handle).toBe('devjun');
+      expect(result?.profile?.handleGenerated).toBe(false);
       expect(result?.profile?.handleChangedAt).toBeNull();
       expect(result?.profile?.profileMusic).toBeNull();
       expect(result).not.toHaveProperty('profileMusic');
@@ -686,15 +699,15 @@ describe('UsersPrismaRepository', () => {
   describe('findHandleState', () => {
     it('탈퇴하지 않은 유저의 고유 ID와 쿨다운 기준 시각만 조회한다', async () => {
       const changedAt = new Date('2026-10-19T06:00:00.000Z');
-      mockPrisma.userProfile.findFirst.mockResolvedValue({ handle: 'devjun', handleChangedAt: changedAt });
+      mockPrisma.userProfile.findFirst.mockResolvedValue({ handle: 'devjun', handleGenerated: false, handleChangedAt: changedAt });
 
       const result = await repository.findHandleState('user-001');
 
       expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
         where: { userId: 'user-001', user: { deletedAt: null } },
-        select: { handle: true, handleChangedAt: true },
+        select: { handle: true, handleGenerated: true, handleChangedAt: true },
       });
-      expect(result).toEqual({ handle: 'devjun', handleChangedAt: changedAt });
+      expect(result).toEqual({ handle: 'devjun', handleGenerated: false, handleChangedAt: changedAt });
     });
   });
 
@@ -708,7 +721,7 @@ describe('UsersPrismaRepository', () => {
 
       expect(mockPrisma.userProfile.updateMany).toHaveBeenCalledWith({
         where: { userId: 'user-001', handle: 'devjnu', user: { deletedAt: null } },
-        data: { handle: 'devjun', handleChangedAt: input.changedAt },
+        data: { handle: 'devjun', handleGenerated: false, handleChangedAt: input.changedAt },
       });
       expect(result).toBe(true);
     });

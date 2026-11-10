@@ -53,14 +53,25 @@ export interface AdminManagedUsersRepository {
   updateUserStatus(userId: string, status: UserStatus, tx?: Prisma.TransactionClient): Promise<void>;
 
   /**
-   * 회원을 탈퇴 처리한다. 유저 탈퇴 API와 같게 deletedAt을 기록하고 상태를 INACTIVE로 둔다.
+   * 회원을 탈퇴 처리한다. 유저 탈퇴 API와 같게 deletedAt을 기록하고 상태를 INACTIVE로 두며,
+   * 원래 고유 ID를 풀도록 replacementHandle(랜덤)로 바꾸고 handleGenerated=true, handleChangedAt=null로 둔다.
    *
    * @param {string} userId - 회원 ID
    * @param {Date} deletedAt - 탈퇴 시각
+   * @param {string} replacementHandle - 원래 고유 ID 대신 넣을 랜덤 고유 ID
    * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
    * @returns {Promise<void>} 변경 완료
    */
-  softDeleteUser(userId: string, deletedAt: Date, tx?: Prisma.TransactionClient): Promise<void>;
+  softDeleteUser(userId: string, deletedAt: Date, replacementHandle: string, tx?: Prisma.TransactionClient): Promise<void>;
+
+  /**
+   * 대소문자를 무시해 이미 쓰이는 고유 ID인지 확인한다. 탈퇴 유저가 쥔 값도 쓰이는 것으로 본다.
+   *
+   * @param {string} handle - 확인할 고유 ID
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<boolean>} 쓰이고 있으면 true
+   */
+  isHandleTaken(handle: string, tx?: Prisma.TransactionClient): Promise<boolean>;
 
   /**
    * 어드민이 탈퇴 처리하기 직전의 회원 상태를 조회한다.

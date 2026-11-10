@@ -95,7 +95,7 @@ export class UsersPrismaRepository implements UsersRepository {
     };
   }
 
-  async createUserWithEmail(email: string, passwordHash: string, nickname: string, tx?: Prisma.TransactionClient): Promise<User> {
+  async createUserWithEmail(email: string, passwordHash: string, nickname: string, handle: string, tx?: Prisma.TransactionClient): Promise<User> {
     const run = async (client: Prisma.TransactionClient) => {
       const user = await client.user.create({
         data: { email, passwordHash },
@@ -105,6 +105,8 @@ export class UsersPrismaRepository implements UsersRepository {
         data: {
           userId: user.id,
           nickname,
+          handle,
+          handleGenerated: true,
         },
       });
 
@@ -159,7 +161,7 @@ export class UsersPrismaRepository implements UsersRepository {
     });
   }
 
-  async createUserWithOAuth(input: CreateOAuthUserInput, tx?: Prisma.TransactionClient): Promise<User> {
+  async createUserWithOAuth(input: CreateOAuthUserInput, handle: string, tx?: Prisma.TransactionClient): Promise<User> {
     const run = async (client: Prisma.TransactionClient) => {
       const user = await client.user.create({
         data: { email: input.email },
@@ -169,6 +171,8 @@ export class UsersPrismaRepository implements UsersRepository {
         data: {
           userId: user.id,
           nickname: input.nickname,
+          handle,
+          handleGenerated: true,
         },
       });
 
@@ -282,6 +286,7 @@ export class UsersPrismaRepository implements UsersRepository {
         ? {
             nickname: user.profile.nickname,
             handle: user.profile.handle,
+            handleGenerated: user.profile.handleGenerated,
             handleChangedAt: user.profile.handleChangedAt,
             selfDescription: user.profile.selfDescription,
             avatarUrl: user.profile.avatarUrl,
@@ -377,13 +382,17 @@ export class UsersPrismaRepository implements UsersRepository {
     return result;
   }
 
-  async softDeleteUser(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null> {
+  async softDeleteUser(userId: string, replacementHandle: string, tx?: Prisma.TransactionClient): Promise<DeleteUserResult | null> {
     const client = tx ?? this.prisma;
     try {
-      // 탈퇴 계정은 복구하지 않으므로 고유 ID를 같은 문장에서 풀어 다른 사람이 바로 쓸 수 있게 한다
+      // 원래 고유 ID를 같은 문장에서 랜덤 값으로 바꿔, 다른 사람이 바로 쓸 수 있게 하면서 handle이 비지 않게 한다
       const user = await client.user.update({
         where: { id: userId, deletedAt: null },
-        data: { deletedAt: new Date(), status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
+        data: {
+          deletedAt: new Date(),
+          status: 'INACTIVE',
+          profile: { update: { handle: replacementHandle, handleGenerated: true, handleChangedAt: null } },
+        },
         select: { id: true, deletedAt: true },
       });
       return { userId: user.id, deletedAt: user.deletedAt!.toISOString() };
@@ -436,7 +445,7 @@ export class UsersPrismaRepository implements UsersRepository {
     const client = tx ?? this.prisma;
     return client.userProfile.findFirst({
       where: { userId, user: { deletedAt: null } },
-      select: { handle: true, handleChangedAt: true },
+      select: { handle: true, handleGenerated: true, handleChangedAt: true },
     });
   }
 
@@ -445,7 +454,7 @@ export class UsersPrismaRepository implements UsersRepository {
     // 모든 변경은 handle 문자열을 바꾸므로, handle이 읽은 값 그대로일 때만 저장하면 동시 변경 두 건이 모두 통과하지 못한다
     const result = await client.userProfile.updateMany({
       where: { userId, handle: input.currentHandle, user: { deletedAt: null } },
-      data: { handle: input.newHandle, handleChangedAt: input.changedAt },
+      data: { handle: input.newHandle, handleGenerated: false, handleChangedAt: input.changedAt },
     });
 
     return result.count === 1;
