@@ -38,17 +38,12 @@ export const TeamMemberListSection: React.FC<TeamMemberListSectionProps> = ({
   } = useSkillTypes(isEditing);
 
   /**
-   * 팀에서 맡은 세션. `skillType`이 실제 편성이고, 없을 때만 보유 스킬로 대신 채운다.
-   * 둘은 다른 값이라 — 편성이 정해지면 그걸 우선한다.
+   * 팀에서 맡은 세션(`skillType`)만 쓴다. 보유 스킬(`skills`)로 채우면 미배정인 사람이
+   * '키보드, 피아노, 보컬'처럼 맡지도 않은 세션을 전부 단 것으로 보인다.
    */
-  const getSessionName = (member: TeamMember, defaultIndex?: number) => {
-    if (member.skillType) return member.skillType.name;
-    if (member.skills && member.skills.length > 0) {
-      return member.skills.map((s) => s.skillName).join(', ');
-    }
-    if (member.sessionName) return member.sessionName;
-    return defaultIndex !== undefined ? `세션${defaultIndex + 1}` : '세션';
-  };
+  const getSessionName = (member: TeamMember, defaultIndex?: number) =>
+    member.skillType?.name ??
+    (defaultIndex !== undefined ? `세션${defaultIndex + 1}` : undefined);
   return (
     <div className={cn(cardSurfaceClass, 'flex w-full flex-col gap-3')}>
       {/* 카드 헤더 */}

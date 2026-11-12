@@ -53,6 +53,7 @@ const MOCK_MEMBERS: TeamMember[] = [
     bandMemberId: 'bm-1',
     user: { userId: 'u-1', nickname: '김민준', profileImageUrl: null },
     teamRole: 'LEADER',
+    skillType: { skillTypeId: 'st-1', name: '기타' },
     skills: [
       {
         skillTypeId: 'st-1',
@@ -67,12 +68,20 @@ const MOCK_MEMBERS: TeamMember[] = [
     bandMemberId: 'bm-2',
     user: { userId: 'u-2', nickname: '박민준', profileImageUrl: null },
     teamRole: 'MEMBER',
+    // 세션 미배정. 보유 스킬이 있어도 팀 세션으로 보이면 안 된다.
+    skillType: null,
     skills: [
       {
-        skillTypeId: 'st-2',
-        skillName: '기타2',
+        skillTypeId: 'st-3',
+        skillName: '키보드',
         skillLevel: 'INTERMEDIATE',
         isPrimary: true,
+      },
+      {
+        skillTypeId: 'st-4',
+        skillName: '보컬',
+        skillLevel: 'BEGINNER',
+        isPrimary: false,
       },
     ],
   },
@@ -91,7 +100,7 @@ describe('BandTeamCard', () => {
     vi.spyOn(teamApi, 'getTeamMembers').mockResolvedValue(MOCK_MEMBERS);
   });
 
-  it('팀명 및 세션/멤버 요약 텍스트를 정상 렌더링한다', async () => {
+  it('팀 세션(skillType)으로 요약하고, 미배정 팀원은 보유 스킬 대신 이름만 보여준다', async () => {
     const onToggleSelect = vi.fn();
     const queryClient = createQueryClient();
 
@@ -107,8 +116,9 @@ describe('BandTeamCard', () => {
     );
 
     expect(screen.getByText('듀얼 기타 편성')).toBeInTheDocument();
-    expect(await screen.findByText(/기타: 김민준/)).toBeInTheDocument();
-    expect(screen.getByText(/기타2: 박민준/)).toBeInTheDocument();
+    const summary = (await screen.findByText('기타: 김민준')).parentElement;
+    expect(summary).toHaveTextContent('박민준');
+    expect(summary).not.toHaveTextContent('키보드');
   });
 
   it('체크박스 클릭 시 onToggleSelect 콜백이 호출된다', async () => {
