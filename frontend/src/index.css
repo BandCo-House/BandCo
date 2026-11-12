@@ -94,13 +94,18 @@
      그라데이션이 출렁인다). lvh를 모르는 브라우저는 앞 줄의 vh로 떨어진다. */
   /* PC에서 스크롤바가 자리를 차지하는 환경(Windows, 마우스를 연결한 macOS)이면 긴 페이지와 짧은
      페이지를 오갈 때 스크롤바 폭만큼 화면 전체가 좌우로 밀린다. 자리를 늘 비워 둬 위치를 고정한다. */
-  /* 모달이 스크롤을 잠그면 Radix가 body에 스크롤바 폭만큼 margin-right를 직접 준다. 비워 둔 자리까지
-     남아 있으면 두 번 보정돼, 전체 화면 모달 오른쪽에 그 폭만큼 바탕이 덮이지 않은 띠가 생긴다. */
-  html:has(body[data-scroll-locked]) {
-    scrollbar-gutter: auto;
+  /* 모달이 열리면 Radix가 body를 overflow: hidden으로 잠그고 사라진 스크롤바 폭만큼 margin-right를
+     준다. body의 overflow는 화면(viewport)으로 넘어가 스크롤바 자리가 통째로 사라지는데, 그 보정이
+     환경마다 0이거나 15px이라 본문·고정 바(헤더·하단 탭·FAB)가 좌우로 들썩였다.
+     html이 스크롤을 직접 맡으면(overflow-y: scroll) body의 잠금이 화면으로 넘어가지 않아 스크롤바 자리가
+     그대로 남는다. 자리가 남으니 Radix의 보정은 0으로 막는다 — 남기면 두 번 보정돼 본문이 왼쪽으로 밀린다.
+     휠·터치 스크롤은 Radix가 이벤트로 막으므로 잠금은 그대로 유지된다. */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
 
   html {
+    overflow-y: scroll;
     scrollbar-gutter: stable;
     overscroll-behavior-y: none;
     background-color: var(--gradient-bottom);
