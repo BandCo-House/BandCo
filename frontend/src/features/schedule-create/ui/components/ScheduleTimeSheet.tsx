@@ -32,7 +32,7 @@ interface SlotChipProps {
   onClick: () => void;
 }
 
-const SlotChip = ({ name, value, isActive, onClick }: SlotChipProps) => (
+export const SlotChip = ({ name, value, isActive, onClick }: SlotChipProps) => (
   <button
     type="button"
     aria-label={`${name} ${value}`}

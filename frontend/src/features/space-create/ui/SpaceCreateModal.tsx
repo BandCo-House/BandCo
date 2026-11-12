@@ -4,6 +4,7 @@ import type { SpaceDetailView } from '@/entities/space/api/space-api';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
 import { useUpdateSpace } from '@/entities/space/api/useUpdateSpace';
 import { ParticipantSection } from '@/features/schedule-create/ui/components/ParticipantSection';
+import { SpacePeriodPicker } from './SpacePeriodPicker';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -17,8 +18,6 @@ import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
 import { Switch } from '@/shared/ui/switch';
-import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
-import { WheelFieldCard } from '@/shared/ui/wheel-field-card';
 import {
   toDateString,
   toWheelDate,
@@ -288,39 +287,15 @@ export const SpaceCreateModal = ({
               </span>
             </div>
 
-            {/* 토글 여부와 무관하게 높이가 232에서 출렁이지 않게 하고, 내용을 세로 중앙에 둔다.
-                고정(h)이 아니라 최소(min-h)인 이유: 좁은 화면에서 라벨이 휠 위로 줄바꿈되면
-                내용이 232를 넘는다. */}
-            <WheelFieldCard
+            <SpacePeriodPicker
               id={SPACE_PERIOD_ID}
-              tabIndex={-1}
-              className="min-h-[232px] justify-center py-4 pr-2.5 pl-5"
-              role="group"
-              aria-label="합주 기간"
-              aria-invalid={endBeforeStart || undefined}
-              aria-describedby={
-                endBeforeStart ? SPACE_PERIOD_ERROR_ID : undefined
-              }
-            >
-              <WheelDatePicker
-                className="relative z-10"
-                label="시작"
-                value={startDate}
-                onChange={(next) => updateForm({ startDate: next })}
-              />
-              {hasEnd ? (
-                <WheelDatePicker
-                  className="relative z-10"
-                  label="종료"
-                  value={endDate}
-                  onChange={(next) => updateForm({ endDate: next })}
-                />
-              ) : (
-                <p className="text-center typo-xs-sb text-grey-50">
-                  정해진 기간이 없는 합주
-                </p>
-              )}
-            </WheelFieldCard>
+              startDate={startDate}
+              endDate={endDate}
+              hasEnd={hasEnd}
+              onChange={(period) => updateForm(period)}
+              invalid={endBeforeStart}
+              errorId={SPACE_PERIOD_ERROR_ID}
+            />
             {endBeforeStart && (
               <p
                 id={SPACE_PERIOD_ERROR_ID}
