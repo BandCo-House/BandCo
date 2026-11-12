@@ -32,7 +32,7 @@ interface ScheduleFormViewProps {
 }
 
 const TYPE_OPTIONS: { value: ScheduleType; label: string }[] = [
-  { value: 'PRACTICE', label: '합주' },
+  { value: 'PRACTICE', label: '연습' },
   { value: 'MEETING', label: '회의' },
 ];
 
@@ -229,7 +229,7 @@ export const ScheduleFormView = ({
 
       {/* 이름 */}
       <Field
-        label={isPractice ? '합주 이름' : '회의 이름'}
+        label={isPractice ? '연습 이름' : '회의 이름'}
         required
         htmlFor="schedule-title"
       >
@@ -240,7 +240,7 @@ export const ScheduleFormView = ({
           value={form.title}
           onChange={(event) => onChange({ title: event.target.value })}
           placeholder={
-            isPractice ? '합주 이름을 입력하세요' : '회의 이름을 입력하세요'
+            isPractice ? '연습 이름을 입력하세요' : '회의 이름을 입력하세요'
           }
           maxLength={40}
         />

@@ -25,7 +25,7 @@ describe('ScheduleFilterBar', () => {
     const user = userEvent.setup();
     const { onScheduleTypeChange } = setup();
 
-    await user.click(screen.getByRole('button', { name: '합주' }));
+    await user.click(screen.getByRole('button', { name: '연습' }));
     expect(onScheduleTypeChange).toHaveBeenCalledWith('PRACTICE');
 
     await user.click(screen.getByRole('button', { name: '회의' }));

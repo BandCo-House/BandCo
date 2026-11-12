@@ -202,7 +202,7 @@ export const ScheduleCreateModal = ({
         className="inset-0 mx-auto flex h-full w-full max-w-[648px] flex-col gap-0 border-0 bg-gradient-to-b from-gradient-top to-gradient-bottom p-0 sm:max-w-[648px]"
       >
         <SheetDescription className="sr-only">
-          합주·회의 일정을 추가하거나 수정하고 상세를 확인합니다.
+          연습·회의 일정을 추가하거나 수정하고 상세를 확인합니다.
         </SheetDescription>
 
         <header className="flex items-center gap-4 bg-gradient-top/65 py-3 pr-5 pl-2.5 header-glow backdrop-blur-sm">
