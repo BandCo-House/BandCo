@@ -48,12 +48,12 @@ describe('CalendarNav', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '주별 보기' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '주간' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '월별 보기' }));
+    fireEvent.click(screen.getByRole('button', { name: '월간' }));
     expect(onViewChange).toHaveBeenCalledWith('month');
   });
 });

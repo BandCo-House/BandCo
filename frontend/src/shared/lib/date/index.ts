@@ -33,6 +33,14 @@ export const getStartOfWeek = (date: Date): Date => {
 /**
  * 주어진 시작 날짜로부터 7일간(월~일)의 Date 객체 배열을 반환합니다.
  */
+/** 일요일 시작 주의 첫날(로컬 자정). 주간 날짜 선택기와 캘린더 주 보기가 같이 쓴다. */
+export const getStartOfSundayWeek = (date: Date): Date => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(date.getDate() - date.getDay());
+  return start;
+};
+
 export const getWeekDays = (startDate: Date): Date[] => {
   const days = [];
   for (let i = 0; i < 7; i++) {
