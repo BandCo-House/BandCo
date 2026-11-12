@@ -5,6 +5,7 @@ import { parseToPrismaQuery } from '../../../common/query';
 import { buildNextPath } from '../../../common/url';
 import type { NotificationReferenceType, NotificationType, Prisma } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { DeleteAllNotificationsResult } from '../types/delete-all-notifications-result.type';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
@@ -284,6 +285,11 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
       return { deletedCount: targetIds.length, notificationIds: targetIds };
     };
     return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  async deleteAllNotifications(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteAllNotificationsResult> {
+    const result = await this.getClient(tx).notification.deleteMany({ where: { userId } });
+    return { deletedCount: result.count };
   }
 
   private getClient(tx?: Prisma.TransactionClient): Prisma.TransactionClient {

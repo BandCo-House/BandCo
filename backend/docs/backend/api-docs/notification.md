@@ -44,6 +44,7 @@
 | #47 | PATCH | `/notifications/read` | 다건 알림 읽음 처리 |
 | #49 | DELETE | `/notifications/:notificationId` | 단건 알림 삭제 |
 | #50 | DELETE | `/notifications` | 다건 알림 삭제 |
+| - | DELETE | `/notifications/all` | 전체 알림 삭제 |
 
 ---
 
@@ -299,4 +300,32 @@
 | 코드 | 사유 |
 |------|------|
 | 400 | `notificationIds`가 UUID 배열이 아님 |
+| 401 | 인증 실패 |
+
+---
+
+## 전체 알림 삭제
+
+- Method: `DELETE`
+- Path: `/notifications/all`
+- 인증: AccessToken
+- 요청한 유저의 알림을 type과 상관없이 모두 지운다(`read-all`과 같은 범위). 되돌릴 수 없다.
+- 경로가 `/notifications/:notificationId`와 겹치므로 컨트롤러에서 그보다 먼저 선언한다.
+
+### Response 200
+
+```json
+{
+  "success": true,
+  "message": "전체 알림 삭제 성공",
+  "data": {
+    "deletedCount": 12
+  }
+}
+```
+
+### Error
+
+| 코드 | 사유 |
+|------|------|
 | 401 | 인증 실패 |
