@@ -48,13 +48,14 @@ export const AssistantScreen = ({
               ?.focus();
         });
       }}
-      className="inset-0 z-[60] flex h-dvh w-full max-w-none flex-col gap-0 border-0 bg-gradient-to-b from-gradient-top to-gradient-bottom p-0 sm:max-w-none"
+      // 다른 전체 화면 시트(일정·장소·곡 추가)처럼 앱 폭(648)으로 가운데 둔다. 화면 폭을 다
+      // 채우면 PC에서 브라우저 전체가 옆에서 밀려 들어와, 혼자 다른 화면처럼 보였다.
+      className="inset-0 z-[60] mx-auto flex h-dvh w-full max-w-[648px] flex-col gap-0 border-0 bg-gradient-to-b from-gradient-top to-gradient-bottom p-0 sm:max-w-[648px]"
     >
       <SheetDescription className="sr-only">
         밴드 일정, 참석, 곡, 팀 정보를 물어보고 답을 봅니다.
       </SheetDescription>
-      {/* 머리와 바닥 바는 화면 폭을 다 채우고, 안의 내용만 앱 폭(648)으로 가운데 둔다.
-          바를 앱 폭에 가두면 PC에서 바가 가운데에 떠 보인다. 선 대신 반투명 바탕과 빛 번짐으로 나누는 건 다른 전체 화면 모달과 같다. */}
+      {/* 선 대신 반투명 바탕과 빛 번짐으로 머리·바닥 바를 나누는 건 다른 전체 화면 모달과 같다. */}
       <header className="bg-gradient-top/65 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 header-glow backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-[648px] items-center justify-between gap-3 px-5">
           <SheetTitle className="typo-lg-sb text-grey-50">
