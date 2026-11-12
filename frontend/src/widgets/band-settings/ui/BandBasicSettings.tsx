@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Search, Upload } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import WithdrawIcon from '@/assets/icons/withdraw.svg?react';
 import { uploadFile } from '@/shared/api';
@@ -60,7 +60,6 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
   const [isCoverCleared, setIsCoverCleared] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
-  const [directInviteQuery, setDirectInviteQuery] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const { selectFile, cropDialogProps } = useImageCrop();
 
@@ -263,38 +262,30 @@ export const BandBasicSettings = ({ band }: BandBasicSettingsProps) => {
         <BandInviteLinkCard bandId={band.id} bandName={band.name} />
       </section>
 
-      <section className="flex flex-col gap-1">
-        <FieldLabel>직접 추가</FieldLabel>
-        <div className="flex items-center gap-2">
-          <Input
-            variant="underline"
-            value={directInviteQuery}
-            onChange={(e) => setDirectInviteQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                setIsInviteModalOpen(true);
-              }
-            }}
-            placeholder="이름, ID로 검색하세요"
-            className="flex-1 border-white/24 py-4 typo-base-sb placeholder:text-grey-300"
-          />
-          <Button
-            type="button"
-            onClick={() => setIsInviteModalOpen(true)}
-            className="flex shrink-0 items-center justify-center gap-1 rounded-full bg-primary px-4 py-3 typo-base-b text-grey-600 transition-colors focus-visible:outline-2 focus-visible:outline-secondary"
-          >
-            <Search aria-hidden="true" className="size-4.5" />
-            <span>검색</span>
-          </Button>
+      {/* 예전엔 입력칸 + 검색 버튼이었지만, 입력칸은 친 글자를 검색 모달로 넘기기만 했다.
+          입력칸처럼 보이는 버튼이라 헷갈려서, 다른 목록의 "+ 새 투표"처럼 버튼 하나로 둔다. */}
+      <section className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <FieldLabel>직접 추가</FieldLabel>
+          <p className="typo-sm-r text-grey-300">
+            이름이나 ID로 찾아 바로 초대해요
+          </p>
         </div>
+        <Button
+          type="button"
+          variant="accent"
+          onClick={() => setIsInviteModalOpen(true)}
+          className="h-9 gap-1 px-3 typo-sm-sb"
+        >
+          <Plus aria-hidden="true" className="size-4" />
+          멤버 찾기
+        </Button>
       </section>
 
       <BandUserInviteModal
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
         bandId={band.id}
-        initialQuery={directInviteQuery}
       />
 
       <div className="flex justify-end">
