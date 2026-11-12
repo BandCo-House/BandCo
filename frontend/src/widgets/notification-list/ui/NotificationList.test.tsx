@@ -4,7 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
 import { API_URL } from '@/mocks/config';
+import { toast } from 'sonner';
 import { NotificationList } from './NotificationList';
+import { NotificationHeaderActions } from './NotificationHeaderActions';
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
 
 const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
@@ -91,7 +97,7 @@ describe('NotificationList', () => {
     expect(markAllBtn).toHaveClass('rounded-full', 'px-4', 'py-1.5');
   });
 
-  it('초대장 알림 리스트에서 수락 클릭 시 acceptInvite API가 성공적으로 호출되고 밴드로 이동한다', async () => {
+  it('초대장 알림에서 수락하면 목록에 남고, 토스트의 "밴드 둘러보기"로 밴드에 들어간다', async () => {
     let acceptApiCalled = false;
 
     server.use(
@@ -139,11 +145,51 @@ describe('NotificationList', () => {
     const acceptBtn = await screen.findByRole('button', { name: '수락' });
     fireEvent.click(acceptBtn);
 
-    await waitFor(() => {
-      expect(acceptApiCalled).toBe(true);
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/band/mock-joined-band-id',
-      });
+    await waitFor(() => expect(acceptApiCalled).toBe(true));
+    // 바로 밴드로 넘어가지 않는다 — 카드가 "수락됨"으로 바뀌는 걸 볼 수 있어야 한다.
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    const [message, options] = vi.mocked(toast.success).mock.calls.at(-1)!;
+    expect(message).toBe('초대를 수락했습니다.');
+    const action = (
+      options as { action: { label: string; onClick: () => void } }
+    ).action;
+    expect(action.label).toBe('밴드 둘러보기');
+    action.onClick();
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/band/mock-joined-band-id',
     });
+  });
+
+  it('편집 모드의 전체 삭제는 확인을 거쳐 서버의 전체 삭제를 부른다', async () => {
+    let deleteAllCalled = false;
+    server.use(
+      http.delete(`${API_URL}/notifications/all`, () => {
+        deleteAllCalled = true;
+        return HttpResponse.json({
+          status: 'success',
+          error: null,
+          message: '전체 알림 삭제 성공',
+          data: { deletedCount: 3 },
+        });
+      }),
+    );
+
+    renderWithClient(
+      <>
+        <NotificationHeaderActions />
+        <NotificationList tab="NOTICE" />
+      </>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: '편집 모드 활성화' }),
+    );
+    fireEvent.click(await screen.findByRole('button', { name: '전체 삭제' }));
+    expect(deleteAllCalled).toBe(false);
+
+    fireEvent.click(await screen.findByRole('button', { name: '모두 삭제' }));
+
+    await waitFor(() => expect(deleteAllCalled).toBe(true));
   });
 });

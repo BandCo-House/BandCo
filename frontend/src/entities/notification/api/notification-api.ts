@@ -61,3 +61,10 @@ export const deleteManyNotifications = async (
 ): Promise<void> => {
   await apiDelete('/notifications', { data: { notificationIds } });
 };
+
+/**
+ * 내 알림을 type과 상관없이 모두 삭제합니다(모두 읽음과 같은 범위).
+ */
+export const deleteAllNotifications = async (): Promise<void> => {
+  await apiDelete('/notifications/all');
+};
