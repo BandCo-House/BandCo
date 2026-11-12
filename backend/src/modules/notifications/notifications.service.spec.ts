@@ -76,6 +76,9 @@ const repositoryStub: NotificationsRepository = {
   async deleteManyNotifications() {
     return mockDeleteManyResult;
   },
+  async deleteAllNotifications() {
+    return { deletedCount: 4 };
+  },
 };
 
 describe('NotificationsService', () => {
@@ -108,6 +111,13 @@ describe('NotificationsService', () => {
     it('repository 결과를 그대로 반환한다', async () => {
       const result = await service.markAllNotificationsAsRead('user-001');
       expect(result.updatedCount).toBe(3);
+    });
+  });
+
+  describe('deleteAllNotifications', () => {
+    it('repository 결과를 그대로 반환한다', async () => {
+      const result = await service.deleteAllNotifications('user-001');
+      expect(result.deletedCount).toBe(4);
     });
   });
 
