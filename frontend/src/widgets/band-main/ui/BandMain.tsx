@@ -14,8 +14,8 @@ const ONLY_MINE_ID = 'band-spaces-only-mine';
 export const BandMain = () => {
   const { bandId } = useParams({ from: '/band/$bandId/' });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
-  // 기본은 밴드의 합주 공간 전체. 예전 "내 공연 / 진행 중인 공연" 토글은 둘 중 하나만 골라야 해서,
-  // 내가 빠진 끝난 합주 공간은 어디에서도 볼 수 없었다.
+  // 기본은 밴드의 합주 전체. 예전 "내 공연 / 진행 중인 공연" 토글은 둘 중 하나만 골라야 해서,
+  // 내가 빠진 끝난 합주는 어디에서도 볼 수 없었다.
   const [onlyMine, setOnlyMine] = useState(false);
   const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
   const { data: spaces, isLoading } = useBandSpaces(
@@ -37,7 +37,7 @@ export const BandMain = () => {
             onCheckedChange={(checked) => setOnlyMine(checked === true)}
           />
           <label htmlFor={ONLY_MINE_ID} className="typo-sm-sb text-grey-100">
-            내가 참여한 합주 공간만 보기
+            내가 참여한 합주만 보기
           </label>
         </div>
       </div>
@@ -60,7 +60,7 @@ export const BandMain = () => {
           ))
         ) : (
           <p className="px-5 py-10 text-center typo-sm-r text-grey-300">
-            표시할 합주 공간이 없어요.
+            표시할 합주가 없어요.
           </p>
         )}
       </div>

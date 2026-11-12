@@ -24,7 +24,7 @@ describe('SpaceCreateModal', () => {
   it('열자마자 경고를 띄우지 않고, 만들기는 눌러 볼 수 있다', () => {
     renderModal();
 
-    expect(screen.queryByText('합주 공간 이름을 입력해주세요.')).toBeNull();
+    expect(screen.queryByText('합주 이름을 입력해주세요.')).toBeNull();
     expect(screen.getByRole('button', { name: '만들기' })).toBeEnabled();
   });
 
@@ -34,10 +34,8 @@ describe('SpaceCreateModal', () => {
 
     await user.click(screen.getByRole('button', { name: '만들기' }));
 
-    const nameInput = screen.getByLabelText(/합주 공간 이름/);
-    expect(
-      screen.getByText('합주 공간 이름을 입력해주세요.'),
-    ).toBeInTheDocument();
+    const nameInput = screen.getByLabelText(/합주 이름/);
+    expect(screen.getByText('합주 이름을 입력해주세요.')).toBeInTheDocument();
     expect(nameInput).toHaveAttribute('aria-invalid', 'true');
     expect(nameInput).toHaveFocus();
     expect(
@@ -50,10 +48,10 @@ describe('SpaceCreateModal', () => {
     renderModal();
 
     await user.click(screen.getByRole('button', { name: '만들기' }));
-    await user.type(screen.getByLabelText(/합주 공간 이름/), '정기 모임');
+    await user.type(screen.getByLabelText(/합주 이름/), '정기 모임');
     await user.click(screen.getByRole('button', { name: '만들기' }));
 
-    expect(screen.queryByText('합주 공간 이름을 입력해주세요.')).toBeNull();
+    expect(screen.queryByText('합주 이름을 입력해주세요.')).toBeNull();
     expect(screen.getByRole('group', { name: '참여자' })).toHaveAttribute(
       'aria-invalid',
       'true',

@@ -70,18 +70,18 @@ const parseDateOnly = (value: string): WheelDate => {
 // 모드별 문구. 폼 구조는 같고 말만 다르다.
 const MODE_COPY = {
   create: {
-    title: '합주 공간 만들기',
-    description: '이름과 기간을 입력해 새 합주 공간을 만듭니다.',
+    title: '합주 만들기',
+    description: '이름과 기간을 입력해 새 합주를 만듭니다.',
     submit: '만들기',
-    success: '합주 공간을 만들었어요.',
-    error: '합주 공간을 만들지 못했어요. 잠시 후 다시 시도해주세요.',
+    success: '합주를 만들었어요.',
+    error: '합주를 만들지 못했어요. 잠시 후 다시 시도해주세요.',
   },
   edit: {
-    title: '합주 공간 수정',
-    description: '합주 공간의 이름과 기간, 참여자를 수정합니다.',
+    title: '합주 수정',
+    description: '합주의 이름과 기간, 참여자를 수정합니다.',
     submit: '수정',
-    success: '합주 공간을 수정했어요.',
-    error: '합주 공간을 수정하지 못했어요. 잠시 후 다시 시도해주세요.',
+    success: '합주를 수정했어요.',
+    error: '합주를 수정하지 못했어요. 잠시 후 다시 시도해주세요.',
   },
 } as const;
 
@@ -238,18 +238,13 @@ export const SpaceCreateModal = ({
             스크롤 컨테이너는 가로로도 잘라서, 카드 밖으로 6px 걸친 참여자 제거(X) 버튼이
             오른쪽 끝에서 잘렸다. */}
         <AppDialogBody className="-mx-2 gap-9 overflow-y-auto px-2">
-          <Field
-            label="합주 공간 이름"
-            required
-            labelSize="lg"
-            htmlFor="space-name"
-          >
+          <Field label="합주 이름" required labelSize="lg" htmlFor="space-name">
             <Input
               id="space-name"
               variant="underline"
               value={name}
               onChange={(event) => updateForm({ name: event.target.value })}
-              placeholder="합주 공간 이름을 입력하세요"
+              placeholder="합주 이름을 입력하세요"
               maxLength={30}
               aria-required
               aria-invalid={showNameError || undefined}
@@ -260,7 +255,7 @@ export const SpaceCreateModal = ({
                 id={SPACE_NAME_ERROR_ID}
                 className="typo-sm-r text-destructive"
               >
-                합주 공간 이름을 입력해주세요.
+                합주 이름을 입력해주세요.
               </p>
             )}
           </Field>
@@ -322,7 +317,7 @@ export const SpaceCreateModal = ({
                 />
               ) : (
                 <p className="text-center typo-xs-sb text-grey-50">
-                  정해진 기간이 없는 합주 공간
+                  정해진 기간이 없는 합주
                 </p>
               )}
             </WheelFieldCard>
