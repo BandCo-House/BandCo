@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useCanGoBack,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import { Search as SearchIcon, X } from 'lucide-react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { useRecentSearches } from '@/features/band-search-history/model/useRecentSearches';
@@ -17,6 +22,8 @@ export const Route = createFileRoute('/search')({
 
 function SearchPage() {
   const navigate = useNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const [inputValue, setInputValue] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
 
@@ -72,7 +79,11 @@ function SearchPage() {
       >
         <button
           type="button"
-          onClick={() => navigate({ to: '..' })}
+          // '..'로 가면 /search의 상위인 홈으로 고정돼, 내 밴드에서 왔어도 홈으로 갔다.
+          // 들어온 곳으로 돌아가고, 바로 이 주소로 열어 돌아갈 곳이 없을 때만 홈으로 보낸다.
+          onClick={() =>
+            canGoBack ? router.history.back() : navigate({ to: '/' })
+          }
           aria-label="뒤로 가기"
           className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-2 focus-visible:outline-key"
         >
