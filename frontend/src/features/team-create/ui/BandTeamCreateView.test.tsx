@@ -86,14 +86,21 @@ describe('BandTeamCreateView', () => {
       teamId: 'team-new-1',
       name: '새로운 합주팀',
     });
-    vi.spyOn(teamApi, 'addTeamMember').mockResolvedValue({
-      teamMemberId: 'tm-new-1',
-      bandMemberId: 'm-1',
-      user: { userId: 'u-1', nickname: '김민준', profileImageUrl: null },
-      teamRole: 'MEMBER',
-      joinedAt: '2026-01-01T00:00:00Z',
-      skills: [],
-    });
+    // 서버는 팀을 만들면서 로그인한 멤버를 리더 행으로 미리 넣어 둔다.
+    vi.spyOn(teamApi, 'getTeamMembers').mockResolvedValue([
+      {
+        teamMemberId: 'tm-leader',
+        bandMemberId: 'm-1',
+        user: { userId: 'u-1', nickname: '김민준', profileImageUrl: null },
+        teamRole: 'LEADER',
+        joinedAt: '2026-01-01T00:00:00Z',
+        skillType: null,
+        skills: [],
+      },
+    ]);
+    vi.spyOn(teamApi, 'replaceTeamMembers').mockResolvedValue([]);
+    // Radix Select가 열릴 때 옵션으로 스크롤한다. jsdom에는 없는 API다.
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   it('팀 추가 폼 요소를 정상적으로 렌더링한다', () => {
@@ -144,8 +151,12 @@ describe('BandTeamCreateView', () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText('보컬')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('combobox', { name: '김민준 세션 선택' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('김민준')).toBeInTheDocument();
+    // 보유 스킬(보컬)을 팀 세션처럼 미리 채우지 않는다.
+    expect(screen.queryByText('보컬')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '김민준 변경' }),
     ).not.toBeInTheDocument();
@@ -171,7 +182,9 @@ describe('BandTeamCreateView', () => {
     const closeBtn = screen.getByRole('button', { name: '닫기' });
     fireEvent.click(closeBtn);
 
-    expect(await screen.findByText('베이스')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('combobox', { name: '박지은 세션 선택' }),
+    ).toBeInTheDocument();
 
     // 2. 추가된 박지은 행의 돋보기(변경) 버튼 클릭
     const editBtn = screen.getByRole('button', { name: '박지은 변경' });
@@ -186,7 +199,7 @@ describe('BandTeamCreateView', () => {
     expect(screen.queryByText('박지은')).not.toBeInTheDocument();
   });
 
-  it('팀 생성 성공 시 createTeam 및 addTeamMember를 호출하고 팀 목록으로 이동한다', async () => {
+  it('팀 생성 성공 시 createTeam을 호출하고 팀 목록으로 이동한다', async () => {
     const createSpy = vi.spyOn(teamApi, 'createTeam');
     const queryClient = createQueryClient();
 
@@ -212,6 +225,48 @@ describe('BandTeamCreateView', () => {
         search: { tab: 'teams' },
       });
     });
+  });
+
+  it('고른 세션을 리더 행을 이어받은 명단으로 저장한다', async () => {
+    const replaceSpy = vi.spyOn(teamApi, 'replaceTeamMembers');
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <BandTeamCreateView bandId="band-1" />
+      </QueryClientProvider>,
+    );
+
+    // 박지은 추가
+    fireEvent.click(screen.getByRole('button', { name: '팀원 추가' }));
+    fireEvent.click(await screen.findByText('박지은'));
+    fireEvent.click(screen.getByRole('button', { name: '닫기' }));
+
+    // 리더(김민준) 세션을 보컬로
+    const trigger = await screen.findByRole('combobox', {
+      name: '김민준 세션 선택',
+    });
+    await waitFor(() => expect(trigger).not.toBeDisabled());
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    fireEvent.keyDown(await screen.findByRole('option', { name: '보컬' }), {
+      key: 'Enter',
+    });
+
+    fireEvent.change(screen.getByLabelText('팀 이름'), {
+      target: { value: '새로운 합주팀' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '추가' }));
+
+    await waitFor(() =>
+      expect(replaceSpy).toHaveBeenCalledWith('team-new-1', [
+        {
+          teamMemberId: 'tm-leader',
+          bandMemberId: 'm-1',
+          skillTypeId: 'vocal-1',
+        },
+        { bandMemberId: 'm-2', skillTypeId: null },
+      ]),
+    );
   });
 
   it('취소 버튼 클릭 시 밴드 설정 팀 탭으로 이동한다', () => {
