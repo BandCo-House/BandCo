@@ -1,7 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { WEEKDAY_LABELS, addDays } from '@/shared/lib/date';
+import {
+  WEEKDAY_LABELS,
+  addDays,
+  getStartOfSundayWeek,
+} from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
 import {
   useDaySchedules,
@@ -84,11 +88,23 @@ export const SpaceCalendar = () => {
     ...scheduleFilter,
   });
   // 점은 타임라인과 같은 필터를 받는다 — 점이 있는 날을 눌렀는데 비어 있으면 안 된다.
-  const { data: monthCounts } = useMonthScheduleCounts(
+  // 주 보기도 같은 월 집계를 쓴다. 주가 두 달에 걸치면(10/26~11/1) 뒷달도 받아 합친다.
+  const weekStart = getStartOfSundayWeek(selectedDate);
+  const weekEnd = addDays(weekStart, 6);
+  const weekSpansTwoMonths = weekStart.getMonth() !== weekEnd.getMonth();
+  const { data: monthCounts } = useMonthScheduleCounts(spaceId ?? '', {
+    month: calendarView === 'month' ? selectedDate : weekStart,
+    ...scheduleFilter,
+  });
+  const { data: nextMonthCounts } = useMonthScheduleCounts(
     spaceId ?? '',
-    { month: selectedDate, ...scheduleFilter },
-    { enabled: calendarView === 'month' },
+    { month: weekEnd, ...scheduleFilter },
+    { enabled: calendarView === 'week' && weekSpansTwoMonths },
   );
+  const weekCounts =
+    weekSpansTwoMonths && monthCounts && nextMonthCounts
+      ? new Map([...monthCounts, ...nextMonthCounts])
+      : monthCounts;
 
   const openCreateModal = () => {
     setDetailScheduleId(null);
@@ -125,7 +141,12 @@ export const SpaceCalendar = () => {
               markerLabel="일정"
             />
           ) : (
-            <WeekDateStrip value={selectedDate} onChange={setSelectedDate} />
+            <WeekDateStrip
+              value={selectedDate}
+              onChange={setSelectedDate}
+              markers={weekCounts}
+              markerLabel="일정"
+            />
           )}
         </section>
       </div>

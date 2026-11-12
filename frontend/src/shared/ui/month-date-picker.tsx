@@ -1,9 +1,6 @@
-import AddMiniIcon from '@/assets/icons/add-mini.svg?react';
 import { formatLocalDate, isSameDay } from '@/shared/lib/date';
+import { MarkerDots } from './marker-dots';
 import { MonthGrid } from './month-grid';
-
-// 점은 최대 3개. 그보다 많으면 점 2개 뒤에 '+'를 붙여 "더 있음"을 알린다.
-const MAX_MARKER_DOTS = 3;
 
 interface MonthDatePickerProps {
   value: Date;
@@ -14,19 +11,6 @@ interface MonthDatePickerProps {
   markerLabel?: string;
   className?: string;
 }
-
-const MarkerDots = ({ count }: { count: number }) => {
-  const hasMore = count > MAX_MARKER_DOTS;
-  const dotCount = hasMore ? MAX_MARKER_DOTS - 1 : count;
-  return (
-    <>
-      {Array.from({ length: dotCount }, (_, dot) => (
-        <span key={dot} className="size-1 rounded-full bg-primary" />
-      ))}
-      {hasMore && <AddMiniIcon className="size-1 text-grey-50" />}
-    </>
-  );
-};
 
 /**
  * 한 달을 그리드로 보여주고 하루를 고르는 날짜 선택기. WeekDateStrip의 월 단위 짝이다.

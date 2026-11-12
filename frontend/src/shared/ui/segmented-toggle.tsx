@@ -41,6 +41,11 @@ interface SegmentedToggleProps<T extends string> {
    * 'input'은 저장될 값을 고르는 선택(폼 필드)이라 노란 면이다. 쓰는 곳마다 정하게 필수로 둔다.
    */
   tone: 'view' | 'input';
+  /**
+   * 탭 토글 크기. 'sm'은 다른 요소와 한 줄에 놓이는 짧은 글자 토글(캘린더 주간/월간)용이다.
+   * 기본 크기는 폼 필드 너비라 한 줄에 제목·화살표와 같이 두면 넘친다.
+   */
+  size?: 'md' | 'sm';
 }
 
 /**
@@ -56,6 +61,7 @@ export const SegmentedToggle = <T extends string>({
   className,
   variant = 'filter',
   tone,
+  size = 'md',
 }: SegmentedToggleProps<T>) => {
   const isTab = variant === 'tab';
   // 아이콘 칩은 글자 칩보다 작아, 컨테이너 여백도 그에 맞춰 줄인다.
@@ -94,7 +100,7 @@ export const SegmentedToggle = <T extends string>({
       className={cn(
         'flex items-center gap-2',
         isTab && 'relative w-fit rounded-full bg-grey-500/24 glass-surface',
-        isTab && (isIconOnly ? 'gap-0 p-1.5' : 'p-2'),
+        isTab && (isIconOnly || size === 'sm' ? 'gap-0 p-1.5' : 'p-2'),
         className,
       )}
     >
@@ -136,7 +142,9 @@ export const SegmentedToggle = <T extends string>({
                     'relative z-10 typo-sm-sb',
                     Icon
                       ? 'inline-flex size-8 items-center justify-center'
-                      : 'min-w-[77px] px-5 py-4',
+                      : size === 'sm'
+                        ? 'h-8 px-3'
+                        : 'min-w-[77px] px-5 py-4',
                     isActive ? 'text-gradient-top' : 'text-grey-100',
                   )
                 : cn(
