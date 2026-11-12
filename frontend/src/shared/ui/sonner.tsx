@@ -61,6 +61,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description: 'whitespace-normal break-words typo-sm-r! text-grey-100',
           // 이전엔 hidden이라 per-toast로 켜도 안 보였다. 유리 재질에 맞춰 직접 칠한다.
           // sonner 규칙의 명시도가 (0,3,0)이라 크기·색·top은 !가 없으면 조용히 덮인다.
+          // 토스트 안의 다음 행동(예: 초대 수락 → 밴드 둘러보기). 앱의 주 버튼과 같은 노란 알약으로
+          // 칠한다. 기본 스타일이 같은 (0,3,0) 명시도라 !가 없으면 조용히 덮인다.
+          actionButton:
+            'relative z-10 h-auto! shrink-0 rounded-full! bg-primary! px-4! py-2! typo-sm-sb! text-primary-dark! shadow-[0_1px_9px_rgba(236,252,171,0.72)]',
           closeButton:
             'z-10 top-1/2! size-6! border-0! bg-transparent! text-grey-100! opacity-100 transition-colors hover:text-grey-50! [&>svg]:size-4 [&>svg]:stroke-[2.5]',
         },

@@ -7,6 +7,7 @@ import { useNotificationList } from '@/entities/notification/api/useNotification
 import { useMarkNotificationAsRead } from '@/entities/notification/api/useMarkNotificationAsRead';
 import { useMarkAllNotificationsAsRead } from '@/entities/notification/api/useMarkAllNotificationsAsRead';
 import { useDeleteManyNotifications } from '@/entities/notification/api/useDeleteManyNotifications';
+import { useDeleteAllNotifications } from '@/entities/notification/api/useDeleteAllNotifications';
 import { notificationQueries } from '@/entities/notification/api/useNotificationUnreadSummary';
 import { updateNotificationHeader } from '@/entities/notification/model/notification-header-state';
 import type { NotificationType } from '@/entities/notification/model/types';
@@ -16,6 +17,7 @@ import { declineInvite } from '@/features/invite-decline/api/invite-api';
 import { bandKeys } from '@/entities/band/api/useBands';
 import { NotificationCard } from './NotificationCard';
 import { EmptyState } from '@/shared/ui/empty-state';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 
 type TabType = 'NOTICE' | 'INVITE' | 'REMINDER';
 
@@ -32,6 +34,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   const queryClient = useQueryClient();
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // 탭이 바뀌면 이전 탭의 선택을 버린다. 클릭 핸들러에만 두면 뒤로가기·앞으로가기·
@@ -55,6 +58,7 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
   const markAsReadMutation = useMarkNotificationAsRead();
   const markAllAsReadMutation = useMarkAllNotificationsAsRead();
   const deleteManyMutation = useDeleteManyNotifications();
+  const deleteAllMutation = useDeleteAllNotifications();
 
   const notifications = data?.pages.flatMap((page) => page.items) ?? [];
   const hasNotifications = notifications.length > 0;
@@ -92,16 +96,20 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
 
       try {
         const data = await acceptInvite(inviteId);
-        toast.success('초대를 수락했습니다!');
+        // 시안: 목록에 남아 카드가 "수락됨"으로 바뀌는 걸 보여주고, 밴드로 가는 건 토스트 버튼에 맡긴다.
+        // 바로 이동하면 무엇이 수락됐는지 확인할 틈이 없다.
+        toast.success('초대를 수락했습니다.', {
+          action: {
+            label: '밴드 둘러보기',
+            onClick: () => navigate({ to: `/band/${data.bandId}` as never }),
+          },
+        });
 
         // 쿼리 캐시 갱신
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: notificationQueries.all }),
           queryClient.invalidateQueries({ queryKey: bandKeys.all }),
         ]);
-
-        // 가입 완료된 밴드 상세 페이지로 리다이렉션
-        navigate({ to: `/band/${data.bandId}` as never });
       } catch (error) {
         console.error('초대 수락 실패:', error);
         toast.error('초대 수락 중 오류가 발생했습니다.');
@@ -193,6 +201,19 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
     // (객체를 넣으면 React Compiler가 수동 메모이제이션을 보존하지 못한다).
   }, [selectedIds, deleteManyMutate]);
 
+  const handleDeleteAll = async () => {
+    setIsDeleteAllOpen(false);
+    try {
+      await deleteAllMutation.mutateAsync();
+      setSelectedIds(new Set());
+      setIsEditMode(false);
+      toast.success('알림을 모두 삭제했어요.');
+    } catch (error) {
+      console.error('전체 알림 삭제 실패:', error);
+      toast.error('알림을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
   const handleCancelEdit = useCallback(() => {
     setSelectedIds(new Set());
     setIsEditMode(false);
@@ -235,21 +256,39 @@ export const NotificationList = ({ tab }: NotificationListProps) => {
 
   return (
     <div data-testid="notifications-page" className="-mt-8 w-full pt-4 pb-16">
-      {/* 편집 모드에서도 자리를 지킨다(숨기면 아래 리스트가 41px 튄다) — 대신 비활성화한다. */}
+      {/* 편집 모드에서도 자리를 지킨다(숨기면 아래 리스트가 41px 튄다). 같은 자리에서
+          보통은 "모두 읽음", 편집 모드에선 "전체 삭제"가 된다 — 둘 다 모든 탭의 알림이 대상이다. */}
       {!isLoading && !isError && hasNotifications && (
         <div className="mb-2 flex items-center justify-end">
-          <button
-            type="button"
-            onClick={handleMarkAllAsRead}
-            disabled={
-              markAllAsReadMutation.isPending || !hasUnread || isEditMode
-            }
-            className="glass-pressable rounded-full glass-surface px-4 py-1.5 typo-sm-sb text-grey-100 hover:bg-grey-300 hover:text-grey-600 disabled:opacity-40"
-          >
-            모두 읽음
-          </button>
+          {isEditMode ? (
+            <button
+              type="button"
+              onClick={() => setIsDeleteAllOpen(true)}
+              disabled={deleteAllMutation.isPending}
+              className="glass-pressable rounded-full glass-surface px-4 py-1.5 typo-sm-sb text-destructive disabled:opacity-40"
+            >
+              전체 삭제
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleMarkAllAsRead}
+              disabled={markAllAsReadMutation.isPending || !hasUnread}
+              className="glass-pressable rounded-full glass-surface px-4 py-1.5 typo-sm-sb text-grey-100 hover:bg-grey-300 hover:text-grey-600 disabled:opacity-40"
+            >
+              모두 읽음
+            </button>
+          )}
         </div>
       )}
+      <ConfirmDialog
+        open={isDeleteAllOpen}
+        onOpenChange={setIsDeleteAllOpen}
+        title="알림을 모두 삭제할까요?"
+        description="공지사항·초대장·일정 조율의 알림이 모두 지워지고, 되돌릴 수 없어요."
+        confirmLabel="모두 삭제"
+        onConfirm={() => void handleDeleteAll()}
+      />
 
       {/* 콘텐츠 영역 */}
       {isLoading ? (
