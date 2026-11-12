@@ -9,7 +9,9 @@ import { Input } from '@/shared/ui/input';
 import { SegmentedToggle } from '@/shared/ui/segmented-toggle';
 import { Field, fieldSurfaceClass } from '@/shared/ui/field';
 import { SelectField, type SelectFieldOption } from '@/shared/ui/select-field';
+import { Plus } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
 import {
   isEndAfterStart,
   shiftStartDate,
@@ -187,22 +189,36 @@ export const ScheduleFormView = ({
 
   const linkField = (
     <Field label="외부 링크" htmlFor="schedule-link">
-      <Input
-        id="schedule-link"
-        type="url"
-        inputMode="url"
-        variant="underline"
-        className={inputClass}
-        value={linkDraft}
-        onChange={(event) => setLinkDraft(event.target.value)}
-        onBlur={addLink}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter') return;
-          event.preventDefault();
-          addLink();
-        }}
-        placeholder="링크를 붙여넣고 Enter"
-      />
+      {/* 곡 추가의 링크 칸과 같은 모양이다. "Enter"라는 키보드 안내는 휴대폰에서 어색해서,
+          누를 버튼을 보여준다. Enter·포커스 이탈로 추가되는 동작은 그대로 둔다. */}
+      <div className="flex items-center gap-1">
+        <Input
+          id="schedule-link"
+          type="url"
+          inputMode="url"
+          variant="underline"
+          className={cn(inputClass, 'min-w-0 flex-1')}
+          value={linkDraft}
+          onChange={(event) => setLinkDraft(event.target.value)}
+          onBlur={addLink}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            addLink();
+          }}
+          placeholder="https://"
+        />
+        <Button
+          type="button"
+          variant="accent"
+          size="inline"
+          disabled={linkDraft.trim().length === 0}
+          onClick={addLink}
+        >
+          <Plus aria-hidden="true" className="size-[18px]" />
+          링크
+        </Button>
+      </div>
       {links.map((url) => (
         <LinkAttachmentItem
           key={url}
