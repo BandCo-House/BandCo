@@ -1,14 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import { WEEKDAY_LABELS, addDays } from '@/shared/lib/date';
+import {
+  WEEKDAY_LABELS,
+  addDays,
+  getStartOfSundayWeek,
+} from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
-import { useSpace } from '@/entities/space/api/useSpace';
 import {
   useDaySchedules,
   useMonthScheduleCounts,
 } from '@/entities/schedule/model/queries';
-import { SpaceSummaryHeader } from '@/entities/space/ui/SpaceSummaryHeader';
 import { ScheduleFilterBar } from '@/features/schedule-filter/ui/ScheduleFilterBar';
 import { ScheduleFilterSheet } from '@/features/schedule-filter/ui/ScheduleFilterSheet';
 import {
@@ -19,7 +21,7 @@ import {
 import { ScheduleCreateModal } from '@/features/schedule-create/ui/ScheduleCreateModal';
 import { MonthDatePicker } from '@/shared/ui/month-date-picker';
 import { WeekDateStrip } from '@/shared/ui/week-date-picker';
-import { SpeedDialFab, type SpeedDialAction } from '@/shared/ui/speed-dial-fab';
+import { ActionFab } from '@/shared/ui/action-fab';
 import { CalendarNav, type CalendarView } from './CalendarNav';
 import { DayTimeline } from './DayTimeline';
 
@@ -74,7 +76,6 @@ export const SpaceCalendar = () => {
     return () => observer.disconnect();
   }, [headerPx]);
 
-  const { data: spaceDetail } = useSpace(spaceId ?? '');
   const scheduleFilter = {
     scheduleType,
     onlyMine,
@@ -87,21 +88,28 @@ export const SpaceCalendar = () => {
     ...scheduleFilter,
   });
   // 점은 타임라인과 같은 필터를 받는다 — 점이 있는 날을 눌렀는데 비어 있으면 안 된다.
-  const { data: monthCounts } = useMonthScheduleCounts(
+  // 주 보기도 같은 월 집계를 쓴다. 주가 두 달에 걸치면(10/26~11/1) 뒷달도 받아 합친다.
+  const weekStart = getStartOfSundayWeek(selectedDate);
+  const weekEnd = addDays(weekStart, 6);
+  const weekSpansTwoMonths = weekStart.getMonth() !== weekEnd.getMonth();
+  const { data: monthCounts } = useMonthScheduleCounts(spaceId ?? '', {
+    month: calendarView === 'month' ? selectedDate : weekStart,
+    ...scheduleFilter,
+  });
+  const { data: nextMonthCounts } = useMonthScheduleCounts(
     spaceId ?? '',
-    { month: selectedDate, ...scheduleFilter },
-    { enabled: calendarView === 'month' },
+    { month: weekEnd, ...scheduleFilter },
+    { enabled: calendarView === 'week' && weekSpansTwoMonths },
   );
+  const weekCounts =
+    weekSpansTwoMonths && monthCounts && nextMonthCounts
+      ? new Map([...monthCounts, ...nextMonthCounts])
+      : monthCounts;
 
-  const fabActions: SpeedDialAction[] = [
-    {
-      label: '새 일정',
-      onClick: () => {
-        setDetailScheduleId(null);
-        setIsModalOpen(true);
-      },
-    },
-  ];
+  const openCreateModal = () => {
+    setDetailScheduleId(null);
+    setIsModalOpen(true);
+  };
 
   const handleScheduleClick = (scheduleId: string) => {
     setDetailScheduleId(scheduleId);
@@ -115,17 +123,9 @@ export const SpaceCalendar = () => {
 
   return (
     <div className="flex w-full flex-col pb-[calc(5rem_+_env(safe-area-inset-bottom))]">
-      {/* 묶음(요약 · 캘린더 · 필터) 사이는 32, 필터 바 자체 여백(py-3) 앞에 8을 더해
+      {/* 묶음(캘린더 · 필터) 사이는 32, 필터 바 자체 여백(py-3) 앞에 8을 더해
           캘린더–필터도 다른 묶음과 비슷하게 벌린다. */}
       <div className="flex flex-col gap-8 px-5 pb-2">
-        {spaceDetail && (
-          <SpaceSummaryHeader
-            name={spaceDetail.space.name}
-            description={spaceDetail.space.description}
-            memberCount={spaceDetail.memberCount}
-            songCount={spaceDetail.songCount}
-          />
-        )}
         <section className="flex flex-col gap-5">
           <CalendarNav
             view={calendarView}
@@ -141,7 +141,12 @@ export const SpaceCalendar = () => {
               markerLabel="일정"
             />
           ) : (
-            <WeekDateStrip value={selectedDate} onChange={setSelectedDate} />
+            <WeekDateStrip
+              value={selectedDate}
+              onChange={setSelectedDate}
+              markers={weekCounts}
+              markerLabel="일정"
+            />
           )}
         </section>
       </div>
@@ -202,9 +207,10 @@ export const SpaceCalendar = () => {
         onScheduleClick={handleScheduleClick}
       />
 
-      <SpeedDialFab
+      <ActionFab
         className="bottom-24"
-        actions={fabActions}
+        label="새 일정"
+        onClick={openCreateModal}
         hidden={isModalOpen || isFilterSheetOpen}
       />
 

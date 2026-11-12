@@ -1,5 +1,6 @@
 import type { NotificationReferenceType, NotificationType, Prisma } from '../../../generated/prisma';
 import type { GetNotificationsQuery } from '../dto/get-notifications-query.dto';
+import type { DeleteAllNotificationsResult } from '../types/delete-all-notifications-result.type';
 import type { DeleteManyNotificationsResult } from '../types/delete-many-notifications-result.type';
 import type { DeleteNotificationResult } from '../types/delete-notification-result.type';
 import type { MarkAllReadResult } from '../types/mark-all-read-result.type';
@@ -31,4 +32,5 @@ export interface NotificationsRepository {
   markNotificationAsRead(userId: string, notificationId: string, tx?: Prisma.TransactionClient): Promise<MarkNotificationReadResult | undefined>;
   deleteNotification(userId: string, notificationId: string, tx?: Prisma.TransactionClient): Promise<DeleteNotificationResult | undefined>;
   deleteManyNotifications(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient): Promise<DeleteManyNotificationsResult>;
+  deleteAllNotifications(userId: string, tx?: Prisma.TransactionClient): Promise<DeleteAllNotificationsResult>;
 }

@@ -182,7 +182,7 @@ function TagSelectContent({
               className={cn(
                 'flex items-center justify-center gap-2 rounded-md px-4 py-2 typo-xs-sb transition-colors select-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:outline-none',
                 isSelected
-                  ? chipSurfaceClass.selected
+                  ? chipSurfaceClass.selectedInput
                   : chipSurfaceClass.unselected,
               )}
             >

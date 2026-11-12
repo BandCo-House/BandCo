@@ -4,6 +4,7 @@ import type { SpaceDetailView } from '@/entities/space/api/space-api';
 import { useCreateSpace } from '@/entities/space/api/useCreateSpace';
 import { useUpdateSpace } from '@/entities/space/api/useUpdateSpace';
 import { ParticipantSection } from '@/features/schedule-create/ui/components/ParticipantSection';
+import { SpacePeriodPicker } from './SpacePeriodPicker';
 import {
   AppDialogBody,
   AppDialogClose,
@@ -17,8 +18,6 @@ import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import { Field, FieldLabel } from '@/shared/ui/field';
 import { Switch } from '@/shared/ui/switch';
-import { WheelDatePicker } from '@/shared/ui/wheel-date-picker';
-import { WheelFieldCard } from '@/shared/ui/wheel-field-card';
 import {
   toDateString,
   toWheelDate,
@@ -53,6 +52,10 @@ const ONGOING_END_DATE = '9999-12-31';
 // 스크롤 컨테이너의 overflow에는 그대로 잡혀, 정작 문구는 보이지 않은 채
 // 모달에만 스크롤이 생긴다(측정: scrollHeight 508 → 532, clientHeight 508).
 const SPACE_PERIOD_ERROR_ID = 'space-period-error';
+const SPACE_PERIOD_ID = 'space-period';
+const SPACE_NAME_ERROR_ID = 'space-name-error';
+const SPACE_PARTICIPANT_TRIGGER_ID = 'space-participant-trigger';
+const SPACE_PARTICIPANT_ERROR_ID = 'space-participant-error';
 
 const compareDate = (a: WheelDate, b: WheelDate) =>
   a.year - b.year || a.month - b.month || a.day - b.day;
@@ -66,18 +69,18 @@ const parseDateOnly = (value: string): WheelDate => {
 // 모드별 문구. 폼 구조는 같고 말만 다르다.
 const MODE_COPY = {
   create: {
-    title: '합주 공간 만들기',
-    description: '이름과 기간을 입력해 새 합주 공간을 만듭니다.',
+    title: '합주 만들기',
+    description: '이름과 기간을 입력해 새 합주를 만듭니다.',
     submit: '만들기',
-    success: '합주 공간을 만들었어요.',
-    error: '합주 공간을 만들지 못했어요. 잠시 후 다시 시도해주세요.',
+    success: '합주를 만들었어요.',
+    error: '합주를 만들지 못했어요. 잠시 후 다시 시도해주세요.',
   },
   edit: {
-    title: '합주 공간 수정',
-    description: '합주 공간의 이름과 기간, 참여자를 수정합니다.',
+    title: '합주 수정',
+    description: '합주의 이름과 기간, 참여자를 수정합니다.',
     submit: '수정',
-    success: '합주 공간을 수정했어요.',
-    error: '합주 공간을 수정하지 못했어요. 잠시 후 다시 시도해주세요.',
+    success: '합주를 수정했어요.',
+    error: '합주를 수정하지 못했어요. 잠시 후 다시 시도해주세요.',
   },
 } as const;
 
@@ -136,22 +139,43 @@ export const SpaceCreateModal = ({
 
   // 열릴 때 폼을 초기화한다(effect 대신 렌더 중 파생).
   const [prevOpen, setPrevOpen] = useState(open);
+  // 만들기를 한 번 눌러 본 뒤에만 빠진 칸을 빨갛게 보여준다. 열자마자 전부 빨가면 안 된다.
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setForm(createInitialForm(editTarget));
+    if (open) {
+      setForm(createInitialForm(editTarget));
+      setSubmitAttempted(false);
+    }
   }
 
   // 폼을 열었을 때의 종료 날짜 사용 여부. 수정 저장 시 기간을 건드렸는지 가르는 기준이다.
   const initialHasEnd = createInitialForm(editTarget).hasEnd;
   const endBeforeStart = hasEnd && compareDate(endDate, startDate) < 0;
-  const canSubmit =
-    name.trim().length > 0 &&
-    bandMemberIds.length > 0 &&
-    !endBeforeStart &&
-    !isPending;
+  const nameMissing = name.trim().length === 0;
+  const participantsMissing = bandMemberIds.length === 0;
+  const showNameError = submitAttempted && nameMissing;
+  const showParticipantError = submitAttempted && participantsMissing;
+
+  // 빠진 칸이 있으면 버튼을 끄는 대신, 눌렀을 때 화면 순서상 첫 칸으로 데려간다.
+  // 꺼진 버튼은 무엇이 빠졌는지 말해 주지 않는다(UT: "필수 표시가 잘 안 보여서 몰랐다").
+  const focusFirstInvalid = () => {
+    const target = nameMissing
+      ? document.getElementById('space-name')
+      : endBeforeStart
+        ? document.getElementById(SPACE_PERIOD_ID)
+        : document.getElementById(SPACE_PARTICIPANT_TRIGGER_ID);
+    target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    target?.focus({ preventScroll: true });
+  };
 
   const handleSubmit = () => {
-    if (!canSubmit) return;
+    if (isPending) return;
+    if (nameMissing || participantsMissing || endBeforeStart) {
+      setSubmitAttempted(true);
+      focusFirstInvalid();
+      return;
+    }
     const trimmedDescription = description.trim();
     const basePayload = {
       name: name.trim(),
@@ -213,21 +237,26 @@ export const SpaceCreateModal = ({
             스크롤 컨테이너는 가로로도 잘라서, 카드 밖으로 6px 걸친 참여자 제거(X) 버튼이
             오른쪽 끝에서 잘렸다. */}
         <AppDialogBody className="-mx-2 gap-9 overflow-y-auto px-2">
-          <Field
-            label="합주 공간 이름"
-            required
-            labelSize="lg"
-            htmlFor="space-name"
-          >
+          <Field label="합주 이름" required labelSize="lg" htmlFor="space-name">
             <Input
               id="space-name"
               variant="underline"
               value={name}
               onChange={(event) => updateForm({ name: event.target.value })}
-              placeholder="합주 공간 이름을 입력하세요"
+              placeholder="합주 이름을 입력하세요"
               maxLength={30}
               aria-required
+              aria-invalid={showNameError || undefined}
+              aria-describedby={showNameError ? SPACE_NAME_ERROR_ID : undefined}
             />
+            {showNameError && (
+              <p
+                id={SPACE_NAME_ERROR_ID}
+                className="typo-sm-r text-destructive"
+              >
+                합주 이름을 입력해주세요.
+              </p>
+            )}
           </Field>
 
           <Field label="설명" labelSize="lg" htmlFor="space-description">
@@ -258,37 +287,15 @@ export const SpaceCreateModal = ({
               </span>
             </div>
 
-            {/* 토글 여부와 무관하게 높이가 232에서 출렁이지 않게 하고, 내용을 세로 중앙에 둔다.
-                고정(h)이 아니라 최소(min-h)인 이유: 좁은 화면에서 라벨이 휠 위로 줄바꿈되면
-                내용이 232를 넘는다. */}
-            <WheelFieldCard
-              className="min-h-[232px] justify-center py-4 pr-2.5 pl-5"
-              role="group"
-              aria-label="합주 기간"
-              aria-invalid={endBeforeStart || undefined}
-              aria-describedby={
-                endBeforeStart ? SPACE_PERIOD_ERROR_ID : undefined
-              }
-            >
-              <WheelDatePicker
-                className="relative z-10"
-                label="시작"
-                value={startDate}
-                onChange={(next) => updateForm({ startDate: next })}
-              />
-              {hasEnd ? (
-                <WheelDatePicker
-                  className="relative z-10"
-                  label="종료"
-                  value={endDate}
-                  onChange={(next) => updateForm({ endDate: next })}
-                />
-              ) : (
-                <p className="text-center typo-xs-sb text-grey-50">
-                  정해진 기간이 없는 합주 공간
-                </p>
-              )}
-            </WheelFieldCard>
+            <SpacePeriodPicker
+              id={SPACE_PERIOD_ID}
+              startDate={startDate}
+              endDate={endDate}
+              hasEnd={hasEnd}
+              onChange={(period) => updateForm(period)}
+              invalid={endBeforeStart}
+              errorId={SPACE_PERIOD_ERROR_ID}
+            />
             {endBeforeStart && (
               <p
                 id={SPACE_PERIOD_ERROR_ID}
@@ -303,6 +310,15 @@ export const SpaceCreateModal = ({
             bandId={bandId}
             value={bandMemberIds}
             onChange={(ids) => updateForm({ bandMemberIds: ids })}
+            triggerId={SPACE_PARTICIPANT_TRIGGER_ID}
+            error={
+              showParticipantError
+                ? {
+                    id: SPACE_PARTICIPANT_ERROR_ID,
+                    message: '참여자를 1명 이상 골라주세요.',
+                  }
+                : undefined
+            }
           />
         </AppDialogBody>
 
@@ -314,7 +330,7 @@ export const SpaceCreateModal = ({
             type="button"
             variant="shining"
             size="lg"
-            disabled={!canSubmit}
+            disabled={isPending}
             onClick={handleSubmit}
           >
             {copy.submit}

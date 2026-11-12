@@ -6,6 +6,10 @@
  * 크기·여백은 쓰는 쪽이 정한다.
  */
 export const chipSurfaceClass = {
-  selected: 'glass-border-primary glass-pressable bg-primary text-gradient-top',
+  // 색 규칙: 보이는 것만 바꾸는 선택(필터)은 흰 면, 저장될 값을 고르는 선택(입력)은 노란 면.
+  // 노란색은 "만들거나 저장하는 중"에만 써서 필터와 만들기 버튼이 같은 색으로 경쟁하지 않게 한다.
+  selected: 'glass-surface glass-pressable bg-grey-50 text-gradient-top',
+  selectedInput:
+    'glass-border-primary glass-pressable bg-primary text-gradient-top',
   unselected: 'glass-surface glass-pressable bg-grey-500/24 text-grey-100',
 } as const;

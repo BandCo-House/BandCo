@@ -21,7 +21,7 @@ export interface SegmentedOption<T extends string> {
    * label은 화면에서 사라지고 버튼 이름(aria-label)으로 쓰인다.
    */
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
-  /** 선택됐을 때 기본 강조색(primary) 대신 쓸 채움 스타일. 밴드 공개 여부의 '비공개'처럼 중립 표현이 필요할 때. */
+  /** 선택됐을 때 tone의 기본 면 대신 쓸 채움 스타일. 밴드 공개 여부의 '비공개'처럼 중립 표현이 필요할 때. */
   selectedClassName?: string;
 }
 
@@ -36,6 +36,16 @@ interface SegmentedToggleProps<T extends string> {
    * 'tab': 하단강조 테두리 컨테이너 + 안쪽 칩(비선택은 테두리 없음). 일정 유형 등 탭 토글용.
    */
   variant?: 'filter' | 'tab';
+  /**
+   * 선택 색 규칙. 'view'는 보이는 것만 바꾸는 선택(필터·보기 전환)이라 흰 면,
+   * 'input'은 저장될 값을 고르는 선택(폼 필드)이라 노란 면이다. 쓰는 곳마다 정하게 필수로 둔다.
+   */
+  tone: 'view' | 'input';
+  /**
+   * 탭 토글 크기. 'sm'은 다른 요소와 한 줄에 놓이는 짧은 글자 토글(캘린더 주간/월간)용이다.
+   * 기본 크기는 폼 필드 너비라 한 줄에 제목·화살표와 같이 두면 넘친다.
+   */
+  size?: 'md' | 'sm';
 }
 
 /**
@@ -50,6 +60,8 @@ export const SegmentedToggle = <T extends string>({
   label,
   className,
   variant = 'filter',
+  tone,
+  size = 'md',
 }: SegmentedToggleProps<T>) => {
   const isTab = variant === 'tab';
   // 아이콘 칩은 글자 칩보다 작아, 컨테이너 여백도 그에 맞춰 줄인다.
@@ -88,7 +100,7 @@ export const SegmentedToggle = <T extends string>({
       className={cn(
         'flex items-center gap-2',
         isTab && 'relative w-fit rounded-full bg-grey-500/24 glass-surface',
-        isTab && (isIconOnly ? 'gap-0 p-1.5' : 'p-2'),
+        isTab && (isIconOnly || size === 'sm' ? 'gap-0 p-1.5' : 'p-2'),
         className,
       )}
     >
@@ -99,7 +111,8 @@ export const SegmentedToggle = <T extends string>({
             aria-hidden="true"
             className={cn(
               slidingIndicatorClass,
-              'rounded-full bg-primary',
+              'rounded-full',
+              tone === 'view' ? 'bg-grey-50' : 'bg-primary',
               activeOption?.selectedClassName,
             )}
           />
@@ -129,13 +142,20 @@ export const SegmentedToggle = <T extends string>({
                     'relative z-10 typo-sm-sb',
                     Icon
                       ? 'inline-flex size-8 items-center justify-center'
-                      : 'min-w-[77px] px-5 py-4',
+                      : size === 'sm'
+                        ? 'h-8 px-3'
+                        : 'min-w-[77px] px-5 py-4',
                     isActive ? 'text-gradient-top' : 'text-grey-100',
                   )
                 : cn(
                     'px-4 py-2 typo-sm-sb',
                     isActive
-                      ? cn(chipSurfaceClass.selected, option.selectedClassName)
+                      ? cn(
+                          tone === 'view'
+                            ? chipSurfaceClass.selected
+                            : chipSurfaceClass.selectedInput,
+                          option.selectedClassName,
+                        )
                       : chipSurfaceClass.unselected,
                   ),
             )}

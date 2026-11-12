@@ -60,4 +60,8 @@ export class NotificationsService {
   async deleteManyNotifications(userId: string, notificationIds: string[], tx?: Prisma.TransactionClient) {
     return this.notificationsRepository.deleteManyNotifications(userId, notificationIds, tx);
   }
+
+  async deleteAllNotifications(userId: string, tx?: Prisma.TransactionClient) {
+    return this.notificationsRepository.deleteAllNotifications(userId, tx);
+  }
 }

@@ -3,22 +3,24 @@ import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import {
   WEEKDAY_LABELS,
   addDays,
+  formatLocalDate,
+  getStartOfSundayWeek,
   getWeekDays,
   isSameDay,
 } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
-
-// 디자인은 일요일 시작 주이므로 lib의 월요일 기준 대신 일요일 시작을 계산한다.
-const getStartOfSundayWeek = (date: Date): Date => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(date.getDate() - date.getDay());
-  return start;
-};
+import { MarkerDots } from './marker-dots';
 
 interface WeekDatePickerProps {
   value: Date;
   onChange: (date: Date) => void;
+  /**
+   * 날짜 키('YYYY-MM-DD') → 그날의 항목 수. 주면 날짜 아래에 점을 찍는다.
+   * 월 보기(MonthDatePicker)와 같은 점이라, 주 보기에서도 일정 있는 날을 눌러 보지 않고 안다.
+   */
+  markers?: ReadonlyMap<string, number>;
+  /** 스크린리더가 점의 뜻을 읽을 때 쓰는 단위(예: '일정'). */
+  markerLabel?: string;
   className?: string;
 }
 
@@ -29,6 +31,8 @@ interface WeekDatePickerProps {
 export const WeekDateStrip = ({
   value,
   onChange,
+  markers,
+  markerLabel = '항목',
   className,
 }: WeekDatePickerProps) => {
   const weekDays = useMemo(
@@ -55,26 +59,36 @@ export const WeekDateStrip = ({
       <div className="mt-2 flex">
         {weekDays.map((day) => {
           const isSelected = isSameDay(day, value);
+          const count = markers?.get(formatLocalDate(day)) ?? 0;
           return (
             // 클릭 범위는 셀 전체로 넓히고(레이아웃 유지), 강조는 안쪽 원만 받는다.
             <button
               key={day.toISOString()}
               type="button"
               aria-pressed={isSelected}
-              aria-label={`${day.getMonth() + 1}월 ${day.getDate()}일`}
+              aria-label={`${day.getMonth() + 1}월 ${day.getDate()}일${count > 0 ? ` ${markerLabel} ${count}개` : ''}`}
               onClick={() => onChange(day)}
-              className="group flex flex-1 justify-center py-1.5 outline-none"
+              className="group flex flex-1 flex-col items-center gap-1.5 py-1.5 outline-none"
             >
               <span
                 className={cn(
                   'flex size-9 items-center justify-center rounded-full typo-xs-sb transition-colors',
                   isSelected
-                    ? 'bg-primary text-primary-dark'
+                    ? 'bg-grey-50 text-gradient-top'
                     : 'text-grey-50 group-hover:bg-overlay-24 group-focus-visible:bg-overlay-24 group-active:bg-overlay-24',
                 )}
               >
                 {day.getDate()}
               </span>
+              {markers && (
+                // 점이 없는 날도 같은 높이를 차지해 숫자 줄이 날마다 들쭉날쭉하지 않게 한다.
+                <span
+                  aria-hidden="true"
+                  className="flex h-1 items-center justify-center gap-1"
+                >
+                  {count > 0 && <MarkerDots count={count} />}
+                </span>
+              )}
             </button>
           );
         })}

@@ -36,6 +36,17 @@ describe('BandList', () => {
     expect(screen.getByText('락스타')).toBeInTheDocument();
   });
 
+  it('밴드가 있으면 새 밴드 FAB과 초대코드 참여 링크를 메뉴 없이 바로 보여준다', async () => {
+    renderWithClient(<BandList />);
+
+    expect(
+      await screen.findByRole('button', { name: '새 밴드' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '초대코드로 참여하기' }),
+    ).toBeInTheDocument();
+  });
+
   it('로딩 중일 때 로딩 상태를 표시한다', async () => {
     server.use(
       http.get('/api/bands/me', async () => {
@@ -72,5 +83,13 @@ describe('BandList', () => {
     expect(
       await screen.findByText('아직 참여한 밴드가 없어요'),
     ).toBeInTheDocument();
+    // 빈 화면에서는 두 행동을 본문에 두고, 같은 행동을 FAB으로 겹쳐 띄우지 않는다.
+    expect(
+      screen.getByRole('button', { name: '새 밴드 만들기' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '초대코드로 참여' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '새 밴드' })).toBeNull();
   });
 });

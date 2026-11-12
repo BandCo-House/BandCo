@@ -26,11 +26,11 @@ const renderModal = () => {
 };
 
 describe('ScheduleCreateModal', () => {
-  it('열면 일정 추가 폼이 합주 기본으로 보이고 추가는 비활성이다', () => {
+  it('열면 일정 추가 폼이 연습 기본으로 보이고 추가는 비활성이다', () => {
     renderModal();
 
     expect(screen.getByText('일정 추가')).toBeInTheDocument();
-    expect(screen.getByText('합주 이름')).toBeInTheDocument();
+    expect(screen.getByText('연습 이름')).toBeInTheDocument();
     expect(screen.getByText('합주곡')).toBeInTheDocument();
     // 필수(이름·장소·곡) 미입력이라 추가 CTA는 비활성.
     expect(screen.getByRole('button', { name: '추가' })).toBeDisabled();
@@ -59,7 +59,7 @@ describe('ScheduleCreateModal', () => {
     const user = userEvent.setup();
     renderModal();
 
-    await user.type(screen.getByLabelText('합주 이름'), '합주 A');
+    await user.type(screen.getByLabelText('연습 이름'), '연습 A');
 
     expect(screen.getByRole('button', { name: '추가' })).toBeDisabled();
   });
