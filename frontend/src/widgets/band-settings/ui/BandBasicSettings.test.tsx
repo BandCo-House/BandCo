@@ -96,7 +96,7 @@ describe('BandBasicSettings', () => {
     renderSettings();
 
     expect(screen.getByText('직접 추가')).toBeInTheDocument();
-    const searchInput = screen.getByPlaceholderText('이름으로 검색하세요');
+    const searchInput = screen.getByPlaceholderText('이름, ID로 검색하세요');
     expect(searchInput).toBeInTheDocument();
 
     await user.type(searchInput, '김');

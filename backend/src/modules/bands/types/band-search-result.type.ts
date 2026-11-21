@@ -8,6 +8,7 @@ export interface BandSearchListItem {
   bandMaster: {
     userId: string;
     nickname: string;
+    handle: string | null;
   };
   createdAt: string;
 }

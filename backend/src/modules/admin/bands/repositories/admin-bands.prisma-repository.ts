@@ -13,7 +13,7 @@ import type { AdminBandsRepository } from './admin-bands.repository';
 const USER_SUMMARY_SELECT = {
   id: true,
   email: true,
-  profile: { select: { nickname: true } },
+  profile: { select: { nickname: true, handle: true } },
 } satisfies Prisma.UserSelect;
 
 /**
@@ -81,6 +81,7 @@ export class AdminBandsPrismaRepository implements AdminBandsRepository {
       bandMaster: {
         userId: band.bandMasterUser.id,
         nickname: band.bandMasterUser.profile?.nickname ?? null,
+        handle: band.bandMasterUser.profile?.handle ?? null,
         email: band.bandMasterUser.email,
       },
       memberCount: band._count.members,
@@ -131,12 +132,17 @@ export class AdminBandsPrismaRepository implements AdminBandsRepository {
           joinRequests: {
             where: { status: 'PENDING' },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            select: { id: true, userId: true, createdAt: true, user: { select: { profile: { select: { nickname: true } } } } },
+            select: { id: true, userId: true, createdAt: true, user: { select: { profile: { select: { nickname: true, handle: true } } } } },
           },
           invitations: {
             where: { status: 'PENDING' },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            select: { id: true, inviteeUserId: true, createdAt: true, inviteeUser: { select: { profile: { select: { nickname: true } } } } },
+            select: {
+              id: true,
+              inviteeUserId: true,
+              createdAt: true,
+              inviteeUser: { select: { profile: { select: { nickname: true, handle: true } } } },
+            },
           },
           inviteLinks: { select: { expiredAt: true } },
           _count: { select: { songs: true, teams: true, places: true } },
@@ -166,12 +172,14 @@ export class AdminBandsPrismaRepository implements AdminBandsRepository {
       bandMaster: {
         userId: band.bandMasterUser.id,
         nickname: band.bandMasterUser.profile?.nickname ?? null,
+        handle: band.bandMasterUser.profile?.handle ?? null,
         email: band.bandMasterUser.email,
       },
       members: band.members.map(member => ({
         bandMemberId: member.id,
         userId: member.user.id,
         nickname: member.user.profile?.nickname ?? null,
+        handle: member.user.profile?.handle ?? null,
         email: member.user.email,
         role: member.role,
         joinedAt: member.joinedAt.toISOString(),
@@ -189,12 +197,14 @@ export class AdminBandsPrismaRepository implements AdminBandsRepository {
         requestId: joinRequest.id,
         userId: joinRequest.userId,
         nickname: joinRequest.user.profile?.nickname ?? null,
+        handle: joinRequest.user.profile?.handle ?? null,
         createdAt: joinRequest.createdAt.toISOString(),
       })),
       pendingInvitations: band.invitations.map(invitation => ({
         invitationId: invitation.id,
         inviteeUserId: invitation.inviteeUserId,
         inviteeNickname: invitation.inviteeUser.profile?.nickname ?? null,
+        inviteeHandle: invitation.inviteeUser.profile?.handle ?? null,
         createdAt: invitation.createdAt.toISOString(),
       })),
       inviteLinkExpiredAt: inviteLink?.expiredAt ?? null,

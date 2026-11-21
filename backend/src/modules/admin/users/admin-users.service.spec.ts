@@ -25,6 +25,7 @@ const LIST_ITEM: AdminUserListItem = {
   userId: USER_ID,
   email: 'user@bandco.kr',
   nickname: '기타리스트',
+  handle: null,
   avatarUrl: null,
   status: 'ACTIVE',
   isDeleted: false,

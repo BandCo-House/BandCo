@@ -170,6 +170,7 @@
             "bandMemberId": "member-uuid",
             "userId": "user-uuid",
             "nickname": "준혁",
+            "handle": null,
             "avatarUrl": null
           }
         ]

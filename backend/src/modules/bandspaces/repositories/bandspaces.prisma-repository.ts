@@ -50,6 +50,7 @@ type BandSpaceDetailRecord = Prisma.BandSpaceGetPayload<{
                 profile: {
                   select: {
                     nickname: true;
+                    handle: true;
                   };
                 };
               };
@@ -268,6 +269,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
                     profile: {
                       select: {
                         nickname: true,
+                        handle: true,
                       },
                     },
                   },
@@ -431,6 +433,7 @@ export class BandSpacesPrismaRepository implements BandSpacesRepository {
     return {
       bandMemberId: member.bandMemberId,
       nickname: member.bandMember.user.profile?.nickname ?? '알 수 없는 사용자',
+      handle: member.bandMember.user.profile?.handle ?? null,
       role: this.normalizeSpaceMemberRole(member.role),
       status: member.status,
       joinedAt: member.joinedAt.toISOString(),

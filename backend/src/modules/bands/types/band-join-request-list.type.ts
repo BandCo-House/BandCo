@@ -5,6 +5,7 @@ export interface BandJoinRequestListItem {
   requester: {
     userId: string;
     nickname: string;
+    handle: string | null;
     avatarUrl: string | null;
   };
   message: string | null;

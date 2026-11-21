@@ -4,6 +4,7 @@ import type { BandMemberRole, BandSpaceStatus, BandSpaceType } from 'src/generat
 export type AdminBandUserSummary = {
   userId: string;
   nickname: string | null;
+  handle: string | null;
   email: string | null;
 };
 
@@ -39,6 +40,7 @@ export type AdminBandDetail = {
     bandMemberId: string;
     userId: string;
     nickname: string | null;
+    handle: string | null;
     email: string | null;
     role: BandMemberRole;
     joinedAt: string;
@@ -52,8 +54,14 @@ export type AdminBandDetail = {
     createdAt: string;
     deletedAt: string | null;
   }[];
-  pendingJoinRequests: { requestId: string; userId: string; nickname: string | null; createdAt: string }[];
-  pendingInvitations: { invitationId: string; inviteeUserId: string; inviteeNickname: string | null; createdAt: string }[];
+  pendingJoinRequests: { requestId: string; userId: string; nickname: string | null; handle: string | null; createdAt: string }[];
+  pendingInvitations: {
+    invitationId: string;
+    inviteeUserId: string;
+    inviteeNickname: string | null;
+    inviteeHandle: string | null;
+    createdAt: string;
+  }[];
   inviteLink: { hasActiveLink: boolean; expiredAt: string | null };
   counts: { songs: number; schedules: number; teams: number; places: number };
 };

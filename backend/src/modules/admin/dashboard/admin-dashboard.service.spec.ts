@@ -306,7 +306,7 @@ describe('AdminDashboardService', () => {
       ];
       let capturedUserIds: string[] | undefined;
       const repository = createDashboardRepositoryStub({
-        identities: [{ userId: USER_IDS[11], nickname: '드러머', email: 'drum@example.com' }],
+        identities: [{ userId: USER_IDS[11], nickname: '드러머', handle: null, email: 'drum@example.com' }],
         onFindUserIdentities(userIds) {
           capturedUserIds = userIds;
         },
@@ -331,8 +331,15 @@ describe('AdminDashboardService', () => {
         USER_IDS[2],
       ]);
       expect(capturedUserIds).toEqual(result.topUsers.map(user => user.userId));
-      expect(result.topUsers[0]).toEqual({ userId: USER_IDS[11], nickname: '드러머', email: 'drum@example.com', bytes: 1200, objectCount: 1 });
-      expect(result.topUsers[1]).toEqual({ userId: USER_IDS[10], nickname: null, email: null, bytes: 1100, objectCount: 1 });
+      expect(result.topUsers[0]).toEqual({
+        userId: USER_IDS[11],
+        nickname: '드러머',
+        handle: null,
+        email: 'drum@example.com',
+        bytes: 1200,
+        objectCount: 1,
+      });
+      expect(result.topUsers[1]).toEqual({ userId: USER_IDS[10], nickname: null, handle: null, email: null, bytes: 1100, objectCount: 1 });
       // 상위 10명 합 = 300+400+...+1200 = 7500, 나머지 = 8957 - 7500
       expect(result.otherBytes).toBe(1457);
       expect(result.scannedAt).toBe('2026-10-05T03:00:00.000Z');
@@ -349,8 +356,8 @@ describe('AdminDashboardService', () => {
       const result = await service.getStorage();
 
       expect(result.topUsers).toEqual([
-        { userId: USER_IDS[0], nickname: null, email: null, bytes: 100, objectCount: 2 },
-        { userId: USER_IDS[1], nickname: null, email: null, bytes: 100, objectCount: 1 },
+        { userId: USER_IDS[0], nickname: null, handle: null, email: null, bytes: 100, objectCount: 2 },
+        { userId: USER_IDS[1], nickname: null, handle: null, email: null, bytes: 100, objectCount: 1 },
       ]);
       expect(result.otherBytes).toBe(0);
     });

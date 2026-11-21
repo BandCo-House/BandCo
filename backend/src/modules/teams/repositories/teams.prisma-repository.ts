@@ -137,7 +137,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             user: {
               select: {
                 profile: {
-                  select: { nickname: true },
+                  select: { nickname: true, handle: true },
                 },
               },
             },
@@ -164,6 +164,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         ? {
             userId: team.teamLeaderBandMember.userId,
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
+            handle: team.teamLeaderBandMember.user?.profile?.handle ?? null,
           }
         : null,
       createdAt: team.createdAt.toISOString(),
@@ -222,7 +223,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             user: {
               select: {
                 profile: {
-                  select: { nickname: true },
+                  select: { nickname: true, handle: true },
                 },
               },
             },
@@ -247,6 +248,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         ? {
             userId: team.teamLeaderBandMember.userId,
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
+            handle: team.teamLeaderBandMember.user?.profile?.handle ?? null,
           }
         : null,
       memberCount: this.countDistinctMembers(team.members),
@@ -316,7 +318,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             userId: true,
             user: {
               select: {
-                profile: { select: { nickname: true } },
+                profile: { select: { nickname: true, handle: true } },
               },
             },
           },
@@ -336,6 +338,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         ? {
             userId: team.teamLeaderBandMember.userId,
             nickname: team.teamLeaderBandMember.user?.profile?.nickname ?? '',
+            handle: team.teamLeaderBandMember.user?.profile?.handle ?? null,
           }
         : null,
       memberCount: this.countDistinctMembers(team.members),
@@ -419,7 +422,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             userId: true,
             user: {
               select: {
-                profile: { select: { nickname: true, avatarUrl: true } },
+                profile: { select: { nickname: true, handle: true, avatarUrl: true } },
                 userSkills: {
                   select: { skillTypeId: true, skillLevel: true, isPrimary: true, skillType: { select: { name: true } } },
                 },
@@ -438,6 +441,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
       user: {
         userId: member.bandMember.userId,
         nickname: member.bandMember.user?.profile?.nickname ?? '',
+        handle: member.bandMember.user?.profile?.handle ?? null,
         profileImageUrl: member.bandMember.user?.profile?.avatarUrl ?? null,
       },
       teamRole: member.teamRole,
@@ -473,7 +477,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             user: {
               select: {
                 profile: {
-                  select: { nickname: true, avatarUrl: true },
+                  select: { nickname: true, handle: true, avatarUrl: true },
                 },
                 userSkills: {
                   select: {
@@ -503,6 +507,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
       user: {
         userId: member.bandMember.userId,
         nickname: member.bandMember.user?.profile?.nickname ?? '',
+        handle: member.bandMember.user?.profile?.handle ?? null,
         profileImageUrl: member.bandMember.user?.profile?.avatarUrl ?? null,
       },
       teamRole: member.teamRole,
@@ -582,7 +587,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
               userId: true,
               user: {
                 select: {
-                  profile: { select: { nickname: true } },
+                  profile: { select: { nickname: true, handle: true } },
                 },
               },
             },
@@ -600,6 +605,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         teamLeader: {
           userId: newLeaderMember!.bandMember.userId,
           nickname: newLeaderMember!.bandMember.user?.profile?.nickname ?? '',
+          handle: newLeaderMember!.bandMember.user?.profile?.handle ?? null,
         },
       };
     };
@@ -629,7 +635,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             userId: true,
             user: {
               select: {
-                profile: { select: { nickname: true, avatarUrl: true } },
+                profile: { select: { nickname: true, handle: true, avatarUrl: true } },
               },
             },
           },
@@ -644,6 +650,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
       user: {
         userId: teamMember.bandMember.userId,
         nickname: teamMember.bandMember.user?.profile?.nickname ?? '',
+        handle: teamMember.bandMember.user?.profile?.handle ?? null,
         profileImageUrl: teamMember.bandMember.user?.profile?.avatarUrl ?? null,
       },
       teamRole: teamMember.teamRole,
@@ -707,7 +714,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
                 userId: true,
                 user: {
                   select: {
-                    profile: { select: { nickname: true } },
+                    profile: { select: { nickname: true, handle: true } },
                   },
                 },
               },
@@ -740,6 +747,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
         ? {
             userId: member.team.teamLeaderBandMember.userId,
             nickname: member.team.teamLeaderBandMember.user?.profile?.nickname ?? '',
+            handle: member.team.teamLeaderBandMember.user?.profile?.handle ?? null,
           }
         : null,
       joinedAt: member.joinedAt.toISOString(),
@@ -798,7 +806,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
             userId: true,
             user: {
               select: {
-                profile: { select: { nickname: true, avatarUrl: true } },
+                profile: { select: { nickname: true, handle: true, avatarUrl: true } },
               },
             },
           },
@@ -813,6 +821,7 @@ export class TeamsPrismaRepository implements TeamsRepository {
       user: {
         userId: teamMember.bandMember.userId,
         nickname: teamMember.bandMember.user?.profile?.nickname ?? '',
+        handle: teamMember.bandMember.user?.profile?.handle ?? null,
         profileImageUrl: teamMember.bandMember.user?.profile?.avatarUrl ?? null,
       },
       teamRole: teamMember.teamRole,

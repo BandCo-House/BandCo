@@ -166,7 +166,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
             user: {
               select: {
                 id: true,
-                profile: { select: { nickname: true, avatarUrl: true } },
+                profile: { select: { nickname: true, handle: true, avatarUrl: true } },
               },
             },
           },
@@ -184,6 +184,7 @@ export class NotificationsPrismaRepository implements NotificationsRepository {
           sender: {
             userId: invitation.inviterBandMember.user.id,
             nickname: invitation.inviterBandMember.user.profile?.nickname ?? '',
+            handle: invitation.inviterBandMember.user.profile?.handle ?? null,
             avatarUrl: invitation.inviterBandMember.user.profile?.avatarUrl ?? null,
           },
         },

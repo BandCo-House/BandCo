@@ -184,7 +184,11 @@ model Genre {
 
 model UserProfile {
   userId          String    @id @map("user_id") @db.Uuid
-  nickname        String    @db.VarChar(255)
+  nickname        String    @db.VarChar(20)
+  /// 유저가 직접 정하는 고유 ID(@handle). 영문 대소문자·숫자·밑줄 4~8자. 기존 유저는 null로 시작한다.
+  handle          String?   @unique @db.VarChar(8)
+  /// 고유 ID 쿨다운 기준 시각. 이 시각 + 7일 전에는 다시 바꿀 수 없다. 처음 설정은 기록하지 않는다.
+  handleChangedAt DateTime? @map("handle_changed_at") @db.Timestamptz(6)
   selfDescription String?   @map("self_description")
   avatarUrl       String?   @map("avatar_url")
   updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)

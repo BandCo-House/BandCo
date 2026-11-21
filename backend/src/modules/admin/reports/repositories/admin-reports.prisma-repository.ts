@@ -19,12 +19,12 @@ function buildAdminReportSelect(now: Date) {
     createdAt: true,
     resolvedAt: true,
     resolutionNote: true,
-    reporter: { select: { id: true, email: true, profile: { select: { nickname: true } } } },
+    reporter: { select: { id: true, email: true, profile: { select: { nickname: true, handle: true } } } },
     reported: {
       select: {
         id: true,
         email: true,
-        profile: { select: { nickname: true } },
+        profile: { select: { nickname: true, handle: true } },
         sanctions: { where: buildActiveSuspensionWhere(now), select: { id: true }, take: 1 },
       },
     },
@@ -43,11 +43,13 @@ function toAdminReport(row: AdminReportRow): AdminReport {
     reporter: {
       userId: row.reporter.id,
       nickname: row.reporter.profile?.nickname ?? null,
+      handle: row.reporter.profile?.handle ?? null,
       email: row.reporter.email,
     },
     reported: {
       userId: row.reported.id,
       nickname: row.reported.profile?.nickname ?? null,
+      handle: row.reported.profile?.handle ?? null,
       email: row.reported.email,
       isSuspended: row.reported.sanctions.length > 0,
     },

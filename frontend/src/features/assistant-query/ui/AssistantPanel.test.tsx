@@ -96,18 +96,28 @@ const asked = (body: object) => ({
 const homeInput = () =>
   screen.getAllByRole('textbox', { name: '밴드 데이터에 대한 질문' })[0];
 
-const askByPreset = () =>
-  userEvent.click(
-    screen.getByRole('button', { name: '다음 합주 일정이 언제야?' }),
+const askByPreset = async () => {
+  let dialog = screen.queryByRole('dialog');
+  if (dialog === null) {
+    await userEvent.click(
+      screen.getByRole('button', { name: '밴드에 물어보기' }),
+    );
+    dialog = await screen.findByRole('dialog');
+  }
+  await userEvent.click(
+    within(dialog).getByRole('button', {
+      name: '다음 합주 일정이 언제야?',
+    }),
   );
+};
 
 describe('AssistantPanel', () => {
   beforeEach(() => askMock.mockReset());
 
-  it('홈에는 질문 입력창과 추천 칩이 있고 질문 버튼은 입력을 시작할 때 나타난다', async () => {
+  it('홈에는 자유 질문 입력창만 있고 질문 버튼은 입력을 시작할 때 나타난다', async () => {
     setup();
 
-    expect(screen.getByText('다음 합주')).toBeInTheDocument();
+    expect(screen.queryByLabelText('추천 질문')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '질문' }),
     ).not.toBeInTheDocument();
@@ -133,7 +143,7 @@ describe('AssistantPanel', () => {
     );
   });
 
-  it('추천 칩을 누르면 presetId로 묻는다', async () => {
+  it('AI 질문 화면의 추천 칩을 누르면 presetId로 묻는다', async () => {
     setup();
 
     await askByPreset();

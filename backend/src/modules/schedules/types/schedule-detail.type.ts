@@ -12,6 +12,7 @@ export interface ScheduleParticipantDetail {
   bandMemberId: string;
   userId: string;
   nickname: string;
+  handle: string | null;
   avatarUrl: string | null;
   attendanceStatus: string | null;
   note: string | null;

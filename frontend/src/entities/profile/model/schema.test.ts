@@ -12,6 +12,8 @@ describe('profileSchema Zod Validation', () => {
       },
       profile: {
         nickname: '김민준',
+        handle: null,
+        handleChangeableAt: null,
         selfDescription: '기타리스트입니다',
         profileMusic: {
           externalTrackId: 'track-1',

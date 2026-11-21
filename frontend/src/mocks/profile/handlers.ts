@@ -3,7 +3,11 @@ import type { ApiSuccessResponse } from '@/shared/api';
 import type { Profile } from '@/entities/profile/model/types';
 import type { ProfileMusicPreview } from '@/entities/profile/api/profile-music-api';
 import type { UpdateProfileRequest } from '@/features/profile-update/api/profile-api';
+import { HANDLE_PATTERN } from '@/entities/user/model/schema';
 import { API_URL } from '../config';
+import { mockUsers } from '../user/handlers';
+
+const HANDLE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
 // 프로필 음악 검색(공용) mock — GET /users/profile-music/search
 const profileMusicPreviews: ProfileMusicPreview[] = [
@@ -31,6 +35,17 @@ const profileMusicPreviews: ProfileMusicPreview[] = [
   },
 ];
 
+const createHandleFailResponse = (message: string) =>
+  HttpResponse.json(
+    {
+      status: 'fail',
+      error: { code: 'BAD_REQUEST', details: { statusCode: 400 } },
+      message,
+      data: {},
+    },
+    { status: 400 },
+  );
+
 const mockProfiles: Record<string, Profile> = {
   'user-001': {
     user: {
@@ -41,6 +56,8 @@ const mockProfiles: Record<string, Profile> = {
     },
     profile: {
       nickname: '김민준',
+      handle: 'minsu_k',
+      handleChangeableAt: null,
       selfDescription: '음악으로 세상과 소통하는 기타리스트',
       profileMusic: {
         externalTrackId: 'deezer-1',
@@ -91,6 +108,9 @@ const mockProfiles: Record<string, Profile> = {
     },
     profile: {
       nickname: '홍길동',
+      // 고유 ID를 아직 정하지 않은 기존 유저
+      handle: null,
+      handleChangeableAt: null,
       selfDescription: '합주 잼을 좋아하는 베이시스트',
       profileMusic: null,
       avatarUrl: null,
@@ -110,6 +130,15 @@ const mockProfiles: Record<string, Profile> = {
   },
 };
 
+const findHandleOwner = (handle: string): string | null => {
+  const target = handle.toLowerCase();
+  const profileOwner = Object.values(mockProfiles).find(
+    (p) => p.profile?.handle?.toLowerCase() === target,
+  );
+  if (profileOwner) return profileOwner.user.id;
+  return mockUsers.find((u) => u.handle?.toLowerCase() === target)?.id ?? null;
+};
+
 export const profileHandlers = [
   http.get(`${API_URL}/users/profile-music/search`, ({ request }) => {
     const url = new URL(request.url);
@@ -127,6 +156,69 @@ export const profileHandlers = [
       error: null,
       message: '프로필 음악 검색 성공',
       data: { items },
+    });
+  }),
+
+  // 백엔드처럼 대소문자를 가리지 않고 겹침을 본다. 검색 mock 유저의 ID도 쓰는 중으로 친다.
+  http.get(`${API_URL}/users/handles/availability`, ({ request }) => {
+    const handle = new URL(request.url).searchParams.get('handle') ?? '';
+    if (!HANDLE_PATTERN.test(handle)) {
+      return createHandleFailResponse(
+        '고유 ID는 영문 대소문자·숫자·언더바(_)만 사용해 4~8자로 입력해 주세요.',
+      );
+    }
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '고유 ID 확인 성공',
+      data: { handle, available: !findHandleOwner(handle) },
+    });
+  }),
+
+  http.patch(`${API_URL}/users/:userId/handle`, async ({ params, request }) => {
+    const { userId } = params as { userId: string };
+    const { handle } = (await request.json()) as { handle: string };
+    const profile = mockProfiles[userId]?.profile;
+
+    if (!profile) {
+      return createHandleFailResponse('존재하지 않는 유저입니다.');
+    }
+    if (!HANDLE_PATTERN.test(handle)) {
+      return createHandleFailResponse(
+        '고유 ID는 영문 대소문자·숫자·언더바(_)만 사용해 4~8자로 입력해 주세요.',
+      );
+    }
+    if (
+      profile.handleChangeableAt &&
+      new Date(profile.handleChangeableAt) > new Date()
+    ) {
+      return createHandleFailResponse(
+        '고유 ID는 7일에 한 번만 변경할 수 있습니다.',
+      );
+    }
+    const owner = findHandleOwner(handle);
+    if (owner && owner !== userId) {
+      return createHandleFailResponse('이미 사용 중인 고유 ID입니다.');
+    }
+
+    // 처음 설정은 7일 제한에 세지 않는다(백엔드 결정 6).
+    const changedAt = profile.handle === null ? null : new Date();
+    profile.handle = handle;
+    profile.handleChangeableAt = changedAt
+      ? new Date(changedAt.getTime() + HANDLE_COOLDOWN_MS).toISOString()
+      : null;
+
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '고유 ID 변경 성공',
+      data: {
+        userId,
+        handle,
+        handleChangedAt: changedAt?.toISOString() ?? null,
+        handleChangeableAt: profile.handleChangeableAt,
+      },
     });
   }),
 
@@ -195,6 +287,8 @@ export const profileHandlers = [
           },
           profile: {
             nickname: `유저_${userId}`,
+            handle: null,
+            handleChangeableAt: null,
             selfDescription: null,
             profileMusic: null,
             avatarUrl: null,
@@ -209,6 +303,8 @@ export const profileHandlers = [
       if (body.profile) {
         current.profile = {
           nickname: body.profile.nickname ?? current.profile?.nickname ?? '',
+          handle: current.profile?.handle ?? null,
+          handleChangeableAt: current.profile?.handleChangeableAt ?? null,
           selfDescription:
             body.profile.selfDescription !== undefined
               ? body.profile.selfDescription

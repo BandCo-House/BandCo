@@ -11,6 +11,7 @@ export interface SentBandInvitationListItem {
   invitee: {
     userId: string;
     nickname: string;
+    handle: string | null;
     avatarUrl: string | null;
   };
   invitationStatus: BandInvitationStatus;

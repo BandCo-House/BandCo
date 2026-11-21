@@ -11,6 +11,7 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 describe('SignupForm', () => {
   const getFields = () => ({
     nickname: screen.getByLabelText(/^이름\s*\*$/),
+    handle: screen.getByLabelText(/^고유 ID\s*\*$/),
     email: screen.getByLabelText(/^이메일\s*\*$/),
     password: screen.getByLabelText(/^비밀번호\s*\*$/),
     passwordConfirm: screen.getByLabelText(/^비밀번호 확인\s*\*$/),
@@ -47,6 +48,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
 
     expect(submitButton).toBeEnabled();
@@ -65,6 +67,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     // 약관은 체크하지 않는다.
 
     // 막아두면 왜 못 누르는지 알 수 없으므로 누를 수는 있어야 한다.
@@ -89,6 +92,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(screen.getByRole('button', { name: '중복 확인' }));
     await waitFor(() => expect(submitButton).toBeEnabled());
@@ -98,6 +102,7 @@ describe('SignupForm', () => {
       email: 'test@test.com',
       password: 'password123!',
       nickname: '홍길동',
+      handle: 'gildong',
     });
   });
 
@@ -113,6 +118,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
 
     expect(submitButton).toBeEnabled();
@@ -135,6 +141,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, 'pass123_!');
     await user.type(fields.passwordConfirm, 'pass123_!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 
@@ -156,6 +163,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, '1111111!');
     await user.type(fields.passwordConfirm, '1111111!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 
@@ -180,6 +188,7 @@ describe('SignupForm', () => {
     await user.type(fields.password, 'password123!');
     await user.type(fields.passwordConfirm, 'password123!');
     await user.type(fields.nickname, '홍길동');
+    await user.type(fields.handle, 'gildong');
     await user.click(screen.getByRole('checkbox', { name: /전체 이용약관/i }));
     await user.click(submitButton);
 

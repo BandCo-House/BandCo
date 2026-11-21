@@ -123,6 +123,7 @@ Notion API 명세서의 `합주 공간 관리` 도메인을 기준으로 정리�
         "memberId": "space-member-uuid",
         "userId": "user-uuid",
         "nickname": "김민준",
+        "handle": null,
         "role": "LEADER",
         "status": "ACTIVE",
         "joinedAt": "2026-04-30T14:17:00.000+09:00"

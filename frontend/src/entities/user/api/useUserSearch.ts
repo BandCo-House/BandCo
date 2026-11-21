@@ -19,7 +19,7 @@ export const useUserSearch = (
 
   return useQuery<UserSearchItem[]>({
     queryKey: userKeys.search(trimmed),
-    queryFn: () => searchUsers({ nickname: trimmed }),
+    queryFn: () => searchUsers({ keyword: trimmed }),
     enabled: options?.enabled !== false && trimmed.length > 0,
     placeholderData: (prev) => prev,
     staleTime: 30_000,
