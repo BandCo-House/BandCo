@@ -78,7 +78,6 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
                 ...m,
                 bandMemberId: picked.bandMemberId,
                 skills: picked.skills,
-                sessionName: picked.skills.map((s) => s.skillName).join(', '),
                 user: {
                   userId: picked.userId,
                   nickname: picked.nickname,
@@ -102,7 +101,6 @@ export function useTeamMemberEdit({ propMembers }: UseTeamMemberEditProps) {
           profileImageUrl: picked.avatarUrl,
         },
         teamRole: 'MEMBER',
-        sessionName: picked.skills.map((s) => s.skillName).join(', '),
       };
       setCurrentMembers((prev) => [...prev, newMember]);
     }

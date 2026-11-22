@@ -72,5 +72,4 @@ export const teamMemberSchema = z.object({
   skillType: teamMemberSkillTypeSchema.nullable().optional(),
   /** 그 사람이 보유한 스킬 전체. 팀 배정과 무관하다. */
   skills: z.array(teamMemberSkillSchema).default([]),
-  sessionName: z.string().optional(), // UI용 세션명 호환
 });

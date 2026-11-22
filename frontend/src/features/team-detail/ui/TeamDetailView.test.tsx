@@ -36,6 +36,7 @@ const MOCK_MEMBERS: TeamMember[] = [
       profileImageUrl: null,
     },
     teamRole: 'LEADER',
+    skillType: { skillTypeId: 'st-guitar', name: '기타' },
     skills: [
       {
         skillTypeId: 'st-guitar',
@@ -50,6 +51,7 @@ const MOCK_MEMBERS: TeamMember[] = [
     bandMemberId: 'bm-2',
     user: { userId: 'u-2', nickname: '이베이스', profileImageUrl: null },
     teamRole: 'MEMBER',
+    skillType: { skillTypeId: 'st-bass', name: '베이스' },
     skills: [
       {
         skillTypeId: 'st-bass',
@@ -96,6 +98,18 @@ describe('TeamDetailView', () => {
     expect(screen.getByText('김기타')).toBeInTheDocument();
     expect(screen.getByText('베이스:')).toBeInTheDocument();
     expect(screen.getByText('이베이스')).toBeInTheDocument();
+  });
+
+  it('세션 미배정 팀원은 보유 스킬을 세션처럼 보여주지 않는다', () => {
+    renderWithQuery(
+      <TeamDetailView
+        {...defaultProps}
+        members={[{ ...MOCK_MEMBERS[1], skillType: null }]}
+      />,
+    );
+
+    expect(screen.getByText('이베이스')).toBeInTheDocument();
+    expect(screen.queryByText('베이스:')).not.toBeInTheDocument();
   });
 
   it('수정 버튼 클릭 시 onToggleEdit 콜백을 호출한다', () => {
