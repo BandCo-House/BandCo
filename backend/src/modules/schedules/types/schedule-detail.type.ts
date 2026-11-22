@@ -12,6 +12,7 @@ export interface ScheduleParticipantDetail {
   bandMemberId: string;
   userId: string;
   nickname: string;
+  handle: string | null;
   avatarUrl: string | null;
   attendanceStatus: string | null;
   note: string | null;
@@ -21,7 +22,7 @@ export interface ScheduleParticipantDetail {
 export interface SchedulePlaceDetail {
   placeId: string;
   name: string;
-  address: string;
+  address: string | null;
 }
 
 export interface GetScheduleDetailResult {

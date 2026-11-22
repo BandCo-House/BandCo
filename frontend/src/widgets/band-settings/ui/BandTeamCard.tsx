@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ChevronRight, ChevronUp } from 'lucide-react';
 import { useTeamMembers } from '@/entities/team/api/queries';
-import type { BandTeamListItem, TeamMember } from '@/entities/team/model/types';
+import type { BandTeamListItem } from '@/entities/team/model/types';
 import { ProfileChip } from '@/entities/user';
 import { cardSurfaceClass } from '@/shared/ui/card-surface';
 import { Checkbox } from '@/shared/ui/checkbox';
@@ -24,13 +24,6 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(true);
   const { data: members = [] } = useTeamMembers(team.teamId);
-
-  const getSessionName = (member: TeamMember, idx: number) => {
-    if (member.skills && member.skills.length > 0) {
-      return member.skills.map((s) => s.skillName).join(', ');
-    }
-    return member.sessionName || `세션${idx + 1}`;
-  };
 
   const handleCardClick = () => {
     navigate({
@@ -81,12 +74,14 @@ export const BandTeamCard: React.FC<BandTeamCardProps> = ({
 
       {/* 2. 세션 요약 (예: 기타: 김민준  베이스: 김루나 …).
           한 줄로 묶고 넘치면 말줄임한다. 줄바꿈을 허용하면 팀원이 많을수록 요약이 서너 줄로
-          늘어나, 아래 펼쳐 보는 팀원 목록보다 요약이 더 길어진다. 전체는 펼치면 보인다. */}
+          늘어나, 아래 펼쳐 보는 팀원 목록보다 요약이 더 길어진다. 전체는 펼치면 보인다.
+          세션은 팀 배정(skillType)만 쓴다. 미배정이면 보유 스킬 대신 이름만 둔다. */}
       {members.length > 0 && (
         <p className="truncate typo-xs-r text-grey-200">
-          {members.map((member, idx) => (
+          {members.map((member) => (
             <span key={member.teamMemberId} className="mr-3 last:mr-0">
-              {getSessionName(member, idx)}: {member.user.nickname}
+              {member.skillType && `${member.skillType.name}: `}
+              {member.user.nickname}
             </span>
           ))}
         </p>

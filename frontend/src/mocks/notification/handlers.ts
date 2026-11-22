@@ -176,6 +176,16 @@ export const notificationHandlers = [
       },
     });
   }),
+  http.delete(`${API_URL}/notifications/all`, () => {
+    const deletedCount = mockNotifications.length;
+    mockNotifications = [];
+    return HttpResponse.json({
+      status: 'success',
+      error: null,
+      message: '전체 알림 삭제 성공',
+      data: { deletedCount },
+    });
+  }),
   http.delete(`${API_URL}/notifications`, async ({ request }) => {
     const body = (await request.json()) as { notificationIds: string[] };
 

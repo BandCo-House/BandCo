@@ -196,7 +196,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
             bandMember: {
               select: {
                 userId: true,
-                user: { select: { profile: { select: { nickname: true, avatarUrl: true } } } },
+                user: { select: { profile: { select: { nickname: true, handle: true, avatarUrl: true } } } },
               },
             },
           },
@@ -228,6 +228,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
           bandMemberId: p.bandMemberId,
           userId: p.bandMember.userId,
           nickname: p.bandMember.user.profile?.nickname ?? '',
+          handle: p.bandMember.user.profile?.handle ?? null,
           avatarUrl: p.bandMember.user.profile?.avatarUrl ?? null,
           attendanceStatus: p.attendanceStatus ?? null,
           note: p.note ?? null,
@@ -518,7 +519,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
             bandMember: {
               select: {
                 userId: true,
-                user: { select: { profile: { select: { nickname: true, avatarUrl: true } } } },
+                user: { select: { profile: { select: { nickname: true, handle: true, avatarUrl: true } } } },
               },
             },
           },
@@ -553,6 +554,7 @@ export class SchedulesPrismaRepository implements SchedulesRepository {
         participants: this.dedupeParticipantRowsByMember(row.participants).map(p => ({
           bandMemberId: p.bandMemberId,
           nickname: p.bandMember.user.profile?.nickname ?? '',
+          handle: p.bandMember.user.profile?.handle ?? null,
           profileImageUrl: p.bandMember.user.profile?.avatarUrl ?? null,
         })),
         memo: row.memo,

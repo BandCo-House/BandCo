@@ -591,6 +591,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true,
+                handle: true,
                 avatarUrl: true,
               },
             },
@@ -663,6 +664,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true,
+                handle: true,
               },
             },
           },
@@ -907,6 +909,7 @@ export class BandsPrismaRepository implements BandsRepository {
                 profile: {
                   select: {
                     nickname: true,
+                    handle: true,
                   },
                 },
               },
@@ -981,6 +984,7 @@ export class BandsPrismaRepository implements BandsRepository {
                 profile: {
                   select: {
                     nickname: true,
+                    handle: true,
                   },
                 },
               },
@@ -1037,6 +1041,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true,
+                handle: true,
                 avatarUrl: true,
               },
             },
@@ -1164,6 +1169,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true,
+                handle: true,
                 avatarUrl: true,
               },
             },
@@ -1694,6 +1700,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true;
+                handle: true;
                 avatarUrl: true;
               };
             };
@@ -1715,6 +1722,7 @@ export class BandsPrismaRepository implements BandsRepository {
       bandMemberId: member.id,
       userId: member.userId,
       nickname: member.user.profile?.nickname ?? '',
+      handle: member.user.profile?.handle ?? null,
       avatarUrl: member.user.profile?.avatarUrl ?? null,
       role: member.role,
       joinedAt: member.joinedAt.toISOString(),
@@ -1735,6 +1743,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true;
+                handle: true;
               };
             };
           };
@@ -1757,6 +1766,7 @@ export class BandsPrismaRepository implements BandsRepository {
       bandMaster: {
         userId: band.bandMasterUserId,
         nickname: band.bandMasterUser.profile?.nickname ?? '',
+        handle: band.bandMasterUser.profile?.handle ?? null,
       },
       createdAt: band.createdAt.toISOString(),
     };
@@ -1843,6 +1853,7 @@ export class BandsPrismaRepository implements BandsRepository {
                 profile: {
                   select: {
                     nickname: true;
+                    handle: true;
                   };
                 };
               };
@@ -1862,6 +1873,7 @@ export class BandsPrismaRepository implements BandsRepository {
       inviter: {
         userId: invitation.inviterBandMember.userId,
         nickname: invitation.inviterBandMember.user.profile?.nickname ?? '',
+        handle: invitation.inviterBandMember.user.profile?.handle ?? null,
       },
       message: invitation.message,
       invitationStatus: invitation.status,
@@ -1886,6 +1898,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true;
+                handle: true;
                 avatarUrl: true;
               };
             };
@@ -1905,6 +1918,7 @@ export class BandsPrismaRepository implements BandsRepository {
       invitee: {
         userId: invitation.inviteeUserId,
         nickname: invitation.inviteeUser.profile?.nickname ?? '',
+        handle: invitation.inviteeUser.profile?.handle ?? null,
         avatarUrl: invitation.inviteeUser.profile?.avatarUrl ?? null,
       },
       invitationStatus: invitation.status,
@@ -1950,6 +1964,7 @@ export class BandsPrismaRepository implements BandsRepository {
             profile: {
               select: {
                 nickname: true;
+                handle: true;
                 avatarUrl: true;
               };
             };
@@ -1963,6 +1978,7 @@ export class BandsPrismaRepository implements BandsRepository {
       requester: {
         userId: joinRequest.userId,
         nickname: joinRequest.user.profile?.nickname ?? '',
+        handle: joinRequest.user.profile?.handle ?? null,
         avatarUrl: joinRequest.user.profile?.avatarUrl ?? null,
       },
       message: joinRequest.message,

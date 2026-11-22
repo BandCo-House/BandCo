@@ -45,15 +45,15 @@ const DEFAULT_POLL: SchedulePollData = {
       startAt: '2026-09-13T12:00:00.000Z',
       endAt: '2026-09-13T14:00:00.000Z',
       voters: [
-        { bandMemberId: BAND_MEMBER_ID, userId: USER_ID, nickname: '준혁', avatarUrl: null },
-        { bandMemberId: OTHER_MEMBER_ID, userId: '88888888-8888-4888-8888-888888888888', nickname: '단비', avatarUrl: null },
+        { bandMemberId: BAND_MEMBER_ID, userId: USER_ID, nickname: '준혁', handle: null, avatarUrl: null },
+        { bandMemberId: OTHER_MEMBER_ID, userId: '88888888-8888-4888-8888-888888888888', nickname: '단비', handle: null, avatarUrl: null },
       ],
     },
     {
       schedulePollOptionId: OPTION_ID_2,
       startAt: '2026-09-14T12:00:00.000Z',
       endAt: '2026-09-14T14:00:00.000Z',
-      voters: [{ bandMemberId: BAND_MEMBER_ID, userId: USER_ID, nickname: '준혁', avatarUrl: null }],
+      voters: [{ bandMemberId: BAND_MEMBER_ID, userId: USER_ID, nickname: '준혁', handle: null, avatarUrl: null }],
     },
   ],
   myOptionIds: [OPTION_ID_1, OPTION_ID_2],

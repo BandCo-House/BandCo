@@ -11,6 +11,7 @@ describe('SegmentedToggle', () => {
   it('선택된 옵션을 aria-pressed로 표시한다', () => {
     render(
       <SegmentedToggle
+        tone="view"
         options={[...options]}
         value="mine"
         onChange={vi.fn()}
@@ -30,6 +31,7 @@ describe('SegmentedToggle', () => {
     const onChange = vi.fn();
     render(
       <SegmentedToggle
+        tone="view"
         options={[...options]}
         value="mine"
         onChange={onChange}

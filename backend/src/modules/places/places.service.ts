@@ -44,6 +44,8 @@ export class PlacesService {
         throw new ForbiddenException('밴드 멤버만 장소를 생성할 수 있습니다.');
       }
 
+      this.validateCoordinates(input);
+
       return this.placesRepository.createPlace(bandId, input, client);
     };
 
@@ -137,6 +139,8 @@ export class PlacesService {
         throw new BadRequestException('수정할 장소 정보가 필요합니다.');
       }
 
+      this.validateCoordinates(input);
+
       return this.placesRepository.updatePlace(placeId, input, client);
     };
 
@@ -183,6 +187,24 @@ export class PlacesService {
     }
 
     return this.prisma.$transaction(run);
+  }
+
+  /**
+   * 좌표는 주소와 함께 지도 검색으로 고른 위치에서만 온다.
+   * 한쪽만 있거나 주소 없이 좌표만 있으면 지도 링크가 엉뚱한 곳을 가리킨다.
+   */
+  private validateCoordinates(input: { address?: string | null; latitude?: number | null; longitude?: number | null }): void {
+    // PATCH에서는 null이 "지움"이라, 좌표가 실제로 실렸는지는 null까지 걸러서 본다.
+    const hasLatitude = input.latitude != null;
+    const hasLongitude = input.longitude != null;
+
+    if (hasLatitude !== hasLongitude) {
+      throw new BadRequestException('latitude와 longitude는 함께 전달해야 합니다.');
+    }
+
+    if (hasLatitude && input.address == null) {
+      throw new BadRequestException('좌표는 address와 함께 전달해야 합니다.');
+    }
   }
 
   private validateCursorPair(query: GetBandPlacesQuery): void {

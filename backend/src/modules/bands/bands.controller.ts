@@ -197,8 +197,12 @@ export class BandsController {
   @ApiOperation({ summary: '밴드 멤버 목록 조회' })
   @ApiParam({ name: 'bandId', description: '밴드 ID (UUID)', type: String })
   @ApiResponse({ status: 200, description: '밴드 멤버 목록 조회 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 bandId 형식 또는 조회 조건' })
   @ApiResponse({ status: 404, description: '밴드를 찾을 수 없음' })
-  async getBandMembers(@Param('bandId') bandId: string, @Query() query: GetBandMembersQueryDto): Promise<ApiSuccessResponse<GetBandMembersResult>> {
+  async getBandMembers(
+    @Param('bandId', ParseUUIDPipe) bandId: string,
+    @Query() query: GetBandMembersQueryDto,
+  ): Promise<ApiSuccessResponse<GetBandMembersResult>> {
     const members = await this.bandsService.getBandMembers(bandId, query);
 
     return createSuccessResponse('밴드 내 멤버 조회 완료', members);

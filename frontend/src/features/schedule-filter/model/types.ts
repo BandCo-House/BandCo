@@ -10,7 +10,7 @@ export interface ScheduleTypeOption {
 
 export const SCHEDULE_TYPE_OPTIONS: ScheduleTypeOption[] = [
   { label: '전체', value: undefined },
-  { label: '합주', value: 'PRACTICE' },
+  { label: '연습', value: 'PRACTICE' },
   { label: '회의', value: 'MEETING' },
 ];
 

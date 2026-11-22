@@ -77,8 +77,14 @@ export const MemberSearchModal = ({
   );
 
   const keyword = query.trim();
+  const lowerKeyword = keyword.toLowerCase();
+  // 고유 ID는 서버 검색과 같이 대소문자를 가리지 않는다.
   const filteredMembers = keyword
-    ? members.filter((m) => m.nickname.includes(keyword))
+    ? members.filter(
+        (m) =>
+          m.nickname.includes(keyword) ||
+          (m.handle?.toLowerCase().includes(lowerKeyword) ?? false),
+      )
     : members;
   const filteredTeams = keyword
     ? teams.filter((t) => t.name.includes(keyword))
@@ -96,8 +102,8 @@ export const MemberSearchModal = ({
         </DialogTitle>
         <DialogDescription className="sr-only">
           {canSelectTeam
-            ? '이름으로 멤버 또는 팀을 검색해 참여자로 추가합니다.'
-            : '이름으로 멤버를 검색해 선택합니다.'}
+            ? '이름이나 고유 ID로 멤버를, 이름으로 팀을 검색해 참여자로 추가합니다.'
+            : '이름이나 고유 ID로 멤버를 검색해 선택합니다.'}
         </DialogDescription>
 
         <div className="relative z-10 flex items-center gap-8">
@@ -137,7 +143,7 @@ export const MemberSearchModal = ({
           onChange={(event) => setQuery(event.target.value)}
           placeholder={
             tab === 'member'
-              ? '이름으로 멤버를 검색하세요'
+              ? '이름, ID로 멤버를 검색하세요'
               : '이름으로 팀을 검색하세요'
           }
           className="relative z-10 h-[54px] border-white/24 bg-grey-500/24 pl-12 typo-base-sb"
@@ -178,6 +184,7 @@ export const MemberSearchModal = ({
                       variant="search"
                       selected={selected.has(member.bandMemberId)}
                       nickname={member.nickname}
+                      handle={member.handle}
                       avatarUrl={member.avatarUrl}
                       sessionName={calcPrimarySkillName(member.skills)}
                     />

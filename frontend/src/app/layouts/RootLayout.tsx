@@ -2,6 +2,7 @@ import { useLayoutEffect } from 'react';
 import { Outlet, useMatches, useRouterState } from '@tanstack/react-router';
 import { useAuth } from '@/app/providers/auth-context';
 import { cn } from '@/shared/lib/utils';
+import { useScrollLockGuard } from '@/shared/lib/use-scroll-lock-guard';
 import {
   RouteHeader,
   type RouteStaticData,
@@ -32,6 +33,8 @@ const HEIGHT_FALLBACKS = {
 };
 
 export const RootLayout = () => {
+  // 모달이 열린 동안 스크롤바 끌기로 배경이 움직이지 않게 한다(index.css 참고).
+  useScrollLockGuard();
   const matches = useMatches();
   const { user } = useAuth();
   const activeMatch = matches.at(-1);

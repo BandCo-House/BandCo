@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { lengthValidationMessage } from 'src/common/validation-message/length-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
+import { NICKNAME_MAX_LENGTH, nicknameLengthPattern } from 'src/modules/users/constants/user-profile.constant';
 
 export class RegisterEmailDto {
   @ApiProperty({ description: '이메일 주소', example: 'user@example.com' })
@@ -22,9 +23,8 @@ export class RegisterEmailDto {
   })
   password: string;
 
-  @ApiProperty({ description: '닉네임 (프로필 닉네임으로 저장된다)', example: '홍길동' })
+  @ApiProperty({ description: '닉네임 (2~20자, 프로필 닉네임으로 저장된다)', example: '홍길동' })
   @IsString({ message: stringValidationMessage })
-  @MinLength(2, { message: lengthValidationMessage })
-  @MaxLength(255, { message: lengthValidationMessage })
+  @Matches(nicknameLengthPattern(2), { message: `nickname은(는) 2~${NICKNAME_MAX_LENGTH}사이 글자를 입력해주세요` })
   nickname: string;
 }

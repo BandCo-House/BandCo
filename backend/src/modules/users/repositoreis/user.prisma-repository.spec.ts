@@ -10,7 +10,7 @@ import { UsersPrismaRepository } from './user.prisma-repository';
 const mockPrisma = {
   user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
   userSanction: { findFirst: jest.fn() },
-  userProfile: { create: jest.fn(), update: jest.fn() },
+  userProfile: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },
   profileMusic: { findUnique: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
   userSkill: { deleteMany: jest.fn(), createMany: jest.fn() },
   favoriteGenre: { deleteMany: jest.fn(), createMany: jest.fn() },
@@ -32,7 +32,7 @@ const userRecord = {
   email: 'test@example.com',
   status: 'ACTIVE',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  profile: { nickname: 'testuser', selfDescription: '안녕', avatarUrl: null },
+  profile: { nickname: 'testuser', handle: 'devjun', handleChangedAt: null, selfDescription: '안녕', avatarUrl: null },
   profileMusic: null,
   userSkills: [{ skillTypeId: 'skill-001', skillLevel: 'ADVANCED', isPrimary: true, skillType: { name: 'GUITAR' } }],
   favoriteGenres: [{ genreId: 'genre-001', genre: { name: 'ROCK' } }],
@@ -285,9 +285,84 @@ describe('UsersPrismaRepository', () => {
       email: 'test@example.com',
       status: 'ACTIVE',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      profile: { nickname: 'testuser', avatarUrl: null },
+      profile: { nickname: 'testuser', handle: 'devjun', avatarUrl: null },
       userSkills: [],
     };
+
+    it('목록 항목에 고유 ID를 담고, 정하지 않은 유저는 null이다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([
+        listRecord,
+        { ...listRecord, id: 'user-002', profile: { nickname: 'other', handle: null, avatarUrl: null } },
+      ]);
+
+      const result = await repository.findUsers(defaultQuery);
+
+      expect(result.items.map(item => item.handle)).toEqual(['devjun', null]);
+    });
+
+    it('where__keyword__contain이 있으면 닉네임·고유 ID 부분 일치와 이메일 완전 일치를 OR로 묶는다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({ ...defaultQuery, where__keyword__contain: 'devjun' });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where).toEqual({
+        deletedAt: null,
+        OR: [
+          { profile: { nickname: { contains: 'devjun', mode: 'insensitive' } } },
+          { profile: { handle: { contains: 'devjun', mode: 'insensitive' } } },
+          { email: { equals: 'devjun', mode: 'insensitive' } },
+        ],
+      });
+    });
+
+    it('검색어의 %·_를 이스케이프해 와일드카드로 쓰이지 않게 한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({ ...defaultQuery, where__keyword__contain: 'a%_b@gmail.com' });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where.OR).toEqual([
+        { profile: { nickname: { contains: 'a\\%\\_b@gmail.com', mode: 'insensitive' } } },
+        { profile: { handle: { contains: 'a\\%\\_b@gmail.com', mode: 'insensitive' } } },
+        { email: { equals: 'a\\%\\_b@gmail.com', mode: 'insensitive' } },
+      ]);
+    });
+
+    it('where__keyword__contain과 where__nickname__contain이 함께 오면 두 조건을 모두 만족해야 한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({ ...defaultQuery, where__nickname__contain: 'nick', where__keyword__contain: 'devjun' });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where.profile).toEqual({ nickname: { contains: 'nick', mode: 'insensitive' } });
+      expect(callArgs.where.OR).toHaveLength(3);
+      expect(callArgs.where).not.toHaveProperty('keyword');
+    });
+
+    it('where__keyword__contain과 커서가 함께 오면 커서 조건은 AND, 검색 조건은 OR로 공존한다', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      await repository.findUsers({
+        ...defaultQuery,
+        where__keyword__contain: 'devjun',
+        cursor__id: 'cursor-uuid',
+        cursor__created_at: '2026-01-01T00:00:00.000Z',
+      });
+
+      const callArgs = mockPrisma.user.findMany.mock.calls[0]?.[0];
+      expect(callArgs.where.AND[0].OR).toHaveLength(2);
+      expect(callArgs.where.OR).toHaveLength(3);
+    });
+
+    it('다음 페이지 URL에 where__keyword__contain을 이어 붙인다', async () => {
+      const second = { ...listRecord, id: 'user-002', createdAt: new Date('2025-12-01T00:00:00.000Z') };
+      mockPrisma.user.findMany.mockResolvedValue([listRecord, second]);
+
+      const result = await repository.findUsers({ ...defaultQuery, take: 2, where__keyword__contain: 'devjun' });
+
+      expect(result.meta.next).toContain('where__keyword__contain=devjun');
+    });
 
     it('유저에게 세션이 있을 때, 목록 항목은 세션 이름과 대표 여부를 함께 담아야 한다', async () => {
       mockPrisma.user.findMany.mockResolvedValue([
@@ -374,13 +449,13 @@ describe('UsersPrismaRepository', () => {
   });
 
   describe('softDeleteUser', () => {
-    it('deletedAt과 status를 업데이트하고 결과를 반환한다', async () => {
+    it('deletedAt과 status를 업데이트하고 고유 ID를 풀어 결과를 반환한다', async () => {
       const now = new Date();
       mockPrisma.user.update.mockResolvedValue({ id: 'user-001', deletedAt: now });
       const result = await repository.softDeleteUser('user-001');
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-001', deletedAt: null },
-        data: { deletedAt: expect.any(Date), status: 'INACTIVE' },
+        data: { deletedAt: expect.any(Date), status: 'INACTIVE', profile: { update: { handle: null, handleChangedAt: null } } },
         select: { id: true, deletedAt: true },
       });
       expect(result?.userId).toBe('user-001');
@@ -420,6 +495,8 @@ describe('UsersPrismaRepository', () => {
       expect(result?.user.id).toBe('user-001');
       expect(result?.user.createdAt).toBe('2026-01-01T00:00:00.000Z');
       expect(result?.profile?.nickname).toBe('testuser');
+      expect(result?.profile?.handle).toBe('devjun');
+      expect(result?.profile?.handleChangedAt).toBeNull();
       expect(result?.profile?.profileMusic).toBeNull();
       expect(result).not.toHaveProperty('profileMusic');
       expect(result?.skills[0]).toEqual({ skillTypeId: 'skill-001', skillName: 'GUITAR', level: 'ADVANCED', isPrimary: true });
@@ -572,6 +649,83 @@ describe('UsersPrismaRepository', () => {
       const result = await repository.updateUserProfile('user-001', { profile: { nickname: '새닉네임' } });
       expect(result.user.id).toBe('user-001');
       expect(result.profile?.nickname).toBe('testuser');
+    });
+  });
+
+  describe('findUserIdByHandle', () => {
+    it('대소문자를 무시하고 같은 고유 ID를 가진 유저 id를 돌려준다', async () => {
+      mockPrisma.userProfile.findFirst.mockResolvedValue({ userId: 'user-002' });
+
+      const result = await repository.findUserIdByHandle('DevJun');
+
+      expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
+        where: { handle: { equals: 'DevJun', mode: 'insensitive' } },
+        select: { userId: true },
+      });
+      expect(result).toEqual({ id: 'user-002' });
+    });
+
+    it('쓰는 유저가 없으면 null을 돌려준다', async () => {
+      mockPrisma.userProfile.findFirst.mockResolvedValue(null);
+
+      expect(await repository.findUserIdByHandle('devjun')).toBeNull();
+    });
+
+    it('밑줄이 아무 글자와 일치하지 않도록 이스케이프해서 조회한다', async () => {
+      mockPrisma.userProfile.findFirst.mockResolvedValue(null);
+
+      await repository.findUserIdByHandle('dev_');
+
+      expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
+        where: { handle: { equals: 'dev\\_', mode: 'insensitive' } },
+        select: { userId: true },
+      });
+    });
+  });
+
+  describe('findHandleState', () => {
+    it('탈퇴하지 않은 유저의 고유 ID와 쿨다운 기준 시각만 조회한다', async () => {
+      const changedAt = new Date('2026-10-19T06:00:00.000Z');
+      mockPrisma.userProfile.findFirst.mockResolvedValue({ handle: 'devjun', handleChangedAt: changedAt });
+
+      const result = await repository.findHandleState('user-001');
+
+      expect(mockPrisma.userProfile.findFirst).toHaveBeenCalledWith({
+        where: { userId: 'user-001', user: { deletedAt: null } },
+        select: { handle: true, handleChangedAt: true },
+      });
+      expect(result).toEqual({ handle: 'devjun', handleChangedAt: changedAt });
+    });
+  });
+
+  describe('updateHandle', () => {
+    const input = { currentHandle: 'devjnu', newHandle: 'devjun', changedAt: new Date('2026-10-19T06:00:00.000Z') };
+
+    it('현재 고유 ID가 읽은 값과 같을 때만 저장한다', async () => {
+      mockPrisma.userProfile.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await repository.updateHandle('user-001', input);
+
+      expect(mockPrisma.userProfile.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-001', handle: 'devjnu', user: { deletedAt: null } },
+        data: { handle: 'devjun', handleChangedAt: input.changedAt },
+      });
+      expect(result).toBe(true);
+    });
+
+    it('다른 요청이 먼저 바꿔 갱신된 행이 없으면 false를 돌려준다', async () => {
+      mockPrisma.userProfile.updateMany.mockResolvedValue({ count: 0 });
+
+      expect(await repository.updateHandle('user-001', input)).toBe(false);
+    });
+
+    it('tx가 전달되면 tx 클라이언트를 사용한다', async () => {
+      const txClient = { userProfile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) } };
+
+      await repository.updateHandle('user-001', input, txClient as unknown as Prisma.TransactionClient);
+
+      expect(txClient.userProfile.updateMany).toHaveBeenCalled();
+      expect(mockPrisma.userProfile.updateMany).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,6 +1,4 @@
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
-import ViewGridIcon from '@/assets/icons/view-grid.svg?react';
-import ViewListIcon from '@/assets/icons/view-list.svg?react';
 import { addDays, addMonths, getWeekOfMonth } from '@/shared/lib/date';
 import { cn } from '@/shared/lib/utils';
 import {
@@ -10,9 +8,11 @@ import {
 
 export type CalendarView = 'month' | 'week';
 
+// 아이콘(⊞/☰)만 있던 전환을 글자로 바꾼다. UT에서 월 보기를 원했는데, 이미 있는 월 보기를
+// 아이콘만 보고는 찾지 못했다.
 const VIEW_OPTIONS: SegmentedOption<CalendarView>[] = [
-  { value: 'month', label: '월별 보기', icon: ViewGridIcon },
-  { value: 'week', label: '주별 보기', icon: ViewListIcon },
+  { value: 'week', label: '주간' },
+  { value: 'month', label: '월간' },
 ];
 
 // 보기 단위에 따라 화살표가 옮기는 폭과 제목이 달라진다.
@@ -32,8 +32,10 @@ const VIEW_NAV: Record<
   week: {
     unit: '주',
     move: (date, direction) => addDays(date, direction * 7),
+    // 올해면 연도를 뺀다. "주간/월간" 글자 토글과 화살표 두 개가 한 줄에 들어가면 연도까지
+    // 붙은 제목(약 140px)이 375px 이하 화면에서 오른쪽 화살표와 겹쳤다. 합주 기간 칩과 같은 규칙이다.
     title: (date) =>
-      `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${getWeekOfMonth(date)}주차`,
+      `${date.getFullYear() === new Date().getFullYear() ? '' : `${date.getFullYear()}년 `}${date.getMonth() + 1}월 ${getWeekOfMonth(date)}주차`,
   },
 };
 
@@ -61,7 +63,9 @@ export const CalendarNav = ({
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <SegmentedToggle
+        tone="view"
         variant="tab"
+        size="sm"
         label="캘린더 보기 방식"
         className="shrink-0"
         options={VIEW_OPTIONS}

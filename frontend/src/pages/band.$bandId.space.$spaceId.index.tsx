@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { SpaceHeaderTitle } from '@/widgets/space-tabs';
 import { renderSpaceTabs } from './-space-header';
 import { SpaceCalendar } from '@/widgets/space-calendar/ui/SpaceCalendar';
 import { SpaceEditAction } from '@/widgets/space-calendar/ui/SpaceEditAction';
@@ -9,8 +10,7 @@ export const Route = createFileRoute('/band/$bandId/space/$spaceId/')({
     // 캘린더가 화면 끝까지 닿아야 해서 가로 여백만 흘린다(세로는 레이아웃이 유지).
     bleed: 'x',
     header: {
-      // 공간 이름/설명은 본문 요약 헤더에서 보여주므로 앱바 제목은 작은 고정 라벨을 쓴다.
-      title: '내 합주',
+      title: SpaceHeaderTitle,
       backTo: '/band/$bandId',
       getBackParams: (params: Record<string, string>) => ({
         bandId: params.bandId,

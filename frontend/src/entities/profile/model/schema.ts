@@ -29,6 +29,9 @@ export const profileUserDetailSchema = z.object({
 
 export const profileDetailSchema = z.object({
   nickname: z.string(),
+  handle: z.string().nullable(),
+  /** 다음 고유 ID 변경 가능 시각(ISO). 본인 조회이면서 7일 제한 중일 때만 값이 있다. */
+  handleChangeableAt: z.string().nullable(),
   selfDescription: z.string().nullable(),
   profileMusic: profileMusicSchema.nullable(),
   avatarUrl: z.string().nullable(),

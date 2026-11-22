@@ -25,6 +25,7 @@ const formatTimeChip = (time: string): string => {
 };
 
 interface SlotChipProps {
+  id?: string;
   /** 스크린리더용 이름(예: '시작 날짜'). 화면에는 값만 보인다. */
   name: string;
   value: string;
@@ -32,8 +33,15 @@ interface SlotChipProps {
   onClick: () => void;
 }
 
-const SlotChip = ({ name, value, isActive, onClick }: SlotChipProps) => (
+export const SlotChip = ({
+  id,
+  name,
+  value,
+  isActive,
+  onClick,
+}: SlotChipProps) => (
   <button
+    id={id}
     type="button"
     aria-label={`${name} ${value}`}
     aria-pressed={isActive}

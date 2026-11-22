@@ -62,7 +62,7 @@ const DEFAULT_GET_TEAM_RESULT: GetTeamResult = {
   description: null,
   status: 'ACTIVE',
   teamCoverUrl: null,
-  teamLeader: { userId: USER_ID, nickname: '리더' },
+  teamLeader: { userId: USER_ID, nickname: '리더', handle: null },
   memberCount: 1,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
@@ -75,7 +75,7 @@ const DEFAULT_UPDATE_RESULT: UpdateTeamResult = {
   description: null,
   status: 'ACTIVE',
   teamCoverUrl: null,
-  teamLeader: { userId: USER_ID, nickname: '리더' },
+  teamLeader: { userId: USER_ID, nickname: '리더', handle: null },
   memberCount: 1,
   updatedAt: '2026-01-02T00:00:00.000Z',
 };
@@ -99,7 +99,7 @@ const DEFAULT_MY_TEAMS_RESULT: GetMyTeamsResult = {
 
 const DEFAULT_CHANGE_LEADER_RESULT: ChangeTeamLeaderResult = {
   teamId: TEAM_ID,
-  teamLeader: { userId: '99999999-9999-4999-8999-999999999999', nickname: '새 리더' },
+  teamLeader: { userId: '99999999-9999-4999-8999-999999999999', nickname: '새 리더', handle: null },
 };
 
 const DEFAULT_REMOVE_RESULT: RemoveTeamMemberResult = {
@@ -111,7 +111,7 @@ const DEFAULT_ADD_MEMBER_RESULT: AddTeamMemberResult = {
   teamMemberId: OTHER_TEAM_MEMBER_ID,
   teamId: TEAM_ID,
   bandMemberId: OTHER_BAND_MEMBER_ID,
-  user: { userId: USER_ID, nickname: '새 멤버', profileImageUrl: null },
+  user: { userId: USER_ID, nickname: '새 멤버', handle: null, profileImageUrl: null },
   teamRole: 'MEMBER',
   joinedAt: '2026-01-01T00:00:00.000Z',
   skillType: null,

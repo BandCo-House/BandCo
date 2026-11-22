@@ -27,6 +27,8 @@ export const buttonVariants = cva(
         lg: 'typo-lg-b px-5 py-4',
         form: 'typo-lg-b p-5',
         pill: 'px-5 py-4',
+        // 폼 안쪽 보조 액션(곡 검색·＋링크·지도에서 찾기). 입력칸(54px)보다 낮아 옆에 놓아도 CTA로 읽히지 않는다.
+        inline: 'h-[46px] gap-1 px-4 typo-base-b',
         icon: 'size-10',
       },
       width: {

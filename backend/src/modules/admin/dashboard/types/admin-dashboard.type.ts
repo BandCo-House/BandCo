@@ -68,6 +68,7 @@ export type AdminDashboardFunnelRange = {
 export type AdminDashboardUserIdentity = {
   userId: string;
   nickname: string | null;
+  handle: string | null;
   email: string | null;
 };
 

@@ -78,7 +78,7 @@ function createBandsRepositoryStub(options?: {
   bandInvitationDetail?: {
     invitationId: string;
     band: { bandId: string; name: string; description: string | null };
-    inviter: { userId: string; nickname: string };
+    inviter: { userId: string; nickname: string; handle: string | null };
     message: string | null;
     invitationStatus: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
     createdAt: string;
@@ -301,6 +301,7 @@ function createBandsRepositoryStub(options?: {
             bandMemberId: 'band-member-001',
             userId: BAND_MASTER_USER_ID,
             nickname: 'Jun',
+            handle: null,
             avatarUrl: null,
             role: BandMemberRole.BM,
             joinedAt: '2026-04-10T00:00:00.000Z',
@@ -368,6 +369,7 @@ function createBandsRepositoryStub(options?: {
             inviter: {
               userId: BAND_MASTER_USER_ID,
               nickname: 'Jun',
+              handle: null,
             },
             message: '같이 밴드 하실래요?',
             invitationStatus: query.where__invitation_status,
@@ -401,6 +403,7 @@ function createBandsRepositoryStub(options?: {
             invitee: {
               userId: INVITEE_USER_ID,
               nickname: 'Choi',
+              handle: null,
               avatarUrl: null,
             },
             invitationStatus: query.where__invitation_status,
@@ -458,6 +461,7 @@ function createBandsRepositoryStub(options?: {
             requester: {
               userId: INVITEE_USER_ID,
               nickname: 'Choi',
+              handle: null,
               avatarUrl: null,
             },
             joinRequestStatus: query.where__join_request_status,
@@ -491,6 +495,7 @@ function createBandsRepositoryStub(options?: {
             bandMaster: {
               userId: BAND_MASTER_USER_ID,
               nickname: 'Jun',
+              handle: null,
             },
             createdAt: '2026-04-10T00:00:00.000Z',
           },
@@ -604,6 +609,7 @@ function createBandsRepositoryStub(options?: {
         inviter: {
           userId: BAND_MASTER_USER_ID,
           nickname: 'Jun',
+          handle: null,
         },
         message: '같이 밴드 하실래요?',
         invitationStatus: 'PENDING',
@@ -2103,6 +2109,7 @@ describe('BandsService', () => {
         inviter: {
           userId: BAND_MASTER_USER_ID,
           nickname: 'Jun',
+          handle: null,
         },
         message: '같이 밴드 하실래요?',
         invitationStatus: 'PENDING',

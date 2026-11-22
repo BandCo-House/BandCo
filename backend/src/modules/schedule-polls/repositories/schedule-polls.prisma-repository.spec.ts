@@ -48,6 +48,7 @@ const POLL_ROW = {
               profile: {
                 userId: USER_ID,
                 nickname: '준혁',
+                handle: null,
                 selfDescription: null,
                 avatarUrl: 'https://example.com/avatar.png',
                 updatedAt: null,
@@ -192,6 +193,7 @@ describe('SchedulePollsPrismaRepository', () => {
       bandMemberId: BAND_MEMBER_ID,
       userId: USER_ID,
       nickname: '준혁',
+      handle: null,
       avatarUrl: 'https://example.com/avatar.png',
     });
     expect(result.myOptionIds).toEqual([OPTION_ID]);

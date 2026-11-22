@@ -1,6 +1,7 @@
 export interface TeamMemberUserInfo {
   userId: string;
   nickname: string;
+  handle: string | null;
   profileImageUrl: string | null;
 }
 

@@ -18,6 +18,10 @@ import { BandInviteModal } from '@/features/band-invite/ui/BandInviteModal';
 import { UserBandsCarousel } from '@/widgets/band-list/ui/UserBandsCarousel';
 import { profileEditSchema } from '@/features/profile-update/model/schema';
 import { uploadFile } from '@/shared/api/upload';
+import { getApiErrorMessage } from '@/shared/api';
+import { changeHandle } from '@/features/profile-update/api/handle-api';
+import { useHandleField } from '@/features/profile-update/model/useHandleField';
+import { HandleEditField } from '@/features/profile-update/ui/HandleEditField';
 import { ProfileMusicSearchDialog } from '@/features/profile-update/ui/ProfileMusicSearchDialog';
 import {
   AppDialogBody,
@@ -115,6 +119,9 @@ function ProfileRoutePage() {
   const [isLeaveEditDialogOpen, setIsLeaveEditDialogOpen] = useState(false);
   const avatarPreviewUrlRef = useRef<string | null>(null);
   const { selectFile, cropDialogProps } = useImageCrop();
+  const handleField = useHandleField(profile?.profile?.handle ?? null);
+  // "고유 ID 정하기"로 들어왔으면 편집 화면에서 ID 칸부터 잡아 준다.
+  const [shouldFocusHandle, setShouldFocusHandle] = useState(false);
 
   // Invitation state
   const [isInviting, setIsInviting] = useState<boolean>(false);
@@ -160,6 +167,27 @@ function ProfileRoutePage() {
     }
 
     const validatedData = result.data;
+
+    if (handleField.saveBlockReason) {
+      toast.warning(handleField.saveBlockReason);
+      return;
+    }
+
+    // 고유 ID는 프로필 수정 API가 받지 않아 전용 API(#72)로 먼저 저장한다. 7일 제한·중복이
+    // 여기서 걸리면 나머지도 저장하지 않아야 사용자가 무엇이 저장됐는지 헷갈리지 않는다.
+    if (handleField.isChanged) {
+      try {
+        await changeHandle(targetUserId, handleField.value);
+        // 뒤의 프로필 저장이 실패해 다시 누를 때 같은 ID를 또 보내면 7일 제한에 걸린다.
+        // 새 ID를 바로 받아 두면 입력값이 현재 값과 같아져 다시 보내지 않는다.
+        await queryClient.invalidateQueries({
+          queryKey: ['user-profiles', 'detail', targetUserId],
+        });
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, '고유 ID를 저장하지 못했어요.'));
+        return;
+      }
+    }
 
     try {
       const profilePayload: NonNullable<UpdateProfileRequest['profile']> = {
@@ -215,11 +243,13 @@ function ProfileRoutePage() {
       profileMusic: profile?.profile?.profileMusic ?? null,
       avatarUrl: profile?.profile?.avatarUrl || '',
     });
+    handleField.reset();
     setAvatarFile(null);
   };
 
-  const enterEditMode = () => {
+  const enterEditMode = (focusHandle = false) => {
     resetEditForm();
+    setShouldFocusHandle(focusHandle);
     setIsEditing(true);
   };
 
@@ -286,6 +316,16 @@ function ProfileRoutePage() {
           onSave={handleSave}
           onAvatarFileSelect={selectFile}
           onOpenMusicSearch={() => setIsMusicSearchOpen(true)}
+          onStartHandleSetup={() => enterEditMode(true)}
+          handleEditor={
+            isMe ? (
+              <HandleEditField
+                field={handleField}
+                changeableAt={profile.profile?.handleChangeableAt ?? null}
+                autoFocus={shouldFocusHandle}
+              />
+            ) : null
+          }
         />
         <div className="bg-gradient-top pb-6">
           <div className="flex flex-col gap-2 px-5">

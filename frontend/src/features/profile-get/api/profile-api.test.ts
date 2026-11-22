@@ -21,6 +21,8 @@ describe('profile get 어댑터', () => {
       },
       profile: {
         nickname: '김민준',
+        handle: null,
+        handleChangeableAt: null,
         selfDescription: '기타리스트입니다',
         profileMusic: {
           externalTrackId: 'track-1',
@@ -85,6 +87,8 @@ describe('profile get 어댑터', () => {
       },
       profile: {
         nickname: '특수문자',
+        handle: null,
+        handleChangeableAt: null,
         selfDescription: null,
         profileMusic: null,
         avatarUrl: null,
