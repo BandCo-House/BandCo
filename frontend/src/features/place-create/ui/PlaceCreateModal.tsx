@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { MapPin, Upload } from 'lucide-react';
+import { MapPin, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { uploadFile } from '@/shared/api';
@@ -30,8 +30,9 @@ interface PlaceCreateModalProps {
 }
 
 /**
- * 연습 장소 추가(풀스크린). 이름·주소(필수)와 커버 이미지(선택)를 입력한다.
+ * 연습 장소 추가(풀스크린). 이름(필수), 주소·커버 이미지(선택)를 입력한다.
  * 주소는 직접 타이핑하지 않고 카카오맵 검색 모달에서 고른다(상세주소는 선택).
+ * "동방 1호"처럼 이름만으로 통하는 장소가 많아 주소는 백엔드·수정 화면과 같이 선택값이다.
  * 커버는 presigned 업로드로 objectUrl을 받아 imageUrl로 전송한다.
  */
 export const PlaceCreateModal = ({
@@ -94,6 +95,12 @@ export const PlaceCreateModal = ({
 
   const displayAddress = [address, detailAddress].filter(Boolean).join(' ');
 
+  const clearAddress = () => {
+    setAddress('');
+    setDetailAddress('');
+    setCoordinates(null);
+  };
+
   const handleCoverSelect = (event: ChangeEvent<HTMLInputElement>) => {
     selectFile(event.target.files?.[0]);
     // 같은 파일을 다시 골라도 change가 발생하도록 값을 비운다(크롭을 취소한 뒤 재시도).
@@ -106,11 +113,7 @@ export const PlaceCreateModal = ({
     setCoverPreview(URL.createObjectURL(file));
   };
 
-  const canSubmit =
-    name.trim().length > 0 &&
-    address.trim().length > 0 &&
-    !isPending &&
-    !isUploading;
+  const canSubmit = name.trim().length > 0 && !isPending && !isUploading;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -133,10 +136,15 @@ export const PlaceCreateModal = ({
     mutate(
       {
         name: name.trim(),
-        address: address.trim(),
+        // 주소·상세주소·좌표는 검색 모달에서 한 번에 고르므로 함께 보내거나 함께 뺀다.
         // 좌표는 백엔드 규칙대로 주소와 함께, 위도·경도를 쌍으로만 보낸다.
-        ...coordinates,
-        detailAddress: detailAddress.trim() || undefined,
+        ...(address.trim()
+          ? {
+              address: address.trim(),
+              ...coordinates,
+              detailAddress: detailAddress.trim() || undefined,
+            }
+          : {}),
         imageUrl,
       },
       {
@@ -197,7 +205,7 @@ export const PlaceCreateModal = ({
             />
           </Field>
 
-          <Field label="주소" required labelSize="lg" htmlFor="place-address">
+          <Field label="주소" labelSize="lg" htmlFor="place-address">
             <div className="flex items-center gap-1">
               {/* 직접 타이핑 대신 검색 모달로만 채운다. 칸을 눌러도 모달이 열린다. */}
               <Input
@@ -208,8 +216,18 @@ export const PlaceCreateModal = ({
                 readOnly
                 onClick={() => setIsAddressSearchOpen(true)}
                 placeholder="주소를 검색해주세요"
-                aria-required
               />
+              {/* 수정 화면(PlaceFormView)과 같이 고른 위치를 지울 수 있다. */}
+              {address && (
+                <button
+                  type="button"
+                  aria-label="위치 지우기"
+                  onClick={clearAddress}
+                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-grey-200 focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <X aria-hidden="true" className="size-5" />
+                </button>
+              )}
               <Button
                 type="button"
                 variant="accent"

@@ -94,12 +94,35 @@ describe('PlaceCreateModal', () => {
     );
   });
 
-  it('주소를 고르기 전에는 추가 버튼이 비활성화된다', async () => {
+  it('이름만 입력해도 추가할 수 있고, 주소·좌표 없이 보낸다', async () => {
+    const user = userEvent.setup();
+    render(<PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />);
+
+    // "동방 1호"처럼 주소로 잡히지 않는 장소가 많아 주소는 선택값이다(백엔드·수정 화면과 같다).
+    await user.type(screen.getByLabelText(/장소 이름/), '동방 1호');
+    await user.click(screen.getByRole('button', { name: '추가' }));
+
+    expect(mocks.mutate).toHaveBeenCalledWith(
+      { name: '동방 1호', imageUrl: undefined },
+      expect.any(Object),
+    );
+  });
+
+  it('고른 위치를 지우면 주소·상세주소·좌표를 모두 빼고 보낸다', async () => {
     const user = userEvent.setup();
     render(<PlaceCreateModal open onOpenChange={vi.fn()} bandId="band-1" />);
 
     await user.type(screen.getByLabelText(/장소 이름/), '연습실 A');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.click(screen.getByRole('button', { name: '주소 고르기' }));
+    await user.click(screen.getByRole('button', { name: '위치 지우기' }));
 
-    expect(screen.getByRole('button', { name: '추가' })).toBeDisabled();
+    expect(screen.getByLabelText(/주소/)).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: '추가' }));
+
+    expect(mocks.mutate).toHaveBeenCalledWith(
+      { name: '연습실 A', imageUrl: undefined },
+      expect.any(Object),
+    );
   });
 });
