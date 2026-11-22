@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SongListItem } from '../model/types';
 import { SongLibraryItem } from './SongLibraryItem';
 
@@ -24,16 +23,8 @@ const song: SongListItem = {
   skills: [],
 };
 
-// 미리듣기는 externalTrackId로 트랙을 따로 조회하므로 query provider가 필요하다.
 const renderItem = (item: SongListItem = song) => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <SongLibraryItem song={item} />
-    </QueryClientProvider>,
-  );
+  return render(<SongLibraryItem song={item} />);
 };
 
 describe('SongLibraryItem', () => {
@@ -59,19 +50,19 @@ describe('SongLibraryItem', () => {
     );
   });
 
-  it('외부 트랙 ID가 없으면 재생 버튼을 노출하지 않는다', () => {
-    renderItem();
+  it('onClick이 없을 때는 버튼을 렌더링하지 않는다', () => {
+    renderItem({ ...song, externalTrackId: 'track-1' });
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('외부 트랙 ID가 있으면 재생을 누른 뒤 미리듣기를 불러온다', async () => {
-    const user = userEvent.setup();
-    renderItem({ ...song, externalTrackId: 'track-1' });
+  it('onClick이 전달되면 버튼으로 렌더링되고 클릭 시 핸들러가 호출된다', async () => {
+    const handleClick = vi.fn();
+    render(<SongLibraryItem song={song} onClick={handleClick} />);
 
-    await user.click(screen.getByRole('button', { name: '건널목 미리듣기' }));
+    const button = screen.getByRole('button', { name: '건널목 상세 보기' });
+    expect(button).toBeInTheDocument();
 
-    expect(
-      await screen.findByRole('button', { name: '건널목 미리듣기' }),
-    ).toBeInTheDocument();
+    await userEvent.click(button);
+    expect(handleClick).toHaveBeenCalledTimes(1);
   });
 });

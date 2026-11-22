@@ -19,7 +19,6 @@ import { PlaceFormView } from './PlaceFormView';
 interface PlaceDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  bandId: string;
   /**
    * 보여줄 장소. 닫을 때 같이 비우지 않는다 — 비우면 시트가 내려가는 동안
    * 내용이 먼저 사라져 빈 화면이 닫히는 것처럼 보인다.
@@ -36,7 +35,6 @@ interface PlaceDetailModalProps {
 export const PlaceDetailModal = ({
   open,
   onOpenChange,
-  bandId,
   place,
   canDelete,
 }: PlaceDetailModalProps) => {
@@ -116,7 +114,6 @@ export const PlaceDetailModal = ({
 
         {place && view === 'edit' && (
           <PlaceFormView
-            bandId={bandId}
             place={place}
             onCancel={() => setView('detail')}
             onSaved={() => setView('detail')}

@@ -12,7 +12,7 @@ import { useBandPlaces } from '@/entities/place/api/useBandPlaces';
 import { PlaceCard } from '@/entities/place/ui/PlaceCard';
 import { PlaceCreateModal } from '@/features/place-create/ui/PlaceCreateModal';
 import { PlaceDetailModal } from '@/features/place-create/ui/PlaceDetailModal';
-import { SongCreateModal } from '@/features/song-create';
+import { SongCreateModal, SongDetailModal } from '@/features/song-create';
 import { LibrarySectionHeader } from './LibrarySectionHeader';
 
 const PLACE_DELETABLE_ROLES = ['BM', 'ADMIN'];
@@ -55,6 +55,8 @@ export const BandLibrary = () => {
 
   const [isPlaceModalOpen, setIsPlaceModalOpen] = useState(false);
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
+  const [detailSongId, setDetailSongId] = useState<string | null>(null);
+  const [isSongDetailOpen, setIsSongDetailOpen] = useState(false);
   // 객체가 아니라 ID를 들고 목록에서 다시 찾는다. 수정 후 목록이 갱신되면
   // 열려 있는 상세도 새 값으로 바뀌어야 한다.
   const [detailPlaceId, setDetailPlaceId] = useState<string | null>(null);
@@ -66,6 +68,9 @@ export const BandLibrary = () => {
   const myRole = members.find((member) => member.userId === user.id)?.role;
   const canDeletePlace =
     myRole !== undefined && PLACE_DELETABLE_ROLES.includes(myRole);
+  const canDeleteSong = myRole !== undefined;
+  const detailSong =
+    songs.find((song) => song.id === detailSongId) ?? null;
   const detailPlace =
     places.find((place) => place.placeId === detailPlaceId) ?? null;
 
@@ -101,7 +106,13 @@ export const BandLibrary = () => {
           >
             {songs.map((song) => (
               <li key={song.id}>
-                <SongLibraryItem song={song} />
+                <SongLibraryItem
+                  song={song}
+                  onClick={() => {
+                    setDetailSongId(song.id);
+                    setIsSongDetailOpen(true);
+                  }}
+                />
               </li>
             ))}
           </ul>
@@ -153,10 +164,16 @@ export const BandLibrary = () => {
         bandId={bandId}
       />
 
+      <SongDetailModal
+        open={isSongDetailOpen}
+        onOpenChange={setIsSongDetailOpen}
+        song={detailSong}
+        canDelete={canDeleteSong}
+      />
+
       <PlaceDetailModal
         open={isPlaceDetailOpen}
         onOpenChange={setIsPlaceDetailOpen}
-        bandId={bandId}
         place={detailPlace}
         canDelete={canDeletePlace}
       />
