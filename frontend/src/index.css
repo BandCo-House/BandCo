@@ -99,7 +99,9 @@
      환경마다 0이거나 15px이라 본문·고정 바(헤더·하단 탭·FAB)가 좌우로 들썩였다.
      html이 스크롤을 직접 맡으면(overflow-y: scroll) body의 잠금이 화면으로 넘어가지 않아 스크롤바 자리가
      그대로 남는다. 자리가 남으니 Radix의 보정은 0으로 막는다 — 남기면 두 번 보정돼 본문이 왼쪽으로 밀린다.
-     휠·터치 스크롤은 Radix가 이벤트로 막으므로 잠금은 그대로 유지된다. */
+     다만 html이 스크롤을 쥐고 있으면 Radix는 휠·터치만 이벤트로 막고, 키보드(PageDown·End·Space)와
+     스크롤바 끌기는 막지 못한다. 잠긴 동안 html을 overflow: hidden으로 바꾸면 Chrome이 스크롤바 자리까지
+     없애 다시 들썩이므로, 그 스크롤은 useScrollLockGuard가 잠긴 위치로 되돌린다. */
   html body[data-scroll-locked] {
     margin-right: 0 !important;
   }
