@@ -280,6 +280,41 @@ describe('앱 라우터', () => {
     expect(await screen.findByTestId('home-page')).toBeInTheDocument();
   });
 
+  it('검색의 뒤로가기는 들어온 화면(내 밴드)으로 돌아간다', async () => {
+    const router = createRouterForTest('/my-bands', {
+      isLoggedIn: true,
+      isAdmin: false,
+      id: 'user-001',
+    });
+
+    renderWithRouter(router);
+    await screen.findByTestId('band-list');
+    // 사용자처럼 내 밴드 헤더의 검색 아이콘을 눌러 들어간다(하단 탭에도 "검색"이 있어 헤더로 좁힌다).
+    fireEvent.click(
+      within(screen.getByRole('banner')).getByRole('link', { name: '검색' }),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '뒤로 가기' }));
+
+    // 예전엔 '..'(= 홈)로 고정돼 있어 어디서 왔든 홈으로 갔다.
+    expect(await screen.findByTestId('band-list')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/my-bands');
+  });
+
+  it('검색을 주소로 바로 열었으면 뒤로가기는 홈으로 간다', async () => {
+    const router = createRouterForTest('/search', {
+      isLoggedIn: true,
+      isAdmin: false,
+      id: 'user-001',
+    });
+
+    renderWithRouter(router);
+
+    fireEvent.click(await screen.findByRole('button', { name: '뒤로 가기' }));
+
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
+  });
+
   it('공연 상세(캘린더)의 뒤로가기는 밴드 상세로 이동한다', async () => {
     const router = createRouterForTest('/band/1/space/1', {
       isLoggedIn: true,
@@ -311,7 +346,7 @@ describe('앱 라우터', () => {
       'aria-current',
       'page',
     );
-    expect(tabs.getByRole('link', { name: '홈' })).not.toHaveAttribute(
+    expect(tabs.getByRole('link', { name: '합주' })).not.toHaveAttribute(
       'aria-current',
     );
   });

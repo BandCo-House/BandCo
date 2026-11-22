@@ -24,7 +24,8 @@ interface SessionSectionProps {
 
 /**
  * 합주 전용 세션 편성.
- * 세션을 고른 뒤 멤버 입력을 눌러 한 명을 배정하면 카드 한 장이 생긴다.
+ * 멤버 입력을 눌러 한 명을 배정하면 카드 한 장이 생긴다. 세션을 먼저 고르면 그 세션에,
+ * 안 고르면 그 멤버의 대표 세션에 배정한다.
  * 같은 사람을 다른 세션에 또 배정할 수 있다(보컬 겸 기타).
  * 팀을 고르면 그 팀의 세션 배정을 그대로 옮겨 담는다.
  */
@@ -49,23 +50,29 @@ export const SessionSection = ({
   const memberById = new Map(members.map((m) => [m.bandMemberId, m]));
   const skillNameById = new Map(skillTypes.map((s) => [s.id, s.name]));
 
-  const openMemberPicker = () => {
-    if (!pendingSkillTypeId) {
-      toast.error('세션을 먼저 선택해주세요.');
-      return;
-    }
-    setIsModalOpen(true);
-  };
+  // 세션을 먼저 고르라고 막지 않는다. 막으면 순서가 있다는 걸 눌러 보기 전엔 알 수 없고
+  // (UT), 팀을 고를 때처럼 세션이 필요 없는 경우까지 막힌다.
+  const openMemberPicker = () => setIsModalOpen(true);
 
   // 세션 하나에 한 명. 같은 세션을 다시 배정하면 이전 멤버를 갈아끼운다.
+  // 세션을 안 골랐으면 대표 세션(없으면 첫 세션)으로 채운다. 바꾸려면 세션을 고르고 다시 배정한다.
   const assignMember = (member: BandMemberListItem) => {
-    if (!pendingSkillTypeId) return;
+    const skillTypeId =
+      pendingSkillTypeId ??
+      (member.skills.find((skill) => skill.isPrimary) ?? member.skills[0])
+        ?.skillTypeId;
+    if (!skillTypeId) {
+      toast.error(
+        `${member.nickname}님은 등록된 세션이 없어요. 세션을 골라 배정해주세요.`,
+      );
+      return;
+    }
     const withoutSameSession = value.filter(
-      (assignment) => assignment.skillTypeId !== pendingSkillTypeId,
+      (assignment) => assignment.skillTypeId !== skillTypeId,
     );
     onChange([
       ...withoutSameSession,
-      { skillTypeId: pendingSkillTypeId, bandMemberId: member.bandMemberId },
+      { skillTypeId, bandMemberId: member.bandMemberId },
     ]);
     setIsModalOpen(false);
   };
@@ -148,7 +155,8 @@ export const SessionSection = ({
               value: skill.id,
               label: skill.name,
             }))}
-            placeholder="전체"
+            // 안 고르면 멤버의 대표 세션으로 배정된다.
+            placeholder="대표 세션"
             ariaLabel="세션 선택"
           />
         </div>

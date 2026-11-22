@@ -80,7 +80,7 @@ export function TagSelectBottomSheet({
         side="bottom"
         showCloseButton={false}
         // 높이는 400px 고정(디자인). 목록이 길어져도 시트가 커지지 않고 칩 영역만 스크롤한다.
-        className="fixed right-[var(--removed-body-scroll-bar-size,0px)] bottom-0 left-0 mx-auto flex h-[400px] max-h-[400px] w-full max-w-[648px] flex-col gap-[18px] rounded-t-3xl border-t border-grey-500 bg-gradient-bottom p-5 text-grey-50 shadow-2xl backdrop-blur-2xl"
+        className="fixed right-0 bottom-0 left-0 mx-auto flex h-[400px] max-h-[400px] w-full max-w-[648px] flex-col gap-[18px] rounded-t-3xl border-t border-grey-500 bg-gradient-bottom p-5 text-grey-50 shadow-2xl backdrop-blur-2xl"
       >
         <SheetHeader className="flex flex-row items-start justify-between gap-4 p-0">
           <div className="flex min-w-0 flex-col gap-2">
@@ -182,7 +182,7 @@ function TagSelectContent({
               className={cn(
                 'flex items-center justify-center gap-2 rounded-md px-4 py-2 typo-xs-sb transition-colors select-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:outline-none',
                 isSelected
-                  ? chipSurfaceClass.selected
+                  ? chipSurfaceClass.selectedInput
                   : chipSurfaceClass.unselected,
               )}
             >

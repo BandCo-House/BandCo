@@ -205,6 +205,28 @@ describe('NotificationsPrismaRepository', () => {
     });
   });
 
+  describe('deleteAllNotifications', () => {
+    it('그 유저의 알림만 모두 지우고 deletedCount를 반환한다', async () => {
+      mockPrisma.notification.deleteMany.mockResolvedValue({ count: 7 });
+
+      const result = await repository.deleteAllNotifications('user-001');
+
+      expect(mockPrisma.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
+      expect(result.deletedCount).toBe(7);
+    });
+
+    it('외부 tx가 있으면 그 tx로 지우고 기본 클라이언트·새 transaction은 쓰지 않는다', async () => {
+      const tx = { notification: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) } };
+
+      const result = await repository.deleteAllNotifications('user-001', tx as never);
+
+      expect(tx.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
+      expect(mockPrisma.notification.deleteMany).not.toHaveBeenCalled();
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(result.deletedCount).toBe(2);
+    });
+  });
+
   describe('markManyNotificationsAsRead', () => {
     it('실제 존재하는 읽지 않은 ID만 처리하고 결과를 반환한다', async () => {
       mockPrisma.notification.findMany.mockResolvedValue([{ id: 'noti-001' }, { id: 'noti-002' }]);
