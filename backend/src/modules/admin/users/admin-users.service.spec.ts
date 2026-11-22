@@ -55,7 +55,8 @@ function createManagedUsersRepositoryStub(options?: {
   onCall?: (method: string, tx: unknown) => void;
   onFindUsers?: (filter: AdminUserListFilter, pagination: { page: number; size: number }) => void;
   onUpdateUserStatus?: (userId: string, status: UserStatus) => void;
-  onSoftDeleteUser?: (userId: string, deletedAt: Date) => void;
+  onSoftDeleteUser?: (userId: string, deletedAt: Date, replacementHandle: string) => void;
+  onIsHandleTaken?: (handle: string) => boolean;
   onRestoreUser?: (userId: string, status: UserStatus) => void;
   statusBeforeWithdrawal?: UserStatus | null;
   onFindStatusBeforeWithdrawal?: (userId: string, deletedAt: Date) => void;
@@ -80,9 +81,13 @@ function createManagedUsersRepositoryStub(options?: {
       options?.onCall?.('updateUserStatus', tx);
       options?.onUpdateUserStatus?.(userId, status);
     },
-    async softDeleteUser(userId, deletedAt, tx) {
+    async softDeleteUser(userId, deletedAt, replacementHandle, tx) {
       options?.onCall?.('softDeleteUser', tx);
-      options?.onSoftDeleteUser?.(userId, deletedAt);
+      options?.onSoftDeleteUser?.(userId, deletedAt, replacementHandle);
+    },
+    async isHandleTaken(handle, tx) {
+      options?.onCall?.('isHandleTaken', tx);
+      return options?.onIsHandleTaken?.(handle) ?? false;
     },
     async findStatusBeforeAdminWithdrawal(userId, deletedAt, tx) {
       options?.onCall?.('findStatusBeforeAdminWithdrawal', tx);
@@ -278,6 +283,23 @@ describe('AdminUsersService', () => {
       expect(capturedAuditLogs[0].tx).toBe(TRANSACTION_CLIENT);
     });
 
+    it('원래 고유 ID 대신 쓰이지 않는 랜덤 고유 ID를 넣는다', async () => {
+      const checkedHandles: string[] = [];
+      const capturedHandles: string[] = [];
+      const repository = createManagedUsersRepositoryStub({
+        // 첫 후보는 이미 쓰이는 것으로 해 다시 뽑는지 본다
+        onIsHandleTaken: handle => checkedHandles.push(handle) === 1,
+        onSoftDeleteUser: (_userId, _deletedAt, replacementHandle) => capturedHandles.push(replacementHandle),
+      });
+      const service = new AdminUsersService(repository, createAuditLogsServiceStub(), createPrismaServiceStub());
+
+      await service.withdrawUser(ACTOR, USER_ID, undefined);
+
+      expect(checkedHandles).toHaveLength(2);
+      expect(capturedHandles).toEqual([checkedHandles[1]]);
+      expect(capturedHandles[0]).toMatch(/^[a-z0-9]{8}$/);
+    });
+
     it('회원이 없으면 NotFoundException을 던진다', async () => {
       const repository = createManagedUsersRepositoryStub({ userState: null });
       const service = new AdminUsersService(repository, createAuditLogsServiceStub(), createPrismaServiceStub());
@@ -301,7 +323,8 @@ describe('AdminUsersService', () => {
 
       await service.withdrawUser(ACTOR, USER_ID, undefined, externalTx as never);
 
-      expect(capturedTransactions).toEqual([externalTx, externalTx]);
+      // findUserState, isHandleTaken, softDeleteUser
+      expect(capturedTransactions).toEqual([externalTx, externalTx, externalTx]);
       expect(capturedAuditLogs[0].tx).toBe(externalTx);
     });
   });

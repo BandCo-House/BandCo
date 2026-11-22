@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import type { PaginationParams } from 'src/common/pagination';
 import { PrismaService } from 'src/database/prisma';
 import type { Prisma } from 'src/generated/prisma';
+import { pickAvailableHandle } from 'src/modules/users/util/generate-handle';
 
 import { AdminAuditLogsService } from '../core/admin-audit-logs.service';
 import { type AdminPaginatedResult, toAdminPaginatedResult } from '../core/types/admin-paginated.type';
@@ -125,7 +126,9 @@ export class AdminUsersService {
       }
 
       const deletedAt = new Date();
-      await this.managedUsersRepository.softDeleteUser(userId, deletedAt, client);
+      // 원래 고유 ID는 풀어 주되 handle이 비지 않도록 랜덤 값으로 바꾼다
+      const replacementHandle = await pickAvailableHandle(handle => this.managedUsersRepository.isHandleTaken(handle, client));
+      await this.managedUsersRepository.softDeleteUser(userId, deletedAt, replacementHandle, client);
       // 탈퇴하면 상태가 INACTIVE로 덮어써지므로, 복구할 때 되돌릴 이전 상태와 이 탈퇴 건의 시각을 함께 남긴다
       await this.auditLogsService.record(
         {

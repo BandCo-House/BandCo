@@ -185,9 +185,12 @@ model Genre {
 model UserProfile {
   userId          String    @id @map("user_id") @db.Uuid
   nickname        String    @db.VarChar(20)
-  /// 유저가 직접 정하는 고유 ID(@handle). 영문 대소문자·숫자·밑줄 4~8자. 기존 유저는 null로 시작한다.
+  /// 고유 ID(@handle). 영문 대소문자·숫자·밑줄 4~8자. 정하지 않은 유저는 서버가 랜덤 값을 준다(handleGenerated=true).
+  /// 대소문자 무시 유니크 인덱스 user_profiles_handle_lower_key는 스키마로 표현할 수 없어 마이그레이션 SQL에만 있다.
   handle          String?   @unique @db.VarChar(8)
-  /// 고유 ID 쿨다운 기준 시각. 이 시각 + 7일 전에는 다시 바꿀 수 없다. 처음 설정은 기록하지 않는다.
+  /// 서버가 랜덤으로 준 고유 ID인지. 유저가 직접 바꾸면 false가 되고, 그 첫 변경은 쿨다운에 세지 않는다.
+  handleGenerated Boolean   @default(false) @map("handle_generated")
+  /// 고유 ID 쿨다운 기준 시각. 이 시각 + 7일 전에는 다시 바꿀 수 없다. 랜덤 ID에서의 첫 변경은 기록하지 않는다.
   handleChangedAt DateTime? @map("handle_changed_at") @db.Timestamptz(6)
   selfDescription String?   @map("self_description")
   avatarUrl       String?   @map("avatar_url")

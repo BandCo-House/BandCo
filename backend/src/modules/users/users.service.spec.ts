@@ -33,6 +33,7 @@ const mockProfile: UserProfileRecord = {
   profile: {
     nickname: 'testuser',
     handle: 'devjun',
+    handleGenerated: false,
     handleChangedAt: new Date('2026-01-01T00:00:00.000Z'),
     selfDescription: null,
     avatarUrl: null,
@@ -140,7 +141,7 @@ function createHandleRepositoryStub(options: HandleStubOptions): { stub: UsersRe
     },
     async findHandleState(userId, tx) {
       calls.findHandleState.push({ userId, tx });
-      return options.state === undefined ? { handle: null, handleChangedAt: null } : options.state;
+      return options.state === undefined ? { handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null } : options.state;
     },
     async updateHandle(userId, input, tx) {
       calls.updateHandle.push({ userId, input, tx });
@@ -275,14 +276,30 @@ describe('UsersService', () => {
       createSpy.mockRestore();
     });
 
-    it('nickname과 tx를 repository에 그대로 전달한다', async () => {
+    it('nickname, 랜덤 고유 ID, tx를 repository에 전달한다', async () => {
       const createSpy = jest.spyOn(repositoryStub, 'createUserWithEmail');
+      const findHandleSpy = jest.spyOn(repositoryStub, 'findUserIdByHandle');
       const tx = {} as Prisma.TransactionClient;
 
       await service.createUserWithEmail('new@example.com', 'hashed', '홍길동', tx);
 
-      expect(createSpy).toHaveBeenCalledWith('new@example.com', 'hashed', '홍길동', tx);
+      expect(createSpy).toHaveBeenCalledWith('new@example.com', 'hashed', '홍길동', expect.stringMatching(/^[a-z0-9]{8}$/), tx);
+      // 고른 고유 ID가 쓰이지 않는지 같은 tx에서 확인했다
+      expect(findHandleSpy).toHaveBeenCalledWith(createSpy.mock.calls[0][3], tx);
       createSpy.mockRestore();
+      findHandleSpy.mockRestore();
+    });
+
+    it('랜덤 고유 ID가 이미 쓰이고 있으면 다시 뽑는다', async () => {
+      const createSpy = jest.spyOn(repositoryStub, 'createUserWithEmail');
+      const findHandleSpy = jest.spyOn(repositoryStub, 'findUserIdByHandle').mockResolvedValueOnce({ id: 'user-002' });
+
+      await service.createUserWithEmail('new@example.com', 'hashed', '홍길동');
+
+      expect(findHandleSpy).toHaveBeenCalledTimes(2);
+      expect(createSpy.mock.calls[0][3]).toBe(findHandleSpy.mock.calls[1][0]);
+      createSpy.mockRestore();
+      findHandleSpy.mockRestore();
     });
   });
 
@@ -367,14 +384,17 @@ describe('UsersService', () => {
       await expect(service.createUserWithGoogle(oauthInput)).resolves.toEqual({ ...mockUser, email: 'new@example.com' });
     });
 
-    it('입력과 tx를 repository에 그대로 전달한다', async () => {
+    it('입력, 랜덤 고유 ID, tx를 repository에 전달한다', async () => {
       const createSpy = jest.spyOn(repositoryStub, 'createUserWithOAuth');
+      const findHandleSpy = jest.spyOn(repositoryStub, 'findUserIdByHandle');
       const tx = {} as Prisma.TransactionClient;
 
       await service.createUserWithGoogle(oauthInput, tx);
 
-      expect(createSpy).toHaveBeenCalledWith(oauthInput, tx);
+      expect(createSpy).toHaveBeenCalledWith(oauthInput, expect.stringMatching(/^[a-z0-9]{8}$/), tx);
+      expect(findHandleSpy).toHaveBeenCalledWith(createSpy.mock.calls[0][1], tx);
       createSpy.mockRestore();
+      findHandleSpy.mockRestore();
     });
 
     it('생성 중 P2002가 발생하면 BadRequestException으로 변환한다', async () => {
@@ -468,6 +488,17 @@ describe('UsersService', () => {
         expect(result.profile?.handleChangeableAt).toBeNull();
       });
 
+      it('랜덤 고유 ID 여부는 조회자와 상관없이 담는다', async () => {
+        const generatedRecord: UserProfileRecord = {
+          ...mockProfile,
+          profile: { ...mockProfile.profile!, handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null },
+        };
+
+        const result = await createServiceWithProfile(generatedRecord).getUserProfile('user-001', 'user-002');
+
+        expect(result.profile).toMatchObject({ handle: 'ab12cd34', handleGenerated: true });
+      });
+
       it('본인이라도 쿨다운이 끝났으면 다음 변경 가능 시각은 null이다', async () => {
         const result = await createServiceWithProfile(mockProfile).getUserProfile('user-001', 'user-001');
 
@@ -503,14 +534,17 @@ describe('UsersService', () => {
       await expect(service.deleteUser('unknown-id')).rejects.toThrow(NotFoundException);
     });
 
-    it('tx가 전달되면 softDeleteUser에 동일한 tx를 전달한다', async () => {
+    it('원래 고유 ID 대신 넣을 랜덤 고유 ID와 tx를 softDeleteUser에 전달한다', async () => {
       const txClient = {} as Prisma.TransactionClient;
       const deleteSpy = jest.spyOn(repositoryStub, 'softDeleteUser');
+      const findHandleSpy = jest.spyOn(repositoryStub, 'findUserIdByHandle');
 
       await service.deleteUser('user-001', txClient);
 
-      expect(deleteSpy).toHaveBeenCalledWith('user-001', txClient);
+      expect(deleteSpy).toHaveBeenCalledWith('user-001', expect.stringMatching(/^[a-z0-9]{8}$/), txClient);
+      expect(findHandleSpy).toHaveBeenCalledWith(deleteSpy.mock.calls[0][1], txClient);
       deleteSpy.mockRestore();
+      findHandleSpy.mockRestore();
     });
   });
 
@@ -604,19 +638,27 @@ describe('UsersService', () => {
       jest.useRealTimers();
     });
 
-    it('처음 설정하면 쿨다운 기준 시각을 기록하지 않아 바로 다시 바꿀 수 있다', async () => {
-      const { handleService, calls } = createService({ state: { handle: null, handleChangedAt: null } });
+    it('랜덤 고유 ID에서 처음 바꾸면 쿨다운 기준 시각을 기록하지 않아 바로 다시 바꿀 수 있다', async () => {
+      const { handleService, calls } = createService({ state: { handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null } });
 
       const result = await handleService.changeHandle('user-001', 'devjnu');
 
       expect(calls.updateHandle).toEqual([
-        { userId: 'user-001', input: { currentHandle: null, newHandle: 'devjnu', changedAt: null }, tx: undefined },
+        { userId: 'user-001', input: { currentHandle: 'ab12cd34', newHandle: 'devjnu', changedAt: null }, tx: undefined },
       ]);
       expect(result).toEqual({ userId: 'user-001', handle: 'devjnu', handleChangedAt: null, handleChangeableAt: null });
     });
 
+    it('고유 ID가 아직 null이면(배포 전환 사이 가입) 처음 설정으로 본다', async () => {
+      const { handleService, calls } = createService({ state: { handle: null, handleGenerated: false, handleChangedAt: null } });
+
+      await handleService.changeHandle('user-001', 'devjnu');
+
+      expect(calls.updateHandle[0].input).toEqual({ currentHandle: null, newHandle: 'devjnu', changedAt: null });
+    });
+
     it('처음 설정 직후 다시 바꾸면 쿨다운 없이 성공하고 그때부터 7일 제한이 걸린다', async () => {
-      const { handleService, calls } = createService({ state: { handle: 'devjnu', handleChangedAt: null } });
+      const { handleService, calls } = createService({ state: { handle: 'devjnu', handleGenerated: false, handleChangedAt: null } });
 
       const result = await handleService.changeHandle('user-001', 'devjun');
 
@@ -626,14 +668,14 @@ describe('UsersService', () => {
 
     it('바꾼 지 정확히 7일이 지났으면 다시 바꿀 수 있다', async () => {
       const changedAt = new Date(NOW.getTime() - 7 * DAY_MS);
-      const { handleService } = createService({ state: { handle: 'devjun', handleChangedAt: changedAt } });
+      const { handleService } = createService({ state: { handle: 'devjun', handleGenerated: false, handleChangedAt: changedAt } });
 
       await expect(handleService.changeHandle('user-001', 'junny')).resolves.toMatchObject({ handle: 'junny', handleChangedAt: NOW.toISOString() });
     });
 
     it('바꾼 지 7일이 안 됐으면 BadRequestException을 던지고 저장하지 않는다', async () => {
       const changedAt = new Date(NOW.getTime() - DAY_MS);
-      const { handleService, calls } = createService({ state: { handle: 'devjun', handleChangedAt: changedAt } });
+      const { handleService, calls } = createService({ state: { handle: 'devjun', handleGenerated: false, handleChangedAt: changedAt } });
 
       await expect(handleService.changeHandle('user-001', 'junny')).rejects.toThrow(
         new BadRequestException('고유 ID는 7일에 한 번만 변경할 수 있습니다.'),
@@ -644,7 +686,7 @@ describe('UsersService', () => {
 
     it('지금 값과 똑같으면 저장하지 않고 현재 쿨다운 상태를 그대로 돌려준다', async () => {
       const changedAt = new Date(NOW.getTime() - DAY_MS);
-      const { handleService, calls } = createService({ state: { handle: 'devjun', handleChangedAt: changedAt } });
+      const { handleService, calls } = createService({ state: { handle: 'devjun', handleGenerated: false, handleChangedAt: changedAt } });
 
       const result = await handleService.changeHandle('user-001', 'devjun');
 
@@ -664,17 +706,41 @@ describe('UsersService', () => {
     });
 
     it('다른 유저가 대소문자만 다른 값을 쓰고 있으면 BadRequestException을 던진다', async () => {
-      const { handleService, calls } = createService({ state: { handle: null, handleChangedAt: null }, owner: { id: 'user-002' } });
+      const { handleService, calls } = createService({
+        state: { handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null },
+        owner: { id: 'user-002' },
+      });
 
       await expect(handleService.changeHandle('user-001', 'DevJun')).rejects.toThrow(new BadRequestException('이미 사용 중인 고유 ID입니다.'));
       expect(calls.updateHandle).toEqual([]);
     });
 
     it('본인 값을 대소문자만 바꾸는 것은 변경으로 처리한다', async () => {
-      const { handleService, calls } = createService({ state: { handle: 'devjun', handleChangedAt: null }, owner: { id: 'user-001' } });
+      const { handleService, calls } = createService({
+        state: { handle: 'devjun', handleGenerated: false, handleChangedAt: null },
+        owner: { id: 'user-001' },
+      });
 
       await expect(handleService.changeHandle('user-001', 'DevJun')).resolves.toMatchObject({ handle: 'DevJun' });
       expect(calls.updateHandle).toHaveLength(1);
+    });
+
+    it('랜덤 고유 ID와 똑같은 값을 보내면 저장하지 않아 랜덤 ID로 남는다', async () => {
+      const { handleService, calls } = createService({ state: { handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null } });
+
+      await expect(handleService.changeHandle('user-001', 'ab12cd34')).resolves.toMatchObject({ handle: 'ab12cd34', handleChangeableAt: null });
+      expect(calls.updateHandle).toEqual([]);
+    });
+
+    it('랜덤 고유 ID를 대소문자만 바꾸는 것도 첫 변경이라 쿨다운을 기록하지 않는다', async () => {
+      const { handleService, calls } = createService({
+        state: { handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null },
+        owner: { id: 'user-001' },
+      });
+
+      await handleService.changeHandle('user-001', 'AB12CD34');
+
+      expect(calls.updateHandle[0].input).toEqual({ currentHandle: 'ab12cd34', newHandle: 'AB12CD34', changedAt: null });
     });
 
     it('저장 중 P2002가 나면 이미 사용 중인 고유 ID로 BadRequestException을 던진다', async () => {
@@ -697,7 +763,7 @@ describe('UsersService', () => {
     });
 
     it('외부 tx를 모든 repository 호출에 그대로 전달한다', async () => {
-      const { handleService, calls } = createService({ state: { handle: null, handleChangedAt: null } });
+      const { handleService, calls } = createService({ state: { handle: 'ab12cd34', handleGenerated: true, handleChangedAt: null } });
       const txClient = {} as Prisma.TransactionClient;
 
       await handleService.changeHandle('user-001', 'devjun', txClient);

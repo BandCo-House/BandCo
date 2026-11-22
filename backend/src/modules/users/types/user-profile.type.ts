@@ -11,8 +11,10 @@ export interface UserProfileUserDetail {
 
 export interface UserProfileDetail {
   nickname: string;
-  /** 고유 ID(@handle). 아직 정하지 않았으면 null. 누구나 볼 수 있다 */
+  /** 고유 ID(@handle). 정하지 않은 유저는 서버가 준 랜덤 값이다. 누구나 볼 수 있다 */
   handle: string | null;
+  /** 서버가 준 랜덤 고유 ID인지. 유저가 직접 바꾸면 false다 */
+  handleGenerated: boolean;
   /** 고유 ID 다음 변경 가능 시각. 본인 조회이면서 쿨다운 중일 때만 값이 있고, 그 외에는 null */
   handleChangeableAt: string | null;
   selfDescription: string | null;

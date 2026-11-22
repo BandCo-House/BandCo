@@ -108,6 +108,7 @@ function createManagedUsersRepositoryStub(options?: {
     findUserDetail: unexpectedCall,
     updateUserStatus: unexpectedCall,
     softDeleteUser: unexpectedCall,
+    isHandleTaken: unexpectedCall,
     findStatusBeforeAdminWithdrawal: unexpectedCall,
     restoreUser: unexpectedCall,
   };

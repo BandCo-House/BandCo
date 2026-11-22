@@ -11,6 +11,7 @@ import type { CreateOAuthUserInput } from './types/oauth-user.type';
 import type { DeleteProfileMusicResult, ProfileMusicTrack } from './types/profile-music.type';
 import type { ChangeHandleResult, HandleAvailabilityResult } from './types/user-handle.type';
 import type { GetUserProfileResult, UserProfileRecord } from './types/user-profile.type';
+import { pickAvailableHandle } from './util/generate-handle';
 import { getHandleChangeableAt } from './util/handle-cooldown';
 
 /** 마지막 접속 시각을 이 간격 안에서는 다시 쓰지 않는다. DAU 집계에는 충분하고 쓰기 부하는 줄인다. */
@@ -73,6 +74,16 @@ export class UsersService {
     private readonly deezerTrackClient: DeezerTrackClient,
   ) {}
 
+  /**
+   * 대소문자를 무시해 아무도 쓰지 않는 랜덤 고유 ID를 고른다. 가입과 탈퇴에서 쓴다.
+   *
+   * @param {Prisma.TransactionClient | undefined} tx - 상위 트랜잭션 client
+   * @returns {Promise<string>} 랜덤 고유 ID
+   */
+  private async pickGeneratedHandle(tx?: Prisma.TransactionClient): Promise<string> {
+    return pickAvailableHandle(async handle => (await this.usersRepository.findUserIdByHandle(handle, tx)) !== null);
+  }
+
   async getUserByEmail(email: string, tx?: Prisma.TransactionClient) {
     return this.usersRepository.findByEmail(email, tx);
   }
@@ -110,7 +121,7 @@ export class UsersService {
   }
 
   /**
-   * 이메일 유저와 프로필을 생성한다.
+   * 이메일 유저와 프로필을 생성한다. 고유 ID는 랜덤 값으로 주고, 유저가 나중에 바꾼다.
    *
    * 중복 검사와 생성 사이에 동시 요청이 끼어들 수 있어, User.email 유니크 제약
    * 위반(P2002)도 사전 검사와 동일한 예외로 변환한다.
@@ -121,8 +132,9 @@ export class UsersService {
     if (existingUser) {
       throw new BadRequestException('이미 존재하는 이메일입니다.');
     }
+    const handle = await this.pickGeneratedHandle(tx);
     try {
-      return await this.usersRepository.createUserWithEmail(email, passwordHash, nickname, tx);
+      return await this.usersRepository.createUserWithEmail(email, passwordHash, nickname, handle, tx);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new BadRequestException('이미 존재하는 이메일입니다.');
@@ -157,14 +169,15 @@ export class UsersService {
   }
 
   /**
-   * OAuth 유저와 프로필, OAuth 계정 연결을 함께 생성한다.
+   * OAuth 유저와 프로필, OAuth 계정 연결을 함께 생성한다. 고유 ID는 랜덤 값으로 준다.
    *
    * 사전 조회와 생성 사이에 동시 요청이 끼어들 수 있어,
    * User.email 유니크 제약 위반(P2002)을 BadRequestException으로 변환한다.
    */
   async createUserWithGoogle(input: CreateOAuthUserInput, tx?: Prisma.TransactionClient) {
+    const handle = await this.pickGeneratedHandle(tx);
     try {
-      return await this.usersRepository.createUserWithOAuth(input, tx);
+      return await this.usersRepository.createUserWithOAuth(input, handle, tx);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new BadRequestException('이미 존재하는 이메일입니다.');
@@ -206,7 +219,9 @@ export class UsersService {
   }
 
   async deleteUser(userId: string, tx?: Prisma.TransactionClient) {
-    const result = await this.usersRepository.softDeleteUser(userId, tx);
+    // 원래 고유 ID는 풀어 주되 handle이 비지 않도록 랜덤 값으로 바꾼다
+    const replacementHandle = await this.pickGeneratedHandle(tx);
+    const result = await this.usersRepository.softDeleteUser(userId, replacementHandle, tx);
     if (!result) {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
@@ -263,8 +278,9 @@ export class UsersService {
       throw new BadRequestException(HANDLE_TAKEN_MESSAGE);
     }
 
-    // 처음 설정은 쿨다운에 세지 않아 직후 한 번은 바로 고칠 수 있다(오타 구제)
-    const isFirstSet = state.handle === null;
+    // 서버가 준 랜덤 ID에서의 첫 변경은 쿨다운에 세지 않아 직후 한 번은 바로 고칠 수 있다(오타 구제).
+    // handle이 null인 유저는 배포 전환 사이에 옛 코드로 가입한 경우라 같게 본다(NOT NULL 전환 때 제거)
+    const isFirstSet = state.handleGenerated || state.handle === null;
     const changedAt = isFirstSet ? null : now;
 
     let isUpdated: boolean;
