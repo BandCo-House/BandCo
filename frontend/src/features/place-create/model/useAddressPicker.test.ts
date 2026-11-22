@@ -107,4 +107,136 @@ describe('useAddressPicker', () => {
     });
     expect(result.current.canConfirm).toBe(true);
   });
+
+  it('연속 movePin 호출 시 늦게 도착한 이전 응답이 최신 주소를 덮어쓰지 않는다', async () => {
+    let resolveA!: (value: string) => void;
+    let resolveB!: (value: string) => void;
+    mocks.coordToAddress
+      .mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveA = resolve; }),
+      )
+      .mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveB = resolve; }),
+      );
+
+    const { result } = renderHook(() => useAddressPicker());
+
+    let promiseA!: Promise<void>;
+    let promiseB!: Promise<void>;
+    act(() => {
+      promiseA = result.current.movePin(37.51, 127.01);
+      promiseB = result.current.movePin(37.52, 127.02);
+    });
+
+    await act(async () => {
+      resolveB('서울 강남구 B');
+      await promiseB;
+    });
+
+    expect(result.current.markerPosition).toEqual({ lat: 37.52, lng: 127.02 });
+    expect(result.current.selectedPlaceInfo).toEqual({
+      name: '선택한 위치',
+      address: '서울 강남구 B',
+    });
+    expect(result.current.isResolvingAddress).toBe(false);
+
+    await act(async () => {
+      resolveA('서울 강남구 A');
+      await promiseA;
+    });
+
+    expect(result.current.markerPosition).toEqual({ lat: 37.52, lng: 127.02 });
+    expect(result.current.selectedPlaceInfo).toEqual({
+      name: '선택한 위치',
+      address: '서울 강남구 B',
+    });
+  });
+
+  it('이전 movePin 응답이 먼저 도착해도 최신 요청이 대기 중이면 isResolvingAddress를 유지한다', async () => {
+    let resolveA!: (value: string) => void;
+    let resolveB!: (value: string) => void;
+    mocks.coordToAddress
+      .mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveA = resolve; }),
+      )
+      .mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveB = resolve; }),
+      );
+
+    const { result } = renderHook(() => useAddressPicker());
+
+    let promiseA!: Promise<void>;
+    let promiseB!: Promise<void>;
+    act(() => {
+      promiseA = result.current.movePin(37.51, 127.01);
+      promiseB = result.current.movePin(37.52, 127.02);
+    });
+
+    await act(async () => {
+      resolveA('서울 강남구 A');
+      await promiseA;
+    });
+
+    expect(result.current.isResolvingAddress).toBe(true);
+    expect(result.current.canConfirm).toBe(false);
+    expect(result.current.selectedPlaceInfo).toBeNull();
+
+    await act(async () => {
+      resolveB('서울 강남구 B');
+      await promiseB;
+    });
+
+    expect(result.current.isResolvingAddress).toBe(false);
+    expect(result.current.canConfirm).toBe(true);
+    expect(result.current.selectedPlaceInfo).toEqual({
+      name: '선택한 위치',
+      address: '서울 강남구 B',
+    });
+  });
+
+  it('movePin 대기 중 selectResult를 호출하면 이전 역지오코딩 응답이 무효화된다', async () => {
+    let resolvePin!: (value: string) => void;
+    mocks.coordToAddress.mockImplementationOnce(
+      () => new Promise<string>((resolve) => { resolvePin = resolve; }),
+    );
+
+    const { result } = renderHook(() => useAddressPicker());
+
+    let pinPromise!: Promise<void>;
+    act(() => {
+      pinPromise = result.current.movePin(37.51, 127.01);
+    });
+
+    expect(result.current.isResolvingAddress).toBe(true);
+
+    act(() => {
+      result.current.selectResult({
+        id: 'place-1',
+        name: '합정 연습실',
+        address: '서울 마포구 양화로 45',
+        lat: 37.5496,
+        lng: 126.9139,
+      });
+    });
+
+    expect(result.current.isResolvingAddress).toBe(false);
+    expect(result.current.canConfirm).toBe(true);
+    expect(result.current.selectedPlaceInfo).toEqual({
+      name: '합정 연습실',
+      address: '서울 마포구 양화로 45',
+    });
+
+    await act(async () => {
+      resolvePin('서울 강남구 늦은 응답');
+      await pinPromise;
+    });
+
+    expect(result.current.markerPosition).toEqual({ lat: 37.5496, lng: 126.9139 });
+    expect(result.current.selectedPlaceInfo).toEqual({
+      name: '합정 연습실',
+      address: '서울 마포구 양화로 45',
+    });
+    expect(result.current.isResolvingAddress).toBe(false);
+    expect(result.current.canConfirm).toBe(true);
+  });
 });

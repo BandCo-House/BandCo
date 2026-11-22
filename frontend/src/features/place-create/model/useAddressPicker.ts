@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PlaceSearchResult } from './useKakaoPlaceSearch';
 import { coordToAddress, getCurrentLocation } from './place-coords';
 
 export const DEFAULT_MAP_CENTER = { lat: 37.5665, lng: 126.978 };
+const UNKNOWN_ADDRESS = '주소를 확인할 수 없는 위치';
 
 export interface SelectedPlaceInfo {
   name: string;
@@ -53,6 +54,7 @@ export const useAddressPicker = (options: UseAddressPickerOptions = {}) => {
   const [isInitializingLocation, setIsInitializingLocation] = useState(
     !initialLocation,
   );
+  const resolveSeqRef = useRef(0);
 
   // 초기 위치가 없을 때만 사용자 현재 위치를 확인하여 중심 설정
   useEffect(() => {
@@ -72,6 +74,8 @@ export const useAddressPicker = (options: UseAddressPickerOptions = {}) => {
   }, [initialLocation]);
 
   const selectResult = (place: PlaceSearchResult) => {
+    resolveSeqRef.current += 1;
+    setIsResolvingAddress(false);
     setSelectedResultId(place.id);
     setMarkerPosition({ lat: place.lat, lng: place.lng });
     setMapCenter({ lat: place.lat, lng: place.lng });
@@ -79,25 +83,29 @@ export const useAddressPicker = (options: UseAddressPickerOptions = {}) => {
   };
 
   const movePin = async (lat: number, lng: number) => {
+    const requestSeq = ++resolveSeqRef.current;
     // 핀을 드래그하거나 화면을 터치해 옮기면 검색 목록 포커스를 해제한다
     setSelectedResultId(null);
     setMarkerPosition({ lat, lng });
     setIsResolvingAddress(true);
     try {
       const address = await coordToAddress(lat, lng);
+      if (requestSeq !== resolveSeqRef.current) return;
       setSelectedPlaceInfo({
         name: '선택한 위치',
-        address: address || '주소를 확인할 수 없는 위치',
+        address: address || UNKNOWN_ADDRESS,
       });
     } finally {
-      setIsResolvingAddress(false);
+      if (requestSeq === resolveSeqRef.current) {
+        setIsResolvingAddress(false);
+      }
     }
   };
 
   const canConfirm = Boolean(
     selectedPlaceInfo &&
       selectedPlaceInfo.address &&
-      selectedPlaceInfo.address !== '주소를 확인할 수 없는 위치' &&
+      selectedPlaceInfo.address !== UNKNOWN_ADDRESS &&
       !isResolvingAddress,
   );
 
