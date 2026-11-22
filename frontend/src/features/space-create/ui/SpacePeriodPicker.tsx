@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg?react';
 import { SlotChip } from '@/features/schedule-create/ui/components/ScheduleTimeSheet';
 import { WEEKDAY_LABELS, isSameDay } from '@/shared/lib/date';
@@ -44,6 +44,7 @@ export const SpacePeriodPicker = ({
   errorId,
 }: SpacePeriodPickerProps) => {
   const [active, setActive] = useState<ActiveSlot>('start');
+  const endChipId = useId();
   const isPickingEnd = hasEnd && active === 'end';
   const start = toDate(startDate);
   const end = toDate(endDate);
@@ -60,7 +61,12 @@ export const SpacePeriodPicker = ({
       startDate: picked,
       endDate: date > end ? picked : endDate,
     });
-    if (hasEnd) setActive('end');
+    if (hasEnd) {
+      setActive('end');
+      // 종료로 넘어가면 달력이 key로 새로 그려져, 키보드 포커스가 있던 날짜 버튼이 사라진다.
+      // 종료 칩으로 포커스를 옮겨 이어서 종료일을 고르게 한다.
+      requestAnimationFrame(() => document.getElementById(endChipId)?.focus());
+    }
   };
 
   return (
@@ -86,6 +92,7 @@ export const SpacePeriodPicker = ({
         />
         {hasEnd ? (
           <SlotChip
+            id={endChipId}
             name="종료 날짜"
             value={formatDateChip(endDate)}
             isActive={isPickingEnd}

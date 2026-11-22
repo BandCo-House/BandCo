@@ -4,13 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
 import { API_URL } from '@/mocks/config';
-import { toast } from 'sonner';
+import { Toaster } from '@/shared/ui/sonner';
 import { NotificationList } from './NotificationList';
 import { NotificationHeaderActions } from './NotificationHeaderActions';
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}));
 
 const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
@@ -140,22 +136,26 @@ describe('NotificationList', () => {
       }),
     );
 
-    renderWithClient(<NotificationList tab="INVITE" />);
+    renderWithClient(
+      <>
+        <NotificationList tab="INVITE" />
+        <Toaster />
+      </>,
+    );
 
     const acceptBtn = await screen.findByRole('button', { name: '수락' });
     fireEvent.click(acceptBtn);
 
     await waitFor(() => expect(acceptApiCalled).toBe(true));
-    // 바로 밴드로 넘어가지 않는다 — 카드가 "수락됨"으로 바뀌는 걸 볼 수 있어야 한다.
+    // 바로 밴드로 넘어가지 않는다. 카드가 "수락됨"으로 바뀌는 걸 볼 수 있어야 한다.
     expect(mockNavigate).not.toHaveBeenCalled();
 
-    const [message, options] = vi.mocked(toast.success).mock.calls.at(-1)!;
-    expect(message).toBe('초대를 수락했습니다.');
-    const action = (
-      options as { action: { label: string; onClick: () => void } }
-    ).action;
-    expect(action.label).toBe('밴드 둘러보기');
-    action.onClick();
+    // 화면에 뜬 실제 토스트의 버튼을 누른다. 버튼이 안 뜨거나 눌리지 않으면 여기서 실패한다.
+    expect(await screen.findByText('초대를 수락했습니다.')).toBeInTheDocument();
+    fireEvent.click(
+      await screen.findByRole('button', { name: '밴드 둘러보기' }),
+    );
+
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/band/mock-joined-band-id',
     });

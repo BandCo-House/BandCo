@@ -125,6 +125,9 @@ export const ParticipantSection = ({
       <button
         id={triggerId}
         type="button"
+        // 빈칸 안내 때 포커스가 이 버튼으로 오므로, 묶음뿐 아니라 버튼에서도 경고를 읽게 한다.
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error?.id}
         onClick={() => setIsModalOpen(true)}
         className={cn(
           fieldSurfaceClass,

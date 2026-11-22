@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -45,6 +45,19 @@ describe('SpacePeriodPicker', () => {
     ).toBeInTheDocument();
     // 그 사이 날짜도 기간으로 칠해진다.
     expect(day(/^11월 15일/)).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('키보드로 시작일을 고르면 포커스가 종료 칩으로 옮겨 간다', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    // 시작일을 고르면 달력이 새로 그려져 누른 날짜 버튼이 사라진다. 포커스가 문서 밖으로 빠지면 안 된다.
+    day(/^11월 12일/).focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /^종료 날짜/ })).toHaveFocus(),
+    );
   });
 
   it('종료를 고를 때 시작보다 앞선 날은 고를 수 없다', async () => {

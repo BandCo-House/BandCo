@@ -289,7 +289,10 @@ describe('앱 라우터', () => {
 
     renderWithRouter(router);
     await screen.findByTestId('band-list');
-    await router.navigate({ to: '/search' });
+    // 사용자처럼 내 밴드 헤더의 검색 아이콘을 눌러 들어간다(하단 탭에도 "검색"이 있어 헤더로 좁힌다).
+    fireEvent.click(
+      within(screen.getByRole('banner')).getByRole('link', { name: '검색' }),
+    );
 
     fireEvent.click(await screen.findByRole('button', { name: '뒤로 가기' }));
 

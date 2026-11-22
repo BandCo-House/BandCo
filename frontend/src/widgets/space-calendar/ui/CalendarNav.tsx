@@ -32,8 +32,10 @@ const VIEW_NAV: Record<
   week: {
     unit: '주',
     move: (date, direction) => addDays(date, direction * 7),
+    // 올해면 연도를 뺀다. "주간/월간" 글자 토글과 화살표 두 개가 한 줄에 들어가면 연도까지
+    // 붙은 제목(약 140px)이 375px 이하 화면에서 오른쪽 화살표와 겹쳤다. 합주 기간 칩과 같은 규칙이다.
     title: (date) =>
-      `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${getWeekOfMonth(date)}주차`,
+      `${date.getFullYear() === new Date().getFullYear() ? '' : `${date.getFullYear()}년 `}${date.getMonth() + 1}월 ${getWeekOfMonth(date)}주차`,
   },
 };
 

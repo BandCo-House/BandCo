@@ -56,8 +56,12 @@ describe('SpaceCreateModal', () => {
       'aria-invalid',
       'true',
     );
-    expect(
-      screen.getByRole('button', { name: '참여자를 선택하세요' }),
-    ).toHaveFocus();
+    const trigger = screen.getByRole('button', { name: '참여자를 선택하세요' });
+    expect(trigger).toHaveFocus();
+    // 포커스가 가는 버튼에서도 경고를 읽어야 한다(묶음에만 걸면 스크린리더가 안 읽는다).
+    expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    expect(trigger).toHaveAccessibleDescription(
+      '참여자를 1명 이상 골라주세요.',
+    );
   });
 });
