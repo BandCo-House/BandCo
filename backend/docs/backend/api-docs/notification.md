@@ -316,7 +316,8 @@
 
 ```json
 {
-  "success": true,
+  "status": "success",
+  "error": null,
   "message": "전체 알림 삭제 성공",
   "data": {
     "deletedCount": 12

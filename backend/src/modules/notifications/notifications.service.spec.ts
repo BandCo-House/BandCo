@@ -1,6 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
+import type { Prisma } from '../../generated/prisma';
+
 import type { GetNotificationsQuery } from './dto/get-notifications-query.dto';
 import type { NotificationsRepository } from './repositories/notifications.repository';
 import { NOTIFICATIONS_REPOSITORY } from './repositories/notifications.repository';
@@ -48,6 +50,9 @@ const mockUnreadSummary: NotificationUnreadSummary = {
   unreadByType: { INVITE: 2, NOTICE: 1, REMINDER: 0 },
 };
 
+// deleteAllNotifications가 repository에 넘긴 값을 기록한다(사용자 범위·외부 tx 전달 검증용).
+let capturedDeleteAllArgs: { userId: string; tx: unknown } | undefined;
+
 const repositoryStub: NotificationsRepository = {
   async createNotification() {
     return undefined;
@@ -76,7 +81,8 @@ const repositoryStub: NotificationsRepository = {
   async deleteManyNotifications() {
     return mockDeleteManyResult;
   },
-  async deleteAllNotifications() {
+  async deleteAllNotifications(userId, tx) {
+    capturedDeleteAllArgs = { userId, tx };
     return { deletedCount: 4 };
   },
 };
@@ -115,9 +121,16 @@ describe('NotificationsService', () => {
   });
 
   describe('deleteAllNotifications', () => {
-    it('repository 결과를 그대로 반환한다', async () => {
+    it('요청한 유저의 범위로 repository를 부르고 결과를 그대로 반환한다', async () => {
       const result = await service.deleteAllNotifications('user-001');
       expect(result.deletedCount).toBe(4);
+      expect(capturedDeleteAllArgs?.userId).toBe('user-001');
+    });
+
+    it('외부 tx가 있으면 그대로 repository에 넘긴다', async () => {
+      const tx = { transactionClient: true } as unknown as Prisma.TransactionClient;
+      await service.deleteAllNotifications('user-001', tx);
+      expect(capturedDeleteAllArgs?.tx).toBe(tx);
     });
   });
 

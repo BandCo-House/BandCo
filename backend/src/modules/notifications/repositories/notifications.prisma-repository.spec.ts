@@ -214,6 +214,17 @@ describe('NotificationsPrismaRepository', () => {
       expect(mockPrisma.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
       expect(result.deletedCount).toBe(7);
     });
+
+    it('외부 tx가 있으면 그 tx로 지우고 기본 클라이언트·새 transaction은 쓰지 않는다', async () => {
+      const tx = { notification: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) } };
+
+      const result = await repository.deleteAllNotifications('user-001', tx as never);
+
+      expect(tx.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-001' } });
+      expect(mockPrisma.notification.deleteMany).not.toHaveBeenCalled();
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(result.deletedCount).toBe(2);
+    });
   });
 
   describe('markManyNotificationsAsRead', () => {
